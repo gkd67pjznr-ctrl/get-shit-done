@@ -33,10 +33,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Verifier Quality
 
-- [ ] **VRFY-01**: Verifier includes Step 7b after existing Step 7 that checks for code duplication across phase files
-- [ ] **VRFY-02**: Verifier Step 7b detects dead code and orphaned exports (artifacts that exist but are never imported)
-- [ ] **VRFY-03**: Verifier Step 7b checks that new `.cjs/.js/.ts` logic files have corresponding test files
-- [ ] **VRFY-04**: Verifier quality findings appear in VERIFICATION.md with severity gated by `quality.level` — warnings in `standard`, blockers in `strict`, skipped in `fast`
+- [x] **VRFY-01**: Verifier includes Step 7b after existing Step 7 that checks for code duplication across phase files
+- [x] **VRFY-02**: Verifier Step 7b detects dead code and orphaned exports (artifacts that exist but are never imported)
+- [x] **VRFY-03**: Verifier Step 7b checks that new `.cjs/.js/.ts` logic files have corresponding test files
+- [x] **VRFY-04**: Verifier quality findings appear in VERIFICATION.md with severity gated by `quality.level` — warnings in `standard`, blockers in `strict`, skipped in `fast`
 
 ### Planner Quality
 
@@ -104,10 +104,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EXEC-06 | Phase 2 | Complete |
 | EXEC-07 | Phase 2 | Complete |
 | EXEC-08 | Phase 2 | Complete |
-| VRFY-01 | Phase 3 | Pending |
-| VRFY-02 | Phase 3 | Pending |
-| VRFY-03 | Phase 3 | Pending |
-| VRFY-04 | Phase 3 | Pending |
+| VRFY-01 | Phase 3 | Complete |
+| VRFY-02 | Phase 3 | Complete |
+| VRFY-03 | Phase 3 | Complete |
+| VRFY-04 | Phase 3 | Complete |
 | PLAN-01 | Phase 3 | Complete |
 | PLAN-02 | Phase 3 | Complete |
 | PCHK-01 | Phase 3 | Complete |

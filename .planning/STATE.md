@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-23)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 3 plan 02 complete — quality_scan and Dimension 9 added
+**Current focus:** Phase 3 plans 01 and 02 complete — all quality dimensions delivered
 
 ## Current Position
 
 Phase: 3 of 3 (Quality Dimensions) — IN PROGRESS
-Plan: 2 of 3 in current phase — COMPLETE
-Status: Phase 3 active
-Last activity: 2026-02-23 — Completed 03-02-PLAN.md (quality_scan format + Dimension 9 quality directives)
+Plan: 2 of 2 in current phase — COMPLETE (both 03-01 and 03-02 done)
+Status: Phase 3 active — both plans complete, ready for verification
+Last activity: 2026-02-23 — Completed 03-01-PLAN.md (Step 7b quality dimensions added to gsd-verifier.md)
 
-Progress: [████████░░] 80%
+Progress: [████████░░] 83%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
-- Average duration: 1.2 min
-- Total execution time: 6 min
+- Total plans completed: 7
+- Average duration: 1.1 min
+- Total execution time: 8 min
 
 **By Phase:**
 
@@ -29,7 +29,7 @@ Progress: [████████░░] 80%
 |-------|-------|-------|----------|
 | 01-foundation | 2 | 3 min | 1.5 min |
 | 02-executor-sentinel | 3 | 3 min | 1 min |
-| 03-quality-dimensions | 2 | 3 min | 1.5 min |
+| 03-quality-dimensions | 2 | 2 min | 1 min |
 
 **Recent Trend:**
 - Last 5 plans: 2 min, 2 min, 1 min, 1 min, 1 min
@@ -60,6 +60,11 @@ Recent decisions affecting current work:
 - [02-02]: execute_tasks step updated additively — two bullets inserted at correct points, existing structure preserved
 - [02-03]: Task 1 skipped — execute_tasks wiring was already done in 02-02 (commit 8dd9ca8), both sentinel bullets present at lines 86 and 90
 - [02-03]: All 10 integration checks passed without remediation — Phase 2 fully consistent, EXEC-01 through EXEC-08 all satisfied
+- [03-01]: Step 7b fast mode writes section header + Skipped to VERIFICATION.md — section must always appear even when skipped (locked user decision)
+- [03-01]: Duplication scope same-phase only — do NOT scan entire codebase (locked user decision)
+- [03-01]: CLI entry points (bin/, cli.cjs, index.cjs) downgraded to INFO not WARN/FAIL for orphaned exports (locked user decision)
+- [03-01]: Strict mode collect-all-before-evaluate — findings arrays initialized, all three sub-checks run before any evaluation (locked user decision)
+- [03-01]: Standard mode WARNs are informational only — do not change overall verification status; only strict mode FAILs produce gaps_found
 - [Phase 03-quality-dimensions]: quality_scan nested INSIDE action, not as sibling — explicit code example prevents ambiguity
 - [Phase 03-quality-dimensions]: Dimension 9 standard=warning does not trigger revision loop — only strict=blocker causes planner return
 - [Phase 03-quality-dimensions]: N/A is only acceptable empty-substitute for quality_scan subsections — placeholder content fails gate identically to missing
@@ -76,5 +81,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Completed 03-02-PLAN.md. quality_scan format added to planner, Dimension 9 added to plan-checker. PLAN-01, PLAN-02, PCHK-01, PCHK-02 satisfied.
+Stopped at: Completed 03-01-PLAN.md. Step 7b quality dimensions block added to gsd-verifier.md. VRFY-01 through VRFY-04 satisfied. Both Phase 3 plans (03-01 and 03-02) are now complete.
 Resume file: None
