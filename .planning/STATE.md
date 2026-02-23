@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-23)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 2 complete — ready for Phase 3
+**Current focus:** Phase 3 plan 02 complete — quality_scan and Dimension 9 added
 
 ## Current Position
 
-Phase: 2 of 3 (Executor Sentinel) — COMPLETE
-Plan: 3 of 3 in current phase — COMPLETE
-Status: Phase 2 complete
-Last activity: 2026-02-23 — Completed 02-03-PLAN.md (integration verification — all 10 EXEC checks passed)
+Phase: 3 of 3 (Quality Dimensions) — IN PROGRESS
+Plan: 2 of 3 in current phase — COMPLETE
+Status: Phase 3 active
+Last activity: 2026-02-23 — Completed 03-02-PLAN.md (quality_scan format + Dimension 9 quality directives)
 
-Progress: [██████░░░░] 66%
+Progress: [████████░░] 80%
 
 ## Performance Metrics
 
@@ -29,9 +29,10 @@ Progress: [██████░░░░] 66%
 |-------|-------|-------|----------|
 | 01-foundation | 2 | 3 min | 1.5 min |
 | 02-executor-sentinel | 3 | 3 min | 1 min |
+| 03-quality-dimensions | 2 | 3 min | 1.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 2 min, 1 min, 1 min, 1 min, 1 min
+- Last 5 plans: 2 min, 2 min, 1 min, 1 min, 1 min
 - Trend: stable
 
 *Updated after each plan completion*
@@ -59,6 +60,9 @@ Recent decisions affecting current work:
 - [02-02]: execute_tasks step updated additively — two bullets inserted at correct points, existing structure preserved
 - [02-03]: Task 1 skipped — execute_tasks wiring was already done in 02-02 (commit 8dd9ca8), both sentinel bullets present at lines 86 and 90
 - [02-03]: All 10 integration checks passed without remediation — Phase 2 fully consistent, EXEC-01 through EXEC-08 all satisfied
+- [Phase 03-quality-dimensions]: quality_scan nested INSIDE action, not as sibling — explicit code example prevents ambiguity
+- [Phase 03-quality-dimensions]: Dimension 9 standard=warning does not trigger revision loop — only strict=blocker causes planner return
+- [Phase 03-quality-dimensions]: N/A is only acceptable empty-substitute for quality_scan subsections — placeholder content fails gate identically to missing
 
 ### Pending Todos
 
@@ -72,5 +76,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Completed 02-03-PLAN.md. Phase 2 (Executor Sentinel) complete. All EXEC requirements satisfied. Ready for Phase 3.
+Stopped at: Completed 03-02-PLAN.md. quality_scan format added to planner, Dimension 9 added to plan-checker. PLAN-01, PLAN-02, PCHK-01, PCHK-02 satisfied.
 Resume file: None

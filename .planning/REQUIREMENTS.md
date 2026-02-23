@@ -40,13 +40,13 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Planner Quality
 
-- [ ] **PLAN-01**: Planner task `<action>` blocks include a `<quality_scan>` subsection specifying existing code to reuse, library docs to consult, and tests to write
-- [ ] **PLAN-02**: Planner self-check verifies each task action has quality directives populated before returning the plan
+- [x] **PLAN-01**: Planner task `<action>` blocks include a `<quality_scan>` subsection specifying existing code to reuse, library docs to consult, and tests to write
+- [x] **PLAN-02**: Planner self-check verifies each task action has quality directives populated before returning the plan
 
 ### Plan-Checker
 
-- [ ] **PCHK-01**: Plan-checker includes Dimension 9 that validates task actions contain quality directives (code to reuse, docs to consult, tests to write)
-- [ ] **PCHK-02**: Dimension 9 is non-blocking in `standard` mode and blocking in `strict` mode
+- [x] **PCHK-01**: Plan-checker includes Dimension 9 that validates task actions contain quality directives (code to reuse, docs to consult, tests to write)
+- [x] **PCHK-02**: Dimension 9 is non-blocking in `standard` mode and blocking in `strict` mode
 
 ## v2 Requirements
 
@@ -108,10 +108,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VRFY-02 | Phase 3 | Pending |
 | VRFY-03 | Phase 3 | Pending |
 | VRFY-04 | Phase 3 | Pending |
-| PLAN-01 | Phase 3 | Pending |
-| PLAN-02 | Phase 3 | Pending |
-| PCHK-01 | Phase 3 | Pending |
-| PCHK-02 | Phase 3 | Pending |
+| PLAN-01 | Phase 3 | Complete |
+| PLAN-02 | Phase 3 | Complete |
+| PCHK-01 | Phase 3 | Complete |
+| PCHK-02 | Phase 3 | Complete |
 
 **Coverage:**
 - v1 requirements: 23 total
