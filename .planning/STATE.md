@@ -5,32 +5,33 @@
 See: .planning/PROJECT.md (updated 2026-02-23)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 1 — Foundation
+**Current focus:** Phase 2 — Executor Sentinel
 
 ## Current Position
 
-Phase: 1 of 3 (Foundation)
-Plan: 2 of 2 in current phase
-Status: Phase complete
-Last activity: 2026-02-23 — Completed 01-02-PLAN.md (quality config key + tests)
+Phase: 2 of 3 (Executor Sentinel)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-02-23 — Completed 02-01-PLAN.md (Context7 MCP tools + context7_protocol section)
 
-Progress: [██░░░░░░░░] 33%
+Progress: [███░░░░░░░] 44%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: 1.5 min
-- Total execution time: 3 min
+- Total plans completed: 3
+- Average duration: 1.3 min
+- Total execution time: 4 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-foundation | 2 | 3 min | 1.5 min |
+| 02-executor-sentinel | 1 | 1 min | 1 min |
 
 **Recent Trend:**
-- Last 5 plans: 1 min, 2 min
+- Last 5 plans: 1 min, 2 min, 1 min
 - Trend: stable
 
 *Updated after each plan completion*
@@ -50,6 +51,9 @@ Recent decisions affecting current work:
 - [01-01]: Test fixtures validate CLI output assertions, not implementation mocking — same pattern as existing tests
 - [01-02]: quality.level defaults to 'fast' — ensures zero behavioral change from vanilla GSD when Phase 2 gates introduced (CFG-02)
 - [01-02]: config-get string output: use JSON.parse() in test assertions — config-get outputs JSON-encoded strings without --raw flag
+- [02-01]: Executor uses specific MCP tool names (not wildcard) — minimal tool surface area vs planner/researcher which use mcp__context7__*
+- [02-01]: One Context7 query per plan execution maximum — prevents context budget blowout; if multiple lookups needed, plan is too broad
+- [02-01]: context7_protocol is a distinct section from quality_sentinel — separation between "when to look up docs" vs "pre/post task quality gates"
 
 ### Pending Todos
 
@@ -63,5 +67,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Completed 01-02-PLAN.md. Phase 1 complete. Ready to begin Phase 2.
+Stopped at: Completed 02-01-PLAN.md. Context7 MCP tools wired into executor. Ready for 02-02 (quality_sentinel section).
 Resume file: None
