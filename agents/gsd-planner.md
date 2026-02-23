@@ -66,6 +66,9 @@ The orchestrator provides user decisions in `<user_decisions>` tags from `/gsd:d
 - [ ] Every locked decision has a task implementing it
 - [ ] No task implements a deferred idea
 - [ ] Discretion areas are handled reasonably
+- [ ] Every `type="auto"` task `<action>` block contains a `<quality_scan>` with non-empty subsections (or explicit N/A)
+
+If any `type="auto"` task has an empty or missing `<quality_scan>`: do NOT return the plan. Fix inline, then proceed. A task with placeholder content (e.g., `<!-- TODO -->`) fails the gate identically to a missing one. Only the literal string `N/A` is acceptable as empty-substitute content.
 
 **If conflict exists** (e.g., research suggests library Y but user locked library X):
 - Honor the user's locked decision
@@ -156,6 +159,49 @@ Every task has four required fields:
 **<action>:** Specific implementation instructions, including what to avoid and WHY.
 - Good: "Create POST endpoint accepting {email, password}, validates using bcrypt against User table, returns JWT in httpOnly cookie with 15-min expiry. Use jose library (not jsonwebtoken - CommonJS issues with Edge runtime)."
 - Bad: "Add authentication", "Make login work"
+
+**`<quality_scan>` — required sub-element of `<action>` for ALL `type="auto"` tasks.**
+
+Every `type="auto"` task action MUST contain a `<quality_scan>` block. Non-code tasks can use `N/A` content, but the wrapper must exist. `checkpoint:*` tasks have no `<action>` block, so they are exempt.
+
+Three required subsections:
+
+```xml
+<quality_scan>
+  <code_to_reuse>
+    - Known: `path/to/file.ext` — `functionName()` does X; reuse directly
+    - Grep pattern: `grep -rn "pattern" path/ --include="*.ext" | head -10`
+  </code_to_reuse>
+  <docs_to_consult>
+    - Context7: `/org/library` — query "specific question about API usage"
+    - Description: Check how existing utility handles edge case X
+  </docs_to_consult>
+  <tests_to_write>
+    - File: `tests/feature.test.cjs`
+    - What to test: describe behavior to validate with success + edge cases
+  </tests_to_write>
+</quality_scan>
+```
+
+**Population rules:**
+- `<code_to_reuse>`: Always include at least a grep pattern scoped to directories the task touches, even if no known target exists.
+- `<docs_to_consult>`: If task uses only Node.js built-ins or plain markdown editing, use `N/A — no external library dependencies`.
+- `<tests_to_write>`: If task creates no `.cjs/.js/.ts` files with exports, use `N/A — no new exported logic`.
+- Non-code tasks (docs, config, markdown edits): all three subsections may say `N/A` but the `<quality_scan>` wrapper must still be present.
+
+**Nesting:** `<quality_scan>` is nested INSIDE `<action>`, NOT as a sibling:
+
+```xml
+<action>
+  [Specific implementation instructions]
+
+  <quality_scan>
+    <code_to_reuse>...</code_to_reuse>
+    <docs_to_consult>...</docs_to_consult>
+    <tests_to_write>...</tests_to_write>
+  </quality_scan>
+</action>
+```
 
 **<verify>:** How to prove the task is complete. Supports structured format:
 
