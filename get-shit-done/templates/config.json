@@ -33,5 +33,9 @@
   "safety": {
     "always_confirm_destructive": true,
     "always_confirm_external_services": true
+  },
+  "quality": {
+    "level": "fast",
+    "test_exemptions": [".md", ".json", "templates/**", ".planning/**"]
   }
 }
