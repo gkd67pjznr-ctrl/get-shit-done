@@ -294,6 +294,191 @@ grep -n -B 2 -A 2 "console\.log" "$file" 2>/dev/null | grep -E "^\s*(const|funct
 
 Categorize: 🛑 Blocker (prevents goal) | ⚠️ Warning (incomplete) | ℹ️ Info (notable)
 
+## Step 7b: Quality Dimensions
+
+**Entry guard — read quality level first:**
+
+```bash
+QUALITY_LEVEL=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs config-get quality.level 2>/dev/null || echo "fast")
+```
+
+**If `QUALITY_LEVEL` is `fast`:** Write the following to VERIFICATION.md, then stop this step:
+
+```markdown
+## Step 7b: Quality Findings
+
+Skipped (quality.level: fast)
+```
+
+The section header MUST appear in VERIFICATION.md even in fast mode — it signals the check was intentionally skipped, not forgotten.
+
+---
+
+**Phase file discovery (reuse Step 7 mechanism):**
+
+```bash
+SUMMARY_FILES=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs summary-extract "$PHASE_DIR"/*-SUMMARY.md --fields key-files)
+```
+
+Fallback if `summary-extract` returns nothing:
+```bash
+SUMMARY_FILES=$(grep -E "^\- \`" "$PHASE_DIR"/*-SUMMARY.md | sed 's/.*`\([^`]*\)`.*/\1/' | sort -u)
+```
+
+If no SUMMARY.md files exist: write `Step 7b: Skipped (no SUMMARY.md found — file list unavailable)` to VERIFICATION.md and stop.
+
+---
+
+**Initialize findings collection (collect ALL findings before evaluating):**
+
+```bash
+FINDINGS_DUPLICATION=()
+FINDINGS_ORPHANED=()
+FINDINGS_MISSING_TESTS=()
+```
+
+Run all three sub-checks below. Do NOT stop on the first finding — collect everything, then evaluate.
+
+---
+
+### Sub-check 1: Duplication (same-phase files only)
+
+Scope: only files from `SUMMARY_FILES` — do NOT scan the entire codebase.
+
+For each pair of phase files `(file_a, file_b)`:
+1. Extract rolling 5-line blocks from `file_a`, skipping blank lines and boilerplate:
+   - Skip lines matching: `"use strict"`, `const X = require(`, `module.exports`, or comment lines (`//`, `#`, `/*`, `*`)
+2. Search `file_b` for each 5-line block using `grep -F`
+3. A match of 5+ consecutive non-trivial identical lines = duplication candidate
+
+```bash
+# Sketch — exact implementation is Claude's discretion:
+BLOCK_SIZE=5
+# Generate non-trivial lines from file_a, sliding window, search in file_b
+awk 'NF > 0 && !/^\s*(\/\/|#|\/\*|\*)/ && !/"use strict"/ && !/require\(/ && !/module\.exports/' "$file_a" \
+  | head -$BLOCK_SIZE > /tmp/block.txt
+grep -cF -f /tmp/block.txt "$file_b" 2>/dev/null
+```
+
+Output format per finding:
+```
+- {SEVERITY}: `{file_a}` lines {start}-{end} duplicates `{file_b}` lines {start}-{end}. Consider extracting to a shared helper.
+```
+
+### Sub-check 2: Orphaned Exports (project-wide)
+
+For each phase file that is `.cjs`, `.js`, or `.ts`:
+
+```bash
+# Extract exported symbol names
+EXPORTS=$(grep -oE "exports\.[a-zA-Z_][a-zA-Z0-9_]*\s*=" "$phase_file" \
+  | sed 's/exports\.\([^= ]*\)\s*=.*/\1/' | tr -d ' ')
+EXPORTS="$EXPORTS $(grep -oE "^export (const|function|class|async function) [a-zA-Z_][a-zA-Z0-9_]*" "$phase_file" \
+  | awk '{print $NF}')"
+
+# For each exported symbol, grep project-wide (exclude node_modules, .git, .planning)
+for symbol in $EXPORTS; do
+  COUNT=$(grep -rn "require\|import" . \
+    --include="*.cjs" --include="*.js" --include="*.ts" \
+    --exclude-dir=node_modules --exclude-dir=.git \
+    --exclude-dir=.planning \
+    2>/dev/null | grep "$symbol" | grep -v "$phase_file" | wc -l)
+  if [ "$COUNT" -eq 0 ]; then
+    # Check if this is a known CLI entry point — downgrade to INFO
+    if echo "$phase_file" | grep -qE "bin/|cli\.cjs|index\.cjs"; then
+      echo "INFO: \`$phase_file\` export \`$symbol\` has no project-internal importers. Possible CLI entry point or public API — verify manually."
+    else
+      echo "{SEVERITY}: \`$phase_file\` export \`$symbol\` has no project-internal importers. Check if this symbol is used or remove it."
+    fi
+  fi
+done
+```
+
+Files in a `bin/` directory or named `cli.cjs`, `index.cjs`, or similar known entry points: **downgrade to INFO** with the note "Possible CLI entry point or public API — verify manually." This is a locked user decision — do NOT mark these WARN or FAIL.
+
+### Sub-check 3: Missing Tests (same logic as executor sentinel Step 4)
+
+```bash
+# Read exemptions from config (same source of truth as executor sentinel)
+TEST_EXEMPTIONS=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs config-get quality.test_exemptions 2>/dev/null)
+
+for file in $SUMMARY_FILES; do
+  # Check file extension
+  if echo "$file" | grep -qE '\.(cjs|js|ts)$'; then
+    # Check if file is exempt
+    EXEMPT=false
+    # Match against test_exemptions patterns (e.g., *.md, *.json, templates/**, .planning/**)
+    for pattern in $TEST_EXEMPTIONS; do
+      if echo "$file" | grep -qE "${pattern//\*\*/.*}"; then
+        EXEMPT=true; break
+      fi
+    done
+    if [ "$EXEMPT" = false ] && grep -q "export" "$file" 2>/dev/null; then
+      # Derive expected test file name
+      TEST_FILE="${file%.cjs}.test.cjs"
+      TEST_FILE="${TEST_FILE%.js}.test.js"  # handle .js → .test.js
+      TEST_FILE="${TEST_FILE%.ts}.test.ts"  # handle .ts → .test.ts
+      if [ ! -f "$TEST_FILE" ]; then
+        echo "{SEVERITY}: \`$file\` has no corresponding test file. Expected: \`$TEST_FILE\`."
+      fi
+    fi
+  fi
+done
+```
+
+---
+
+**Severity assignment:**
+
+| Mode | Certain findings | Uncertain findings (e.g., CLI entry points) |
+|------|-----------------|---------------------------------------------|
+| fast | Skipped | Skipped |
+| standard | WARN | INFO |
+| strict | FAIL | INFO |
+
+In standard mode: replace `{SEVERITY}` with `WARN` for certain findings, `INFO` for uncertain.
+In strict mode: replace `{SEVERITY}` with `FAIL` for certain findings, `INFO` for uncertain.
+
+---
+
+**Write Step 7b section to VERIFICATION.md:**
+
+Collect all findings from the three sub-checks. Then write:
+
+```markdown
+## Step 7b: Quality Findings
+
+### Duplication
+
+- WARN: `path/to/file_a.cjs` lines 12-30 duplicates `path/to/file_b.cjs` lines 5-23. Consider extracting to a shared helper.
+
+### Dead Code / Orphaned Exports
+
+- INFO: `path/to/file.cjs` export `functionName` has no project-internal importers. Possible CLI entry point or public API — verify manually.
+
+### Missing Tests
+
+- WARN: `path/to/file.cjs` has no corresponding test file. Expected: `tests/file.test.cjs`.
+
+**Step 7b: N WARN findings (breakdown), M INFO**
+```
+
+Rules for the output section:
+- Omit any subsection (`### Duplication`, `### Dead Code / Orphaned Exports`, `### Missing Tests`) that has no findings — do NOT show empty headers
+- The count summary line at the end is always present (even if counts are 0): `**Step 7b: N WARN findings (N duplication, N orphaned, N missing test), M INFO**`
+- In strict mode, replace "WARN" with "FAIL" in the summary line
+
+---
+
+**Strict mode status propagation:**
+
+In strict mode, after writing all findings to VERIFICATION.md:
+- If ANY FAIL findings exist: set VERIFICATION.md frontmatter `status: gaps_found` and add each failing file/check to the `gaps:` frontmatter list
+- Standard mode WARN findings do NOT change the overall verification status (informational only)
+- INFO findings never affect status in any mode
+
+**This feeds into Step 9 status determination** — Step 7b's strict-mode FAILs propagate to `status: gaps_found`. Standard mode WARNs are informational only.
+
 ## Step 8: Identify Human Verification Needs
 
 **Always needs human:** Visual appearance, user flow completion, real-time behavior, external service integration, performance feel, error message clarity.
