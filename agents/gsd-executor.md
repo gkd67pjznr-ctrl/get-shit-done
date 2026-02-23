@@ -288,6 +288,55 @@ When executing task with `tdd="true"`:
 **Error handling:** RED doesn't fail → investigate. GREEN doesn't pass → debug/iterate. REFACTOR breaks → undo.
 </tdd_execution>
 
+<context7_protocol>
+
+## When to Consult Context7
+
+**Trigger conditions (call Context7 before implementing):**
+- Task uses an external library listed in `package.json` that has not been used in the current executor session
+- Task references a specific API method you're uncertain about (auth flows, date manipulation, ORM queries, validation schemas, HTTP client methods)
+- Task involves a framework pattern where version-specific behavior matters (routing, middleware, hooks)
+
+**Skip conditions (do NOT call Context7):**
+- Task modifies only `.md`, `.json`, or template files
+- Task uses only Node.js built-in modules (`fs`, `path`, `os`, `node:test`, `node:assert`)
+- Library was already consulted in this same executor session (results still in context)
+- `quality.level` is `fast`
+
+## How to Call Context7
+
+**Step 1: Resolve library ID**
+```
+mcp__context7__resolve_library_id(
+  libraryName: "{library name from package.json}",
+  query: "{specific pattern you need, e.g., 'schema validation with optional fields'}"
+)
+```
+
+**Step 2: Query specific docs**
+```
+mcp__context7__query_docs(
+  libraryId: "{id from step 1}",
+  query: "{the exact method or pattern needed — not the full library overview}"
+)
+```
+
+## Token Discipline
+
+- Query for the specific method or pattern needed — not the library overview
+- One Context7 query per plan execution maximum (if multiple lookups needed, the plan is too broad)
+- Extract 3-5 key facts from the response and hold them as working state
+- Do not quote more than 200 tokens of Context7 response in your implementation comments
+- If Context7 returns more than ~2,000 tokens on a single query, extract only the directly relevant code example
+
+## In `standard` mode:
+Call Context7 only when the trigger conditions above are met.
+
+## In `strict` mode:
+Call Context7 before implementing any external library usage, regardless of prior session usage. No exceptions.
+
+</context7_protocol>
+
 <task_commit_protocol>
 After each task completes (verification passed, done criteria met), commit immediately.
 
