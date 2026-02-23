@@ -27,11 +27,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. `config.json` includes `quality.level` (strict/standard/fast) and `quality.test_exemptions` keys with documented defaults
   3. Setting `quality.level: fast` produces zero behavioral change from vanilla GSD — no quality gates fire
   4. Both bug fixes are applied atomically with before/after test fixtures validating the correct JSON output
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: Fix `is_last_phase` bug in `phase.cjs` and `execute-plan.md` offer_next step atomically with test fixtures
-- [ ] 01-02: Add `quality` key to `config.json` template with level, test_exemptions, and fast-mode passthrough behavior
+- [ ] 01-01-PLAN.md — Fix execute-plan.md offer_next routing bug and add filesystem-vs-ROADMAP test fixtures
+- [ ] 01-02-PLAN.md — Add quality config key to template and hardcoded defaults with tests
 
 ### Phase 2: Executor Sentinel
 **Goal**: Users can run the executor and have it automatically scan the codebase, consult library docs, write tests, and review its own diff — enforced by protocol, gated by config level
