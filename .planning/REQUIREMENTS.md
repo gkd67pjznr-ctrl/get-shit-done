@@ -15,10 +15,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Config Foundation
 
-- [ ] **CFG-01**: `config.json` template includes `quality.level` key with values `strict`, `standard`, or `fast`
-- [ ] **CFG-02**: `quality.level: fast` preserves existing GSD behavior exactly — zero quality gates fire
-- [ ] **CFG-03**: `config.json` includes `quality.test_exemptions` array listing file patterns exempt from test requirements (`.md`, `.json`, `templates/**`, `.planning/**`)
-- [ ] **CFG-04**: Every quality gate reads `quality_level` at its entry point before executing any checks
+- [x] **CFG-01**: `config.json` template includes `quality.level` key with values `strict`, `standard`, or `fast`
+- [x] **CFG-02**: `quality.level: fast` preserves existing GSD behavior exactly — zero quality gates fire
+- [x] **CFG-03**: `config.json` includes `quality.test_exemptions` array listing file patterns exempt from test requirements (`.md`, `.json`, `templates/**`, `.planning/**`)
+- [x] **CFG-04**: Every quality gate reads `quality_level` at its entry point before executing any checks
 
 ### Executor Quality
 
@@ -92,10 +92,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BUG-01 | Phase 1 | Complete |
 | BUG-02 | Phase 1 | Complete |
 | BUG-03 | Phase 1 | Complete |
-| CFG-01 | Phase 1 | Pending |
-| CFG-02 | Phase 1 | Pending |
-| CFG-03 | Phase 1 | Pending |
-| CFG-04 | Phase 1 | Pending |
+| CFG-01 | Phase 1 | Complete |
+| CFG-02 | Phase 1 | Complete |
+| CFG-03 | Phase 1 | Complete |
+| CFG-04 | Phase 1 | Complete |
 | EXEC-01 | Phase 2 | Pending |
 | EXEC-02 | Phase 2 | Pending |
 | EXEC-03 | Phase 2 | Pending |

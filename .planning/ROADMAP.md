@@ -12,7 +12,7 @@ This milestone upgrades the GSD framework with engineer-level quality enforcemen
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Fix routing bugs and establish config infrastructure that all quality gates depend on
+- [x] **Phase 1: Foundation** - Fix routing bugs and establish config infrastructure that all quality gates depend on (completed 2026-02-23)
 - [ ] **Phase 2: Executor Sentinel** - Add inline quality enforcement to the executor at the point where code is written
 - [ ] **Phase 3: Quality Dimensions** - Extend verifier, planner, and plan-checker with quality checks that complete the enforcement loop
 
@@ -72,6 +72,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 1/2 | In progress | - |
+| 1. Foundation | 2/2 | Complete   | 2026-02-23 |
 | 2. Executor Sentinel | 0/3 | Not started | - |
 | 3. Quality Dimensions | 0/2 | Not started | - |
