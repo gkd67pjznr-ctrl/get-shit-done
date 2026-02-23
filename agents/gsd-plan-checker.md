@@ -411,6 +411,83 @@ If Dimension 8 FAILS:
 - This follows the same loop behavior as existing dimensions
 - Maximum 3 revision loops for Dimension 8 before escalating to user
 
+## Dimension 9: Quality Directives
+
+<dimension_9_skip_condition>
+Skip this entire dimension if:
+- workflow.plan_check is false in .planning/config.json
+- quality.level is fast
+
+If skipped, output: "Dimension 9: SKIPPED (quality.level: fast or plan_check disabled)"
+</dimension_9_skip_condition>
+
+**Question:** Does every `type="auto"` task action contain a `<quality_scan>` block with non-empty subsections?
+
+Note: `checkpoint:*` tasks have no `<action>` block, so Dimension 9 only checks `type="auto"` tasks. This is consistent with how `<quality_scan>` is defined as a sub-element of `<action>`.
+
+### Process
+
+1. Read `quality.level` from config using `config-get quality.level`
+2. For each `<task type="auto">` in each PLAN.md:
+   - Parse the `<action>` element
+   - Check for `<quality_scan>` presence INSIDE the `<action>` block (not as a sibling)
+   - Check that `<code_to_reuse>`, `<docs_to_consult>`, `<tests_to_write>` are present and non-empty (or contain the explicit literal string `N/A`)
+3. Flag tasks missing `<quality_scan>` or with empty subsections
+
+### Severity Matrix
+
+| Mode | Missing quality_scan | Empty subsection |
+|------|---------------------|-----------------|
+| fast | SKIPPED | SKIPPED |
+| standard | warning | warning |
+| strict | blocker | blocker |
+
+### Example Issue (standard mode)
+
+```yaml
+issue:
+  dimension: quality_directives
+  severity: warning
+  description: "Task 2 action missing <quality_scan> block"
+  plan: "03-01"
+  task: 2
+  fix_hint: "Add <quality_scan> with code_to_reuse, docs_to_consult, tests_to_write subsections"
+```
+
+### Example Issue (strict mode)
+
+```yaml
+issue:
+  dimension: quality_directives
+  severity: blocker
+  description: "Task 1 action has empty <code_to_reuse> — must name existing code to check or provide grep pattern"
+  plan: "03-02"
+  task: 1
+  fix_hint: "Add known target path or grep pattern to <code_to_reuse>"
+```
+
+### Dimension 9 Output Block
+
+Include this block in the plan-checker report:
+
+```markdown
+## Dimension 9: Quality Directives
+
+| Task | Plan | has quality_scan | code_to_reuse | docs_to_consult | tests_to_write | Status |
+|------|------|-----------------|---------------|-----------------|----------------|--------|
+| Task 1 | 03-01 | Yes | Yes | Yes | Yes | PASS |
+| Task 2 | 03-01 | No | - | - | - | WARN/FAIL |
+
+### Overall Dimension 9 Status: PASS / WARNING / FAIL
+```
+
+### Revision Loop Behavior
+
+If Dimension 9 FAILS (strict mode only — standard mode warnings do not trigger revision):
+- Return to `gsd-planner` with the specific revision instructions
+- The planner must add `<quality_scan>` blocks to all flagged tasks before returning
+- Maximum 3 revision loops for Dimension 9 before escalating to user
+
 </verification_dimensions>
 
 <verification_process>
