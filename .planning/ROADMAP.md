@@ -59,11 +59,11 @@ Plans:
   2. Planner-generated task `<action>` blocks include a `<quality_scan>` subsection naming existing code to reuse, library docs to consult, and tests to write
   3. The planner self-check rejects any task action that has an empty `<quality_scan>` before returning the plan
   4. Plan-checker Dimension 9 validates quality directive completeness — as a warning in `standard` mode and a blocker in `strict` mode
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 03-01: Add Step 7b quality dimensions to `gsd-verifier.md` (duplication, dead code, test existence, pattern consistency)
-- [ ] 03-02: Add `<quality_scan>` format to planner task actions and self-check validation; add Dimension 9 to plan-checker
+- [ ] 03-01-PLAN.md — Add Step 7b quality dimensions to `gsd-verifier.md` (duplication, dead code/orphaned exports, missing tests, severity gated by config level)
+- [ ] 03-02-PLAN.md — Add `<quality_scan>` format to planner task actions and self-check validation; add Dimension 9 to plan-checker
 
 ## Progress
 
