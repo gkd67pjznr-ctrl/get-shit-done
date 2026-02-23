@@ -9,9 +9,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Bug Fixes
 
-- [ ] **BUG-01**: `cmdPhaseComplete` in `phase.cjs` determines `is_last_phase` by parsing ROADMAP.md phase headers instead of scanning filesystem directories
-- [ ] **BUG-02**: `execute-plan.md` offer_next step uses ROADMAP.md phase count for routing instead of independent filesystem directory scan
-- [ ] **BUG-03**: Both bug fixes are atomic — applied in the same plan with before/after test fixtures validating JSON output
+- [x] **BUG-01**: `cmdPhaseComplete` in `phase.cjs` determines `is_last_phase` by parsing ROADMAP.md phase headers instead of scanning filesystem directories
+- [x] **BUG-02**: `execute-plan.md` offer_next step uses ROADMAP.md phase count for routing instead of independent filesystem directory scan
+- [x] **BUG-03**: Both bug fixes are atomic — applied in the same plan with before/after test fixtures validating JSON output
 
 ### Config Foundation
 
@@ -89,9 +89,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BUG-01 | Phase 1 | Pending |
-| BUG-02 | Phase 1 | Pending |
-| BUG-03 | Phase 1 | Pending |
+| BUG-01 | Phase 1 | Complete |
+| BUG-02 | Phase 1 | Complete |
+| BUG-03 | Phase 1 | Complete |
 | CFG-01 | Phase 1 | Pending |
 | CFG-02 | Phase 1 | Pending |
 | CFG-03 | Phase 1 | Pending |

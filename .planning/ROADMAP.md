@@ -30,7 +30,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Fix execute-plan.md offer_next routing bug and add filesystem-vs-ROADMAP test fixtures
+- [x] 01-01-PLAN.md — Fix execute-plan.md offer_next routing bug and add filesystem-vs-ROADMAP test fixtures (completed 2026-02-23)
 - [ ] 01-02-PLAN.md — Add quality config key to template and hardcoded defaults with tests
 
 ### Phase 2: Executor Sentinel
@@ -72,6 +72,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/2 | Not started | - |
+| 1. Foundation | 1/2 | In progress | - |
 | 2. Executor Sentinel | 0/3 | Not started | - |
 | 3. Quality Dimensions | 0/2 | Not started | - |
