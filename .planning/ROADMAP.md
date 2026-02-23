@@ -43,12 +43,12 @@ Plans:
   3. Any task that creates new `.cjs/.js/.ts` files with exported functions produces a corresponding test file before the commit
   4. The executor reads its own diff before each commit and self-reports any duplication or naming inconsistency found
   5. All executor quality gates are skipped entirely when `quality.level` is `fast`; reduced gates for `standard`; full gates for `strict`
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 02-01: Add Context7 MCP to tools frontmatter, write `<context7_protocol>` section, and create `.mcp.json`
-- [ ] 02-02: Add `<quality_sentinel>` section to `gsd-executor.md` covering pre-task scan, mandatory test step, and post-task diff review
-- [ ] 02-03: Wire quality level config reads into every sentinel gate so fast/standard/strict gating works end to end
+- [ ] 02-01-PLAN.md — Add Context7 MCP to tools frontmatter, write `<context7_protocol>` section, and create `.mcp.json`
+- [ ] 02-02-PLAN.md — Add `<quality_sentinel>` section to `gsd-executor.md` covering pre-task scan, mandatory test step, and post-task diff review
+- [ ] 02-03-PLAN.md — Wire quality level config reads into every sentinel gate so fast/standard/strict gating works end to end
 
 ### Phase 3: Quality Dimensions
 **Goal**: Users can rely on the verifier as a post-execution backstop for duplication and dead code, and planners produce task actions that pre-load executors with quality scan results
