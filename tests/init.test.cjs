@@ -103,3 +103,60 @@ describe('init commands', () => {
 // roadmap analyze command
 // ─────────────────────────────────────────────────────────────────────────────
 
+describe('config quality section', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('config-ensure-section creates quality key with fast default', () => {
+    const result = runGsdTools('config-ensure-section', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const configPath = path.join(tmpDir, '.planning', 'config.json');
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+
+    assert.ok(config.quality, 'quality key must exist');
+    assert.strictEqual(config.quality.level, 'fast', 'default level must be fast');
+    assert.ok(Array.isArray(config.quality.test_exemptions), 'test_exemptions must be array');
+    assert.ok(config.quality.test_exemptions.includes('.md'), 'must include .md exemption');
+    assert.ok(config.quality.test_exemptions.includes('.json'), 'must include .json exemption');
+    assert.ok(config.quality.test_exemptions.includes('templates/**'), 'must include templates/** exemption');
+    assert.ok(config.quality.test_exemptions.includes('.planning/**'), 'must include .planning/** exemption');
+  });
+
+  test('config-get quality.level returns fast on fresh config', () => {
+    // First ensure config exists
+    runGsdTools('config-ensure-section', tmpDir);
+
+    const result = runGsdTools('config-get quality.level', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+    assert.strictEqual(JSON.parse(result.output), 'fast', 'quality.level should be fast');
+  });
+
+  test('config-get quality.test_exemptions returns array', () => {
+    runGsdTools('config-ensure-section', tmpDir);
+
+    const result = runGsdTools('config-get quality.test_exemptions', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const exemptions = JSON.parse(result.output);
+    assert.ok(Array.isArray(exemptions), 'test_exemptions should be an array');
+    assert.strictEqual(exemptions.length, 4, 'should have 4 default exemptions');
+  });
+
+  test('config-set quality.level to standard persists', () => {
+    runGsdTools('config-ensure-section', tmpDir);
+    runGsdTools('config-set quality.level standard', tmpDir);
+
+    const result = runGsdTools('config-get quality.level', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+    assert.strictEqual(JSON.parse(result.output), 'standard', 'quality.level should be standard after set');
+  });
+});
+
