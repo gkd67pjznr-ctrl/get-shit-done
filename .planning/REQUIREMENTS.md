@@ -22,11 +22,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Executor Quality
 
-- [ ] **EXEC-01**: Executor performs targeted codebase scan before each task — grep for existing patterns, utilities, and test baseline relevant to the task
+- [x] **EXEC-01**: Executor performs targeted codebase scan before each task — grep for existing patterns, utilities, and test baseline relevant to the task
 - [x] **EXEC-02**: Executor has Context7 MCP tools (`resolve-library-id`, `query-docs`) in its tools frontmatter and calls them before implementing code using external libraries
-- [ ] **EXEC-03**: Executor runs mandatory test step for new logic — any task creating new `.cjs/.js/.ts` files with exported functions gets test coverage before commit
-- [ ] **EXEC-04**: Executor performs post-task diff review before each commit — reads own diff, checks for duplication, validates naming consistency
-- [ ] **EXEC-05**: Quality Sentinel protocol is documented as `<quality_sentinel>` section in `gsd-executor.md` with pre-task, during-task, and post-task gates
+- [x] **EXEC-03**: Executor runs mandatory test step for new logic — any task creating new `.cjs/.js/.ts` files with exported functions gets test coverage before commit
+- [x] **EXEC-04**: Executor performs post-task diff review before each commit — reads own diff, checks for duplication, validates naming consistency
+- [x] **EXEC-05**: Quality Sentinel protocol is documented as `<quality_sentinel>` section in `gsd-executor.md` with pre-task, during-task, and post-task gates
 - [x] **EXEC-06**: Context7 usage protocol is documented as `<context7_protocol>` section in `gsd-executor.md` specifying when and how to consult library docs
 - [x] **EXEC-07**: `.mcp.json` includes Context7 MCP server configuration (project-scoped)
 - [ ] **EXEC-08**: Quality gates are skipped entirely when `quality.level` is `fast`; reduced gates for `standard`; all gates for `strict`
@@ -96,11 +96,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CFG-02 | Phase 1 | Complete |
 | CFG-03 | Phase 1 | Complete |
 | CFG-04 | Phase 1 | Complete |
-| EXEC-01 | Phase 2 | Pending |
+| EXEC-01 | Phase 2 | Complete |
 | EXEC-02 | Phase 2 | Complete |
-| EXEC-03 | Phase 2 | Pending |
-| EXEC-04 | Phase 2 | Pending |
-| EXEC-05 | Phase 2 | Pending |
+| EXEC-03 | Phase 2 | Complete |
+| EXEC-04 | Phase 2 | Complete |
+| EXEC-05 | Phase 2 | Complete |
 | EXEC-06 | Phase 2 | Complete |
 | EXEC-07 | Phase 2 | Complete |
 | EXEC-08 | Phase 2 | Pending |
@@ -120,4 +120,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-23*
-*Last updated: 2026-02-23 after roadmap creation*
+*Last updated: 2026-02-23 after 02-02-PLAN.md completion (EXEC-01, EXEC-03, EXEC-04, EXEC-05 marked complete)*

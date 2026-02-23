@@ -46,8 +46,8 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Add Context7 MCP to tools frontmatter, write `<context7_protocol>` section, and create `.mcp.json`
-- [ ] 02-02-PLAN.md — Add `<quality_sentinel>` section to `gsd-executor.md` covering pre-task scan, mandatory test step, and post-task diff review
+- [x] 02-01-PLAN.md — Add Context7 MCP to tools frontmatter, write `<context7_protocol>` section, and create `.mcp.json` (completed 2026-02-23)
+- [x] 02-02-PLAN.md — Add `<quality_sentinel>` section to `gsd-executor.md` covering pre-task scan, mandatory test step, and post-task diff review (completed 2026-02-23)
 - [ ] 02-03-PLAN.md — Wire quality level config reads into every sentinel gate so fast/standard/strict gating works end to end
 
 ### Phase 3: Quality Dimensions
@@ -73,5 +73,5 @@ Phases execute in numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 2/2 | Complete    | 2026-02-23 |
-| 2. Executor Sentinel | 1/3 | In Progress|  |
+| 2. Executor Sentinel | 2/3 | In Progress|  |
 | 3. Quality Dimensions | 0/2 | Not started | - |
