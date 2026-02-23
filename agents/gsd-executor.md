@@ -83,9 +83,11 @@ For each task:
 
 1. **If `type="auto"`:**
    - Check for `tdd="true"` → follow TDD execution flow
+   - **Run quality_sentinel pre-task protocol** (see `<quality_sentinel>`)
    - Execute task, apply deviation rules as needed
    - Handle auth errors as authentication gates
    - Run verification, confirm done criteria
+   - **Run quality_sentinel post-task protocol** (see `<quality_sentinel>`) before committing
    - Commit (see task_commit_protocol)
    - Track completion + commit hash for Summary
 
@@ -97,6 +99,84 @@ For each task:
 </step>
 
 </execution_flow>
+
+<quality_sentinel>
+
+Read quality level at sentinel entry — all gates are conditional on this value:
+```bash
+QUALITY_LEVEL=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs config-get quality.level 2>/dev/null || echo "fast")
+```
+
+**If `QUALITY_LEVEL` is `fast`: skip ALL sentinel steps. Proceed directly to task implementation.**
+
+---
+
+## Pre-Task Protocol (runs before each type="auto" task)
+
+**Step 1: Targeted Codebase Scan** (skip if `fast`)
+
+Identify the task's domain from its `<name>` and `<files>` fields. Run targeted grep against files relevant to this domain only — not the full codebase.
+
+```bash
+# Example: task involves "validators" → scan src/lib/validators/ and src/utils/
+# Cap output: pipe to head -10 to limit results
+grep -rn "export.*function\|export const" src/lib/ --include="*.cjs" 2>/dev/null | head -10
+```
+
+Rules:
+- Scope to directories named in the task's `<files>` field or adjacent utility directories
+- Search for existing exported functions that match the task's domain term
+- If similar function found: evaluate for reuse before writing new code
+- Maximum 10 lines of grep output — truncate with `| head -10`
+- Document reuse decision in commit message: "Reuses X from Y" or "New because X differs in Z way"
+- Never scan `node_modules`, `.git`, `.planning/`, or archived phase directories
+
+**Step 2: Context7 Lookup** (see `<context7_protocol>` section — skip if `fast`)
+
+**Step 3: Test Baseline** (skip if `fast`)
+```bash
+node --test tests/*.test.cjs 2>&1 | tail -3
+```
+Record: pass count before changes. If baseline is red, document in SUMMARY.md under "Issues Encountered."
+
+---
+
+## Post-Task Protocol (runs before commit, after all files written)
+
+**Step 4: Test Gate** (standard: new `.cjs/.js/.ts` with exports only; strict: always; fast: skip)
+
+For each file produced by this task:
+- If file is `.cjs`, `.js`, or `.ts` AND contains `export` keyword:
+  - Check if corresponding test file exists (same name + `.test.` prefix)
+  - If test file missing: write it now, before commit
+  - Test file must exercise the exported function(s) with at least one success and one edge case
+- Files matching `quality.test_exemptions` (`.md`, `.json`, `templates/**`, `.planning/**`) are exempt — skip test gate for these files
+
+**Step 5: Diff Review** (standard and strict; skip if `fast`)
+```bash
+git diff --staged
+```
+Self-report any of the following found in staged diff:
+- Function or variable names that conflict with existing names in the codebase
+- Logic blocks that duplicate code already found in the pre-task scan (Step 1)
+- TODO or FIXME comments left in changed lines
+- Error paths with no handling
+
+Report findings in SUMMARY.md under "Deviations from Plan -> Auto-fixed Issues" or "Issues Encountered." Fix before committing if fix scope is within Rules 1-3. Escalate to Rule 4 if architectural.
+
+---
+
+## Gate Behavior Matrix
+
+| Gate | fast | standard | strict |
+|------|------|----------|--------|
+| Pre-task codebase scan | Skip | Run | Run |
+| Context7 lookup | Skip | Conditional (new deps only) | Always |
+| Test baseline record | Skip | Run | Run |
+| Test gate (new logic) | Skip | New `.cjs/.js/.ts` with exports | Always |
+| Post-task diff review | Skip | Run | Run |
+
+</quality_sentinel>
 
 <deviation_rules>
 **While executing, you WILL discover work not in the plan.** Apply these rules automatically. Track all deviations for Summary.
