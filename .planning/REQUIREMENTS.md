@@ -29,7 +29,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **EXEC-05**: Quality Sentinel protocol is documented as `<quality_sentinel>` section in `gsd-executor.md` with pre-task, during-task, and post-task gates
 - [x] **EXEC-06**: Context7 usage protocol is documented as `<context7_protocol>` section in `gsd-executor.md` specifying when and how to consult library docs
 - [x] **EXEC-07**: `.mcp.json` includes Context7 MCP server configuration (project-scoped)
-- [ ] **EXEC-08**: Quality gates are skipped entirely when `quality.level` is `fast`; reduced gates for `standard`; all gates for `strict`
+- [x] **EXEC-08**: Quality gates are skipped entirely when `quality.level` is `fast`; reduced gates for `standard`; all gates for `strict`
 
 ### Verifier Quality
 
@@ -103,7 +103,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EXEC-05 | Phase 2 | Complete |
 | EXEC-06 | Phase 2 | Complete |
 | EXEC-07 | Phase 2 | Complete |
-| EXEC-08 | Phase 2 | Pending |
+| EXEC-08 | Phase 2 | Complete |
 | VRFY-01 | Phase 3 | Pending |
 | VRFY-02 | Phase 3 | Pending |
 | VRFY-03 | Phase 3 | Pending |
