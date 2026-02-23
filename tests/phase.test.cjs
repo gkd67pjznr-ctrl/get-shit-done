@@ -1005,6 +1005,89 @@ describe('phase complete command', () => {
     const result = runGsdTools('phase complete 1', tmpDir);
     assert.ok(result.success, `Command should succeed even without REQUIREMENTS.md: ${result.error}`);
   });
+
+  test('is_last_phase uses filesystem not ROADMAP (3 phases in ROADMAP, 1 on disk = last phase)', () => {
+    // ROADMAP declares 3 phases, but only phase 01 directory exists on disk
+    // Bug behavior: is_last_phase=false (ROADMAP says more phases exist)
+    // Correct behavior: is_last_phase=true (no next phase dir on disk)
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      `# Roadmap
+
+- [ ] Phase 1: Foundation
+- [ ] Phase 2: API
+- [ ] Phase 3: Features
+
+### Phase 1: Foundation
+**Goal:** Setup base
+**Plans:** 1 plans
+
+### Phase 2: API
+**Goal:** Build API
+
+### Phase 3: Features
+**Goal:** Build features
+`
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      `# State\n\n**Current Phase:** 01\n**Current Phase Name:** Foundation\n**Status:** In progress\n**Current Plan:** 01-01\n**Last Activity:** 2025-01-01\n**Last Activity Description:** Working on phase 1\n`
+    );
+
+    // Only create phase 01 directory — phases 02 and 03 do NOT exist on disk
+    const p1 = path.join(tmpDir, '.planning', 'phases', '01-foundation');
+    fs.mkdirSync(p1, { recursive: true });
+    fs.writeFileSync(path.join(p1, '01-01-PLAN.md'), '# Plan');
+    fs.writeFileSync(path.join(p1, '01-01-SUMMARY.md'), '# Summary');
+
+    const result = runGsdTools('phase complete 1', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.is_last_phase, true, 'filesystem has no next phase dir — must be last phase');
+    assert.strictEqual(output.next_phase, null, 'no next phase should exist');
+  });
+
+  test('multi-phase routing: 3 phases on disk, completing phase 1 routes to phase 2', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      `# Roadmap
+
+- [ ] Phase 1: Foundation
+- [ ] Phase 2: API
+- [ ] Phase 3: Features
+
+### Phase 1: Foundation
+**Goal:** Setup base
+**Plans:** 1 plans
+
+### Phase 2: API
+**Goal:** Build API
+
+### Phase 3: Features
+**Goal:** Build features
+`
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      `# State\n\n**Current Phase:** 01\n**Current Phase Name:** Foundation\n**Status:** In progress\n**Current Plan:** 01-01\n**Last Activity:** 2025-01-01\n**Last Activity Description:** Working on phase 1\n`
+    );
+
+    // Create all 3 phase directories on disk
+    const p1 = path.join(tmpDir, '.planning', 'phases', '01-foundation');
+    fs.mkdirSync(p1, { recursive: true });
+    fs.writeFileSync(path.join(p1, '01-01-PLAN.md'), '# Plan');
+    fs.writeFileSync(path.join(p1, '01-01-SUMMARY.md'), '# Summary');
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '02-api'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '03-features'), { recursive: true });
+
+    const result = runGsdTools('phase complete 1', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.is_last_phase, false, 'phase 02 and 03 exist on disk — not last phase');
+    assert.strictEqual(output.next_phase, '02', 'should route to phase 02');
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
