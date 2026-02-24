@@ -29,9 +29,9 @@ Requirements for concurrent milestone execution. Each maps to roadmap phases.
 
 ### Phase Numbering
 
-- [ ] **PHASE-01**: Phase numbering resets to 01 per milestone (not global sequential)
-- [ ] **PHASE-02**: Cross-milestone phase references use qualified format `<version>/phase-<NN>`
-- [ ] **PHASE-03**: `phase-complete` command accepts `--milestone` flag and routes to milestone-scoped phase folder
+- [x] **PHASE-01**: Phase numbering resets to 01 per milestone (not global sequential)
+- [x] **PHASE-02**: Cross-milestone phase references use qualified format `<version>/phase-<NN>`
+- [x] **PHASE-03**: `phase-complete` command accepts `--milestone` flag and routes to milestone-scoped phase folder
 
 ### Dashboard
 
@@ -50,9 +50,9 @@ Requirements for concurrent milestone execution. Each maps to roadmap phases.
 ### Routing
 
 - [ ] **ROUTE-01**: All workflow files pass `--milestone` to gsd-tools.cjs calls when in milestone-scoped mode
-- [ ] **ROUTE-02**: All init commands return milestone-scoped paths when `--milestone` is provided
+- [x] **ROUTE-02**: All init commands return milestone-scoped paths when `--milestone` is provided
 - [ ] **ROUTE-03**: `/gsd:progress`, `/gsd:health`, `/gsd:complete-milestone`, `/gsd:resume-work` updated to be milestone-aware
-- [ ] **ROUTE-04**: Canonical path variable glossary committed as reference before workflow/agent editing begins
+- [x] **ROUTE-04**: Canonical path variable glossary committed as reference before workflow/agent editing begins
 - [ ] **ROUTE-05**: Agent specs remain unchanged — paths flow through `<files_to_read>` from orchestrators
 
 ### Test Coverage
@@ -122,9 +122,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | COMPAT-01 | Phase 10 | Complete |
 | COMPAT-02 | Phase 10 | Complete |
 | COMPAT-03 | Phase 10 | Complete |
-| PHASE-01 | Phase 12 | Pending |
-| PHASE-02 | Phase 12 | Pending |
-| PHASE-03 | Phase 12 | Pending |
+| PHASE-01 | Phase 12 | Complete |
+| PHASE-02 | Phase 12 | Complete |
+| PHASE-03 | Phase 12 | Complete |
 | DASH-01 | Phase 11 | Complete |
 | DASH-02 | Phase 11 | Complete |
 | DASH-03 | Phase 11 | Complete |
@@ -134,9 +134,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CNFL-03 | Phase 11 | Complete |
 | CNFL-04 | Phase 11 | Complete |
 | ROUTE-01 | Phase 12 | Pending |
-| ROUTE-02 | Phase 12 | Pending |
+| ROUTE-02 | Phase 12 | Complete |
 | ROUTE-03 | Phase 12 | Pending |
-| ROUTE-04 | Phase 12 | Pending |
+| ROUTE-04 | Phase 12 | Complete |
 | ROUTE-05 | Phase 12 | Pending |
 | TEST-01 | Phase 13 | Pending |
 | TEST-02 | Phase 13 | Pending |

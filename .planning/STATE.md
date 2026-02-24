@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 
 ## Current Position
 
-Phase: 11 — Dashboard Conflict Detection (complete)
-Plan: 03 (complete)
-Status: Phase 11 plan 03 complete — milestone write-status wired into execute-phase and plan-phase workflows at three DASH-01 checkpoints (plan-start, plan-complete, phase-complete); all calls guarded by layout_style check
-Last activity: 2026-02-24 — 11-03 complete: write-status checkpoint wiring, DASH-01 satisfied
+Phase: 12 — Full Routing Update (in progress)
+Plan: 01 (complete)
+Status: Phase 12 plan 01 complete — milestoneScope threaded through all 5 remaining init commands and cmdPhaseComplete; 21 routing integration tests pass; ROUTE-04 path variable glossary created
+Last activity: 2026-02-24 — 12-01 complete: full CLI/lib routing foundation for milestone-scoped concurrent execution
 
 **Progress:** [██████████] 100%
 
@@ -39,6 +39,7 @@ Last activity: 2026-02-24 — 11-03 complete: write-status checkpoint wiring, DA
 | 10-compatibility-layer | 1 | 8 min | 8 min |
 | Phase 11-dashboard-conflict-detection P01 | 2 | 2 tasks | 2 files |
 | Phase 11-dashboard-conflict-detection P02 | 8min | 2 tasks | 4 files |
+| Phase 12-full-routing-update P01 | 12min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,9 @@ Full v1.0 + v1.1 decision logs archived with milestones.
 - [Phase 11-dashboard-conflict-detection]: cmdManifestCheck always exits 0 (advisory only) — conflict detection warns on overlap, never blocks (CNFL-04)
 - [Phase 11-dashboard-conflict-detection]: table format test uses no --raw flag so output() emits JSON (with --raw and rawValue set, output() emits raw text not JSON)
 - [Phase 11-dashboard-conflict-detection P03]: write-status checkpoint calls placed at plan-start (plan-phase.md §9), plan-complete (execute-phase.md step 4a), and phase-complete (execute-phase.md update_roadmap) — all guarded by layout_style === "milestone-scoped"
+- [Phase 12-01]: searchPhaseInDir used directly in cmdPhaseComplete when milestoneScope set — findPhaseInternal hardcodes root phases dir, cannot be changed without breaking all callers
+- [Phase 12-01]: cmdInitPhaseOp path fields (state_path, roadmap_path, requirements_path) now use planningRoot-relative paths — milestone workspace paths returned to callers
+- [Phase 12-01]: milestoneScope as last param pattern maintained for all 5 new init functions — backward compat preserved (undefined -> null -> legacy path)
 
 ### Pending Todos
 
@@ -81,5 +85,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: 11-03-PLAN.md complete — Phase 11 plan 03 complete
-Resume file: .planning/phases/11-dashboard-conflict-detection/11-03-SUMMARY.md
+Stopped at: 12-01-PLAN.md complete — Phase 12 plan 01 complete
+Resume file: .planning/phases/12-full-routing-update/12-01-SUMMARY.md
