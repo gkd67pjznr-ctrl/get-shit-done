@@ -104,6 +104,28 @@ _Note: TDD tasks may have multiple commits (test → feat → refactor)_
 **Total deviations:** [N] auto-fixed ([breakdown by rule])
 **Impact on plan:** [Brief assessment - e.g., "All auto-fixes necessary for correctness/security. No scope creep."]
 
+## Quality Gates
+
+<!-- This section is CONDITIONAL:
+  - ABSENT when quality.level is "fast" (do not include, not even as empty)
+  - PRESENT when quality.level is "standard" or "strict"
+-->
+
+**Quality Level:** {standard|strict}
+
+| Task | Gate | Outcome | Detail |
+|------|------|---------|--------|
+| 1 | codebase_scan | passed | [brief description] |
+| 1 | context7_lookup | skipped | [reason] |
+| 1 | test_baseline | passed | [N tests passing] |
+| 1 | test_gate | passed | [description] |
+| 1 | diff_review | passed | [description] |
+
+**Summary:** {N} gates ran, {M} passed, {W} warned, {S} skipped, {B} blocked
+
+<!-- If any gate blocked (strict mode only): -->
+**Blocked gates:** Task {N} {gate_name} — {detail}
+
 ## Issues Encountered
 [Problems and how they were resolved, or "None"]
 
@@ -164,6 +186,28 @@ The one-liner MUST be substantive:
 The one-liner should tell someone what actually shipped.
 </one_liner_rules>
 
+<quality_gates_guidance>
+The Quality Gates section is populated from the `GATE_OUTCOMES` array collected during quality_sentinel execution. Each entry is `"{task_num}|{step_name}|{outcome}|{detail}"`.
+
+**Conditional presence:**
+- The section must be completely ABSENT in fast mode — not present as empty, not present with "N/A". Fast mode means no gates ran, nothing to report.
+- In standard mode: outcomes are `passed`, `warned`, or `skipped`
+- In strict mode: outcomes can additionally be `blocked` — blocked gates must be surfaced prominently after the summary line
+
+**Gate names (step_name values):**
+- `codebase_scan` — Targeted codebase grep for reuse candidates (Step 1)
+- `context7_lookup` — Context7 library documentation query (Step 2)
+- `test_baseline` — Test suite baseline before changes (Step 3)
+- `test_gate` — Tests written and passing after changes (Step 4)
+- `diff_review` — Staged diff self-review for issues (Step 5)
+
+**Outcome definitions:**
+- `passed` — Gate ran and found no issues
+- `warned` — Gate ran and found non-blocking issues (auto-fixed in standard mode)
+- `skipped` — Gate was skipped due to task type or N/A condition (not due to fast mode)
+- `blocked` — Gate found blocking issues; execution halted (strict mode only)
+</quality_gates_guidance>
+
 <example>
 ```markdown
 # Phase 1: Foundation Summary
@@ -220,6 +264,25 @@ The one-liner should tell someone what actually shipped.
 
 **Total deviations:** 2 auto-fixed (1 missing critical, 1 blocking)
 **Impact on plan:** Both auto-fixes essential for security and functionality. No scope creep.
+
+## Quality Gates
+
+**Quality Level:** standard
+
+| Task | Gate | Outcome | Detail |
+|------|------|---------|--------|
+| 1 | codebase_scan | passed | 2 reuse candidates evaluated |
+| 1 | context7_lookup | passed | queried jose |
+| 1 | test_baseline | passed | 14 tests passing |
+| 1 | test_gate | passed | tests written and passing |
+| 1 | diff_review | passed | clean diff |
+| 2 | codebase_scan | passed | no matches in scoped grep |
+| 2 | context7_lookup | skipped | already queried this session |
+| 2 | test_baseline | passed | 14 tests passing |
+| 2 | test_gate | skipped | no new exported logic |
+| 2 | diff_review | warned | 1 finding auto-fixed |
+
+**Summary:** 10 gates ran, 8 passed, 1 warned, 1 skipped, 0 blocked
 
 ## Issues Encountered
 - jsonwebtoken CommonJS import failed in Edge runtime - switched to jose (planned library change, worked as expected)

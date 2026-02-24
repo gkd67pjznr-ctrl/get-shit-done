@@ -44,5 +44,16 @@ completed: YYYY-MM-DD
 [Key decisions or "None - followed plan as specified"]
 [Minor deviations if any, or "None"]
 
+## Quality Gates
+
+<!-- ABSENT when fast mode. Present when standard/strict. -->
+
+**Quality Level:** {standard|strict}
+
+| Task | Gate | Outcome | Detail |
+|------|------|---------|--------|
+
+**Summary:** {N} gates ran, {M} passed, {W} warned, {S} skipped, {B} blocked
+
 ## Next Phase Readiness
 [What's ready for next phase]

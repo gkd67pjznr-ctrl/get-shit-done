@@ -327,6 +327,8 @@ One-liner SUBSTANTIVE: "JWT auth with refresh rotation using jose library" not "
 Include: duration, start/end times, task count, file count.
 
 Next: more plans → "Ready for {next-plan}" | last → "Phase complete, ready for transition".
+
+**Quality Gates:** If `QUALITY_LEVEL` is not `fast`, include a `## Quality Gates` section populated from gate outcomes collected during execution. See gsd-executor.md `<summary_creation>` for format. If `QUALITY_LEVEL` is `fast`, omit the section entirely.
 </step>
 
 <step name="update_current_position">

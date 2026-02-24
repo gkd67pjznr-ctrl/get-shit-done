@@ -51,6 +51,28 @@ completed: YYYY-MM-DD
 ## Deviations from Plan (Auto-fixed)
 [Detailed auto-fix records per GSD deviation rules]
 
+## Quality Gates
+
+<!-- This section is CONDITIONAL:
+  - ABSENT when quality.level is "fast" (do not include, not even as empty)
+  - PRESENT when quality.level is "standard" or "strict"
+-->
+
+**Quality Level:** {standard|strict}
+
+| Task | Gate | Outcome | Detail |
+|------|------|---------|--------|
+| 1 | codebase_scan | passed | [brief description] |
+| 1 | context7_lookup | skipped | [reason] |
+| 1 | test_baseline | passed | [N tests passing] |
+| 1 | test_gate | passed | [description] |
+| 1 | diff_review | passed | [description] |
+
+**Summary:** {N} gates ran, {M} passed, {W} warned, {S} skipped, {B} blocked
+
+<!-- If any gate blocked (strict mode only): -->
+**Blocked gates:** Task {N} {gate_name} — {detail}. Execution was halted per strict mode policy.
+
 ## Issues Encountered
 [Problems during planned work and resolutions]
 

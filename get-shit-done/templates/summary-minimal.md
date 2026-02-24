@@ -34,6 +34,13 @@ completed: YYYY-MM-DD
 1. **Task 1: [task name]** - `hash`
 2. **Task 2: [task name]** - `hash`
 
+## Quality Gates
+
+<!-- ABSENT when fast mode -->
+
+**Quality Level:** {standard|strict}
+**Summary:** {N} gates ran, {M} passed, {W} warned, {S} skipped, {B} blocked
+
 ## Files Created/Modified
 - `path/to/file.ts` - What it does
 
