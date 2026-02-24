@@ -26,3 +26,23 @@
 
 ---
 
+
+## v1.1 Quality UX (Shipped: 2026-02-24)
+
+**Delivered:** Quality enforcement made discoverable, configurable, and observable — users can switch quality levels, see what mode they're in, and inspect what quality gates did during execution.
+
+**Phases:** 3 phases, 5 plans, 10 tasks
+**Files modified:** 34 (+3,781 / -34)
+**Timeline:** ~4 hours (2026-02-23 21:57 → 2026-02-24 02:19)
+**Git range:** feat(05-01) → feat(07-01)
+**Requirements:** 9/9 satisfied
+
+**Key accomplishments:**
+1. Config auto-migration adds quality block to existing projects + global defaults bootstrap via ~/.gsd/defaults.json
+2. Context7 per-query token cap made configurable via quality.context7_token_cap with runtime reads
+3. /gsd:set-quality command with per-project and global scope (TDD-tested backend + UX workflow)
+4. Quality gate outcome tracking (GATE_OUTCOMES array) in executor sentinel
+5. Quality Gates section in SUMMARY.md for standard/strict modes — full observability of gate activity
+
+---
+

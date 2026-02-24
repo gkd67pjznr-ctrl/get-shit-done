@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A forked, upgraded version of the GSD (Get Shit Done) framework for Claude Code that adds quality enforcement layers to eliminate "slop" — duplicate code, shortcuts, placeholder implementations, broken integrations, and hand-rolled logic that should use libraries. The fork adds a Quality Sentinel to the executor, Context7 library lookup, mandatory testing, quality directives in the planner, and quality dimensions in the verifier — completing a full Plan→Execute→Verify quality enforcement loop gated by `quality.level` config.
+A forked, upgraded version of the GSD (Get Shit Done) framework for Claude Code that adds quality enforcement layers to eliminate "slop" — duplicate code, shortcuts, placeholder implementations, broken integrations, and hand-rolled logic that should use libraries. The fork adds a Quality Sentinel to the executor, Context7 library lookup, mandatory testing, quality directives in the planner, quality dimensions in the verifier, and user-facing quality configuration and observability — completing a full Plan→Execute→Verify quality enforcement loop gated by `quality.level` config with full visibility into what the gates are doing.
 
 ## Core Value
 
@@ -22,30 +22,18 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 - ✓ Fix `is_last_phase` bug in `cmdPhaseComplete` — v1.0
 - ✓ Fix roadmap-aware phase routing so transition correctly identifies next unplanned phase — v1.0
 - ✓ All changes are additive (extend, don't replace existing GSD behavior) — v1.0
+- ✓ `/gsd:set-quality` command for per-project quality level switching (fast/standard/strict) — v1.1
+- ✓ Config migration to auto-add `quality` block to existing projects missing it — v1.1
+- ✓ Quality observability — surface quality gate activity in summaries and output — v1.1
+- ✓ Global defaults via `~/.gsd/defaults.json` for new project inheritance — v1.1
+- ✓ `/gsd:help` shows `/gsd:reapply-patches` reminder after updates — v1.1
+- ✓ Quality level displayed in `/gsd:progress` output — v1.1
+- ✓ Config validation — warn on missing sections instead of silent fallback — v1.1
+- ✓ Context7 token cap configuration and verification — v1.1
 
 ### Active
 
-- [ ] `/gsd:set-quality` command for per-project quality level switching (fast/standard/strict)
-- [ ] Config migration to auto-add `quality` block to existing projects missing it
-- [ ] Quality observability — surface quality gate activity in summaries and output
-- [ ] Global defaults via `~/.gsd/defaults.json` for new project inheritance
-- [ ] `/gsd:help` shows `/gsd:reapply-patches` reminder after updates
-- [ ] Quality level displayed in `/gsd:progress` output
-- [ ] Config validation — warn on missing sections instead of silent fallback
-- [ ] Context7 token cap configuration and verification
-
-## Current Milestone: v1.1 Quality UX
-
-**Goal:** Make quality enforcement discoverable, configurable, and observable — so users know what mode they're in, can switch easily, and can see what the quality gates are doing.
-
-**Target features:**
-- `/gsd:set-quality` command (per-project toggle)
-- Config migration (auto-add quality block to existing projects)
-- Quality observability (show gate activity in summaries)
-- Global defaults (`~/.gsd/defaults.json`)
-- Help/progress UX improvements
-- Config validation (warn on missing sections)
-- Context7 token cap
+(None — planning next milestone)
 
 ### Out of Scope
 
@@ -61,23 +49,24 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 - Exhaustive pre-scan (whole codebase) — violates 50% context budget before first line of code
 - Blocking quality gates in fast mode — fast mode exists for quick experiments and prototypes
 - Silent quality improvements — all quality-driven changes tracked as deviations in SUMMARY
+- New quality gate types (security, a11y) — need to validate existing gates work first
+- Custom quality rules — premature, need production validation
+- Quality dashboard/reporting UI — CLI-only project, text output sufficient
 
 ## Context
 
-Shipped v1.0 with ~18,284 LOC across CJS/JS/agent MD files.
+Shipped v1.1 with ~29,471 LOC across CJS/JS/agent MD files.
 Tech stack: Node.js, CJS modules, Markdown agent specifications, Context7 MCP.
-102 tests passing (phase.test.cjs: 51, init.test.cjs: 9, full suite: 102).
+102+ tests passing across init, commands, and phase test suites.
 
 The GSD framework now enforces quality through the complete Plan→Execute→Verify loop:
 - **Planner** generates `<quality_scan>` directives (code_to_reuse, docs_to_consult, tests_to_write)
 - **Plan-checker** validates directives via Dimension 9 (warning in standard, blocker in strict)
-- **Executor** consumes directives in Quality Sentinel Steps 1, 2, 4 (pre-task scan, library lookup, mandatory tests, diff review)
+- **Executor** consumes directives in Quality Sentinel Steps 1-5 (pre-task scan, library lookup, mandatory tests, diff review) with GATE_OUTCOMES tracking
 - **Verifier** backstops with Step 7b (duplication, orphaned exports, missing tests)
 - **Config** gates everything — fast skips all, standard warns, strict blocks
-
-Known bugs fixed: `is_last_phase` filesystem routing, `offer_next` ROADMAP-vs-filesystem mismatch.
-
-**Source repo:** https://github.com/gsd-build/get-shit-done (cloned into this project directory)
+- **Observability** — Quality Gates section in SUMMARY.md shows what ran and what happened
+- **UX** — `/gsd:set-quality` to switch levels, `/gsd:progress` shows current level, `/gsd:help` reminds about patches
 
 ## Constraints
 
@@ -99,6 +88,11 @@ Known bugs fixed: `is_last_phase` filesystem routing, `offer_next` ROADMAP-vs-fi
 | Duplication scope same-phase only | Full codebase scan too expensive; same-phase catches most real issues | ✓ Good — keeps verifier fast while catching relevant duplications |
 | N/A override guard for tests_to_write | Planner may mark N/A but if task produced exports, tests still required | ✓ Good — prevents planner error from bypassing mandatory test requirement |
 | One Context7 query per plan maximum | Prevents context budget blowout; if multiple lookups needed, plan is too broad | — Pending (unverified in production) |
+| spawnSync for test helpers | execSync only exposes stderr on non-zero exit; spawnSync captures unconditionally | ✓ Good — enabled reliable stderr assertions in TDD tests |
+| GSD_HOME env var for global state | Tests need to override ~/.gsd without touching real state | ✓ Good — clean test isolation for global defaults |
+| Direct config.json reads for quality.level | loadConfig doesn't expose quality section in return object | ✓ Good — cmdProgressRender reads accurate value |
+| GATE_OUTCOMES per-plan initialization | Prevent reset between tasks; guard variable ensures single init | ✓ Good — outcomes accumulate across all tasks in a plan |
+| Quality Gates section absent in fast mode | No gates ran, nothing to report; empty section would be misleading | ✓ Good — clean SUMMARY.md in fast mode |
 
 ---
-*Last updated: 2026-02-23 after v1.1 milestone started*
+*Last updated: 2026-02-24 after v1.1 milestone*

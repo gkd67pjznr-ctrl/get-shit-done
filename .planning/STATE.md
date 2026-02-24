@@ -2,26 +2,26 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-23)
+See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** v1.1 Quality UX — Phase 7: Quality Observability
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-Phase: 7 of 7 (Quality Observability)
-Plan: 1 of 1 in current phase
-Status: In Progress
-Last activity: 2026-02-24 — Phase 7 Plan 1 complete (quality gate observability: GATE_OUTCOMES tracking, Quality Gates SUMMARY section)
+Phase: N/A — between milestones
+Plan: N/A
+Status: Milestone v1.1 complete
+Last activity: 2026-02-24 — Completed v1.1 Quality UX milestone (3 phases, 5 plans, 9/9 requirements)
 
-Progress: [█░░░░░░░░░] ~5% (v1.1)
+Progress: [██████████] 100% (v1.1 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8 (v1.0)
-- Average duration: 1.1 min
-- Total execution time: 11 min
+- Total plans completed: 13 (v1.0: 8, v1.1: 5)
+- Average duration: ~2 min
+- Total execution time: ~26 min
 
 **By Phase:**
 
@@ -33,29 +33,14 @@ Progress: [█░░░░░░░░░] ~5% (v1.1)
 | 04-wire-quality-scan-handoff | 1 | 3 min | 3 min |
 | 05-config-foundation | 2 | 5 min | 2.5 min |
 | 06-commands-and-ux | 2 | 8 min | 4 min |
-
-*Updated after each plan completion*
-| Phase 07-quality-observability P01 | 2 | 2 tasks | 6 files |
+| 07-quality-observability | 1 | 2 min | 2 min |
 
 ## Accumulated Context
 
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.
-Full v1.0 decision log archived with milestone.
-- [Phase 05-01]: spawnSync vs execSync: runGsdToolsFull uses spawnSync for unconditional stderr capture; execSync only exposes stderr on non-zero exit
-- [Phase 05-01]: Missing-section warning added to cmdConfigGet (not just loadConfig): config-get reads config directly without invoking loadConfig
-- [Phase 05-01]: GSD_HOME env var pattern: allows tests and users to override global defaults location; braveKeyFile also updated to use gsdHome
-- [Phase 05-02]: Executor reads quality.context7_token_cap at query time (bash one-liner) so config changes take effect immediately without agent restart
-- [Phase 05-02]: TOKEN_CAP bash fallback to '2000' keeps executor safe if config-get fails for any reason
-- [Phase 05-02]: Both context7_protocol and quality_sentinel Step 2 updated so all Context7 call paths use the configurable cap
-- [Phase 06-01]: Read quality.level directly from config.json in cmdProgressRender (loadConfig in core.cjs does not expose quality section in return object)
-- [Phase 06-01]: cmdCheckPatches checks GSD_HOME/gsd-local-patches first, then ~/.claude/gsd-local-patches as fallback
-- [Phase 06-01]: table format test uses progress table (JSON output) not --raw (raw string) for JSON.parse compatibility
-- [Phase 06-02]: help.md gets a full process wrapper around the existing reference so patches check runs first
-- [Phase 06-02]: progress.md reads quality level via config-get CLI (not hardcoded) for live config reflection
-- [Phase 07-01]: GATE_OUTCOMES initialized once per plan with GATE_OUTCOMES_INITIALIZED guard to prevent reset between tasks
-- [Phase 07-01]: Fast mode: Quality Gates section completely absent from SUMMARY.md (not empty) — no gates ran so nothing to report
+Full v1.0 + v1.1 decision logs archived with milestones.
 
 ### Pending Todos
 
@@ -68,5 +53,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 07-quality-observability-01-PLAN.md
+Stopped at: Completed v1.1 milestone archival
 Resume file: None
