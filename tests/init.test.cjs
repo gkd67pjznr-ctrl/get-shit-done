@@ -200,6 +200,91 @@ describe('init commands', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// --milestone flag parsing and init command wiring (PATH-03)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('--milestone flag parsing (PATH-03)', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+    // Create minimal planning files needed for init plan-phase to succeed
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '01-test'), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'ROADMAP.md'), '# Roadmap\n## Phases\n### Phase 1: Test\n');
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), '# State\n');
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('--milestone flag parsed in space form', () => {
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'config.json'), JSON.stringify({ concurrent: true }));
+
+    const result = runGsdTools('--milestone v2.0 init plan-phase 1 --raw', tmpDir);
+    assert.ok(result.success, `Command should succeed: ${result.error || ''}`);
+    const parsed = JSON.parse(result.output);
+    assert.strictEqual(parsed.milestone_scope, 'v2.0');
+  });
+
+  test('--milestone=value equals form parsed', () => {
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'config.json'), JSON.stringify({ concurrent: true }));
+
+    const result = runGsdTools('--milestone=v2.0 init plan-phase 1 --raw', tmpDir);
+    assert.ok(result.success, `Command should succeed: ${result.error || ''}`);
+    const parsed = JSON.parse(result.output);
+    assert.strictEqual(parsed.milestone_scope, 'v2.0');
+  });
+
+  test('--milestone without value produces error', () => {
+    // When --milestone is the last arg with no value following, it errors
+    const result = runGsdToolsFull('--milestone', tmpDir);
+    assert.strictEqual(result.success, false);
+    assert.ok(
+      result.stderr.includes('Missing value for --milestone'),
+      `Error should mention missing value: ${result.stderr}`
+    );
+  });
+
+  test('no --milestone flag results in null milestone_scope', () => {
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'config.json'), '{}');
+
+    const result = runGsdTools('init plan-phase 1 --raw', tmpDir);
+    assert.ok(result.success, `Command should succeed: ${result.error || ''}`);
+    const parsed = JSON.parse(result.output);
+    assert.strictEqual(parsed.milestone_scope, null);
+  });
+
+  test('planning_root uses milestone-scoped path when --milestone provided', () => {
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'config.json'), JSON.stringify({ concurrent: true }));
+
+    const result = runGsdTools('--milestone v2.0 init plan-phase 1 --raw', tmpDir);
+    assert.ok(result.success, `Command should succeed: ${result.error || ''}`);
+    const parsed = JSON.parse(result.output);
+    assert.ok(
+      parsed.planning_root.endsWith(path.join('.planning', 'milestones', 'v2.0')),
+      `planning_root should end with milestone path: ${parsed.planning_root}`
+    );
+  });
+
+  test('planning_root uses legacy path when no --milestone provided', () => {
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'config.json'), '{}');
+
+    const result = runGsdTools('init plan-phase 1 --raw', tmpDir);
+    assert.ok(result.success, `Command should succeed: ${result.error || ''}`);
+    const parsed = JSON.parse(result.output);
+    assert.ok(
+      parsed.planning_root.endsWith('.planning'),
+      `planning_root should end with .planning: ${parsed.planning_root}`
+    );
+    assert.ok(
+      !parsed.planning_root.includes('milestones'),
+      `planning_root should not contain milestones: ${parsed.planning_root}`
+    );
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // roadmap analyze command
 // ─────────────────────────────────────────────────────────────────────────────
 
