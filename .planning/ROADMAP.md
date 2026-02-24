@@ -74,5 +74,5 @@ Plans:
 | 3. Quality Dimensions | v1.0 | 2/2 | Complete | 2026-02-23 |
 | 4. Wire Quality Scan Handoff | v1.0 | 1/1 | Complete | 2026-02-24 |
 | 5. Config Foundation | 2/2 | Complete   | 2026-02-24 | - |
-| 6. Commands and UX | v1.1 | 0/2 | Not started | - |
+| 6. Commands and UX | 1/2 | In Progress|  | - |
 | 7. Quality Observability | v1.1 | 0/TBD | Not started | - |
