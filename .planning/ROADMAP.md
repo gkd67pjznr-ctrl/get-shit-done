@@ -58,10 +58,11 @@ Plans:
 **Goal:** Live multi-milestone dashboard showing progress across all active milestones, plus advisory overlap detection that warns when milestones touch the same files.
 **Depends on:** Phase 9 (milestone workspaces with conflict.json), Phase 10 (compatibility layer for old-style graceful degrade)
 **Requirements:** [DASH-01, DASH-02, DASH-03, DASH-04, CNFL-02, CNFL-03, CNFL-04]
-**Plans:** 2 plans
+**Plans:** 3 plans
 Plans:
 - [ ] 11-01-PLAN.md — TDD cmdMilestoneWriteStatus and cmdManifestCheck in milestone.cjs
 - [ ] 11-02-PLAN.md — cmdProgressRenderMulti, CLI routing, and new-milestone workflow update
+- [ ] 11-03-PLAN.md — Wire milestone write-status into execute-phase and plan-phase workflows at checkpoints
 
 ### Phase 12: Full Routing Update
 **Goal:** All workflows, commands, and phase numbering updated to be milestone-aware — `--milestone` flag threaded through every gsd-tools.cjs call, phase numbering resets per milestone, and canonical path variable glossary committed.
