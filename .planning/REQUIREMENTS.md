@@ -51,21 +51,21 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| QCFG-01 | — | Pending |
-| QCFG-02 | — | Pending |
-| QCFG-03 | — | Pending |
-| QCFG-04 | — | Pending |
-| QOBS-01 | — | Pending |
-| QOBS-02 | — | Pending |
-| QOBS-03 | — | Pending |
-| INFR-01 | — | Pending |
-| INFR-02 | — | Pending |
+| QCFG-01 | Phase 6 | Pending |
+| QCFG-02 | Phase 5 | Pending |
+| QCFG-03 | Phase 5 | Pending |
+| QCFG-04 | Phase 6 | Pending |
+| QOBS-01 | Phase 7 | Pending |
+| QOBS-02 | Phase 6 | Pending |
+| QOBS-03 | Phase 5 | Pending |
+| INFR-01 | Phase 5 | Pending |
+| INFR-02 | Phase 6 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 9 total
-- Mapped to phases: 0
-- Unmapped: 9 (pending roadmap)
+- Mapped to phases: 9
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-23*
-*Last updated: 2026-02-23 after initial definition*
+*Last updated: 2026-02-23 after v1.1 roadmap creation*

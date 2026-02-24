@@ -3,6 +3,7 @@
 ## Milestones
 
 - ✅ **v1.0 MVP** — Phases 1-4 (shipped 2026-02-24)
+- 🚧 **v1.1 Quality UX** — Phases 5-7 (in progress)
 
 ## Phases
 
@@ -16,6 +17,48 @@
 
 </details>
 
+### 🚧 v1.1 Quality UX (In Progress)
+
+**Milestone Goal:** Make quality enforcement discoverable, configurable, and observable — users know what mode they're in, can switch easily, and can see what the quality gates are doing.
+
+- [ ] **Phase 5: Config Foundation** - Config migration, global defaults, validation, and token cap — the plumbing everything else depends on
+- [ ] **Phase 6: Commands and UX** - User-facing set-quality command, global flag, progress display, and help reminder
+- [ ] **Phase 7: Quality Observability** - SUMMARY.md quality gates section showing what checks ran and their outcomes
+
+## Phase Details
+
+### Phase 5: Config Foundation
+**Goal**: Quality config is reliably present, validated, and inheritable — any command that touches config either finds the quality block or creates it with sane defaults, warns loudly on missing sections, and respects a configurable Context7 token cap
+**Depends on**: Phase 4
+**Requirements**: QCFG-02, QCFG-03, QOBS-03, INFR-01
+**Success Criteria** (what must be TRUE):
+  1. Running any GSD command on a project missing the `quality` config block automatically adds it with default values (no silent failure, no crash)
+  2. `~/.gsd/defaults.json` exists after first GSD usage and new projects inherit quality level from it during config initialization
+  3. When required config sections are absent, the user sees a warning identifying the missing section rather than a silent fallback
+  4. `quality.context7_token_cap` is read from config and applied to Context7 queries; changing the value changes behavior without code edits
+**Plans**: TBD
+
+### Phase 6: Commands and UX
+**Goal**: Users can set quality level via a dedicated command (per-project or globally), and can see the current quality level when checking progress
+**Depends on**: Phase 5
+**Requirements**: QCFG-01, QCFG-04, QOBS-02, INFR-02
+**Success Criteria** (what must be TRUE):
+  1. User runs `/gsd:set-quality strict` (or fast/standard) and the project's quality.level updates immediately; subsequent commands enforce the new level
+  2. User runs `/gsd:set-quality --global standard` and `~/.gsd/defaults.json` is updated; new projects initialized after this inherit the global level
+  3. `/gsd:progress` output includes the current quality level so users know what mode they are in without inspecting config files
+  4. `/gsd:help` output shows a `/gsd:reapply-patches` reminder at the top when patches exist that need reapplying after a framework update
+**Plans**: TBD
+
+### Phase 7: Quality Observability
+**Goal**: Execution summaries surface what quality gates ran and what they found, so users can see the quality enforcement loop in action
+**Depends on**: Phase 6
+**Requirements**: QOBS-01
+**Success Criteria** (what must be TRUE):
+  1. SUMMARY.md written after plan execution includes a "Quality Gates" section listing which sentinel steps ran (pre-task scan, library lookup, test step, diff review) and their outcomes (passed, warned, skipped)
+  2. The Quality Gates section is absent (not present as empty) when quality.level is fast, since fast mode skips all gates
+  3. In strict mode, any gate that blocked execution is identified in the section so the user understands why a plan stopped
+**Plans**: TBD
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -24,3 +67,6 @@
 | 2. Executor Sentinel | v1.0 | 3/3 | Complete | 2026-02-23 |
 | 3. Quality Dimensions | v1.0 | 2/2 | Complete | 2026-02-23 |
 | 4. Wire Quality Scan Handoff | v1.0 | 1/1 | Complete | 2026-02-24 |
+| 5. Config Foundation | v1.1 | 0/TBD | Not started | - |
+| 6. Commands and UX | v1.1 | 0/TBD | Not started | - |
+| 7. Quality Observability | v1.1 | 0/TBD | Not started | - |
