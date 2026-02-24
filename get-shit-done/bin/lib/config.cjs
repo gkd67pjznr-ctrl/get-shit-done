@@ -225,8 +225,54 @@ function cmdConfigGet(cwd, keyPath, raw) {
   output(current, raw, String(current));
 }
 
+function cmdSetQuality(cwd, level, options, raw) {
+  const validLevels = ['fast', 'standard', 'strict'];
+  if (!validLevels.includes(level)) {
+    error(`Invalid quality level "${level}". Valid levels: ${validLevels.join(', ')}`);
+  }
+
+  if (options && options.global) {
+    // Write to ~/.gsd/defaults.json (or GSD_HOME/defaults.json)
+    const homedir = require('os').homedir();
+    const gsdHome = process.env.GSD_HOME || path.join(homedir, '.gsd');
+    const globalDefaultsPath = path.join(gsdHome, 'defaults.json');
+
+    let defaults = {};
+    try {
+      if (fs.existsSync(globalDefaultsPath)) {
+        defaults = JSON.parse(fs.readFileSync(globalDefaultsPath, 'utf-8'));
+      }
+    } catch (err) { /* start fresh */ }
+
+    if (!defaults.quality) defaults.quality = {};
+    defaults.quality.level = level;
+
+    fs.mkdirSync(gsdHome, { recursive: true });
+    fs.writeFileSync(globalDefaultsPath, JSON.stringify(defaults, null, 2), 'utf-8');
+
+    const result = { updated: true, level, scope: 'global' };
+    output(result, raw, `quality.level=${level} (global)`);
+    return;
+  }
+
+  // Local project update
+  const configPath = path.join(cwd, '.planning', 'config.json');
+  if (!fs.existsSync(configPath)) {
+    error('No .planning/config.json found. Run config-ensure-section first.');
+  }
+
+  let config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+  if (!config.quality) config.quality = {};
+  config.quality.level = level;
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
+
+  const result = { updated: true, level, scope: 'project' };
+  output(result, raw, `quality.level=${level}`);
+}
+
 module.exports = {
   cmdConfigEnsureSection,
   cmdConfigSet,
   cmdConfigGet,
+  cmdSetQuality,
 };

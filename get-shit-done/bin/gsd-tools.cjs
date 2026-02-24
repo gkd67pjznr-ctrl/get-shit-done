@@ -375,6 +375,24 @@ async function main() {
       break;
     }
 
+    case 'set-quality': {
+      // Parse args: set-quality [--global] <level>
+      // The level may come before or after --global flag
+      const isGlobal = args.includes('--global');
+      const levelArgs = args.slice(1).filter(a => a !== '--global');
+      const level = levelArgs[0];
+      if (!level) {
+        error('Usage: set-quality [--global] <level>  (valid levels: fast, standard, strict)');
+      }
+      config.cmdSetQuality(cwd, level, { global: isGlobal }, raw);
+      break;
+    }
+
+    case 'check-patches': {
+      commands.cmdCheckPatches(cwd, raw);
+      break;
+    }
+
     case 'history-digest': {
       commands.cmdHistoryDigest(cwd, raw);
       break;

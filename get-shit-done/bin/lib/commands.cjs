@@ -389,6 +389,18 @@ function cmdProgressRender(cwd, format, raw) {
   const roadmapPath = path.join(cwd, '.planning', 'ROADMAP.md');
   const milestone = getMilestoneInfo(cwd);
 
+  // Read quality level directly from config.json (loadConfig doesn't expose quality section)
+  let qualityLevel = 'fast';
+  try {
+    const configPath = path.join(cwd, '.planning', 'config.json');
+    if (fs.existsSync(configPath)) {
+      const configData = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      if (configData.quality && configData.quality.level) {
+        qualityLevel = configData.quality.level;
+      }
+    }
+  } catch (err) { /* use default */ }
+
   const phases = [];
   let totalPlans = 0;
   let totalSummaries = 0;
@@ -426,7 +438,8 @@ function cmdProgressRender(cwd, format, raw) {
     const filled = Math.round((percent / 100) * barWidth);
     const bar = '\u2588'.repeat(filled) + '\u2591'.repeat(barWidth - filled);
     let out = `# ${milestone.version} ${milestone.name}\n\n`;
-    out += `**Progress:** [${bar}] ${totalSummaries}/${totalPlans} plans (${percent}%)\n\n`;
+    out += `**Progress:** [${bar}] ${totalSummaries}/${totalPlans} plans (${percent}%)\n`;
+    out += `**Quality:** ${qualityLevel}\n\n`;
     out += `| Phase | Name | Plans | Status |\n`;
     out += `|-------|------|-------|--------|\n`;
     for (const p of phases) {
@@ -438,7 +451,7 @@ function cmdProgressRender(cwd, format, raw) {
     const filled = Math.round((percent / 100) * barWidth);
     const bar = '\u2588'.repeat(filled) + '\u2591'.repeat(barWidth - filled);
     const text = `[${bar}] ${totalSummaries}/${totalPlans} plans (${percent}%)`;
-    output({ bar: text, percent, completed: totalSummaries, total: totalPlans }, raw, text);
+    output({ bar: text, percent, completed: totalSummaries, total: totalPlans, quality_level: qualityLevel }, raw, text);
   } else {
     // JSON format
     output({
@@ -448,8 +461,34 @@ function cmdProgressRender(cwd, format, raw) {
       total_plans: totalPlans,
       total_summaries: totalSummaries,
       percent,
+      quality_level: qualityLevel,
     }, raw);
   }
+}
+
+function cmdCheckPatches(cwd, raw) {
+  const homedir = require('os').homedir();
+  const gsdHome = process.env.GSD_HOME || path.join(homedir, '.gsd');
+
+  // Check both global GSD_HOME and ~/.claude patch locations
+  const globalPatchesDir = path.join(gsdHome, 'gsd-local-patches');
+  const localPatchesDir = path.join(homedir, '.claude', 'gsd-local-patches');
+
+  for (const patchesDir of [globalPatchesDir, localPatchesDir]) {
+    const metaPath = path.join(patchesDir, 'backup-meta.json');
+    if (fs.existsSync(metaPath)) {
+      try {
+        const meta = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
+        const fileCount = (meta.files || []).length;
+        const result = { has_patches: true, file_count: fileCount, path: patchesDir, from_version: meta.from_version || null };
+        output(result, raw, `${fileCount} patches`);
+        return;
+      } catch (err) { /* continue checking */ }
+    }
+  }
+
+  const result = { has_patches: false };
+  output(result, raw, 'none');
 }
 
 function cmdTodoComplete(cwd, filename, raw) {
@@ -548,6 +587,7 @@ module.exports = {
   cmdSummaryExtract,
   cmdWebsearch,
   cmdProgressRender,
+  cmdCheckPatches,
   cmdTodoComplete,
   cmdScaffold,
 };

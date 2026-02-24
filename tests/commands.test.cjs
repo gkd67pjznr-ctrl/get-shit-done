@@ -847,7 +847,8 @@ describe('progress quality-level display (QOBS-02)', () => {
       'utf-8'
     );
 
-    const result = runGsdTools('progress table --raw', tmpDir);
+    // Without --raw, progress table returns JSON { rendered: "..." }
+    const result = runGsdTools('progress table', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const out = JSON.parse(result.output);
