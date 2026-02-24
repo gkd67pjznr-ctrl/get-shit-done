@@ -261,6 +261,52 @@ describe('config quality section', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// context7 token cap config (INFR-01)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('context7 token cap config (INFR-01)', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('config-get quality.context7_token_cap returns 2000 on fresh config', () => {
+    runGsdTools('config-ensure-section', tmpDir);
+
+    const result = runGsdTools('config-get quality.context7_token_cap', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+    assert.strictEqual(JSON.parse(result.output), 2000, 'context7_token_cap should default to 2000');
+  });
+
+  test('config-set quality.context7_token_cap changes value', () => {
+    runGsdTools('config-ensure-section', tmpDir);
+    runGsdTools('config-set quality.context7_token_cap 5000', tmpDir);
+
+    const result = runGsdTools('config-get quality.context7_token_cap', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+    assert.strictEqual(JSON.parse(result.output), 5000, 'context7_token_cap should be 5000 after set');
+  });
+
+  test('context7_token_cap persists across config reads', () => {
+    runGsdTools('config-ensure-section', tmpDir);
+    runGsdTools('config-set quality.context7_token_cap 3000', tmpDir);
+
+    const configPath = path.join(tmpDir, '.planning', 'config.json');
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    assert.strictEqual(config.quality.context7_token_cap, 3000, 'context7_token_cap must be 3000 in raw file');
+
+    const result = runGsdTools('config-get quality.context7_token_cap', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+    assert.strictEqual(JSON.parse(result.output), 3000, 'config-get must return 3000 after persistence');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // config auto-migration (QCFG-02)
 // ─────────────────────────────────────────────────────────────────────────────
 
