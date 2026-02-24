@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 
 ## Current Position
 
-Phase: 12 — Full Routing Update (in progress)
-Plan: 01 (complete)
-Status: Phase 12 plan 01 complete — milestoneScope threaded through all 5 remaining init commands and cmdPhaseComplete; 21 routing integration tests pass; ROUTE-04 path variable glossary created
-Last activity: 2026-02-24 — 12-01 complete: full CLI/lib routing foundation for milestone-scoped concurrent execution
+Phase: 12 — Full Routing Update (complete)
+Plan: 02 (complete)
+Status: Phase 12 complete — MILESTONE_FLAG threaded through all 7 workflow files; Agent Teams research documented (TEAM-01); all ROUTE-* and TEAM-01 requirements satisfied
+Last activity: 2026-02-24 — 12-02 complete: full workflow routing layer for milestone-scoped concurrent execution
 
 **Progress:** [██████████] 100%
 
@@ -40,6 +40,7 @@ Last activity: 2026-02-24 — 12-01 complete: full CLI/lib routing foundation fo
 | Phase 11-dashboard-conflict-detection P01 | 2 | 2 tasks | 2 files |
 | Phase 11-dashboard-conflict-detection P02 | 8min | 2 tasks | 4 files |
 | Phase 12-full-routing-update P01 | 12min | 2 tasks | 5 files |
+| Phase 12 P02 | 3min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -73,6 +74,9 @@ Full v1.0 + v1.1 decision logs archived with milestones.
 - [Phase 12-01]: searchPhaseInDir used directly in cmdPhaseComplete when milestoneScope set — findPhaseInternal hardcodes root phases dir, cannot be changed without breaking all callers
 - [Phase 12-01]: cmdInitPhaseOp path fields (state_path, roadmap_path, requirements_path) now use planningRoot-relative paths — milestone workspace paths returned to callers
 - [Phase 12-01]: milestoneScope as last param pattern maintained for all 5 new init functions — backward compat preserved (undefined -> null -> legacy path)
+- [Phase 12]: transition.md adds init execute-phase call in load_project_state to obtain layout_style — no prior init existed in that workflow
+- [Phase 12]: complete-milestone.md extracts MILESTONE_VERSION from first arg of $ARGUMENTS — version is always arg 1 when invoked as /gsd:complete-milestone v2.0
+- [Phase 12]: standalone workflows extract --milestone from $ARGUMENTS via sed — users can invoke verify-work, progress, resume-project with --milestone flag
 
 ### Pending Todos
 
@@ -85,5 +89,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: 12-01-PLAN.md complete — Phase 12 plan 01 complete
-Resume file: .planning/phases/12-full-routing-update/12-01-SUMMARY.md
+Stopped at: Completed 12-02-PLAN.md — Phase 12 full-routing-update complete
+Resume file: .planning/phases/12-full-routing-update/12-02-SUMMARY.md

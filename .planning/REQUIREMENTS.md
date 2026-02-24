@@ -49,11 +49,11 @@ Requirements for concurrent milestone execution. Each maps to roadmap phases.
 
 ### Routing
 
-- [ ] **ROUTE-01**: All workflow files pass `--milestone` to gsd-tools.cjs calls when in milestone-scoped mode
+- [x] **ROUTE-01**: All workflow files pass `--milestone` to gsd-tools.cjs calls when in milestone-scoped mode
 - [x] **ROUTE-02**: All init commands return milestone-scoped paths when `--milestone` is provided
-- [ ] **ROUTE-03**: `/gsd:progress`, `/gsd:health`, `/gsd:complete-milestone`, `/gsd:resume-work` updated to be milestone-aware
+- [x] **ROUTE-03**: `/gsd:progress`, `/gsd:health`, `/gsd:complete-milestone`, `/gsd:resume-work` updated to be milestone-aware
 - [x] **ROUTE-04**: Canonical path variable glossary committed as reference before workflow/agent editing begins
-- [ ] **ROUTE-05**: Agent specs remain unchanged — paths flow through `<files_to_read>` from orchestrators
+- [x] **ROUTE-05**: Agent specs remain unchanged — paths flow through `<files_to_read>` from orchestrators
 
 ### Test Coverage
 
@@ -66,7 +66,7 @@ Requirements for concurrent milestone execution. Each maps to roadmap phases.
 
 ### Agent Teams Documentation
 
-- [ ] **TEAM-01**: Research findings documented — Agent Teams recommended for intra-milestone parallel phases, not inter-milestone concurrency
+- [x] **TEAM-01**: Research findings documented — Agent Teams recommended for intra-milestone parallel phases, not inter-milestone concurrency
 
 ## v2.1 Requirements
 
@@ -133,18 +133,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CNFL-02 | Phase 11 | Complete |
 | CNFL-03 | Phase 11 | Complete |
 | CNFL-04 | Phase 11 | Complete |
-| ROUTE-01 | Phase 12 | Pending |
+| ROUTE-01 | Phase 12 | Complete |
 | ROUTE-02 | Phase 12 | Complete |
-| ROUTE-03 | Phase 12 | Pending |
+| ROUTE-03 | Phase 12 | Complete |
 | ROUTE-04 | Phase 12 | Complete |
-| ROUTE-05 | Phase 12 | Pending |
+| ROUTE-05 | Phase 12 | Complete |
 | TEST-01 | Phase 13 | Pending |
 | TEST-02 | Phase 13 | Pending |
 | TEST-03 | Phase 13 | Pending |
 | TEST-04 | Phase 13 | Pending |
 | TEST-05 | Phase 13 | Pending |
 | TEST-06 | Phase 13 | Pending |
-| TEAM-01 | Phase 12 | Pending |
+| TEAM-01 | Phase 12 | Complete |
 
 **Coverage:**
 - v2.0 requirements: 34 total
