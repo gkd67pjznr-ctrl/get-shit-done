@@ -37,8 +37,17 @@
   Plans:
   - [ ] 08-01-PLAN.md — TDD planningRoot, detectLayoutStyle, and is_last_phase bug fix
   - [ ] 08-02-PLAN.md — --milestone CLI flag parsing and init command wiring
-- [ ] **Phase 9: Milestone Workspace Initialization** - Physical workspace creation, scaffold files, and conflict manifest format
-- [ ] **Phase 10: Compatibility Layer** - Legacy project detection and permanent zero-migration old-style support
+### Phase 9: Milestone Workspace Initialization
+**Goal:** Enable `new-milestone` to create isolated workspace directories with all required scaffold files, and define the conflict manifest format for cross-milestone overlap detection.
+**Depends on:** Phase 8 (path architecture)
+**Requirements:** [WKSP-01, WKSP-02, WKSP-03, WKSP-04, CNFL-01]
+**Plans:** 2 plans
+Plans:
+- [ ] 09-01-PLAN.md — TDD cmdMilestoneNewWorkspace and cmdMilestoneUpdateManifest
+- [ ] 09-02-PLAN.md — CLI routing, complete-milestone extension, and init layout_style
+
+### Phase 10: Compatibility Layer
+Legacy project detection and permanent zero-migration old-style support
 - [ ] **Phase 11: Dashboard and Conflict Detection** - Live multi-milestone dashboard and advisory overlap detection
 - [ ] **Phase 12: Full Routing Update** - All workflows, commands, and phase numbering updated to be milestone-aware
 - [ ] **Phase 13: Test Coverage** - New test helpers, branch coverage on new functions, and end-to-end verification
@@ -55,7 +64,7 @@
 | 6. Commands and UX | v1.1 | 2/2 | Complete | 2026-02-24 |
 | 7. Quality Observability | v1.1 | 1/1 | Complete | 2026-02-24 |
 | 8. Path Architecture Foundation | 2/2 | Complete   | 2026-02-24 | - |
-| 9. Milestone Workspace Initialization | v2.0 | 0/? | Not started | - |
+| 9. Milestone Workspace Initialization | v2.0 | 0/2 | Planned | - |
 | 10. Compatibility Layer | v2.0 | 0/? | Not started | - |
 | 11. Dashboard and Conflict Detection | v2.0 | 0/? | Not started | - |
 | 12. Full Routing Update | v2.0 | 0/? | Not started | - |
