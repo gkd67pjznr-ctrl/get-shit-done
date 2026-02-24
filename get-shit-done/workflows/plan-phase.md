@@ -329,7 +329,26 @@ Task(
 
 ## 9. Handle Planner Return
 
-- **`## PLANNING COMPLETE`:** Display plan count. If `--skip-verify` or `plan_checker_enabled` is false (from init): skip to step 13. Otherwise: step 10.
+- **`## PLANNING COMPLETE`:** Display plan count.
+
+  **Write STATUS.md (plan-start checkpoint):**
+
+  If `layout_style` from init is `"milestone-scoped"` and `milestone_version` is not null:
+
+  ```bash
+  node ~/.claude/get-shit-done/bin/gsd-tools.cjs milestone write-status "${milestone_version}" \
+    --phase "${phase_number}" --plan "0" \
+    --checkpoint plan-start \
+    --progress "0/${plan_count} plans (0%)" \
+    --status "In Progress" --raw
+  ```
+
+  This marks the moment plans exist but execution has not started. Plan is "0" because no plan has been executed yet.
+
+  If `layout_style` is not `"milestone-scoped"`, skip this step.
+
+  If `--skip-verify` or `plan_checker_enabled` is false (from init): skip to step 13. Otherwise: step 10.
+
 - **`## CHECKPOINT REACHED`:** Present to user, get response, spawn continuation (step 12)
 - **`## PLANNING INCONCLUSIVE`:** Show attempts, offer: Add context / Retry / Manual
 

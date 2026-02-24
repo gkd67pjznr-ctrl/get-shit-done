@@ -147,6 +147,25 @@ Execute each wave in sequence. Within a wave: parallel if `PARALLELIZATION=true`
 
    If ANY spot-check fails: report which plan failed, route to failure handler — ask "Retry plan?" or "Continue with remaining waves?"
 
+   **4a. Update milestone STATUS.md (plan-complete checkpoint):**
+
+   If `layout_style` from init is `"milestone-scoped"` and `milestone_version` is not null:
+
+   For each completed plan in this wave, compute progress and write status:
+   ```bash
+   # Count completed plans (those with SUMMARY.md) vs total
+   COMPLETED=$(ls "${PHASE_DIR}"/*-SUMMARY.md 2>/dev/null | wc -l | tr -d ' ')
+   TOTAL="${plan_count}"
+   PCT=$(( COMPLETED * 100 / TOTAL ))
+   node ~/.claude/get-shit-done/bin/gsd-tools.cjs milestone write-status "${milestone_version}" \
+     --phase "${PHASE_NUMBER}" --plan "${PLAN_ID}" \
+     --checkpoint plan-complete \
+     --progress "${COMPLETED}/${TOTAL} plans (${PCT}%)" \
+     --status "In Progress" --raw
+   ```
+
+   If `layout_style` is not `"milestone-scoped"`, skip this step (legacy projects unaffected).
+
    If pass:
    ```
    ---
@@ -369,6 +388,20 @@ The CLI handles:
 - Updating REQUIREMENTS.md traceability
 
 Extract from result: `next_phase`, `next_phase_name`, `is_last_phase`.
+
+**Write final STATUS.md (phase-complete checkpoint):**
+
+If `layout_style` from init is `"milestone-scoped"` and `milestone_version` is not null:
+
+```bash
+node ~/.claude/get-shit-done/bin/gsd-tools.cjs milestone write-status "${milestone_version}" \
+  --phase "${PHASE_NUMBER}" --plan "${plan_count}" \
+  --checkpoint phase-complete \
+  --progress "${plan_count}/${plan_count} plans (100%)" \
+  --status "Complete" --raw
+```
+
+If `layout_style` is not `"milestone-scoped"`, skip this step.
 
 ```bash
 node ~/.claude/get-shit-done/bin/gsd-tools.cjs commit "docs(phase-{X}): complete phase execution" --files .planning/ROADMAP.md .planning/STATE.md .planning/REQUIREMENTS.md {phase_dir}/*-VERIFICATION.md
