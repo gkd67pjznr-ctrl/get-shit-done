@@ -41,7 +41,7 @@
 **Goal:** Enable `new-milestone` to create isolated workspace directories with all required scaffold files, and define the conflict manifest format for cross-milestone overlap detection.
 **Depends on:** Phase 8 (path architecture)
 **Requirements:** [WKSP-01, WKSP-02, WKSP-03, WKSP-04, CNFL-01]
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 Plans:
 - [ ] 09-01-PLAN.md — TDD cmdMilestoneNewWorkspace and cmdMilestoneUpdateManifest
 - [ ] 09-02-PLAN.md — CLI routing, complete-milestone extension, and init layout_style
@@ -64,7 +64,7 @@ Legacy project detection and permanent zero-migration old-style support
 | 6. Commands and UX | v1.1 | 2/2 | Complete | 2026-02-24 |
 | 7. Quality Observability | v1.1 | 1/1 | Complete | 2026-02-24 |
 | 8. Path Architecture Foundation | 2/2 | Complete   | 2026-02-24 | - |
-| 9. Milestone Workspace Initialization | v2.0 | 0/2 | Planned | - |
+| 9. Milestone Workspace Initialization | 2/2 | Complete   | 2026-02-24 | - |
 | 10. Compatibility Layer | v2.0 | 0/? | Not started | - |
 | 11. Dashboard and Conflict Detection | v2.0 | 0/? | Not started | - |
 | 12. Full Routing Update | v2.0 | 0/? | Not started | - |

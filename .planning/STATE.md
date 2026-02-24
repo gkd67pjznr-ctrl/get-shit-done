@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 
 ## Current Position
 
-Phase: 09 — Milestone Workspace Initialization (plan 01 complete)
-Plan: 01 (complete)
-Status: Plan 01 complete — ready for Plan 02 (CLI routing for new-workspace and update-manifest)
-Last activity: 2026-02-24 — 09-01 complete: cmdMilestoneNewWorkspace and cmdMilestoneUpdateManifest implemented and tested
+Phase: 09 — Milestone Workspace Initialization (complete)
+Plan: 02 (complete)
+Status: Phase 09 complete — all plans done; CLI routing wired, workspace lifecycle complete
+Last activity: 2026-02-24 — 09-02 complete: CLI routing for new-workspace/update-manifest, cmdMilestoneComplete workspace extension, layout_style in init new-milestone
 
-**Progress:** [████████░░] 75%
+**Progress:** [█████████░] 85%
 
 ## Performance Metrics
 
@@ -35,7 +35,7 @@ Last activity: 2026-02-24 — 09-01 complete: cmdMilestoneNewWorkspace and cmdMi
 | 06-commands-and-ux | 2 | 8 min | 4 min |
 | 07-quality-observability | 1 | 2 min | 2 min |
 | 08-path-architecture-foundation | 2 (P01: 4min, P02: 2min) | 6 min | 3 min |
-| 09-milestone-workspace-initialization | 1 (P01: 4min) | 4 min | 4 min |
+| 09-milestone-workspace-initialization | 2 (P01: 4min, P02: 5min) | 9 min | 4.5 min |
 
 ## Accumulated Context
 
@@ -59,6 +59,8 @@ Full v1.0 + v1.1 decision logs archived with milestones.
 - [Phase 08]: milestoneScope added as last param to init functions — existing callers unaffected
 - [Phase 08]: Error test uses --milestone with no following arg (triggers !value branch); plain words are valid flag values
 - [Phase 09-milestone-workspace-initialization]: Tests use spawnSync child process pattern because output() and error() both call process.exit() — direct invocation kills test runner
+- [Phase 09-P02]: conflict_marked_complete: false for old-style projects without workspace — no error, clean backward compat
+- [Phase 09-P02]: layout_style + milestones_dir + milestones_dir_exists added together in cmdInitNewMilestone — full workspace context in one init call
 
 ### Pending Todos
 
@@ -71,5 +73,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: 09-01-PLAN.md complete — cmdMilestoneNewWorkspace and cmdMilestoneUpdateManifest implemented
-Resume file: .planning/phases/09-milestone-workspace-initialization/09-01-SUMMARY.md
+Stopped at: 09-02-PLAN.md complete — Phase 09 fully complete
+Resume file: .planning/phases/09-milestone-workspace-initialization/09-02-SUMMARY.md

@@ -17,9 +17,9 @@ Requirements for concurrent milestone execution. Each maps to roadmap phases.
 ### Workspace Isolation
 
 - [x] **WKSP-01**: Each milestone creates its own folder at `.planning/milestones/<version>/` containing STATE.md, ROADMAP.md, REQUIREMENTS.md, phases/, and research/
-- [ ] **WKSP-02**: Global `.planning/` root retains only project-wide files: PROJECT.md, config.json, MILESTONES.md
-- [ ] **WKSP-03**: `new-milestone` workflow creates milestone workspace with all required scaffold files
-- [ ] **WKSP-04**: `complete-milestone` marks milestone workspace as complete and updates MILESTONES.md
+- [x] **WKSP-02**: Global `.planning/` root retains only project-wide files: PROJECT.md, config.json, MILESTONES.md
+- [x] **WKSP-03**: `new-milestone` workflow creates milestone workspace with all required scaffold files
+- [x] **WKSP-04**: `complete-milestone` marks milestone workspace as complete and updates MILESTONES.md
 
 ### Compatibility
 
@@ -116,9 +116,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PATH-03 | Phase 8 | Complete |
 | PATH-04 | Phase 8 | Complete |
 | WKSP-01 | Phase 9 | Complete |
-| WKSP-02 | Phase 9 | Pending |
-| WKSP-03 | Phase 9 | Pending |
-| WKSP-04 | Phase 9 | Pending |
+| WKSP-02 | Phase 9 | Complete |
+| WKSP-03 | Phase 9 | Complete |
+| WKSP-04 | Phase 9 | Complete |
 | COMPAT-01 | Phase 10 | Pending |
 | COMPAT-02 | Phase 10 | Pending |
 | COMPAT-03 | Phase 10 | Pending |
