@@ -143,6 +143,8 @@ Read `<docs_to_consult>` from the current task's `<action>` block in the PLAN.md
 
 **If `<docs_to_consult>` contains a `Context7:` entry** (e.g., `Context7: /org/library — query "specific question"`):
 - Call Context7 for this library with the specified query. The planner has pre-identified this as needed.
+- Read token cap: `TOKEN_CAP=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs config-get quality.context7_token_cap 2>/dev/null || echo '2000')`
+- Pass `tokens: $TOKEN_CAP` to the Context7 query call.
 - Skip the standard trigger heuristics — proceed directly to the Context7 call.
 
 **If `<docs_to_consult>` says `N/A — no external library dependencies`:**
@@ -423,11 +425,17 @@ mcp__context7__resolve_library_id(
 )
 ```
 
-**Step 2: Query specific docs**
+**Step 2: Read token cap**
+```bash
+TOKEN_CAP=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs config-get quality.context7_token_cap 2>/dev/null || echo '2000')
+```
+
+**Step 3: Query specific docs**
 ```
 mcp__context7__query_docs(
   libraryId: "{id from step 1}",
-  query: "{the exact method or pattern needed — not the full library overview}"
+  query: "{the exact method or pattern needed — not the full library overview}",
+  tokens: {TOKEN_CAP value from step 2}
 )
 ```
 
@@ -437,7 +445,9 @@ mcp__context7__query_docs(
 - One Context7 query per plan execution maximum (if multiple lookups needed, the plan is too broad)
 - Extract 3-5 key facts from the response and hold them as working state
 - Do not quote more than 200 tokens of Context7 response in your implementation comments
-- If Context7 returns more than ~2,000 tokens on a single query, extract only the directly relevant code example
+- Token cap is read from `quality.context7_token_cap` in config (default: 2000). Change this value to tune query size.
+- If Context7 returns more tokens than the configured cap, extract only the directly relevant code example
+- To change the token cap: `node ~/.claude/get-shit-done/bin/gsd-tools.cjs config-set quality.context7_token_cap 5000`
 
 ## In `standard` mode:
 Call Context7 only when the trigger conditions above are met.
