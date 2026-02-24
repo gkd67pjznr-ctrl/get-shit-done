@@ -5,9 +5,9 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
-const { loadConfig, resolveModelInternal, findPhaseInternal, getRoadmapPhaseInternal, pathExistsInternal, generateSlugInternal, getMilestoneInfo, normalizePhaseName, output, error } = require('./core.cjs');
+const { loadConfig, resolveModelInternal, findPhaseInternal, getRoadmapPhaseInternal, pathExistsInternal, generateSlugInternal, getMilestoneInfo, normalizePhaseName, planningRoot, output, error } = require('./core.cjs');
 
-function cmdInitExecutePhase(cwd, phase, raw) {
+function cmdInitExecutePhase(cwd, phase, raw, milestoneScope) {
   if (!phase) {
     error('phase required for init execute-phase');
   }
@@ -75,12 +75,16 @@ function cmdInitExecutePhase(cwd, phase, raw) {
     state_path: '.planning/STATE.md',
     roadmap_path: '.planning/ROADMAP.md',
     config_path: '.planning/config.json',
+
+    // Milestone scope (v2.0 concurrent execution)
+    milestone_scope: milestoneScope || null,
+    planning_root: planningRoot(cwd, milestoneScope),
   };
 
   output(result, raw);
 }
 
-function cmdInitPlanPhase(cwd, phase, raw) {
+function cmdInitPlanPhase(cwd, phase, raw, milestoneScope) {
   if (!phase) {
     error('phase required for init plan-phase');
   }
@@ -130,6 +134,10 @@ function cmdInitPlanPhase(cwd, phase, raw) {
     state_path: '.planning/STATE.md',
     roadmap_path: '.planning/ROADMAP.md',
     requirements_path: '.planning/REQUIREMENTS.md',
+
+    // Milestone scope (v2.0 concurrent execution)
+    milestone_scope: milestoneScope || null,
+    planning_root: planningRoot(cwd, milestoneScope),
   };
 
   if (phaseInfo?.directory) {

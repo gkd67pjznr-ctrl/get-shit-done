@@ -168,6 +168,21 @@ async function main() {
   const raw = rawIndex !== -1;
   if (rawIndex !== -1) args.splice(rawIndex, 1);
 
+  // --milestone scope for concurrent milestone execution
+  let milestoneScope = null;
+  const milestoneEqArg = args.find(arg => arg.startsWith('--milestone='));
+  const milestoneIdx = args.indexOf('--milestone');
+  if (milestoneEqArg) {
+    milestoneScope = milestoneEqArg.slice('--milestone='.length).trim();
+    if (!milestoneScope) error('Missing value for --milestone');
+    args.splice(args.indexOf(milestoneEqArg), 1);
+  } else if (milestoneIdx !== -1) {
+    const value = args[milestoneIdx + 1];
+    if (!value || value.startsWith('--')) error('Missing value for --milestone');
+    args.splice(milestoneIdx, 2);
+    milestoneScope = value;
+  }
+
   const command = args[0];
 
   if (!command) {
@@ -525,10 +540,10 @@ async function main() {
       const workflow = args[1];
       switch (workflow) {
         case 'execute-phase':
-          init.cmdInitExecutePhase(cwd, args[2], raw);
+          init.cmdInitExecutePhase(cwd, args[2], raw, milestoneScope);
           break;
         case 'plan-phase':
-          init.cmdInitPlanPhase(cwd, args[2], raw);
+          init.cmdInitPlanPhase(cwd, args[2], raw, milestoneScope);
           break;
         case 'new-project':
           init.cmdInitNewProject(cwd, raw);
