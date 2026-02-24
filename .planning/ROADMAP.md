@@ -22,7 +22,7 @@
 **Milestone Goal:** Make quality enforcement discoverable, configurable, and observable — users know what mode they're in, can switch easily, and can see what the quality gates are doing.
 
 - [x] **Phase 5: Config Foundation** - Config migration, global defaults, validation, and token cap — the plumbing everything else depends on (completed 2026-02-24)
-- [ ] **Phase 6: Commands and UX** - User-facing set-quality command, global flag, progress display, and help reminder
+- [x] **Phase 6: Commands and UX** - User-facing set-quality command, global flag, progress display, and help reminder (completed 2026-02-24)
 - [ ] **Phase 7: Quality Observability** - SUMMARY.md quality gates section showing what checks ran and their outcomes
 
 ## Phase Details
@@ -74,5 +74,5 @@ Plans:
 | 3. Quality Dimensions | v1.0 | 2/2 | Complete | 2026-02-23 |
 | 4. Wire Quality Scan Handoff | v1.0 | 1/1 | Complete | 2026-02-24 |
 | 5. Config Foundation | 2/2 | Complete   | 2026-02-24 | - |
-| 6. Commands and UX | 1/2 | In Progress|  | - |
+| 6. Commands and UX | 2/2 | Complete   | 2026-02-24 | - |
 | 7. Quality Observability | v1.1 | 0/TBD | Not started | - |
