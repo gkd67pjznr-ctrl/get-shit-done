@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 
 ## Current Position
 
-Phase: 8 — Path Architecture Foundation (not started)
-Plan: —
-Status: Roadmap created, ready for phase planning
-Last activity: 2026-02-24 — v2.0 roadmap created (6 phases, 8-13)
+Phase: 8 — Path Architecture Foundation (plan 01 complete)
+Plan: 01 (complete)
+Status: Plan 01 complete — ready for next plan or phase
+Last activity: 2026-02-24 — 08-01 complete: planningRoot, detectLayoutStyle, is_last_phase fix
 
-**Progress:** [.......] 0% — Phase 8 of 13 total phases (7 complete from v1.0/v1.1)
+**Progress:** [x......] ~8% — Phase 8 plan 01 of 13 total phases (7 complete from v1.0/v1.1)
 
 ## Performance Metrics
 
@@ -34,6 +34,7 @@ Last activity: 2026-02-24 — v2.0 roadmap created (6 phases, 8-13)
 | 05-config-foundation | 2 | 5 min | 2.5 min |
 | 06-commands-and-ux | 2 | 8 min | 4 min |
 | 07-quality-observability | 1 | 2 min | 2 min |
+| 08-path-architecture-foundation | 1 (of 1 planned) | 4 min | 4 min |
 
 ## Accumulated Context
 
@@ -50,6 +51,9 @@ Full v1.0 + v1.1 decision logs archived with milestones.
 - Conflict detection is advisory only — warns on overlap, never blocks execution
 - Agent Teams deferred to v2.x — wrong for inter-milestone concurrency; session resumption not supported
 - `atomicWrite()` implemented inline in gsd-tools.cjs (15 lines) — avoids write-file-atomic Node 20+ constraint
+- `planningRoot(cwd, milestoneScope)` uses truthiness check — null/undefined/empty all return legacy `.planning/` path
+- `detectLayoutStyle` reads config.json only — directory presence detection is forbidden
+- `is_last_phase` ROADMAP fallback: checks `[x]` completion to avoid false negatives on already-complete higher phases
 
 ### Pending Todos
 
@@ -62,5 +66,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: v2.0 roadmap created — next step is `/gsd:plan-phase 8`
-Resume file: .planning/milestones/v2.0-ROADMAP.md
+Stopped at: 08-01-PLAN.md complete — planningRoot, detectLayoutStyle, is_last_phase fix done
+Resume file: .planning/phases/08-path-architecture-foundation/08-01-SUMMARY.md

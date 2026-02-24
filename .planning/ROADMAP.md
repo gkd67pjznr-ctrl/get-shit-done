@@ -54,7 +54,7 @@
 | 5. Config Foundation | v1.1 | 2/2 | Complete | 2026-02-24 |
 | 6. Commands and UX | v1.1 | 2/2 | Complete | 2026-02-24 |
 | 7. Quality Observability | v1.1 | 1/1 | Complete | 2026-02-24 |
-| 8. Path Architecture Foundation | v2.0 | 0/2 | Planned | - |
+| 8. Path Architecture Foundation | 1/2 | In Progress|  | - |
 | 9. Milestone Workspace Initialization | v2.0 | 0/? | Not started | - |
 | 10. Compatibility Layer | v2.0 | 0/? | Not started | - |
 | 11. Dashboard and Conflict Detection | v2.0 | 0/? | Not started | - |
