@@ -53,9 +53,25 @@ Plans:
 **Plans:** 1/1 plans complete
 Plans:
 - [ ] 10-01-PLAN.md — Add layout_style to init commands, test helpers, and three-state compatibility tests
-- [ ] **Phase 11: Dashboard and Conflict Detection** - Live multi-milestone dashboard and advisory overlap detection
-- [ ] **Phase 12: Full Routing Update** - All workflows, commands, and phase numbering updated to be milestone-aware
-- [ ] **Phase 13: Test Coverage** - New test helpers, branch coverage on new functions, and end-to-end verification
+
+### Phase 11: Dashboard and Conflict Detection
+**Goal:** Live multi-milestone dashboard showing progress across all active milestones, plus advisory overlap detection that warns when milestones touch the same files.
+**Depends on:** Phase 9 (milestone workspaces with conflict.json), Phase 10 (compatibility layer for old-style graceful degrade)
+**Requirements:** [DASH-01, DASH-02, DASH-03, DASH-04, CNFL-02, CNFL-03, CNFL-04]
+**Plans:** 2 plans
+Plans:
+- [ ] 11-01-PLAN.md — TDD cmdMilestoneWriteStatus and cmdManifestCheck in milestone.cjs
+- [ ] 11-02-PLAN.md — cmdProgressRenderMulti, CLI routing, and new-milestone workflow update
+
+### Phase 12: Full Routing Update
+**Goal:** All workflows, commands, and phase numbering updated to be milestone-aware — `--milestone` flag threaded through every gsd-tools.cjs call, phase numbering resets per milestone, and canonical path variable glossary committed.
+**Depends on:** Phase 8 (path architecture), Phase 11 (dashboard for progress routing)
+**Requirements:** [ROUTE-01, ROUTE-02, ROUTE-03, ROUTE-04, ROUTE-05, PHASE-01, PHASE-02, PHASE-03, TEAM-01]
+
+### Phase 13: Test Coverage
+**Goal:** Comprehensive test coverage for all v2.0 concurrent milestone functionality — new test helpers, branch coverage on new functions, and end-to-end verification across both layout modes.
+**Depends on:** Phase 12 (all routing complete — tests validate final state)
+**Requirements:** [TEST-01, TEST-02, TEST-03, TEST-04, TEST-05, TEST-06]
 
 ## Progress
 
@@ -71,6 +87,6 @@ Plans:
 | 8. Path Architecture Foundation | 2/2 | Complete   | 2026-02-24 | - |
 | 9. Milestone Workspace Initialization | 2/2 | Complete   | 2026-02-24 | - |
 | 10. Compatibility Layer | 1/1 | Complete    | 2026-02-24 | - |
-| 11. Dashboard and Conflict Detection | v2.0 | 0/? | Not started | - |
+| 11. Dashboard and Conflict Detection | v2.0 | 0/2 | Planned | - |
 | 12. Full Routing Update | v2.0 | 0/? | Not started | - |
 | 13. Test Coverage | v2.0 | 0/? | Not started | - |
