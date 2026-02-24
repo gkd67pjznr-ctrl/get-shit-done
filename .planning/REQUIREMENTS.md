@@ -10,15 +10,15 @@ Requirements for v1.1 Quality UX. Each maps to roadmap phases.
 ### Quality Config
 
 - [ ] **QCFG-01**: User can run `/gsd:set-quality` to set quality.level (fast/standard/strict) for current project
-- [ ] **QCFG-02**: Any GSD command auto-adds missing `quality` config block with appropriate default when not present
-- [ ] **QCFG-03**: `~/.gsd/defaults.json` stores global defaults that new projects inherit during config initialization
+- [x] **QCFG-02**: Any GSD command auto-adds missing `quality` config block with appropriate default when not present
+- [x] **QCFG-03**: `~/.gsd/defaults.json` stores global defaults that new projects inherit during config initialization
 - [ ] **QCFG-04**: User can set global defaults via `/gsd:set-quality --global` (writes to `~/.gsd/defaults.json`)
 
 ### Quality Observability
 
 - [ ] **QOBS-01**: SUMMARY.md includes a "Quality Gates" section showing what checks ran and their outcomes
 - [ ] **QOBS-02**: `/gsd:progress` output displays current `quality.level` for the project
-- [ ] **QOBS-03**: Config validation warns when required sections are missing instead of silently falling back
+- [x] **QOBS-03**: Config validation warns when required sections are missing instead of silently falling back
 
 ### Infrastructure
 
@@ -52,12 +52,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | QCFG-01 | Phase 6 | Pending |
-| QCFG-02 | Phase 5 | Pending |
-| QCFG-03 | Phase 5 | Pending |
+| QCFG-02 | Phase 5 | Complete |
+| QCFG-03 | Phase 5 | Complete |
 | QCFG-04 | Phase 6 | Pending |
 | QOBS-01 | Phase 7 | Pending |
 | QOBS-02 | Phase 6 | Pending |
-| QOBS-03 | Phase 5 | Pending |
+| QOBS-03 | Phase 5 | Complete |
 | INFR-01 | Phase 5 | Pending |
 | INFR-02 | Phase 6 | Pending |
 

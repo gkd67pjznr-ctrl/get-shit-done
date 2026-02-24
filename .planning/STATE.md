@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-23)
 ## Current Position
 
 Phase: 5 of 7 (Config Foundation)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-02-23 — v1.1 roadmap created, Phase 5 is next
+Plan: 1 of TBD in current phase
+Status: In Progress
+Last activity: 2026-02-23 — Phase 5 Plan 1 complete (config auto-migration, global defaults, missing-section warnings)
 
-Progress: [░░░░░░░░░░] 0% (v1.1)
+Progress: [█░░░░░░░░░] ~5% (v1.1)
 
 ## Performance Metrics
 
@@ -31,6 +31,7 @@ Progress: [░░░░░░░░░░] 0% (v1.1)
 | 02-executor-sentinel | 3 | 3 min | 1 min |
 | 03-quality-dimensions | 2 | 2 min | 1 min |
 | 04-wire-quality-scan-handoff | 1 | 3 min | 3 min |
+| 05-config-foundation | 1 | 3 min | 3 min |
 
 *Updated after each plan completion*
 
@@ -40,6 +41,9 @@ Progress: [░░░░░░░░░░] 0% (v1.1)
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Full v1.0 decision log archived with milestone.
+- [Phase 05-01]: spawnSync vs execSync: runGsdToolsFull uses spawnSync for unconditional stderr capture; execSync only exposes stderr on non-zero exit
+- [Phase 05-01]: Missing-section warning added to cmdConfigGet (not just loadConfig): config-get reads config directly without invoking loadConfig
+- [Phase 05-01]: GSD_HOME env var pattern: allows tests and users to override global defaults location; braveKeyFile also updated to use gsdHome
 
 ### Pending Todos
 
@@ -52,5 +56,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: v1.1 roadmap created — Phase 5 ready to plan.
+Stopped at: Completed 05-config-foundation-01-PLAN.md
 Resume file: None
