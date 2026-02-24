@@ -24,6 +24,16 @@ Parse JSON for: `researcher_model`, `planner_model`, `checker_model`, `research_
 
 **If `planning_exists` is false:** Error — run `/gsd:new-project` first.
 
+```bash
+# Milestone routing (v2.0)
+MILESTONE_FLAG=""
+LAYOUT=$(echo "$INIT" | jq -r '.layout_style // "legacy"')
+MILESTONE_SCOPE=$(echo "$INIT" | jq -r '.milestone_scope // empty')
+if [ "$LAYOUT" = "milestone-scoped" ] && [ -n "$MILESTONE_SCOPE" ]; then
+  MILESTONE_FLAG="--milestone ${MILESTONE_SCOPE}"
+fi
+```
+
 ## 2. Parse and Normalize Arguments
 
 Extract from $ARGUMENTS: phase number (integer or decimal like `2.1`), flags (`--research`, `--skip-research`, `--gaps`, `--skip-verify`, `--prd <filepath>`).
@@ -42,7 +52,7 @@ mkdir -p ".planning/phases/${padded_phase}-${phase_slug}"
 ## 3. Validate Phase
 
 ```bash
-PHASE_INFO=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs roadmap get-phase "${PHASE}")
+PHASE_INFO=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs roadmap get-phase "${PHASE}" ${MILESTONE_FLAG})
 ```
 
 **If `found` is false:** Error with available phases. **If `found` is true:** Extract `phase_number`, `phase_name`, `goal` from JSON.
@@ -175,7 +185,7 @@ Display banner:
 ### Spawn gsd-phase-researcher
 
 ```bash
-PHASE_DESC=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs roadmap get-phase "${PHASE}" | jq -r '.section')
+PHASE_DESC=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs roadmap get-phase "${PHASE}" ${MILESTONE_FLAG} | jq -r '.section')
 ```
 
 Research prompt:

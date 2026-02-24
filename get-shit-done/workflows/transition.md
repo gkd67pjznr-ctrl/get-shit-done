@@ -32,6 +32,18 @@ cat .planning/PROJECT.md 2>/dev/null
 Parse current position to verify we're transitioning the right phase.
 Note accumulated context that may need updating after transition.
 
+```bash
+# Milestone routing (v2.0)
+# Use current_phase extracted from STATE.md above
+MILESTONE_FLAG=""
+INIT_TRANSITION=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs init execute-phase "${current_phase}" 2>/dev/null || echo '{}')
+LAYOUT=$(echo "$INIT_TRANSITION" | jq -r '.layout_style // "legacy"')
+MILESTONE_SCOPE=$(echo "$INIT_TRANSITION" | jq -r '.milestone_scope // empty')
+if [ "$LAYOUT" = "milestone-scoped" ] && [ -n "$MILESTONE_SCOPE" ]; then
+  MILESTONE_FLAG="--milestone ${MILESTONE_SCOPE}"
+fi
+```
+
 </step>
 
 <step name="verify_completion">
@@ -123,7 +135,7 @@ If found, delete them — phase is complete, handoffs are stale.
 **Delegate ROADMAP.md and STATE.md updates to gsd-tools:**
 
 ```bash
-TRANSITION=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs phase complete "${current_phase}")
+TRANSITION=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs phase complete "${current_phase}" ${MILESTONE_FLAG})
 ```
 
 The CLI handles:
@@ -347,7 +359,7 @@ The `next_phase` and `next_phase_name` fields give you the next phase details.
 
 If you need additional context, use:
 ```bash
-ROADMAP=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs roadmap analyze)
+ROADMAP=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs roadmap analyze ${MILESTONE_FLAG})
 ```
 
 This returns all phases with goals, disk status, and completion info.

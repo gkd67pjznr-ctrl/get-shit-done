@@ -20,10 +20,27 @@ Instantly restore full project context so "Where were we?" has an immediate, com
 Load all context in one call:
 
 ```bash
-INIT=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs init resume)
+# Extract --milestone flag from arguments if present (e.g., /gsd:resume-work --milestone v2.0)
+MILESTONE_ARG=""
+if echo "$ARGUMENTS" | grep -q "\-\-milestone"; then
+  MILESTONE_ARG=$(echo "$ARGUMENTS" | sed 's/.*--milestone[= ]\([^ ]*\).*/\1/')
+  MILESTONE_ARG="--milestone ${MILESTONE_ARG}"
+fi
+
+INIT=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs init resume ${MILESTONE_ARG})
 ```
 
 Parse JSON for: `state_exists`, `roadmap_exists`, `project_exists`, `planning_exists`, `has_interrupted_agent`, `interrupted_agent_id`, `commit_docs`.
+
+```bash
+# Milestone routing (v2.0)
+MILESTONE_FLAG=""
+LAYOUT=$(echo "$INIT" | jq -r '.layout_style // "legacy"')
+MILESTONE_SCOPE=$(echo "$INIT" | jq -r '.milestone_scope // empty')
+if [ "$LAYOUT" = "milestone-scoped" ] && [ -n "$MILESTONE_SCOPE" ]; then
+  MILESTONE_FLAG="--milestone ${MILESTONE_SCOPE}"
+fi
+```
 
 **If `state_exists` is true:** Proceed to load_state
 **If `state_exists` is false but `roadmap_exists` or `project_exists` is true:** Offer to reconstruct STATE.md
@@ -35,7 +52,8 @@ Parse JSON for: `state_exists`, `roadmap_exists`, `project_exists`, `planning_ex
 Read and parse STATE.md, then PROJECT.md:
 
 ```bash
-cat .planning/STATE.md
+STATE_PATH=$(echo "$INIT" | jq -r '.state_path // ".planning/STATE.md"')
+cat "${STATE_PATH}"
 cat .planning/PROJECT.md
 ```
 

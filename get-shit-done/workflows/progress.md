@@ -12,10 +12,27 @@ Read all files referenced by the invoking prompt's execution_context before star
 **Load progress context (paths only):**
 
 ```bash
-INIT=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs init progress)
+# Extract --milestone flag from arguments if present (e.g., /gsd:progress --milestone v2.0)
+MILESTONE_ARG=""
+if echo "$ARGUMENTS" | grep -q "\-\-milestone"; then
+  MILESTONE_ARG=$(echo "$ARGUMENTS" | sed 's/.*--milestone[= ]\([^ ]*\).*/\1/')
+  MILESTONE_ARG="--milestone ${MILESTONE_ARG}"
+fi
+
+INIT=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs init progress ${MILESTONE_ARG})
 ```
 
 Extract from init JSON: `project_exists`, `roadmap_exists`, `state_exists`, `phases`, `current_phase`, `next_phase`, `milestone_version`, `completed_count`, `phase_count`, `paused_at`, `state_path`, `roadmap_path`, `project_path`, `config_path`.
+
+```bash
+# Milestone routing (v2.0)
+MILESTONE_FLAG=""
+LAYOUT=$(echo "$INIT" | jq -r '.layout_style // "legacy"')
+MILESTONE_SCOPE=$(echo "$INIT" | jq -r '.milestone_scope // empty')
+if [ "$LAYOUT" = "milestone-scoped" ] && [ -n "$MILESTONE_SCOPE" ]; then
+  MILESTONE_FLAG="--milestone ${MILESTONE_SCOPE}"
+fi
+```
 
 If `project_exists` is false (no `.planning/` directory):
 
@@ -40,7 +57,7 @@ If missing both ROADMAP.md and PROJECT.md: suggest `/gsd:new-project`.
 **Use structured extraction from gsd-tools:**
 
 Instead of reading full files, use targeted tools to get only the data needed for the report:
-- `ROADMAP=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs roadmap analyze)`
+- `ROADMAP=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs roadmap analyze ${MILESTONE_FLAG})`
 - `STATE=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs state-snapshot)`
 
 This minimizes orchestrator context usage.
@@ -50,7 +67,7 @@ This minimizes orchestrator context usage.
 **Get comprehensive roadmap analysis (replaces manual parsing):**
 
 ```bash
-ROADMAP=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs roadmap analyze)
+ROADMAP=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs roadmap analyze ${MILESTONE_FLAG})
 ```
 
 This returns structured JSON with:

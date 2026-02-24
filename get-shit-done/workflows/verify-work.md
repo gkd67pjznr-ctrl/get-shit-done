@@ -24,10 +24,27 @@ No Pass/Fail buttons. No severity questions. Just: "Here's what should happen. D
 If $ARGUMENTS contains a phase number, load context:
 
 ```bash
-INIT=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs init verify-work "${PHASE_ARG}")
+# Extract --milestone flag from arguments if present (e.g., /gsd:verify-work 3 --milestone v2.0)
+MILESTONE_ARG=""
+if echo "$ARGUMENTS" | grep -q "\-\-milestone"; then
+  MILESTONE_ARG=$(echo "$ARGUMENTS" | sed 's/.*--milestone[= ]\([^ ]*\).*/\1/')
+  MILESTONE_ARG="--milestone ${MILESTONE_ARG}"
+fi
+
+INIT=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs init verify-work "${PHASE_ARG}" ${MILESTONE_ARG})
 ```
 
 Parse JSON for: `planner_model`, `checker_model`, `commit_docs`, `phase_found`, `phase_dir`, `phase_number`, `phase_name`, `has_verification`.
+
+```bash
+# Milestone routing (v2.0)
+MILESTONE_FLAG=""
+LAYOUT=$(echo "$INIT" | jq -r '.layout_style // "legacy"')
+MILESTONE_SCOPE=$(echo "$INIT" | jq -r '.milestone_scope // empty')
+if [ "$LAYOUT" = "milestone-scoped" ] && [ -n "$MILESTONE_SCOPE" ]; then
+  MILESTONE_FLAG="--milestone ${MILESTONE_SCOPE}"
+fi
+```
 </step>
 
 <step name="check_active_session">

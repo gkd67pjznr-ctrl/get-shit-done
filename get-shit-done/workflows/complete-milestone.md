@@ -40,7 +40,15 @@ When a milestone completes:
 **Use `roadmap analyze` for comprehensive readiness check:**
 
 ```bash
-ROADMAP=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs roadmap analyze)
+# Milestone routing (v2.0)
+# The milestone version is provided as $ARGUMENTS (e.g., "v2.0") — use it to scope all path lookups
+MILESTONE_VERSION=$(echo "$ARGUMENTS" | awk '{print $1}')
+MILESTONE_FLAG=""
+if [ -n "$MILESTONE_VERSION" ]; then
+  MILESTONE_FLAG="--milestone ${MILESTONE_VERSION}"
+fi
+
+ROADMAP=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs roadmap analyze ${MILESTONE_FLAG})
 ```
 
 This returns all phases with plan/summary counts and disk status. Use this to verify:

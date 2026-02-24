@@ -26,6 +26,16 @@ Parse JSON for: `executor_model`, `verifier_model`, `commit_docs`, `parallelizat
 **If `state_exists` is false but `.planning/` exists:** Offer reconstruct or continue.
 
 When `parallelization` is false, plans within a wave execute sequentially.
+
+```bash
+# Milestone routing (v2.0)
+MILESTONE_FLAG=""
+LAYOUT=$(echo "$INIT" | jq -r '.layout_style // "legacy"')
+MILESTONE_SCOPE=$(echo "$INIT" | jq -r '.milestone_scope // empty')
+if [ "$LAYOUT" = "milestone-scoped" ] && [ -n "$MILESTONE_SCOPE" ]; then
+  MILESTONE_FLAG="--milestone ${MILESTONE_SCOPE}"
+fi
+```
 </step>
 
 <step name="handle_branching">
@@ -377,7 +387,7 @@ Gap closure cycle: `/gsd:plan-phase {X} --gaps` reads VERIFICATION.md → create
 **Mark phase complete and update all tracking files:**
 
 ```bash
-COMPLETION=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs phase complete "${PHASE_NUMBER}")
+COMPLETION=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs phase complete "${PHASE_NUMBER}" ${MILESTONE_FLAG})
 ```
 
 The CLI handles:
