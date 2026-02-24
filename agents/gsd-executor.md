@@ -111,6 +111,36 @@ QUALITY_LEVEL=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs config-get qualit
 
 ---
 
+**Gate outcome tracking (standard and strict modes only):**
+
+Initialize gate tracking at sentinel entry (once per plan, not per task):
+```bash
+# Initialize on first sentinel entry for this plan
+if [ -z "$GATE_OUTCOMES_INITIALIZED" ]; then
+  GATE_OUTCOMES=()
+  GATE_OUTCOMES_INITIALIZED=true
+fi
+```
+
+After each sentinel step completes, record the outcome:
+```bash
+GATE_OUTCOMES+=("{task_num}|{step_name}|{outcome}|{detail}")
+```
+
+Where:
+- `task_num`: Current task number (1, 2, 3...)
+- `step_name`: One of `codebase_scan`, `context7_lookup`, `test_baseline`, `test_gate`, `diff_review`
+- `outcome`: One of `passed`, `warned`, `skipped`, `blocked`
+- `detail`: Brief description (e.g., "3 reuse candidates found", "skipped — no external deps", "2 WARN findings in diff")
+
+**Outcome definitions:**
+- `passed`: Gate ran and found no issues
+- `warned`: Gate ran and found non-blocking issues (standard mode)
+- `skipped`: Gate was skipped due to task type or N/A condition (NOT due to fast mode — fast mode skips the entire sentinel)
+- `blocked`: Gate found blocking issues (strict mode only — gate prevented commit)
+
+---
+
 ## Pre-Task Protocol (runs before each type="auto" task)
 
 **Step 1: Targeted Codebase Scan** (skip if `fast`)
@@ -137,6 +167,10 @@ Read `<code_to_reuse>` from the current task's `<action>` block in the PLAN.md.
 - Document reuse decision in commit message: "Reuses X from Y" or "New because X differs in Z way"
 - Never scan `node_modules`, `.git`, `.planning/`, or archived phase directories
 
+Record outcome:
+- If reuse candidates found: `GATE_OUTCOMES+=("${TASK_NUM}|codebase_scan|passed|{N} reuse candidates evaluated")`
+- If no matches: `GATE_OUTCOMES+=("${TASK_NUM}|codebase_scan|passed|no matches in scoped grep")`
+
 **Step 2: Context7 Lookup** (skip if `fast`)
 
 Read `<docs_to_consult>` from the current task's `<action>` block in the PLAN.md.
@@ -155,11 +189,19 @@ Read `<docs_to_consult>` from the current task's `<action>` block in the PLAN.md
 
 Token discipline: one Context7 query per plan execution maximum (see `<context7_protocol>`).
 
+Record outcome:
+- If Context7 called: `GATE_OUTCOMES+=("${TASK_NUM}|context7_lookup|passed|queried {library}")`
+- If skipped (N/A or already queried): `GATE_OUTCOMES+=("${TASK_NUM}|context7_lookup|skipped|{reason}")`
+
 **Step 3: Test Baseline** (skip if `fast`)
 ```bash
 node --test tests/*.test.cjs 2>&1 | tail -3
 ```
 Record: pass count before changes. If baseline is red, document in SUMMARY.md under "Issues Encountered."
+
+Record outcome:
+- If baseline green: `GATE_OUTCOMES+=("${TASK_NUM}|test_baseline|passed|{N} tests passing")`
+- If baseline red: `GATE_OUTCOMES+=("${TASK_NUM}|test_baseline|warned|baseline red — documented in Issues")`
 
 ---
 
@@ -184,6 +226,11 @@ Read `<tests_to_write>` from the current task's `<action>` block in the PLAN.md.
 
 Files matching `quality.test_exemptions` (`.md`, `.json`, `templates/**`, `.planning/**`) are always exempt — skip test gate for these files.
 
+Record outcome:
+- If tests written and passing: `GATE_OUTCOMES+=("${TASK_NUM}|test_gate|passed|tests written and passing")`
+- If skipped (N/A, exempt, no exports): `GATE_OUTCOMES+=("${TASK_NUM}|test_gate|skipped|{reason}")`
+- If strict mode and tests failing: `GATE_OUTCOMES+=("${TASK_NUM}|test_gate|blocked|tests failing — strict mode")`
+
 **Step 5: Diff Review** (standard and strict; skip if `fast`)
 ```bash
 git diff --staged
@@ -195,6 +242,11 @@ Self-report any of the following found in staged diff:
 - Error paths with no handling
 
 Report findings in SUMMARY.md under "Deviations from Plan -> Auto-fixed Issues" or "Issues Encountered." Fix before committing if fix scope is within Rules 1-3. Escalate to Rule 4 if architectural.
+
+Record outcome:
+- If no findings: `GATE_OUTCOMES+=("${TASK_NUM}|diff_review|passed|clean diff")`
+- If findings auto-fixed: `GATE_OUTCOMES+=("${TASK_NUM}|diff_review|warned|{N} findings auto-fixed")`
+- If strict mode block: `GATE_OUTCOMES+=("${TASK_NUM}|diff_review|blocked|{N} findings — strict mode")`
 
 ---
 
@@ -523,6 +575,44 @@ After all tasks complete, create `{phase}-{plan}-SUMMARY.md` at `.planning/phase
 Or: "None - plan executed exactly as written."
 
 **Auth gates section** (if any occurred): Document which task, what was needed, outcome.
+
+**Quality Gates section (conditional on quality level):**
+
+```bash
+QUALITY_LEVEL=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs config-get quality.level 2>/dev/null || echo "fast")
+```
+
+**If `QUALITY_LEVEL` is `fast`:** Do NOT include a Quality Gates section in SUMMARY.md. The section should be entirely absent — not present as empty, not present as "skipped". Fast mode means no gates ran, so nothing to report.
+
+**If `QUALITY_LEVEL` is `standard` or `strict`:** Include a `## Quality Gates` section in SUMMARY.md after `## Deviations from Plan` and before `## Issues Encountered`. Format:
+
+```markdown
+## Quality Gates
+
+**Quality Level:** {standard|strict}
+
+| Task | Gate | Outcome | Detail |
+|------|------|---------|--------|
+| 1 | codebase_scan | passed | 2 reuse candidates evaluated |
+| 1 | context7_lookup | skipped | N/A — no external deps |
+| 1 | test_baseline | passed | 14 tests passing |
+| 1 | test_gate | passed | tests written and passing |
+| 1 | diff_review | passed | clean diff |
+| 2 | codebase_scan | passed | no matches in scoped grep |
+| 2 | test_gate | skipped | no new exported logic |
+| 2 | diff_review | warned | 1 finding auto-fixed |
+
+**Summary:** {N} gates ran, {M} passed, {W} warned, {S} skipped, {B} blocked
+```
+
+Populate from the `GATE_OUTCOMES` array collected during quality_sentinel execution. Each entry in the array is `"{task_num}|{step_name}|{outcome}|{detail}"`.
+
+**If any gate has outcome `blocked`:** Add a note after the summary line:
+```markdown
+**Blocked gates:** Task {N} {gate_name} — {detail}. Execution was halted per strict mode policy.
+```
+
+This surfaces the information required for strict mode blocking gate identification.
 </summary_creation>
 
 <self_check>
