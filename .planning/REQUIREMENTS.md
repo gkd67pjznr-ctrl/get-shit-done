@@ -16,7 +16,7 @@ Requirements for concurrent milestone execution. Each maps to roadmap phases.
 
 ### Workspace Isolation
 
-- [ ] **WKSP-01**: Each milestone creates its own folder at `.planning/milestones/<version>/` containing STATE.md, ROADMAP.md, REQUIREMENTS.md, phases/, and research/
+- [x] **WKSP-01**: Each milestone creates its own folder at `.planning/milestones/<version>/` containing STATE.md, ROADMAP.md, REQUIREMENTS.md, phases/, and research/
 - [ ] **WKSP-02**: Global `.planning/` root retains only project-wide files: PROJECT.md, config.json, MILESTONES.md
 - [ ] **WKSP-03**: `new-milestone` workflow creates milestone workspace with all required scaffold files
 - [ ] **WKSP-04**: `complete-milestone` marks milestone workspace as complete and updates MILESTONES.md
@@ -42,7 +42,7 @@ Requirements for concurrent milestone execution. Each maps to roadmap phases.
 
 ### Conflict Detection
 
-- [ ] **CNFL-01**: Each milestone workspace contains conflict.json declaring files_touched (source files the milestone intends to modify)
+- [x] **CNFL-01**: Each milestone workspace contains conflict.json declaring files_touched (source files the milestone intends to modify)
 - [ ] **CNFL-02**: `manifest-check` command reads all active milestone conflict.json files and reports overlapping file paths
 - [ ] **CNFL-03**: Overlap detection runs automatically during `/gsd:new-milestone` workflow
 - [ ] **CNFL-04**: Conflicts are advisory (warnings only) — do not block execution
@@ -115,7 +115,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PATH-02 | Phase 8 | Complete |
 | PATH-03 | Phase 8 | Complete |
 | PATH-04 | Phase 8 | Complete |
-| WKSP-01 | Phase 9 | Pending |
+| WKSP-01 | Phase 9 | Complete |
 | WKSP-02 | Phase 9 | Pending |
 | WKSP-03 | Phase 9 | Pending |
 | WKSP-04 | Phase 9 | Pending |
@@ -129,7 +129,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DASH-02 | Phase 11 | Pending |
 | DASH-03 | Phase 11 | Pending |
 | DASH-04 | Phase 11 | Pending |
-| CNFL-01 | Phase 9 | Pending |
+| CNFL-01 | Phase 9 | Complete |
 | CNFL-02 | Phase 11 | Pending |
 | CNFL-03 | Phase 11 | Pending |
 | CNFL-04 | Phase 11 | Pending |
