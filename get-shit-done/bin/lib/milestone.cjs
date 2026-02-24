@@ -209,7 +209,100 @@ function cmdMilestoneComplete(cwd, version, options, raw) {
   output(result, raw);
 }
 
+function cmdMilestoneNewWorkspace(cwd, version, options, raw) {
+  if (!version) {
+    error('version required for milestone new-workspace (e.g., v2.0)');
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+  const workspaceDir = path.join(cwd, '.planning', 'milestones', version);
+  const phasesDir = path.join(workspaceDir, 'phases');
+  const researchDir = path.join(workspaceDir, 'research');
+
+  // Create directory tree
+  fs.mkdirSync(workspaceDir, { recursive: true });
+  fs.mkdirSync(phasesDir, { recursive: true });
+  fs.mkdirSync(researchDir, { recursive: true });
+
+  const files = [];
+  const dirs = ['phases', 'research'];
+
+  // Create scaffold files only if not already present (idempotency)
+  const statePath = path.join(workspaceDir, 'STATE.md');
+  if (!fs.existsSync(statePath)) {
+    fs.writeFileSync(
+      statePath,
+      `# Project State — Milestone ${version}\n\n**Created:** ${today}\n**Status:** Initializing\n`,
+      'utf-8'
+    );
+    files.push('STATE.md');
+  }
+
+  const roadmapPath = path.join(workspaceDir, 'ROADMAP.md');
+  if (!fs.existsSync(roadmapPath)) {
+    fs.writeFileSync(
+      roadmapPath,
+      `# Roadmap — Milestone ${version}\n\n*Created: ${today}*\n`,
+      'utf-8'
+    );
+    files.push('ROADMAP.md');
+  }
+
+  const reqPath = path.join(workspaceDir, 'REQUIREMENTS.md');
+  if (!fs.existsSync(reqPath)) {
+    fs.writeFileSync(
+      reqPath,
+      `# Requirements — Milestone ${version}\n\n*Created: ${today}*\n`,
+      'utf-8'
+    );
+    files.push('REQUIREMENTS.md');
+  }
+
+  const conflictPath = path.join(workspaceDir, 'conflict.json');
+  if (!fs.existsSync(conflictPath)) {
+    fs.writeFileSync(
+      conflictPath,
+      JSON.stringify({ version, created_at: today, status: 'active', files_touched: [] }, null, 2),
+      'utf-8'
+    );
+    files.push('conflict.json');
+  }
+
+  const result = {
+    version,
+    workspace_dir: workspaceDir,
+    created: files.length > 0,
+    files,
+    dirs,
+  };
+
+  output(result, raw);
+}
+
+function cmdMilestoneUpdateManifest(cwd, version, files, raw) {
+  if (!version) {
+    error('version required for milestone update-manifest (e.g., v2.0)');
+  }
+
+  const conflictPath = path.join(cwd, '.planning', 'milestones', version, 'conflict.json');
+  if (!fs.existsSync(conflictPath)) {
+    error(`conflict.json not found for milestone ${version} — run milestone new-workspace first`);
+  }
+
+  const conflict = JSON.parse(fs.readFileSync(conflictPath, 'utf-8'));
+  const existingFiles = conflict.files_touched || [];
+  const merged = [...new Set([...existingFiles, ...files])];
+  const added = merged.length - existingFiles.length;
+
+  conflict.files_touched = merged;
+  fs.writeFileSync(conflictPath, JSON.stringify(conflict, null, 2), 'utf-8');
+
+  output({ version, files_touched: merged, added }, raw);
+}
+
 module.exports = {
   cmdRequirementsMarkComplete,
   cmdMilestoneComplete,
+  cmdMilestoneNewWorkspace,
+  cmdMilestoneUpdateManifest,
 };

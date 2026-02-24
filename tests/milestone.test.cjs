@@ -6,7 +6,28 @@ const { test, describe, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 const { runGsdTools, createTempProject, cleanup } = require('./helpers.cjs');
+
+const MILESTONE_LIB = path.join(__dirname, '..', 'get-shit-done', 'bin', 'lib', 'milestone.cjs');
+
+// Run cmdMilestoneNewWorkspace in a child process (output() calls process.exit)
+function runNewWorkspace(cwd, version) {
+  const script = `
+    const m = require(${JSON.stringify(MILESTONE_LIB)});
+    m.cmdMilestoneNewWorkspace(${JSON.stringify(cwd)}, ${JSON.stringify(version)}, {}, true);
+  `;
+  return spawnSync(process.execPath, ['-e', script], { encoding: 'utf-8' });
+}
+
+// Run cmdMilestoneUpdateManifest in a child process
+function runUpdateManifest(cwd, version, files) {
+  const script = `
+    const m = require(${JSON.stringify(MILESTONE_LIB)});
+    m.cmdMilestoneUpdateManifest(${JSON.stringify(cwd)}, ${JSON.stringify(version)}, ${JSON.stringify(files)}, true);
+  `;
+  return spawnSync(process.execPath, ['-e', script], { encoding: 'utf-8' });
+}
 
 describe('milestone complete command', () => {
   let tmpDir;
@@ -108,8 +129,8 @@ describe('milestone new-workspace (cmdMilestoneNewWorkspace)', () => {
   });
 
   test('creates workspace directory tree with scaffold files', () => {
-    const milestone = require('../get-shit-done/bin/lib/milestone.cjs');
-    milestone.cmdMilestoneNewWorkspace(tmpDir, 'v2.0', {}, true);
+    const result = runNewWorkspace(tmpDir, 'v2.0');
+    assert.strictEqual(result.status, 0, `Should exit 0, got: ${result.stderr}`);
 
     const workspaceDir = path.join(tmpDir, '.planning', 'milestones', 'v2.0');
     assert.ok(fs.existsSync(workspaceDir), 'workspace dir should exist');
@@ -122,8 +143,8 @@ describe('milestone new-workspace (cmdMilestoneNewWorkspace)', () => {
   });
 
   test('scaffold files contain version and status', () => {
-    const milestone = require('../get-shit-done/bin/lib/milestone.cjs');
-    milestone.cmdMilestoneNewWorkspace(tmpDir, 'v2.0', {}, true);
+    const result = runNewWorkspace(tmpDir, 'v2.0');
+    assert.strictEqual(result.status, 0, `Should exit 0, got: ${result.stderr}`);
 
     const workspaceDir = path.join(tmpDir, '.planning', 'milestones', 'v2.0');
     const stateContent = fs.readFileSync(path.join(workspaceDir, 'STATE.md'), 'utf-8');
@@ -132,8 +153,8 @@ describe('milestone new-workspace (cmdMilestoneNewWorkspace)', () => {
   });
 
   test('conflict.json has correct schema', () => {
-    const milestone = require('../get-shit-done/bin/lib/milestone.cjs');
-    milestone.cmdMilestoneNewWorkspace(tmpDir, 'v2.0', {}, true);
+    const result = runNewWorkspace(tmpDir, 'v2.0');
+    assert.strictEqual(result.status, 0, `Should exit 0, got: ${result.stderr}`);
 
     const workspaceDir = path.join(tmpDir, '.planning', 'milestones', 'v2.0');
     const conflict = JSON.parse(fs.readFileSync(path.join(workspaceDir, 'conflict.json'), 'utf-8'));
@@ -145,8 +166,7 @@ describe('milestone new-workspace (cmdMilestoneNewWorkspace)', () => {
   });
 
   test('is idempotent — second run does not overwrite existing files', () => {
-    const milestone = require('../get-shit-done/bin/lib/milestone.cjs');
-    milestone.cmdMilestoneNewWorkspace(tmpDir, 'v2.0', {}, true);
+    runNewWorkspace(tmpDir, 'v2.0');
 
     // Modify STATE.md after first run
     const workspaceDir = path.join(tmpDir, '.planning', 'milestones', 'v2.0');
@@ -154,19 +174,15 @@ describe('milestone new-workspace (cmdMilestoneNewWorkspace)', () => {
     fs.writeFileSync(statePath, '# Custom State Content', 'utf-8');
 
     // Second run should not overwrite
-    milestone.cmdMilestoneNewWorkspace(tmpDir, 'v2.0', {}, true);
+    runNewWorkspace(tmpDir, 'v2.0');
     const stateContent = fs.readFileSync(statePath, 'utf-8');
     assert.strictEqual(stateContent, '# Custom State Content', 'second run should not overwrite STATE.md');
   });
 
   test('errors when version is not provided', () => {
-    const { runGsdToolsFull } = require('./helpers.cjs');
-    // We call directly and expect error() to throw (process.exit)
-    const milestone = require('../get-shit-done/bin/lib/milestone.cjs');
-    assert.throws(
-      () => milestone.cmdMilestoneNewWorkspace(tmpDir, '', {}, true),
-      'should throw when version is missing'
-    );
+    const result = runNewWorkspace(tmpDir, '');
+    assert.strictEqual(result.status, 1, 'should exit with code 1 when version is missing');
+    assert.ok(result.stderr.includes('version required'), 'error message should mention version');
   });
 });
 
@@ -179,9 +195,8 @@ describe('milestone update-manifest (cmdMilestoneUpdateManifest)', () => {
 
   beforeEach(() => {
     tmpDir = createTempProject();
-    // Set up a workspace first
-    const milestone = require('../get-shit-done/bin/lib/milestone.cjs');
-    milestone.cmdMilestoneNewWorkspace(tmpDir, 'v2.0', {}, true);
+    // Set up a workspace first (in a child process to avoid process.exit)
+    runNewWorkspace(tmpDir, 'v2.0');
   });
 
   afterEach(() => {
@@ -189,8 +204,8 @@ describe('milestone update-manifest (cmdMilestoneUpdateManifest)', () => {
   });
 
   test('merges files into files_touched', () => {
-    const milestone = require('../get-shit-done/bin/lib/milestone.cjs');
-    milestone.cmdMilestoneUpdateManifest(tmpDir, 'v2.0', ['a.js', 'b.js'], true);
+    const result = runUpdateManifest(tmpDir, 'v2.0', ['a.js', 'b.js']);
+    assert.strictEqual(result.status, 0, `Should exit 0, got: ${result.stderr}`);
 
     const conflictPath = path.join(tmpDir, '.planning', 'milestones', 'v2.0', 'conflict.json');
     const conflict = JSON.parse(fs.readFileSync(conflictPath, 'utf-8'));
@@ -198,9 +213,8 @@ describe('milestone update-manifest (cmdMilestoneUpdateManifest)', () => {
   });
 
   test('deduplicates files — same file added twice appears once', () => {
-    const milestone = require('../get-shit-done/bin/lib/milestone.cjs');
-    milestone.cmdMilestoneUpdateManifest(tmpDir, 'v2.0', ['a.js'], true);
-    milestone.cmdMilestoneUpdateManifest(tmpDir, 'v2.0', ['a.js'], true);
+    runUpdateManifest(tmpDir, 'v2.0', ['a.js']);
+    runUpdateManifest(tmpDir, 'v2.0', ['a.js']);
 
     const conflictPath = path.join(tmpDir, '.planning', 'milestones', 'v2.0', 'conflict.json');
     const conflict = JSON.parse(fs.readFileSync(conflictPath, 'utf-8'));
@@ -208,9 +222,8 @@ describe('milestone update-manifest (cmdMilestoneUpdateManifest)', () => {
   });
 
   test('accumulates files across multiple calls', () => {
-    const milestone = require('../get-shit-done/bin/lib/milestone.cjs');
-    milestone.cmdMilestoneUpdateManifest(tmpDir, 'v2.0', ['a.js', 'b.js'], true);
-    milestone.cmdMilestoneUpdateManifest(tmpDir, 'v2.0', ['c.js'], true);
+    runUpdateManifest(tmpDir, 'v2.0', ['a.js', 'b.js']);
+    runUpdateManifest(tmpDir, 'v2.0', ['c.js']);
 
     const conflictPath = path.join(tmpDir, '.planning', 'milestones', 'v2.0', 'conflict.json');
     const conflict = JSON.parse(fs.readFileSync(conflictPath, 'utf-8'));
@@ -218,19 +231,15 @@ describe('milestone update-manifest (cmdMilestoneUpdateManifest)', () => {
   });
 
   test('errors when version is not provided', () => {
-    const milestone = require('../get-shit-done/bin/lib/milestone.cjs');
-    assert.throws(
-      () => milestone.cmdMilestoneUpdateManifest(tmpDir, '', ['a.js'], true),
-      'should throw when version is missing'
-    );
+    const result = runUpdateManifest(tmpDir, '', ['a.js']);
+    assert.strictEqual(result.status, 1, 'should exit with code 1 when version is missing');
+    assert.ok(result.stderr.includes('version required'), 'error message should mention version');
   });
 
   test('errors when conflict.json does not exist', () => {
-    const milestone = require('../get-shit-done/bin/lib/milestone.cjs');
-    assert.throws(
-      () => milestone.cmdMilestoneUpdateManifest(tmpDir, 'v99.0', ['a.js'], true),
-      'should throw when conflict.json not found'
-    );
+    const result = runUpdateManifest(tmpDir, 'v99.0', ['a.js']);
+    assert.strictEqual(result.status, 1, 'should exit with code 1 when conflict.json not found');
+    assert.ok(result.stderr.includes('conflict.json not found'), 'error message should mention conflict.json');
   });
 });
 
