@@ -58,7 +58,7 @@ Plans:
 **Goal:** Live multi-milestone dashboard showing progress across all active milestones, plus advisory overlap detection that warns when milestones touch the same files.
 **Depends on:** Phase 9 (milestone workspaces with conflict.json), Phase 10 (compatibility layer for old-style graceful degrade)
 **Requirements:** [DASH-01, DASH-02, DASH-03, DASH-04, CNFL-02, CNFL-03, CNFL-04]
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 Plans:
 - [ ] 11-01-PLAN.md — TDD cmdMilestoneWriteStatus and cmdManifestCheck in milestone.cjs
 - [ ] 11-02-PLAN.md — cmdProgressRenderMulti, CLI routing, and new-milestone workflow update
@@ -88,6 +88,6 @@ Plans:
 | 8. Path Architecture Foundation | 2/2 | Complete   | 2026-02-24 | - |
 | 9. Milestone Workspace Initialization | 2/2 | Complete   | 2026-02-24 | - |
 | 10. Compatibility Layer | 1/1 | Complete    | 2026-02-24 | - |
-| 11. Dashboard and Conflict Detection | v2.0 | 0/2 | Planned | - |
+| 11. Dashboard and Conflict Detection | 1/3 | In Progress|  | - |
 | 12. Full Routing Update | v2.0 | 0/? | Not started | - |
 | 13. Test Coverage | v2.0 | 0/? | Not started | - |

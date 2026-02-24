@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 
 ## Current Position
 
-Phase: 10 — Compatibility Layer (complete)
+Phase: 11 — Dashboard Conflict Detection (in progress)
 Plan: 01 (complete)
-Status: Phase 10 complete — all plans done; layout_style in init phase commands, compat tests lock down COMPAT-01/02/03
-Last activity: 2026-02-24 — 10-01 complete: layout_style in cmdInitPlanPhase/cmdInitExecutePhase, createLegacyProject/createConcurrentProject helpers, 12 compat tests
+Status: Phase 11 plan 01 complete — cmdMilestoneWriteStatus and cmdManifestCheck implemented via TDD, DASH-01/DASH-03/CNFL-02/CNFL-04 satisfied
+Last activity: 2026-02-24 — 11-01 complete: STATUS.md writer, MILESTONES.md dashboard update, manifest overlap detector, 10 new tests
 
-**Progress:** [██████████] 100%
+**Progress:** [████████░░] 75%
 
 ## Performance Metrics
 
@@ -37,6 +37,7 @@ Last activity: 2026-02-24 — 10-01 complete: layout_style in cmdInitPlanPhase/c
 | 08-path-architecture-foundation | 2 (P01: 4min, P02: 2min) | 6 min | 3 min |
 | 09-milestone-workspace-initialization | 2 (P01: 4min, P02: 5min) | 9 min | 4.5 min |
 | 10-compatibility-layer | 1 | 8 min | 8 min |
+| Phase 11-dashboard-conflict-detection P01 | 2 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -63,6 +64,8 @@ Full v1.0 + v1.1 decision logs archived with milestones.
 - [Phase 09-P02]: conflict_marked_complete: false for old-style projects without workspace — no error, clean backward compat
 - [Phase 09-P02]: layout_style + milestones_dir + milestones_dir_exists added together in cmdInitNewMilestone — full workspace context in one init call
 - [Phase 10-compatibility-layer]: layout_style field placed after planning_root in result objects — grouped with other v2.0 compatibility fields
+- [Phase 11-dashboard-conflict-detection]: cmdMilestoneWriteStatus uses try/catch for MILESTONES.md update — STATUS.md write must succeed even if MILESTONES.md is absent
+- [Phase 11-dashboard-conflict-detection]: cmdManifestCheck always exits 0 (advisory only) — conflict detection warns on overlap, never blocks (CNFL-04)
 
 ### Pending Todos
 
@@ -75,5 +78,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: 10-01-PLAN.md complete — Phase 10 fully complete
-Resume file: .planning/phases/10-compatibility-layer/10-01-SUMMARY.md
+Stopped at: 11-01-PLAN.md complete — Phase 11 plan 01 complete
+Resume file: .planning/phases/11-dashboard-conflict-detection/11-01-SUMMARY.md

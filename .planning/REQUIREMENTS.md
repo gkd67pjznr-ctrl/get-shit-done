@@ -35,17 +35,17 @@ Requirements for concurrent milestone execution. Each maps to roadmap phases.
 
 ### Dashboard
 
-- [ ] **DASH-01**: Each milestone writes STATUS.md in its workspace folder at natural checkpoints (plan start, plan complete, phase complete)
+- [x] **DASH-01**: Each milestone writes STATUS.md in its workspace folder at natural checkpoints (plan start, plan complete, phase complete)
 - [ ] **DASH-02**: `/gsd:progress` reads all active milestone STATUS.md files and renders multi-milestone summary table
-- [ ] **DASH-03**: MILESTONES.md repurposed as live dashboard with structured per-milestone sections updated independently by concurrent sessions
+- [x] **DASH-03**: MILESTONES.md repurposed as live dashboard with structured per-milestone sections updated independently by concurrent sessions
 - [ ] **DASH-04**: Old-style projects show single-milestone progress (graceful degrade)
 
 ### Conflict Detection
 
 - [x] **CNFL-01**: Each milestone workspace contains conflict.json declaring files_touched (source files the milestone intends to modify)
-- [ ] **CNFL-02**: `manifest-check` command reads all active milestone conflict.json files and reports overlapping file paths
+- [x] **CNFL-02**: `manifest-check` command reads all active milestone conflict.json files and reports overlapping file paths
 - [ ] **CNFL-03**: Overlap detection runs automatically during `/gsd:new-milestone` workflow
-- [ ] **CNFL-04**: Conflicts are advisory (warnings only) — do not block execution
+- [x] **CNFL-04**: Conflicts are advisory (warnings only) — do not block execution
 
 ### Routing
 
@@ -125,14 +125,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PHASE-01 | Phase 12 | Pending |
 | PHASE-02 | Phase 12 | Pending |
 | PHASE-03 | Phase 12 | Pending |
-| DASH-01 | Phase 11 | Pending |
+| DASH-01 | Phase 11 | Complete |
 | DASH-02 | Phase 11 | Pending |
-| DASH-03 | Phase 11 | Pending |
+| DASH-03 | Phase 11 | Complete |
 | DASH-04 | Phase 11 | Pending |
 | CNFL-01 | Phase 9 | Complete |
-| CNFL-02 | Phase 11 | Pending |
+| CNFL-02 | Phase 11 | Complete |
 | CNFL-03 | Phase 11 | Pending |
-| CNFL-04 | Phase 11 | Pending |
+| CNFL-04 | Phase 11 | Complete |
 | ROUTE-01 | Phase 12 | Pending |
 | ROUTE-02 | Phase 12 | Pending |
 | ROUTE-03 | Phase 12 | Pending |
