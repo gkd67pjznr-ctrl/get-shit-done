@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 
 ## Current Position
 
-Phase: 11 — Dashboard Conflict Detection (in progress)
-Plan: 02 (complete)
-Status: Phase 11 plan 02 complete — cmdProgressRenderMulti with legacy fallback, CLI routing for write-status/manifest-check, new-milestone workflow step 7.5, DASH-02/DASH-04/CNFL-03 satisfied
-Last activity: 2026-02-24 — 11-02 complete: progress multi renderer, milestone subcommands wired, workflow conflict detection, 15 dashboard tests pass
+Phase: 11 — Dashboard Conflict Detection (complete)
+Plan: 03 (complete)
+Status: Phase 11 plan 03 complete — milestone write-status wired into execute-phase and plan-phase workflows at three DASH-01 checkpoints (plan-start, plan-complete, phase-complete); all calls guarded by layout_style check
+Last activity: 2026-02-24 — 11-03 complete: write-status checkpoint wiring, DASH-01 satisfied
 
-**Progress:** [█████████░] 88%
+**Progress:** [██████████] 100%
 
 ## Performance Metrics
 
@@ -68,6 +68,7 @@ Full v1.0 + v1.1 decision logs archived with milestones.
 - [Phase 11-dashboard-conflict-detection]: cmdMilestoneWriteStatus uses try/catch for MILESTONES.md update — STATUS.md write must succeed even if MILESTONES.md is absent
 - [Phase 11-dashboard-conflict-detection]: cmdManifestCheck always exits 0 (advisory only) — conflict detection warns on overlap, never blocks (CNFL-04)
 - [Phase 11-dashboard-conflict-detection]: table format test uses no --raw flag so output() emits JSON (with --raw and rawValue set, output() emits raw text not JSON)
+- [Phase 11-dashboard-conflict-detection P03]: write-status checkpoint calls placed at plan-start (plan-phase.md §9), plan-complete (execute-phase.md step 4a), and phase-complete (execute-phase.md update_roadmap) — all guarded by layout_style === "milestone-scoped"
 
 ### Pending Todos
 
@@ -80,5 +81,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: 11-02-PLAN.md complete — Phase 11 plan 02 complete
-Resume file: .planning/phases/11-dashboard-conflict-detection/11-02-SUMMARY.md
+Stopped at: 11-03-PLAN.md complete — Phase 11 plan 03 complete
+Resume file: .planning/phases/11-dashboard-conflict-detection/11-03-SUMMARY.md
