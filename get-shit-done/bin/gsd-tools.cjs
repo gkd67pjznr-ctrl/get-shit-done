@@ -466,7 +466,7 @@ async function main() {
         const forceFlag = args.includes('--force');
         phase.cmdPhaseRemove(cwd, args[2], { force: forceFlag }, raw);
       } else if (subcommand === 'complete') {
-        phase.cmdPhaseComplete(cwd, args[2], raw);
+        phase.cmdPhaseComplete(cwd, args[2], raw, milestoneScope);
       } else {
         error('Unknown phase subcommand. Available: next-decimal, add, insert, remove, complete');
       }
@@ -578,25 +578,25 @@ async function main() {
           init.cmdInitQuick(cwd, args.slice(2).join(' '), raw);
           break;
         case 'resume':
-          init.cmdInitResume(cwd, raw);
+          init.cmdInitResume(cwd, raw, milestoneScope);
           break;
         case 'verify-work':
-          init.cmdInitVerifyWork(cwd, args[2], raw);
+          init.cmdInitVerifyWork(cwd, args[2], raw, milestoneScope);
           break;
         case 'phase-op':
-          init.cmdInitPhaseOp(cwd, args[2], raw);
+          init.cmdInitPhaseOp(cwd, args[2], raw, milestoneScope);
           break;
         case 'todos':
           init.cmdInitTodos(cwd, args[2], raw);
           break;
         case 'milestone-op':
-          init.cmdInitMilestoneOp(cwd, raw);
+          init.cmdInitMilestoneOp(cwd, raw, milestoneScope);
           break;
         case 'map-codebase':
           init.cmdInitMapCodebase(cwd, raw);
           break;
         case 'progress':
-          init.cmdInitProgress(cwd, raw);
+          init.cmdInitProgress(cwd, raw, milestoneScope);
           break;
         default:
           error(`Unknown init workflow: ${workflow}\nAvailable: execute-phase, plan-phase, new-project, new-milestone, quick, resume, verify-work, phase-op, todos, milestone-op, map-codebase, progress`);

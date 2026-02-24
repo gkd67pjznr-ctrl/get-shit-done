@@ -319,25 +319,26 @@ function cmdInitQuick(cwd, description, raw) {
   output(result, raw);
 }
 
-function cmdInitResume(cwd, raw) {
+function cmdInitResume(cwd, raw, milestoneScope) {
   const config = loadConfig(cwd);
+  const root = planningRoot(cwd, milestoneScope);
 
   // Check for interrupted agent
   let interruptedAgentId = null;
   try {
-    interruptedAgentId = fs.readFileSync(path.join(cwd, '.planning', 'current-agent-id.txt'), 'utf-8').trim();
+    interruptedAgentId = fs.readFileSync(path.join(root, 'current-agent-id.txt'), 'utf-8').trim();
   } catch {}
 
   const result = {
     // File existence
-    state_exists: pathExistsInternal(cwd, '.planning/STATE.md'),
-    roadmap_exists: pathExistsInternal(cwd, '.planning/ROADMAP.md'),
+    state_exists: pathExistsInternal(cwd, path.relative(cwd, path.join(root, 'STATE.md'))),
+    roadmap_exists: pathExistsInternal(cwd, path.relative(cwd, path.join(root, 'ROADMAP.md'))),
     project_exists: pathExistsInternal(cwd, '.planning/PROJECT.md'),
     planning_exists: pathExistsInternal(cwd, '.planning'),
 
     // File paths
-    state_path: '.planning/STATE.md',
-    roadmap_path: '.planning/ROADMAP.md',
+    state_path: path.relative(cwd, path.join(root, 'STATE.md')),
+    roadmap_path: path.relative(cwd, path.join(root, 'ROADMAP.md')),
     project_path: '.planning/PROJECT.md',
 
     // Agent state
@@ -346,12 +347,19 @@ function cmdInitResume(cwd, raw) {
 
     // Config
     commit_docs: config.commit_docs,
+
+    // Milestone scope (v2.0 concurrent execution)
+    milestone_scope: milestoneScope || null,
+    planning_root: root,
+
+    // Layout detection (v2.0 compatibility)
+    layout_style: detectLayoutStyle(cwd),
   };
 
   output(result, raw);
 }
 
-function cmdInitVerifyWork(cwd, phase, raw) {
+function cmdInitVerifyWork(cwd, phase, raw, milestoneScope) {
   if (!phase) {
     error('phase required for init verify-work');
   }
@@ -375,13 +383,21 @@ function cmdInitVerifyWork(cwd, phase, raw) {
 
     // Existing artifacts
     has_verification: phaseInfo?.has_verification || false,
+
+    // Milestone scope (v2.0 concurrent execution)
+    milestone_scope: milestoneScope || null,
+    planning_root: planningRoot(cwd, milestoneScope),
+
+    // Layout detection (v2.0 compatibility)
+    layout_style: detectLayoutStyle(cwd),
   };
 
   output(result, raw);
 }
 
-function cmdInitPhaseOp(cwd, phase, raw) {
+function cmdInitPhaseOp(cwd, phase, raw, milestoneScope) {
   const config = loadConfig(cwd);
+  const root = planningRoot(cwd, milestoneScope);
   let phaseInfo = findPhaseInternal(cwd, phase);
 
   // Fallback to ROADMAP.md if no directory exists (e.g., Plans: TBD)
@@ -426,13 +442,20 @@ function cmdInitPhaseOp(cwd, phase, raw) {
     plan_count: phaseInfo?.plans?.length || 0,
 
     // File existence
-    roadmap_exists: pathExistsInternal(cwd, '.planning/ROADMAP.md'),
+    roadmap_exists: pathExistsInternal(cwd, path.relative(cwd, path.join(root, 'ROADMAP.md'))),
     planning_exists: pathExistsInternal(cwd, '.planning'),
 
     // File paths
-    state_path: '.planning/STATE.md',
-    roadmap_path: '.planning/ROADMAP.md',
-    requirements_path: '.planning/REQUIREMENTS.md',
+    state_path: path.relative(cwd, path.join(root, 'STATE.md')),
+    roadmap_path: path.relative(cwd, path.join(root, 'ROADMAP.md')),
+    requirements_path: path.relative(cwd, path.join(root, 'REQUIREMENTS.md')),
+
+    // Milestone scope (v2.0 concurrent execution)
+    milestone_scope: milestoneScope || null,
+    planning_root: root,
+
+    // Layout detection (v2.0 compatibility)
+    layout_style: detectLayoutStyle(cwd),
   };
 
   if (phaseInfo?.directory) {
@@ -520,14 +543,15 @@ function cmdInitTodos(cwd, area, raw) {
   output(result, raw);
 }
 
-function cmdInitMilestoneOp(cwd, raw) {
+function cmdInitMilestoneOp(cwd, raw, milestoneScope) {
   const config = loadConfig(cwd);
   const milestone = getMilestoneInfo(cwd);
+  const root = planningRoot(cwd, milestoneScope);
 
   // Count phases
   let phaseCount = 0;
   let completedPhases = 0;
-  const phasesDir = path.join(cwd, '.planning', 'phases');
+  const phasesDir = path.join(root, 'phases');
   try {
     const entries = fs.readdirSync(phasesDir, { withFileTypes: true });
     const dirs = entries.filter(e => e.isDirectory()).map(e => e.name);
@@ -572,10 +596,17 @@ function cmdInitMilestoneOp(cwd, raw) {
 
     // File existence
     project_exists: pathExistsInternal(cwd, '.planning/PROJECT.md'),
-    roadmap_exists: pathExistsInternal(cwd, '.planning/ROADMAP.md'),
-    state_exists: pathExistsInternal(cwd, '.planning/STATE.md'),
+    roadmap_exists: pathExistsInternal(cwd, path.relative(cwd, path.join(root, 'ROADMAP.md'))),
+    state_exists: pathExistsInternal(cwd, path.relative(cwd, path.join(root, 'STATE.md'))),
     archive_exists: pathExistsInternal(cwd, '.planning/archive'),
-    phases_dir_exists: pathExistsInternal(cwd, '.planning/phases'),
+    phases_dir_exists: pathExistsInternal(cwd, path.relative(cwd, phasesDir)),
+
+    // Milestone scope (v2.0 concurrent execution)
+    milestone_scope: milestoneScope || null,
+    planning_root: root,
+
+    // Layout detection (v2.0 compatibility)
+    layout_style: detectLayoutStyle(cwd),
   };
 
   output(result, raw);
@@ -615,12 +646,13 @@ function cmdInitMapCodebase(cwd, raw) {
   output(result, raw);
 }
 
-function cmdInitProgress(cwd, raw) {
+function cmdInitProgress(cwd, raw, milestoneScope) {
   const config = loadConfig(cwd);
   const milestone = getMilestoneInfo(cwd);
+  const root = planningRoot(cwd, milestoneScope);
 
   // Analyze phases
-  const phasesDir = path.join(cwd, '.planning', 'phases');
+  const phasesDir = path.join(root, 'phases');
   const phases = [];
   let currentPhase = null;
   let nextPhase = null;
@@ -670,7 +702,7 @@ function cmdInitProgress(cwd, raw) {
   // Check for paused work
   let pausedAt = null;
   try {
-    const state = fs.readFileSync(path.join(cwd, '.planning', 'STATE.md'), 'utf-8');
+    const state = fs.readFileSync(path.join(root, 'STATE.md'), 'utf-8');
     const pauseMatch = state.match(/\*\*Paused At:\*\*\s*(.+)/);
     if (pauseMatch) pausedAt = pauseMatch[1].trim();
   } catch {}
@@ -701,13 +733,21 @@ function cmdInitProgress(cwd, raw) {
 
     // File existence
     project_exists: pathExistsInternal(cwd, '.planning/PROJECT.md'),
-    roadmap_exists: pathExistsInternal(cwd, '.planning/ROADMAP.md'),
-    state_exists: pathExistsInternal(cwd, '.planning/STATE.md'),
+    roadmap_exists: pathExistsInternal(cwd, path.relative(cwd, path.join(root, 'ROADMAP.md'))),
+    state_exists: pathExistsInternal(cwd, path.relative(cwd, path.join(root, 'STATE.md'))),
+
     // File paths
-    state_path: '.planning/STATE.md',
-    roadmap_path: '.planning/ROADMAP.md',
+    state_path: path.relative(cwd, path.join(root, 'STATE.md')),
+    roadmap_path: path.relative(cwd, path.join(root, 'ROADMAP.md')),
     project_path: '.planning/PROJECT.md',
     config_path: '.planning/config.json',
+
+    // Milestone scope (v2.0 concurrent execution)
+    milestone_scope: milestoneScope || null,
+    planning_root: root,
+
+    // Layout detection (v2.0 compatibility)
+    layout_style: detectLayoutStyle(cwd),
   };
 
   output(result, raw);

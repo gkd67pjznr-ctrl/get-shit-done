@@ -4,7 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { escapeRegex, normalizePhaseName, comparePhaseNum, findPhaseInternal, getArchivedPhaseDirs, generateSlugInternal, output, error } = require('./core.cjs');
+const { escapeRegex, normalizePhaseName, comparePhaseNum, findPhaseInternal, getArchivedPhaseDirs, generateSlugInternal, planningRoot, detectLayoutStyle, output, error } = require('./core.cjs');
 const { extractFrontmatter } = require('./frontmatter.cjs');
 
 function cmdPhasesList(cwd, options, raw) {
@@ -690,14 +690,15 @@ function cmdPhaseRemove(cwd, targetPhase, options, raw) {
   output(result, raw);
 }
 
-function cmdPhaseComplete(cwd, phaseNum, raw) {
+function cmdPhaseComplete(cwd, phaseNum, raw, milestoneScope) {
   if (!phaseNum) {
     error('phase number required for phase complete');
   }
 
-  const roadmapPath = path.join(cwd, '.planning', 'ROADMAP.md');
-  const statePath = path.join(cwd, '.planning', 'STATE.md');
-  const phasesDir = path.join(cwd, '.planning', 'phases');
+  const root = planningRoot(cwd, milestoneScope);
+  const roadmapPath = path.join(root, 'ROADMAP.md');
+  const statePath = path.join(root, 'STATE.md');
+  const phasesDir = path.join(root, 'phases');
   const normalized = normalizePhaseName(phaseNum);
   const today = new Date().toISOString().split('T')[0];
 
@@ -745,7 +746,7 @@ function cmdPhaseComplete(cwd, phaseNum, raw) {
     fs.writeFileSync(roadmapPath, roadmapContent, 'utf-8');
 
     // Update REQUIREMENTS.md traceability for this phase's requirements
-    const reqPath = path.join(cwd, '.planning', 'REQUIREMENTS.md');
+    const reqPath = path.join(root, 'REQUIREMENTS.md');
     if (fs.existsSync(reqPath)) {
       // Extract Requirements line from roadmap for this phase
       const reqMatch = roadmapContent.match(
