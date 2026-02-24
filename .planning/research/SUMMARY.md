@@ -1,271 +1,209 @@
 # Project Research Summary
 
-**Project:** GSD Enhanced Fork — Quality Enforcement Layer
-**Domain:** AI coding agent framework quality enforcement (Claude Code / GSD)
-**Researched:** 2026-02-23
-**Confidence:** HIGH
+**Project:** GSD Enhanced Fork — v2.0 Concurrent Milestones
+**Domain:** AI coding agent framework extension — concurrent milestone execution and workspace isolation
+**Researched:** 2026-02-24
+**Confidence:** HIGH (official Claude Code docs verified directly; first-party codebase analysis with empirical path counts)
 
 ## Executive Summary
 
-This project is a fork of the GSD (Get Shit Done) AI coding agent framework that adds quality enforcement layers to close the gap between "Claude writes code" and "Claude writes code like a senior engineer." The existing GSD pipeline (project → milestone → phase → plan → execute → verify) already has the scaffolding — TDD flags, a verifier agent, codebase mapper — but all quality checks are either post-execution (verifier finds stubs after context is burned) or optional (TDD flag is plan-controlled). The recommended approach is to layer quality gates directly into the executor agent as an inline sentinel, extend the verifier with additive quality dimensions, and embed quality directives into the planner's task actions. All changes must be additive — no existing behavior is replaced.
+GSD v2.0 adds concurrent milestone execution to a framework that was designed from the ground up for single-session sequential operation. The core challenge is not feature invention — it is safe structural migration. The existing system has 270+ hardcoded path references across four file types (`.cjs` libs, agent `.md` specs, workflow `.md` files, test helpers), all of which assume exactly one active `.planning/` root. The recommended approach is to introduce a `planningRoot()` path resolver in `core.cjs` as the first and foundational deliverable, implement milestone-scoped workspaces at `.planning/milestones/<version>/`, and add a compatibility layer that detects old-style vs. new-style projects via an explicit config sentinel — not by directory presence, which would break old-style projects that already have a `.planning/milestones/` archive directory from prior milestone completions.
 
-The recommended stack relies entirely on tools already available or trivially installed: Claude Code hooks (PreToolUse/PostToolUse/Stop) for deterministic enforcement, Context7 MCP for live library documentation lookup, jscpd for duplication detection, and agentlint for pre-built quality rules. No new runtime dependencies are added to the GSD framework itself. The critical design choice is to implement quality gates as an inline sentinel within the executor rather than as a separate quality agent — a separate agent would burn 50–100K tokens on context handoff per task, while the inline sentinel adds only 6–16K tokens using already-loaded context.
+The recommended stack for v2.0 adds zero new runtime dependencies. Workspace isolation uses directory scoping (milestone-scoped folders) rather than file locks, which would create stale-lock failure modes when Claude sessions are killed. The lock-free dashboard uses per-milestone `STATUS.md` files aggregated at read time, eliminating concurrent write races entirely. Conflict detection is advisory and declarative: each milestone declares its intended file ownership in `conflict.json` at creation time, and the system warns on overlap — but does not block, since human coordination is better than automated gating for milestone-length workstreams. The quality enforcement system from v1.0/v1.1 carries forward unchanged and is orthogonal to the concurrency changes.
 
-The top risks are context budget exhaustion (quality gates consuming 40–60% of executor context before any code is written), a confirmed `is_last_phase` bug in `phase.cjs` that routes users to "milestone complete" prematurely on multi-phase projects, and config wiring that must be built upfront — not deferred. All three are avoidable with disciplined design: targeted scans with output caps, fixing the bug before layering quality enforcement on top, and wiring `quality_level` config checks into every gate at the time each gate is written.
+The primary risk is incomplete path migration. Research identified exactly 94 path references in workflow files, 83 in agent specs, 67 in lib modules, and 30 in test files — all string literals with no compile-time safety. Any partial migration leaves the system in a state where unit tests pass (new code paths) but live workflow execution silently reads from wrong locations. The mitigation is clear: build the resolver function first, refactor path construction to use it universally, and run the 102+ existing tests after every batch of changes as a regression gate before adding new concurrent tests.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The GSD quality enforcement layer requires no new runtime dependencies. Claude Code hooks (PreToolUse/PostToolUse/Stop) are the only mechanism that enforces behavior regardless of Claude's in-context reasoning — CLAUDE.md rules are advisory and degrade as context fills, but hooks are deterministic. Context7 MCP (`@upstash/context7-mcp`) is added project-scoped to provide version-specific library documentation during executor runs, closing the "hallucinated API" failure mode. jscpd handles duplication detection at file scope in PostToolUse hooks and at project scope in the verifier. agentlint's Quality Pack provides 42 pre-built rules as a baseline, avoiding the need to write all hooks from scratch.
+The v2.0 stack adds no new runtime dependencies to GSD's zero-dependency baseline. The core isolation mechanism is directory-based scoping at `.planning/milestones/<version>/` — a filesystem primitive, not a locking protocol. Atomic dashboard writes use an inline `atomicWrite()` implementation (temp file + `fs.renameSync` within same filesystem) in `gsd-tools.cjs`, which is 15 lines and avoids the Node 20+ requirement that `write-file-atomic` 7.0.0 would impose on GSD's current `>=16.7.0` engine floor. Claude Code worktrees (`--worktree` flag) provide OS-level file isolation for concurrent source code edits, and are stable (not experimental). Claude Code Agent Teams are explicitly NOT recommended as the coordination mechanism for concurrent milestones — they are experimental, require simultaneous active sessions, and lack session resumption, making them inappropriate for milestone-length workstreams that may span days.
 
 **Core technologies:**
-- **Claude Code Hooks** (`settings.json` PreToolUse/PostToolUse/Stop): Deterministic quality gate enforcement — the only layer that survives context compression and cannot be overridden by in-context reasoning. Exit code 2 blocks; exit code 0 allows.
-- **Context7 MCP** (`@upstash/context7-mcp`): Live library doc lookup via two-step resolve-then-query pattern. Added to executor tool list (not just planner). Prevents hand-rolled implementations using stale or hallucinated APIs.
-- **jscpd** (`^4.x`): Token-level duplication detection. File-scoped in PostToolUse hooks; full project scan in verifier Step 7b only.
-- **Node.js built-in test runner** (`node --test`): Framework self-tests. No new dependency needed — already in `package.json`.
-- **agentlint** (pip): 42 pre-built quality rules covering conventional commits, error-handling removal detection, unused imports. Start here; write custom hooks only for GSD-specific needs.
-- **jq** (system): Parses hook JSON payloads — required for any non-trivial hook script.
+- **`planningRoot(cwd, milestoneScope)` helper** (new, zero-dependency): Central path resolver — returns `.planning/` for old-style or `.planning/milestones/<v>/` for new-style; eliminates 270+ string literals; the single most important architectural addition
+- **`detectLayoutStyle(cwd)` helper** (new, zero-dependency): Detects `legacy`, `milestone-scoped`, or `uninitialized` using an explicit `concurrent: true` sentinel in `config.json`, not directory presence (which would false-positive on existing milestone archives)
+- **`fs.renameSync()` atomic write** (Node built-in, zero dependency): Safe dashboard writes via temp-file-rename pattern; same-filesystem atomicity on macOS/Linux without raising Node.js floor
+- **Claude Code Hooks** (`settings.json` PreToolUse/PostToolUse/Stop): Deterministic quality gate enforcement from v1.1; unchanged and orthogonal to v2.0 concurrency work
+- **Context7 MCP** (`@upstash/context7-mcp`): Version-accurate library docs injected into executor agent context at code generation time; unchanged from v1.1
+- **Claude Code `--worktree` flag**: Stable (not experimental) OS-level source file isolation for concurrent sessions; each milestone gets its own worktree branch
 
-**Critical version note:** Claude Code hooks require current Claude Code version (released early 2026). Verify with `claude --version` before implementation.
+**Critical version note:** `write-file-atomic` 7.0.0 requires `Node.js ^20.17.0 || >=22.9.0` — more restrictive than GSD's `>=16.7.0`. Implementing `atomicWrite()` inline in `gsd-tools.cjs` (15 lines) avoids this constraint entirely.
 
 ### Expected Features
 
-The MVP for this milestone delivers six features that close the core quality gap without requiring new infrastructure beyond editing existing agent files. Two features (strict-mode pre-commit blocking via hooks, test baseline delta in SUMMARY) are deferred to v1.x pending real-world feedback. Automated pattern learning and quality trend reporting are v2+.
+The feature landscape divides cleanly into structural foundation (P1 — must-have for v2.0 to be a valid concurrent execution system) and safety enhancements (P2 — meaningfully improve UX without being correctness requirements).
 
-**Must have (table stakes) — v1:**
-- **Pre-implementation codebase scan** — targeted grep for existing patterns before writing; prevents the #1 AI slop pattern of reinventing utilities that already exist (54% context-miss rate without automated context per Qodo 2025)
-- **Context7 library lookup in executor** — inline doc verification before implementing any external library; currently in planner only, missing from executor where code is actually written
-- **Mandatory test step for new logic** — default-on for `.cjs/.js/.ts` files with exported functions; GSD already has TDD infrastructure but `tdd="true"` is opt-in per plan
-- **Configurable quality levels** (`strict/standard/fast`) — infrastructure that gates all other features; must be implemented first; fast mode preserves existing GSD behavior exactly
-- **Planner quality directives** — `<quality_scan>` subsection in task `<action>` blocks pre-loading executor with "what to reuse, what docs to consult, what tests to write"
-- **Enhanced verifier** (duplication + orphan detection) — extends existing verifier Step 7 anti-pattern scan with duplication detection and dead export checking; uses existing grep infrastructure
+**Must have (table stakes — P1):**
+- **Milestone-scoped workspace isolation** — root dependency for everything else; without isolated workspace directories, two Claude sessions editing `STATE.md` simultaneously corrupt each other's state
+- **Compatibility layer (old-style auto-detection)** — zero-breakage upgrade is table stakes; existing v1.x projects must work unchanged; uses explicit sentinel, not directory presence
+- **Updated GSD routing** — all workflows, commands, and agents must resolve milestone-scoped paths; most load-bearing change in the codebase; 270+ occurrences
+- **Milestone-scoped phase numbering** — phases reset to `01` per milestone; referenced as `v2.0/phase-01` in cross-milestone contexts; old global sequential scheme cannot work for concurrent milestones
+- **Test coverage for new routing and isolation logic** — 102+ existing tests must remain green throughout; new tests cover both old-style and new-style paths in both layout modes
 
-**Should have (differentiators) — v1.x:**
-- **Strict mode pre-commit blocking** via Claude Code hooks — requires PostToolUse hook infrastructure; add after v1 quality gates are validated
-- **Test baseline delta in SUMMARY** — extends mandatory test step with before/after test counts; add when mandatory test step is stable
+**Should have (competitive — P2):**
+- **Lock-free dashboard** (per-milestone `STATUS.md` aggregated by `/gsd:progress`) — status visibility across concurrent milestones; each milestone owns its own file, eliminating write races
+- **Conflict manifest** (`conflict.json` per milestone with overlap detection at init time) — surfaces file ownership conflicts before any code is written; advisory only, not blocking
 
-**Defer (v2+):**
-- Automated pattern learning from codebase history
-- Quality trend reporting across milestones
+**Defer (v2.x+):**
+- Agent Teams integration for parallel phases (intra-milestone parallelism) — research verdict: correct use case for Agent Teams, wrong timing; design for asynchronous multi-session work first
+- Conflict manifest enforcement (runtime blocking via PreToolUse hooks) — pre-flight check is right for v2.0; blocking enforcement can be opt-in post-validation
+- Dashboard live refresh (`/gsd:progress --watch`) — polling STATUS.md; nice to have, not essential
+- Cross-milestone dependency tracking — requires dependency graph data structure; build on user demand
 
-**Anti-features (deliberately excluded):**
-- Separate quality agent (burns 50–100K tokens on context handoff vs. inline sentinel at 6–16K)
-- Exhaustive pre-scan (whole codebase violates 50% context budget before first line of code)
-- Continuous test running on every file edit (kills execution flow; run at task boundaries instead)
-- Automated quality score / vanity metrics (leads to gaming; use binary pass/fail gates with actionable messages)
-- Silent quality improvements (all quality-driven changes must be tracked as deviations in SUMMARY)
+**Anti-features (explicitly out of scope):**
+- File locking for concurrent writes — stale locks from killed sessions are worse than no locks; workspace isolation eliminates the need
+- Automatic conflict resolution — semantic correctness of concurrent code changes cannot be automated; surface conflicts clearly, leave resolution to humans
+- Centralized "active milestone" state — creates split-brain when sessions are interrupted; lock-free model with explicit `--milestone` flag is correct
+- Nested concurrent milestones — Agent Teams docs confirm "no nested teams"; same constraint applies; exponential coordination complexity
+- Rewriting the milestone/phase lifecycle — concurrency is a property of execution context, not lifecycle; PROJECT.md explicitly excludes lifecycle changes
 
 ### Architecture Approach
 
-The quality enforcement layer inserts into the existing GSD pipeline at three natural points without replacing any existing behavior. The executor agent receives the largest changes (inline quality sentinel with pre/during/post-task protocols, Context7 tools added to frontmatter). The verifier receives additive quality dimensions as a new Step 7b after existing Step 7. The planner receives a quality directive format for task `<action>` blocks. Config gates all quality features via `quality.level` in `config.json`.
+The architecture inserts a milestone-scoped layer between the project root and the existing phase/state structure without changing the phase/plan/execute lifecycle itself. `MILESTONES.md` is repurposed from an append-only log to a live dashboard with structured per-milestone sections that concurrent sessions update independently. Each milestone workspace (`.planning/milestones/<version>/`) contains its own `STATE.md`, `ROADMAP.md`, `REQUIREMENTS.md`, `conflict.json`, `research/`, and `phases/`. Global `.planning/` retains only truly project-wide files: `PROJECT.md`, `config.json`, `MILESTONES.md`. The compatibility bridge preserves old-style projects (root-level `STATE.md`, `ROADMAP.md`, `phases/`) as a permanent valid mode, not a transitional state that eventually goes away.
 
-**Major components and their changes:**
-1. **`config.json` template** — add `quality` key with `level` (strict/standard/fast), `enforce_tests`, `enforce_context7`, `enforce_codebase_scan`, `enforce_lint_check`; everything else reads this; must be implemented first
-2. **`gsd-executor.md`** — primary target: add `mcp__context7__*` to tools frontmatter, add `<quality_sentinel>` section (pre-task scan + Context7 lookup + test baseline), add during-task gates (tsc/lint), add post-task review (diff read + duplication check + test gate)
-3. **`gsd-verifier.md`** — secondary target: add Step 7b (duplication detection, dead code/orphan exports, test file existence check, pattern consistency) after existing Step 7 anti-pattern scan
-4. **`gsd-planner.md`** — tertiary target: quality directive format in task `<action>` blocks specifying code to reuse, docs to consult, tests to write
-5. **`gsd-plan-checker.md`** — Dimension 9: verify task actions include quality directives; non-blocking in standard mode, blocking in strict mode
-6. **Claude Code hooks** (`~/.claude/settings.json` or `.claude/settings.json`) — PreToolUse, PostToolUse, Stop hooks for deterministic enforcement outside of agent reasoning
-7. **`.mcp.json`** — Context7 MCP server configuration (project-scoped, committed to git)
+**Major components:**
+1. **`core.cjs: planningRoot()`** — central path resolver; all other modules call this; accepts optional `milestoneScope` parameter; returns `.planning/` or `.planning/milestones/<v>/` accordingly
+2. **`core.cjs: detectLayoutStyle()`** — checks `config.json` for `concurrent: true` sentinel; returns `legacy`, `milestone-scoped`, or `uninitialized`; single source of truth, called only from `cmdInitNewMilestone` and `cmdInitPlanPhase`
+3. **`gsd-tools.cjs` CLI router** — parses `--milestone <version>` global flag; threads scope into all phase/state/roadmap commands; project-wide commands (`config-set`, `commit`, `resolve-model`) do not require the flag
+4. **`commands.cjs: cmdConflictCheck()`** — new command; reads two `conflict.json` files, returns overlapping file paths; called automatically during `new-milestone` workflow
+5. **`commands.cjs: cmdMilestoneDashboard()`** — new command; pattern-replaces the `**Status:**` line for a specific milestone section in `MILESTONES.md`; uses atomic write
+6. **Workflow files** (`new-milestone.md`, `plan-phase.md`, `execute-phase.md`) — modified to pass `--milestone` to all tool calls; receive milestone-scoped paths from init commands; no hardcoded `.planning/` path strings in workflow bodies
+7. **Agent specs** (`gsd-executor.md`, etc.) — unchanged; agents receive paths through `<files_to_read>` from orchestrators; no `.planning/` references in agent bodies
 
-**Key patterns:**
-- **Inline Sentinel** (not separate agent): Quality gates run inside executor context at ~6–16K tokens overhead per task vs. ~50–100K for a separate agent context handoff
-- **Cascading Quality Directives**: Planner embeds scan results in task actions so executor doesn't re-discover patterns from scratch
-- **Additive Verification Dimensions**: New verifier checks are Step 7b additions, not a separate verification pass
-- **Config-Gated Quality Levels**: Every gate reads `quality_level` at its entry point; fast mode = zero behavior change from vanilla GSD
-
-**Build order is strictly enforced by dependencies:**
-Phase 1 (config) → Phase 2 (executor sentinel) → Phase 3 (verifier quality dims) → Phase 4 (planner directives) → Phase 5 (plan-checker Dimension 9)
+**Build dependency order (architecture-mandated):**
+Phase 1 (path resolver) → Phase 2 (workspace initialization) → Phase 3 (compatibility layer) → Phase 4 (dashboard + conflict detection) → Phase 5 (full routing update) → Phase 6 (test coverage)
 
 ### Critical Pitfalls
 
-1. **Context budget exhaustion from quality gates** — Quality gate additions compound: pre-task scan + Context7 + sentinel prompting can consume 40–60% of context before any code is written. Prevention: cap all grep output (`| head -10`), scope Context7 queries to exact method/pattern needed (not full library overview), cap total quality gate overhead to 15% of context window. Measure executor context before and after sentinel implementation — must stay under 50% budget.
+1. **Incomplete path migration (270+ occurrences)** — 94 path references in workflow files, 83 in agent specs, 67 in lib modules, 30 in tests — all string literals. Build `planningRoot()` resolver first; all path construction calls it; never do text replacement. Run 102+ existing tests after every batch of changes.
 
-2. **`is_last_phase` bug causing premature milestone completion** — Confirmed bug in `phase.cjs` lines 786–802: scans filesystem for phase directories, finds none for unplanned future phases, sets `is_last_phase = true`, routes to "milestone complete." Fix: parse phase numbers from ROADMAP.md (authoritative source). Two-location fix required — `phase.cjs` AND `execute-plan.md` offer_next step must be updated atomically.
+2. **Backward compatibility false detection** — old-style projects that have completed milestones already have `.planning/milestones/` (archive directory from `cmdMilestoneComplete`). Detecting "new-style" by directory presence breaks these projects. Use explicit `concurrent: true` sentinel in `config.json`, created only when a project is explicitly upgraded.
 
-3. **Config wiring deferred as "phase 2" kills fast mode** — Quality gate code gets written with hardcoded "always run" logic; `quality_level: fast` config key exists but has no behavioral effect. Prevention: every gate function reads `quality_level` at its entry point, always, from day one. Never defer config wiring.
+3. **Git merge conflicts from concurrent session commits** — two sessions committing to the same branch without pre-pull will conflict on shared files. Primary mitigation: workspace isolation (each session writes only its milestone subdirectory). Dashboard writes: atomic replace on per-milestone sections; git conflicts are trivially resolvable by accepting both changes.
 
-4. **Testing enforcement blocking config and styling changes** — A "write tests for all changes" gate false-positives on `.md`, `.json`, and template file modifications, which have no meaningful unit tests. Prevention: enumerate file-type exemptions explicitly in config (`quality.test_exemptions: ["*.md", "*.json", "templates/**", ".planning/**"]`); test gate fires only on `.cjs/.js/.ts` files with exported functions.
+4. **State desynchronization between milestone-local and global state** — `state.cjs` has 15+ functions all hardcoded to `.planning/STATE.md`. In concurrent execution, global and milestone-local state diverge unless all state commands receive `--milestone` context and route to the correct scoped file.
 
-5. **Roadmap routing inconsistency after `is_last_phase` fix** — Fixing `phase.cjs` but not `execute-plan.md` creates split-brain: CLI tool says "next phase" but workflow says "milestone done." Both locations must be fixed in the same plan.
+5. **Test suite breakage during structural changes** — `helpers.cjs` has a single `createTempProject()` shared by all 102+ tests; hardcodes old-style layout. Create a parallel `createConcurrentProject()` helper. Never modify `createTempProject()` itself.
+
+6. **Agent prompt variable drift** — agent `.md` files use path variables in bash commands. Without a canonical variable glossary committed before editing begins, different agents invent different names for the same path, causing silent failures in live execution. Define the glossary first.
+
+7. **`is_last_phase` bug (carried from v1.x)** — `cmdPhaseComplete` scans the filesystem for phase directories; finds none for unplanned future phases; sets `is_last_phase = true` prematurely. Fix before concurrent milestone work begins — it affects the same code paths being refactored.
 
 ## Implications for Roadmap
 
-The research is unambiguous about build order. A confirmed bug must be fixed before quality enforcement is layered on top. Config infrastructure must precede gate implementation. Executor changes (where code is written) deliver more value than verifier changes (backstop). Planner changes are upstream signaling that reduce executor scan overhead but the executor can work without them.
+Based on research, suggested phase structure (6 phases):
 
-### Phase 1: Bug Fixes — Restore Multi-Phase Milestone Routing
+### Phase 1: Path Architecture Foundation
+**Rationale:** All other phases depend on the path resolver. The 270+ hardcoded path strings cannot be safely refactored without a central resolver. Also fix the `is_last_phase` bug here — it affects the same code paths being changed and must be corrected before concurrent execution is layered on top.
+**Delivers:** `planningRoot()` helper, `detectLayoutStyle()` with sentinel-based detection, `--milestone` flag parsing in CLI router, `is_last_phase` bug fix, path refactor in `core.cjs`, `phase.cjs`, `state.cjs`, `roadmap.cjs`
+**Addresses:** Milestone-scoped phase numbering (structural), milestone-scoped state routing
+**Avoids:** Incomplete path migration pitfall, state desynchronization pitfall, is_last_phase premature routing
+**Research flag:** Standard patterns — internal codebase analysis is complete and path counts are verified; no external research needed
 
-**Rationale:** The `is_last_phase` bug makes the framework unusable for multi-phase milestones. Any quality enforcement built on top of a broken routing system will produce confusing results and mislead users into thinking milestones are complete. This must be the first phase — not a parallel track, not deferred.
+### Phase 2: Milestone Workspace Initialization
+**Rationale:** Workspace isolation is the root dependency for dashboard, conflict manifest, and routing. Must exist before any feature that reads from milestone workspaces can be built. `new-milestone` workflow creates the physical workspace structure.
+**Delivers:** `new-milestone` workflow creates `.planning/milestones/<version>/` with `STATE.md`, `ROADMAP.md`, `REQUIREMENTS.md`, `conflict.json`; `cmdConflictCheck` command; MILESTONES.md repurposed as structured live dashboard
+**Addresses:** Milestone-scoped workspace isolation, conflict manifest (format and creation), MILESTONES.md dashboard structure
+**Avoids:** Dashboard write corruption pitfall (per-milestone files eliminate shared write targets)
+**Research flag:** Standard patterns — directory structure design is fully specified in ARCHITECTURE.md; no external research needed
 
-**Delivers:** Correct phase routing after phase completion on multi-phase projects; stable CLI output contract for all downstream callers.
+### Phase 3: Compatibility Layer
+**Rationale:** Cannot ship to existing users without zero-breakage compatibility. Detection sentinel design must be locked in before any command branches on it. Old-style projects must work unchanged indefinitely — not as a transitional state.
+**Delivers:** `isConcurrentProject()` detection with `concurrent: true` sentinel in `config.json`, routing fork in init commands, test cases for all three project states (new project, old-style with archived milestones, new-style concurrent)
+**Addresses:** Compatibility layer for existing projects
+**Avoids:** Backward compatibility false detection pitfall (sentinel vs. directory presence), test suite breakage pitfall (extend helpers before changing code)
+**Research flag:** Standard patterns — detection logic and sentinel design are fully specified in ARCHITECTURE.md and PITFALLS.md
 
-**Files:** `get-shit-done/bin/lib/phase.cjs` (cmdPhaseComplete function), `get-shit-done/workflows/execute-plan.md` (offer_next step)
+### Phase 4: Dashboard and Conflict Detection
+**Rationale:** Depends on workspace isolation (Phase 2) and compatibility layer (Phase 3). Dashboard reads per-milestone STATUS.md files — those files need to exist. Conflict detection reads conflict.json files — those need to exist. Routing must know layout style before dashboard can aggregate correctly.
+**Delivers:** `cmdMilestoneDashboard()` command with atomic write; STATUS.md written at milestone checkpoints; `/gsd:progress` aggregates all active milestone STATUS.md files; conflict warning fires at `execute-phase` start when manifests overlap; phase IDs fully qualified as `v2.0/phase-01` in dashboard
+**Addresses:** Lock-free dashboard, conflict manifest overlap detection
+**Avoids:** Dashboard file corruption pitfall (lock-free design with per-milestone write ownership), phase numbering collision pitfall (milestones aggregated separately with qualified IDs)
+**Research flag:** Standard patterns — lock-free design is fully specified; atomic write pattern is 15 lines of Node.js built-ins
 
-**Avoids:** Pitfall 2 (premature milestone completion), Pitfall 3 (CLI output field compatibility), Pitfall 8 (routing inconsistency across callers)
+### Phase 5: Full Routing Update
+**Rationale:** Depends on Phases 1-4. All workflows and agent specs need updating to use milestone-scoped paths from init commands. Cannot be done correctly until init commands return the right paths (Phase 1) and layout detection is stable (Phase 3). Run comprehensive `grep` inventory before this phase begins.
+**Delivers:** All `/gsd:*` commands work with `--milestone` flag; agent variable glossary committed; all 270+ path string literals replaced or routed through resolver; `progress.md`, `complete-milestone.md`, `health.md`, `resume-project.md`, `history-digest` updated to be milestone-aware
+**Addresses:** Updated GSD routing, agent prompt variable drift prevention
+**Avoids:** Agent prompt drift pitfall (glossary-first discipline), incomplete path migration pitfall (final audit pass)
+**Research flag:** Needs pre-planning audit pass — run `grep -rn "\.planning/phases\|\.planning/STATE\|\.planning/ROADMAP"` across all file types and document the full count. No external research; it is a mechanical migration guided by the resolver.
 
-**Implementation notes:** Fix is atomic — both locations in the same plan. Parse ROADMAP.md for phase count (not filesystem directory scan). Preserve all existing output fields (`is_last_phase`, `next_phase`, `next_phase_name`, etc.). Write before/after test fixtures capturing exact JSON output before touching code.
-
-**Research flag:** Standard patterns — no deeper research needed. Direct source analysis confirms the fix strategy.
-
-### Phase 2: Config Foundation — Quality Level Infrastructure
-
-**Rationale:** Every quality gate reads config. Without the `quality.level` key in config.json and the pattern for reading it, gates cannot be conditionally enabled or disabled. This is the lowest-risk, highest-leverage change — one file, no agent logic — but it unblocks every subsequent phase.
-
-**Delivers:** `quality_level: strict|standard|fast` in config.json; fast mode that preserves existing GSD behavior exactly; the infrastructure all subsequent gates use to check their activation state.
-
-**Files:** `get-shit-done/templates/config.json`
-
-**Avoids:** Pitfall 7 (enforcement levels not wired), technical debt of retroactively threading config through already-written gates
-
-**Implementation notes:** Define the complete behavior matrix upfront (what each gate does in each mode) before writing any gate code. Add `quality.test_exemptions` array alongside `quality.level`.
-
-**Research flag:** Standard patterns — well-understood config pattern. No deeper research needed.
-
-### Phase 3: Executor Quality Sentinel — Inline Quality Gates at Write Time
-
-**Rationale:** The executor is where code is written and where slop originates. Fixing quality at the source (executor) is cheaper than fixing it in verification. This is the highest-value change in the entire milestone and the core differentiator of this fork.
-
-**Delivers:** Pre-task codebase scan (targeted grep for existing patterns), Context7 library lookup before implementing external libraries, during-task lint/type checks after each file write, post-task diff review before commit, mandatory test step for new `.cjs/.js/.ts` logic.
-
-**Uses:** Context7 MCP (mcp__context7__resolve-library-id + mcp__context7__query-docs), Node built-in test runner, config quality level gate
-
-**Addresses features:** Pre-implementation codebase scan (P1), Context7 in executor (P1), Mandatory test step (P1), Quality Sentinel behavior (core differentiator)
-
-**Avoids:** Pitfall 1 (context budget exhaustion — cap grep output, cap Context7 queries, target scans), Pitfall 4 (test enforcement blocking config changes — use file-type exemptions), Pitfall 5 (codebase scan noise — scope to task-relevant directories from PLAN frontmatter), Pitfall 6 (Context7 token explosion — one query per plan, exact method not full library)
-
-**Files:** `agents/gsd-executor.md` (tools frontmatter, `<quality_sentinel>` section, `<context7_protocol>` section, `<execute_tasks>` step modifications, `<task_commit_protocol>` test gate), `.mcp.json` (Context7 server config)
-
-**Context budget warning:** Quality sentinel adds 17–38K tokens overhead per task on top of current 40–75K baseline. Complex tasks may approach 200K limit. Plans must target ~40% context (not 50%) when quality gates are active. This is the primary technical risk of this phase.
-
-**Research flag:** Needs deeper research during planning — Context7 token budget management, specific grep patterns for GSD's CJS codebase, test file detection heuristics for the CJS framework format.
-
-### Phase 4: Verifier Quality Dimensions — Post-Execution Backstop
-
-**Rationale:** The verifier is the backstop — it catches what the executor's inline gates miss. It operates on complete phase output, so it is meaningfully useful only after Phase 3 has been teaching the executor to write tests. Without Phase 3 first, every Phase 4 verification would fail on test coverage because existing plans don't have tests.
-
-**Delivers:** Step 7b quality dimensions: duplication detection on phase files, dead code/orphaned export detection, test file existence check, pattern consistency check against CONVENTIONS.md. Quality findings appear in VERIFICATION.md `gaps_found` section with severity gated by config level.
-
-**Uses:** Existing grep infrastructure (no new tooling), jscpd for duplication detection, config quality level gate
-
-**Addresses features:** Enhanced verifier duplication + orphan detection (P2)
-
-**Avoids:** Pitfall anti-pattern of making Step 7b findings hard-block in all modes (in `standard`: warnings; in `strict`: blockers; in `fast`: Step 7b skipped entirely)
-
-**Files:** `agents/gsd-verifier.md` (Step 7b addition, Step 9 status update to include quality findings, VERIFICATION.md output template)
-
-**Research flag:** Standard patterns — verifier architecture is well-understood from direct source analysis. No deeper research needed.
-
-### Phase 5: Planner Quality Directives — Upstream Scan Optimization
-
-**Rationale:** Planner quality directives pre-load the executor with scan results, reducing executor scan cost. The executor can work without them (quality sentinel runs its own scan), but directives make scans more targeted and efficient. Building planner changes after Phases 3–4 means the executor contract is stable before we change how plans are created.
-
-**Delivers:** Quality directive format in task `<action>` blocks specifying (a) existing code to reuse, (b) library docs to consult, (c) tests to write. Planner self-check verifies each task action has quality directives populated before returning the plan.
-
-**Addresses features:** Planner quality directives (P2)
-
-**Files:** `agents/gsd-planner.md` (task_breakdown section, self-check instruction)
-
-**Research flag:** Standard patterns — follows the cascading directives architectural pattern documented in ARCHITECTURE.md. No deeper research needed.
-
-### Phase 6: Plan-Checker Dimension 9 — Pre-Execution Plan Validation
-
-**Rationale:** Plan-checker Dimension 9 enforces that planners follow the Phase 5 changes. The executor's inline sentinel catches gaps regardless, so this is the least critical change — it provides pre-execution validation as a convenience, not a safety net. Build last, after the planner changes are stable.
-
-**Delivers:** Dimension 9 quality directive completeness check: verifies task actions reference codebase patterns to reuse, library docs to consult, and tests to write. Non-blocking in standard mode, blocking in strict mode.
-
-**Addresses features:** Plan quality directives enforcement
-
-**Files:** `agents/gsd-plan-checker.md` (Dimension 9 addition)
-
-**Research flag:** Standard patterns — follows the existing 8-dimension plan-checker structure. No deeper research needed.
-
-### Phase 7: Claude Code Hooks — Deterministic Enforcement Layer
-
-**Rationale:** Claude Code hooks provide enforcement that survives context compression and cannot be overridden by in-context reasoning. This is the "hard gate" pattern — hooks run regardless of what Claude "thinks." Deferred to v1.x because it requires infrastructure setup (hook scripts, settings.json configuration) beyond agent file edits, and v1 quality gates should be validated before adding the infrastructure complexity.
-
-**Delivers:** PreToolUse hook (quality-sentinel-pre.sh) blocking writes that fail pre-conditions; PostToolUse hook (quality-sentinel-post.sh) running lint/type/duplication checks; Stop hook (quality-sentinel-stop.sh) running full test suite before session end. agentlint Quality Pack as baseline rule set.
-
-**Uses:** Claude Code hooks system, agentlint, jscpd, jq for JSON parsing
-
-**Addresses features:** Strict mode pre-commit blocking (P2, deferred to v1.x)
-
-**Avoids:** Common mistake of putting must-enforce quality gates only in CLAUDE.md (advisory only, not deterministic)
-
-**Files:** `~/.claude/settings.json` or `.claude/settings.json`, new hook scripts in `get-shit-done/hooks/`
-
-**Research flag:** Needs deeper research during planning — hook script implementation details, agentlint rule configuration, interaction between hooks and existing executor commit protocol.
+### Phase 6: Test Coverage
+**Rationale:** Last phase because all features must exist before end-to-end tests can exercise the integrated system. Existing 102+ tests must have been kept green throughout all prior phases.
+**Delivers:** `createConcurrentProject()` test helper alongside (not replacing) `createTempProject()`; test cases for milestone-scoped path resolution, compatibility detection, conflict check, phase numbering, MILESTONES.md dashboard update; 90%+ branch coverage on new functions in `core.cjs` and `commands.cjs`; at least one end-to-end test executing plan→execute→verify in both old-style and new-style modes
+**Addresses:** Test coverage for new routing and isolation logic
+**Avoids:** Test suite breakage pitfall (new helper alongside old, not replacing it)
+**Research flag:** Standard patterns — test infrastructure (`node --test`, `helpers.cjs`) already exists; extend, don't replace
 
 ### Phase Ordering Rationale
 
-- **Bug fix first:** The `is_last_phase` bug is confirmed, breaks multi-phase milestones, and is independent of quality features. Fixing it first provides a stable foundation.
-- **Config before gates:** Every gate reads config; config must exist before gates are written, not retrofitted.
-- **Executor before verifier:** Fixing quality at source (executor) is cheaper than backstop verification. Verifier quality checks are only meaningful after the executor is writing tests.
-- **Planner before plan-checker:** No point validating quality directives in plans before the planner knows how to write them.
-- **Hooks last (v1.x):** Infrastructure complexity deferred until agent-level quality gates are validated and the hook contract is stable.
+- **Path resolver first (Phase 1)** because 270+ string literals cannot be safely refactored without a central function to replace them. Any other phase executed first creates migration debt that compounds.
+- **`is_last_phase` bug fix in Phase 1** because it affects `phase.cjs` which is being refactored anyway; fixing it atomically with the path refactor avoids a double-touch.
+- **Workspace initialization before compatibility (Phase 2 before Phase 3)** because the compatibility layer needs the workspace structure to exist to test against the new-style code path. These phases could run concurrently if bandwidth allows — they have no strict blocking dependency.
+- **Dashboard after workspace (Phase 4 after Phase 2)** because the dashboard aggregates per-milestone STATUS.md files that must physically exist first.
+- **Full routing update late (Phase 5 after Phases 1-4)** because workflows and agents can only be correctly updated once init commands return the right paths with canonical variable names.
+- **Tests always last (Phase 6)** because end-to-end tests verify the integrated system; component-level tests accompany each phase, but integration coverage requires the full system to exist.
 
 ### Research Flags
 
-Phases likely needing deeper research during planning:
-- **Phase 3 (Executor Quality Sentinel):** Context7 token budget management is the primary technical risk. Need to determine: maximum token cap for Context7 responses, specific grep patterns for GSD's CJS codebase structure, test file detection heuristics for `.test.cjs` format, exact hook stdin JSON schema for PostToolUse events.
-- **Phase 7 (Claude Code Hooks):** Hook script implementation is environment-dependent. Need to verify: exact settings.json hook configuration format for current Claude Code version, agentlint rule pack configuration, interaction between PostToolUse hooks and executor's atomic commit protocol (avoid double-committing).
+Phases needing deeper research during planning:
+- **Phase 5 (Full Routing Update):** Run a comprehensive grep inventory before planning begins — count every occurrence of `.planning/phases`, `.planning/STATE.md`, `.planning/ROADMAP.md` across all four file types. The count is the migration checklist. This is mechanical, not exploratory research, but must be done before estimation.
 
-Phases with standard patterns (can skip `/gsd:research-phase`):
-- **Phase 1 (Bug Fixes):** Direct source analysis confirms fix location and strategy. ROADMAP.md parsing already exists in `roadmap.cjs`.
-- **Phase 2 (Config Foundation):** One-file change following existing config.json patterns.
-- **Phase 4 (Verifier Quality Dims):** Follows existing verifier step structure. Grep patterns are well-understood.
-- **Phase 5 (Planner Directives):** Follows existing task `<action>` format with additive subsection.
-- **Phase 6 (Plan-Checker Dim 9):** Follows existing 8-dimension plan-checker structure exactly.
+Phases with standard patterns (skip research-phase):
+- **Phase 1 (Path Architecture):** All implementation details are specified in ARCHITECTURE.md and PITFALLS.md. The fix strategy for `is_last_phase` is confirmed from direct source analysis of `phase.cjs`.
+- **Phase 2 (Workspace Initialization):** Directory structure and `conflict.json` format are fully specified in ARCHITECTURE.md. Straight implementation.
+- **Phase 3 (Compatibility Layer):** Detection logic and sentinel design are fully specified. The three test cases (new project, old-style with archives, new-style) are defined.
+- **Phase 4 (Dashboard):** Lock-free pattern and atomic write are fully specified. `cmdMilestoneDashboard` format is defined.
+- **Phase 6 (Tests):** Test infrastructure already exists. Extend `helpers.cjs` with `createConcurrentProject()` alongside existing helper.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Official Claude Code docs, Context7 GitHub, jscpd npm — all primary sources. agentlint is MEDIUM (GitHub README only, active project). Context7 runtime behavior is LOW (quota exceeded during research, pattern from training data corroborated by multiple secondary sources). |
-| Features | HIGH | Executor, verifier, and planner agent files read directly. Qodo survey data (609 devs), CodeScene patterns, and PDCA framework corroborate feature prioritization. |
-| Architecture | HIGH | All 11 agent source files, PROJECT.md, and PROPOSAL.md read directly. Architecture is derived from first-party analysis, not inference. |
-| Pitfalls | HIGH | `is_last_phase` bug confirmed in first-party source (`phase.cjs` lines 786–802). `execute-plan.md` independent filesystem routing confirmed. Context budget numbers from PROJECT.md constraints directly. |
+| Stack | HIGH | Official Claude Code docs verified directly for hooks, subagents, Agent Teams, and worktrees. `write-file-atomic` Node.js engine constraint confirmed from official GitHub. Agent Teams experimental limitations confirmed from official docs. |
+| Features | HIGH | Official Agent Teams and worktrees docs read directly. Internal PROJECT.md, STATE.md, and MILESTONES.md read directly for v1.x baseline. Feature dependency graph independently verified from architecture analysis. Anti-features validated against Claude Code Agent Teams limitations. |
+| Architecture | HIGH | Based on direct source analysis of all `lib/*.cjs` modules. All hardcoded path counts are empirically measured (94/83/67/30 by file type). Compatibility detection flaw (directory vs. sentinel) identified from direct `milestone.cjs` code analysis. |
+| Pitfalls | HIGH | First-party codebase analysis: exact counts of path references per file type measured via grep. `createTempProject()` single-helper limitation confirmed from `tests/helpers.cjs` direct read. `state.cjs` 15-function hardcoded path confirmed from direct read. `is_last_phase` bug location confirmed at `phase.cjs` lines 786–802. |
 
-**Overall confidence: HIGH**
+**Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **Context7 runtime token volume:** Research confirmed the two-step resolve+query pattern but could not verify exact token counts for Context7 responses at runtime (quota exceeded). During Phase 3 planning, run a test Context7 query against a real library and measure token output before setting the cap. Recommendation: start with 2,000 token cap per query (per PITFALLS.md), adjust based on observed behavior.
-
-- **agentlint rule pack details:** agentlint's 42 rules were described at category level (Quality Pack, Security Pack) but not inspected individually. During Phase 7 planning, run `agentlint setup` in a test environment and enumerate the specific Quality Pack rules to determine which align with GSD's enforcement goals and which to disable.
-
-- **Hook interaction with executor atomic commits:** The executor already has a per-task commit protocol. PostToolUse hooks fire after every Write/Edit, not just at commit time. Need to confirm during Phase 7 planning that hook-level gates don't interfere with the executor's staged commit sequence.
-
-- **ROADMAP.md phase number format:** PITFALLS.md notes ROADMAP.md uses unpadded phase numbers in headers (`Phase 1:` not `Phase 01:`). Confirm this is consistent across all existing projects before writing the parser in Phase 1.
+- **Node.js engine floor:** Implementing `atomicWrite()` inline (15 lines) keeps the `>=16.7.0` floor. If `write-file-atomic` is ever added as a dependency, `engines.node` must be updated to `^20.17.0 || >=22.9.0`. Document as a framework-level constraint in PROJECT.md.
+- **Windows cross-drive atomicity:** `fs.renameSync()` is atomic on macOS/Linux within the same filesystem but not guaranteed on Windows cross-drive. GSD's current user base (macOS/Linux Claude Code users) makes this acceptable for v2.0; document as a known limitation.
+- **Agent Teams for parallel phases (deferred):** Research confirms Agent Teams are the right tool for intra-milestone phase parallelism. This is correctly deferred to v2.x. When addressed, it will require a separate research pass — Agent Teams docs are experimental and may have evolved.
+- **MILESTONES.md concurrent write strategy:** The architecture recommends git rebase (not merge) for the planning branch to make concurrent MILESTONES.md section updates trivially resolvable. This is a process recommendation that should be documented in CLAUDE.md or a workflow file but is not enforced by code.
+- **`is_last_phase` ROADMAP.md format:** Verify whether existing ROADMAP.md files use padded phase numbers (`Phase 01:`) or unpadded (`Phase 1:`) before writing the parser in Phase 1 to ensure format consistency.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- Claude Code Hooks Guide (`code.claude.com/docs/en/hooks-guide`) — hook events, exit codes, settings.json format
-- Claude Code MCP Docs (`code.claude.com/docs/en/mcp`) — MCP scopes, `.mcp.json` format, project-scoped installation
-- Claude Code Subagents Docs (`code.claude.com/docs/en/sub-agents`) — subagent frontmatter, tools field
-- Context7 GitHub (`github.com/upstash/context7`) — tool interface, two-step resolve+query pattern
-- jscpd npm (`npmjs.com/package/jscpd`) — language support, configuration, threshold behavior
-- Internal: `agents/gsd-executor.md` — current executor behavior, tool list, deviation rules
-- Internal: `agents/gsd-verifier.md` — 3-level verification, anti-pattern scan, step structure
-- Internal: `agents/gsd-planner.md` — task anatomy, context budget rules, quality degradation curve
-- Internal: `agents/gsd-plan-checker.md` — 8 verification dimensions, Nyquist section
-- Internal: `get-shit-done/bin/lib/phase.cjs` (lines 786–802) — is_last_phase bug confirmed
-- Internal: `get-shit-done/workflows/execute-plan.md` — offer_next step routing logic
-- Internal: `.planning/PROJECT.md` — constraints, out-of-scope items, known bugs
+- [Claude Code MCP Official Docs](https://code.claude.com/docs/en/mcp) — MCP scopes, installation syntax, `.mcp.json` format
+- [Claude Code Subagents Official Docs](https://code.claude.com/docs/en/sub-agents) — Subagent frontmatter, tools field, `isolation: worktree`
+- [Claude Code Hooks Guide](https://code.claude.com/docs/en/hooks-guide) — Hook events, exit codes, `settings.json` format
+- [Claude Code Agent Teams Official Docs](https://code.claude.com/docs/en/agent-teams) — Architecture, task list, mailbox system, limitations, no-nested-teams constraint, experimental status
+- [Claude Code Common Workflows — Worktrees](https://code.claude.com/docs/en/common-workflows#run-parallel-claude-code-sessions-with-git-worktrees) — `--worktree` flag, worktree location, cleanup behavior, `isolation: worktree` frontmatter
+- [Context7 GitHub (upstash/context7)](https://github.com/upstash/context7) — Tool interface, resolve+query pattern, connection types
+- [write-file-atomic GitHub (npm/write-file-atomic)](https://github.com/npm/write-file-atomic) — Node.js engine constraint `^20.17.0 || >=22.9.0`, CJS API, atomic temp+rename mechanism
+- [jscpd npm](https://www.npmjs.com/package/jscpd) — Language support, configuration, threshold behavior
+- [Node.js fs documentation](https://nodejs.org/api/fs.html) — `fs.rename()` atomicity notes
+- First-party: `bin/lib/core.cjs`, `bin/lib/phase.cjs`, `bin/lib/state.cjs`, `bin/lib/init.cjs`, `bin/lib/milestone.cjs` — direct source analysis
+- First-party: `tests/helpers.cjs`, `workflows/new-milestone.md`, `workflows/plan-phase.md` — direct source analysis
+- First-party: `.planning/PROJECT.md`, `.planning/STATE.md`, `.planning/MILESTONES.md` — direct source analysis
 
 ### Secondary (MEDIUM confidence)
-- Qodo State of AI Code Quality 2025 (`qodo.ai/reports/state-of-ai-code-quality/`) — context-miss statistics, test confidence gap (609-dev survey)
-- CodeScene Agentic AI Coding Patterns (`codescene.com/blog/agentic-ai-coding-best-practice-patterns-for-speed-with-quality`) — pre-implementation health assessment, multi-level safeguards
-- OpenObserve QA Agent Case Study (`openobserve.ai/blog/autonomous-qa-testing-ai-agents-claude-code/`) — Sentinel pattern, hard gate impact
-- InfoQ PDCA Framework (`infoq.com/articles/PDCA-AI-code-generation/`) — TDD-first, atomic commits, pre-scan mandate
-- agentlint GitHub (`github.com/mauhpr/agentlint`) — rule packs, hook integration
-- Claude Code Enforcers (`rungie.com/blog/claude-code-enforcers/`) — PostToolUse lint hook patterns
-- Claude Code Hooks Production Patterns (`pixelmojo.io/blogs/claude-code-hooks-production-quality-ci-cd-patterns`) — 12 lifecycle events, PreToolUse blocking behavior
+- [agentlint GitHub (mauhpr/agentlint)](https://github.com/mauhpr/agentlint) — Quality Pack rules, hook integration (active project, not official Anthropic docs)
+- [CodeScene: Agentic AI Coding Best Practices](https://codescene.com/blog/agentic-ai-coding-best-practice-patterns-for-speed-with-quality) — Multi-level safeguard patterns, AGENTS.md executable guidance pattern
+- [Claude Code Hooks Production Patterns (pixelmojo.io)](https://www.pixelmojo.io/blogs/claude-code-hooks-production-quality-ci-cd-patterns) — Hook types, 12 lifecycle events (corroborated by official docs)
+- [Verdent 1.5.0 Blog](https://www.verdent.ai/blog/introducing-verdent-1-5-0) — Workspace isolation as table-stakes user expectation in comparable AI coding tools
+- [Turborepo Guide (Strapi)](https://strapi.io/blog/turborepo-guide) — Parallel task execution, `--affected` file detection as reference patterns for conflict manifest design
+- [Claude Code Threads (Boris Cherny / Anthropic)](https://www.threads.com/@boris_cherny/post/DVAAnexgRUj/) — Built-in worktree support confirmed by Anthropic engineer
 
 ### Tertiary (LOW confidence)
-- Context7 MCP runtime behavior — Context7 API quota exceeded during research; token volume and response format inferred from training data, corroborated by secondary sources. Validate during Phase 3 planning with a live test query.
+- Context7 MCP API quota exceeded during research — docs query behavior corroborated by multiple secondary sources but not verified at runtime; carries forward from v1.1 research
+- [Claude Code Swarm Orchestration gist (kieranklaassen)](https://gist.github.com/kieranklaassen/4f2aba89594a4aea4ad64d753984b2ea) — Community pattern corroborating agent teams task claiming; single GitHub gist
+- [Superpowers Issue #469](https://github.com/obra/superpowers/issues/469) — Evidence of community interest in Agent Teams for milestone coordination; single GitHub issue, not authoritative
 
 ---
-*Research completed: 2026-02-23*
+*Research completed: 2026-02-24*
 *Ready for roadmap: yes*

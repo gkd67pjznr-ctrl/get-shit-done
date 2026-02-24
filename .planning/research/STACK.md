@@ -299,3 +299,252 @@ No changes to GSD's `package.json` dependencies are required. The framework itse
 
 *Stack research for: GSD Enhanced Fork — quality enforcement layer*
 *Researched: 2026-02-23*
+
+---
+
+---
+
+# Stack Research — v2.0 Concurrent Milestones
+
+**Domain:** Concurrent milestone execution, workspace isolation, lock-free file coordination
+**Researched:** 2026-02-24
+**Confidence:** HIGH for Claude Code worktrees/agent-teams (official docs verified); HIGH for write-file-atomic (GitHub verified); MEDIUM for lock-free dashboard pattern (no single authoritative source, but pattern is well-established in Node.js ecosystem)
+
+---
+
+## What This Section Covers
+
+Stack additions needed for v2.0: concurrent milestone execution across separate Claude Code sessions. The existing GSD stack (CJS, Node.js built-in test runner, Context7, hooks) stays intact. This section covers only what's NEW.
+
+**Key constraint:** GSD's `package.json` has `"engines": { "node": ">=16.7.0" }` and zero runtime dependencies. Any new library must either ship zero-dependency inline, or use a tool already available in the Node.js ecosystem.
+
+---
+
+## Recommended Stack Additions
+
+### Core Technologies
+
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| `write-file-atomic` | 7.0.0 | Atomic dashboard writes from concurrent milestone sessions | Writes temp file → renames atomically, serializes concurrent writes to same file via Promises. Used by npm itself. CJS-compatible (`require('write-file-atomic')`). Zero ambiguity about partial writes corrupting dashboard state. |
+| Claude Code `--worktree` flag | Current (2026) | Filesystem isolation per milestone session | Built into Claude Code CLI. Creates isolated worktree at `.claude/worktrees/<name>/` on a separate branch. No extra tooling. Sessions cannot clobber each other's working files. Best supported isolation mechanism. |
+| Claude Code Agent Teams (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`) | Current (2026, experimental) | Optional: coordinate milestone sessions as a team with shared task list and messaging | Enables inter-session communication, shared task list with file-lock-based claim mechanism. Experimental — has known limitations (no session resumption, task status lag). Research only; evaluate before adopting. |
+| `fs.rename()` / `fs.renameSync()` (Node.js built-in) | Node 16+ | Atomic file publish step for dashboard updates without new dependencies | On Unix/macOS, `fs.rename()` within the same filesystem is atomic. Write to `.planning/DASHBOARD.md.tmp`, rename to `.planning/DASHBOARD.md`. Works with existing Node.js baseline. Use `write-file-atomic` if cross-process concurrent writes are needed; use raw `rename` if only one writer exists per file. |
+
+### Supporting Patterns (No Additional Libraries)
+
+| Pattern | Mechanism | Purpose | When to Use |
+|---------|-----------|---------|-------------|
+| Conflict manifest file | Plain Markdown/JSON in `.planning/milestones/<v>/MANIFEST.md` | Declare which source files each milestone will touch; detect conflicts before execution starts | Always — lightweight static analysis, no runtime overhead |
+| Milestone-scoped workspace | `.planning/milestones/<version>/` directory structure | Isolate milestone STATE.md, ROADMAP.md, phases/ from other concurrent milestones | Always — pure directory convention, zero tooling |
+| Lock-free dashboard reads | `fs.readFileSync()` (non-blocking readers) + atomic writes from single writer per milestone | Multiple sessions read dashboard without locks; only one session writes its own milestone row | Suitable when each milestone owns exactly one dashboard row — no cross-milestone write conflicts |
+| Advisory lock file | `.planning/DASHBOARD.lock` (create/delete sentinel file) | Coordinate writes when multiple milestones update the shared dashboard simultaneously | Only needed if lock-free single-writer-per-row pattern is insufficient |
+
+---
+
+## Decision: Lock-Free vs Lock-Based for Dashboard
+
+The dashboard (`DASHBOARD.md` or equivalent) tracks all milestone status. Two approaches:
+
+**Option A — Lock-free (recommended):** Each milestone owns exactly one row in the dashboard. Each session only ever writes its own row. Readers never lock. Writers use `write-file-atomic` to serialize same-file writes atomically. No inter-process locking needed because no two sessions compete to write the same row.
+
+**Option B — Advisory lock (fallback):** Use `proper-lockfile` for cross-process mutex when the dashboard structure requires full-file rewrites. More robust but adds a dependency and stale-lock risk.
+
+**Recommendation: Option A.** Design the dashboard so each milestone session writes only its own status segment. This eliminates inter-process write conflicts entirely and keeps the stack dependency-free.
+
+---
+
+## Claude Code Agent Teams: What to Know
+
+Agent teams (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`) are **experimental** (as of 2026-02-24). Key facts verified from official docs:
+
+**Architecture:**
+- Team config: `~/.claude/teams/{team-name}/config.json` (members array with name, agent ID, type)
+- Task list: `~/.claude/tasks/{team-name}/` (file-lock-based task claiming)
+- Mailbox: messaging system for inter-agent communication (automatic delivery, no polling)
+- Each teammate has its own context window; shares CLAUDE.md and MCP servers from lead
+
+**What it provides for GSD:**
+- Shared task list where milestone-executor agents claim work without double-claiming
+- Direct messaging between milestone sessions (e.g., "milestone A is touching auth.js — do you conflict?")
+- `TeammateIdle` and `TaskCompleted` hooks for quality enforcement at team level
+
+**Limitations that matter for GSD:**
+- No session resumption for in-process teammates (`/resume` and `/rewind` don't restore teammates)
+- Task status can lag — teammates sometimes fail to mark tasks complete, blocking dependent tasks
+- One team per session — a lead can only manage one team at a time
+- Experimental: behavior may change without notice
+
+**Verdict:** Do NOT build GSD's concurrent milestone model on top of agent teams as a required dependency. Agent teams are experimental and have known reliability gaps. Instead, design GSD's workspace isolation using filesystem primitives (directory isolation + atomic writes) that work without agent teams, and provide an optional integration layer that uses agent teams when enabled.
+
+---
+
+## Claude Code Worktrees: The Primary Isolation Mechanism
+
+Worktrees are stable (not experimental) and the right tool for filesystem isolation.
+
+**How it works (verified from official docs, 2026-02-24):**
+```bash
+# Each milestone gets its own worktree
+claude --worktree milestone-v2-auth
+# Creates: <repo>/.claude/worktrees/milestone-v2-auth/
+# Branch: worktree-milestone-v2-auth
+```
+
+**Subagent worktree isolation (in agent frontmatter):**
+```yaml
+---
+name: milestone-executor
+isolation: worktree
+---
+```
+Each subagent spawned by a milestone gets its own auto-cleaned worktree. No two subagents touch the same working directory.
+
+**What worktrees isolate:** Working tree files (source code changes). What they do NOT isolate: shared `.planning/` state files (DASHBOARD.md, MILESTONES.md). This is why the lock-free dashboard pattern is needed separately.
+
+**Cleanup:** No changes → auto-removed. Changes → prompt to keep or remove.
+
+---
+
+## What NOT to Add for v2.0
+
+| Avoid | Why | Use Instead |
+|-------|-----|-------------|
+| `proper-lockfile` as a runtime dependency | Adds external dependency to a zero-dependency framework. Advisory locks can stale and require TTL maintenance. The lock-free single-writer-per-row dashboard design eliminates the need. | Lock-free dashboard (Option A above) + `write-file-atomic` for same-file serialization |
+| `chokidar` for file watching | v4.0.3 supports CJS; v5 is ESM-only. For a dashboard poller, polling `fs.readFileSync` on a short interval is simpler and adds no dependency. Chokidar shines for large directory trees — overkill for watching one status file. | Native `fs.watch()` or timed polling in agent instructions (agents don't need real-time watch — they read on demand) |
+| Redis or any external store for coordination | Adds infrastructure dependency, violates "runs anywhere Claude Code runs" principle | Filesystem as coordination medium — files are the existing GSD state model |
+| Full agent teams as required infrastructure | Experimental, known reliability gaps, requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. Cannot be a required dependency for a stable feature. | Filesystem isolation (worktrees + scoped directories) as primary; agent teams as optional enhancement |
+| `async-lock` in-process mutex | Only works within a single Node.js process. GSD milestone sessions are separate processes — in-process locks are useless across them. | `write-file-atomic` (serializes concurrent writes in same process via Promises) or filesystem advisory lock if cross-process coordination is genuinely needed |
+| SQLite for state | Overkill for what are essentially markdown state files. Adds a native module dependency, complicates install. | Existing ROADMAP.md / STATE.md pattern, extended with milestone-scoped directories |
+
+---
+
+## Integration Patterns for v2.0
+
+### Milestone Workspace Structure (No New Libraries)
+
+```
+.planning/
+  DASHBOARD.md              # Central lock-free status (one row per milestone)
+  milestones/
+    v2.0-concurrent/
+      STATE.md              # Milestone-scoped state
+      ROADMAP.md            # Milestone-scoped roadmap
+      MANIFEST.md           # Conflict declaration (which files this milestone touches)
+      phase-01/             # Milestone-scoped phases
+        PLAN.md
+        SUMMARY.md
+    v2.1-future/
+      STATE.md
+      ...
+  phases/                   # Legacy: old-style projects still use root phases/
+```
+
+Each milestone session reads/writes only its own subdirectory except for DASHBOARD.md updates.
+
+### Atomic Dashboard Write Pattern (CJS, zero new dependencies)
+
+```javascript
+// gsd-tools.cjs — new cmdDashboardUpdate function
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+const crypto = require('crypto');
+
+function atomicWrite(filePath, content) {
+  // temp file in same directory = same filesystem = rename is atomic on Unix/macOS
+  const tmpPath = filePath + '.' + process.pid + '.' + crypto.randomBytes(4).toString('hex') + '.tmp';
+  try {
+    fs.writeFileSync(tmpPath, content, 'utf-8');
+    fs.renameSync(tmpPath, filePath);  // atomic on Unix/macOS same-filesystem
+  } catch (err) {
+    try { fs.unlinkSync(tmpPath); } catch {}
+    throw err;
+  }
+}
+```
+
+This is what `write-file-atomic` does internally. Implement inline in `gsd-tools.cjs` to stay dependency-free, OR add `write-file-atomic` as a dev dependency for the battle-tested version.
+
+**Recommendation:** Implement the atomic write inline in `gsd-tools.cjs` for the dashboard update command. The implementation is 15 lines. This keeps the zero-dependency constraint satisfied.
+
+### write-file-atomic (if dependency is acceptable)
+
+```bash
+npm install write-file-atomic  # adds to dependencies, not devDependencies
+```
+
+```javascript
+const writeFileAtomic = require('write-file-atomic');
+// Async with Promise
+await writeFileAtomic('.planning/DASHBOARD.md', newContent, { encoding: 'utf-8' });
+// Sync
+writeFileAtomic.sync('.planning/DASHBOARD.md', newContent);
+```
+
+**Node.js requirement:** `^20.17.0 || >=22.9.0` — this is MORE restrictive than GSD's current `>=16.7.0` engine requirement. Adding this as a dependency would implicitly raise the Node.js floor. Check your target user base before adding.
+
+**If write-file-atomic is needed:** Add it, but update `engines.node` in `package.json` to match.
+
+### Conflict Detection Pattern (Pure Markdown)
+
+```markdown
+# MANIFEST.md (in each milestone workspace)
+## Files This Milestone Will Modify
+- bin/gsd-tools.cjs
+- get-shit-done/bin/gsd-tools.cjs
+- agents/gsd-executor.md
+
+## Files This Milestone Will Create
+- .planning/milestones/v2.0-concurrent/
+```
+
+The `/gsd:new-milestone` command reads all existing MANIFEST.md files and checks for overlapping file lists before starting. No library needed — pure string matching in gsd-tools.cjs.
+
+---
+
+## Version Compatibility
+
+| Package / Feature | Compatible With | Notes |
+|-------------------|-----------------|-------|
+| `write-file-atomic` 7.0.0 | Node.js `^20.17.0 \|\| >=22.9.0` | Raises GSD's Node.js floor from 16 to 20 if added as dependency |
+| `fs.rename()` atomic write (built-in) | Node.js >=16 (all versions) | Atomic on Unix/macOS same-filesystem; not guaranteed on Windows cross-drive |
+| Claude Code `--worktree` flag | Current Claude Code (2026) | Stable, not experimental. Worktree location: `.claude/worktrees/<name>/` |
+| Agent Teams (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`) | Current Claude Code (2026) | Experimental — verify still available before building on it |
+| Subagent `isolation: worktree` frontmatter | Current Claude Code (2026) | Stable — same underlying worktree mechanism |
+| `chokidar` 4.0.3 | Node.js >=14, CJS + ESM | v5 (Nov 2025) is ESM-only; stay on 4.x if CJS required |
+
+---
+
+## Installation (v2.0 Additions Only)
+
+```bash
+# Option A: Zero new dependencies (recommended)
+# Implement atomicWrite() inline in gsd-tools.cjs (15 lines, no install needed)
+# Uses: fs.writeFileSync + fs.renameSync (Node.js built-ins)
+
+# Option B: Add write-file-atomic (if inline implementation is not preferred)
+# WARNING: requires Node.js >=20.17.0 — check engine constraint before adding
+npm install write-file-atomic
+
+# No other new dependencies needed for v2.0
+```
+
+---
+
+## Sources
+
+- [Claude Code Agent Teams Official Docs](https://code.claude.com/docs/en/agent-teams) — Architecture, task list location, mailbox system, limitations, `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` env var, team config path `~/.claude/teams/{name}/config.json` (HIGH confidence, official docs, verified 2026-02-24)
+- [Claude Code Common Workflows — Worktrees](https://code.claude.com/docs/en/common-workflows#run-parallel-claude-code-sessions-with-git-worktrees) — `--worktree` flag, worktree location `.claude/worktrees/<name>/`, cleanup behavior, subagent `isolation: worktree` frontmatter (HIGH confidence, official docs, verified 2026-02-24)
+- [write-file-atomic GitHub (npm/write-file-atomic)](https://github.com/npm/write-file-atomic) — Version 7.0.0, Node.js engine `^20.17.0 || >=22.9.0`, CJS API, atomic temp+rename mechanism (HIGH confidence, official GitHub, verified 2026-02-24)
+- [write-file-atomic npm page](https://www.npmjs.com/package/write-file-atomic) — Download stats, latest version confirmation (HIGH confidence)
+- [Node.js fs documentation](https://nodejs.org/api/fs.html) — `fs.rename()`, `fs.writeFileSync()`, atomicity notes (HIGH confidence, official docs)
+- [proper-lockfile npm](https://www.npmjs.com/package/proper-lockfile) — mkdir-based lock strategy, stale threshold mechanism (MEDIUM confidence — researched but not recommended for this use case)
+- [chokidar GitHub (paulmillr/chokidar)](https://github.com/paulmillr/chokidar) — v4.0.3 CJS+ESM, v5 ESM-only, Node.js >=20 for v5 (MEDIUM confidence, GitHub)
+- [Claude Code Threads announcement — built-in worktree support](https://www.threads.com/@boris_cherny/post/DVAAnexgRUj/) — Confirmed built-in worktree support in CLI (MEDIUM confidence, official Anthropic engineer post)
+- [Node.js concurrent file write patterns — LogRocket](https://blog.logrocket.com/understanding-node-js-file-locking/) — File locking overview, patterns (MEDIUM confidence, practitioner blog)
+
+---
+
+*Stack research for: GSD v2.0 — Concurrent Milestone Execution*
+*Researched: 2026-02-24*

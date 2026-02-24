@@ -1,308 +1,383 @@
 # Pitfalls Research
 
-**Domain:** AI coding agent framework quality enforcement layer
-**Researched:** 2026-02-23
-**Confidence:** HIGH (first-party codebase analysis + known bug confirmation)
+**Domain:** Concurrent milestone execution and workspace isolation — GSD Enhanced Fork (v2.0)
+**Researched:** 2026-02-24
+**Confidence:** HIGH (first-party codebase analysis: 94 hardcoded `.planning/` refs in workflows, 83 in agents, 67 in lib/*.cjs, 30 in tests; 102+ tests exercising current structure)
 
 ---
 
-## Critical Pitfalls
+## Part 1: V2.0 Concurrent Milestone Pitfalls
 
-### Pitfall 1: Quality Gates Exhausting Context Budget Before Execution
-
-**What goes wrong:**
-Pre-task codebase scanning, Context7 library lookups, and quality sentinel prompting consume 40–60% of available context before the executor agent writes a single line of code. The executor then runs out of context mid-task, produces truncated or placeholder implementations, and the quality gates that were meant to prevent slop actually cause it.
-
-**Why it happens:**
-Quality enforcement is added as a prefix to existing executor prompts. Each addition seems small — a codebase scan here, a Context7 lookup there — but they compound. A full codebase scan can return hundreds of file listings, dependency trees, and pattern examples. Context7 docs can return thousands of tokens per query. By the time the executor reaches the actual task instructions, its effective context window is already crowded.
-
-**How to avoid:**
-- Cap pre-task scans to targeted lookups only: specific file types, specific directories relevant to the task's `files-modified` frontmatter, not the full codebase.
-- Context7 queries must be scoped to the exact API surface being used — not the full library overview. One focused query ("how to use X method") not "tell me about this library."
-- Quality sentinel output must be structured JSON summaries consumed by the executor, not raw prose dumped into context. A 5-field JSON object is vastly cheaper than a 200-line scan narrative.
-- Set a context budget cap: quality gates combined must not exceed 15% of the executor's context window. If a scan would exceed this, skip it and log a warning rather than silently burning budget.
-
-**Warning signs:**
-- Executor agents timing out or stopping mid-task on plans that previously completed fine.
-- SUMMARY.md files containing "ran out of context" or "deferred to next task" language.
-- Plans with many `files-modified` entries triggering proportionally large scans.
-- Execution time increasing significantly after quality sentinel is added.
-
-**Phase to address:**
-Phase implementing Quality Sentinel in executor — budget cap logic must be part of the initial implementation, not a follow-up optimization.
+These pitfalls are specific to adding concurrent milestone execution on top of the existing serial-only framework.
 
 ---
 
-### Pitfall 2: is_last_phase Bug Causes Premature Milestone Completion
+### Pitfall 1: Git Merge Conflicts from Concurrent Session Commits
 
 **What goes wrong:**
-The existing `cmdPhaseComplete` function in `phase.cjs` (lines 786–802) determines `is_last_phase` by scanning the `.planning/phases/` filesystem directory for phase directories higher-numbered than the current phase. Because unplanned future phases don't have directories yet (only ROADMAP.md entries), the scan finds nothing after the current phase and sets `is_last_phase = true`. This routes users to `/gsd:complete-milestone` when they should be routed to `/gsd:plan-phase` for the next unplanned phase.
+Two Claude Code sessions working on separate milestones both commit to the same branch of the same git repository. Session A commits `.planning/STATE.md`. Session B, which hasn't pulled, also commits `.planning/STATE.md` with different content. One session's `git commit` succeeds; the other gets a non-fast-forward push rejection. The session that fails has no recovery path built in — its commit tools assume success. The session either stalls or overwrites the other session's changes.
 
 **Why it happens:**
-The GSD lifecycle is: plan phases lazily (directories created only when planning begins). At the time phase N completes, phases N+1 through end only exist in ROADMAP.md — their directories are not created until `/gsd:plan-phase` is run. The filesystem scan is a correct query for the wrong data source.
+The existing `cmdCommit` in `core.cjs` calls `git add` and `git commit` with no pre-commit pull, no merge strategy, and no conflict detection. It was designed for single-session serial execution where only one session is ever writing at a time. GSD's `commit_docs` config enables or disables commit entirely but has no concept of concurrent writers to the same files.
+
+Shared files that are natural conflict zones:
+- `.planning/STATE.md` — both milestones update "last activity" and progress fields
+- `.planning/ROADMAP.md` — milestone-complete workflow rewrites sections
+- `.planning/MILESTONES.md` — milestone complete appends to this file
+- `.planning/PROJECT.md` — new-milestone workflow updates "Current Milestone" section
+- `.planning/dashboard.json` — if a central lock-free dashboard is introduced
 
 **How to avoid:**
-Fix `cmdPhaseComplete` to parse phase numbers from ROADMAP.md instead of scanning filesystem directories. ROADMAP.md is the authoritative source of all phases in the milestone — it contains every phase (planned or not) under `### Phase N:` headers. The fix:
-1. Parse all `Phase N:` headers from ROADMAP.md to build a complete ordered list of phase numbers.
-2. Find the current phase in that list.
-3. If any phase number in the list is greater than the current phase, `is_last_phase = false` and `nextPhaseNum` is the next entry.
-4. The roadmap-parsing capability already exists in `roadmap.cjs` — use `cmdRoadmapGetPhase` or extract phase headers inline.
-
-Note: the `execute-plan.md` workflow's `offer_next` step also implements its own "current < highest phase" check using filesystem directory counts. Both locations need consistent logic.
+- Shared files must be owned exclusively by one party. Each milestone gets its own subdirectory (`.planning/milestones/v2.0-workspace/`) for all milestone-local state. Cross-milestone shared files (`STATE.md`, `ROADMAP.md`) must be treated as read-only by concurrent sessions, or migrated to per-milestone equivalents.
+- If shared files must be written concurrently, introduce a file-locking protocol: write to a temp file with a session-unique name, then atomic rename only on success.
+- The dashboard (if central) must be append-only with a fixed per-milestone section. No session rewrites another session's section.
+- Validate before the concurrent milestone feature ships: two actual simultaneous `git commit` runs from different temp directories targeting the same branch, confirming the conflict detection and recovery path works.
 
 **Warning signs:**
-- Users completing Phase 1 of a 5-phase project and immediately being told "Milestone complete."
-- STATE.md showing "Milestone complete" status when ROADMAP.md still has unchecked phases.
-- `/gsd:complete-milestone` being triggered on multi-phase milestones after the first phase.
+- `git commit` output containing `rejected` or `non-fast-forward` anywhere in gsd-tools commit logs.
+- `.planning/STATE.md` showing alternating "last activity" timestamps from two sessions within the same minute.
+- MILESTONES.md entries out of chronological order (indicates concurrent appends that interleaved).
 
 **Phase to address:**
-Bug fix phase (earliest in the roadmap) — this bug makes the fork unusable for multi-phase milestones and must be fixed before quality enforcement is layered on top.
+Workspace isolation design phase — the ownership model for every shared file must be decided before any code is written. "Which files does each session own exclusively?" is the first deliverable.
 
 ---
 
-### Pitfall 3: Additive Changes Break Existing CLI Command Parsing
+### Pitfall 2: Dashboard File Corruption from Concurrent Writes
 
 **What goes wrong:**
-`phase.cjs` is loaded and called via `gsd-tools.cjs` through a command dispatch table. When modifying `cmdPhaseComplete` or other functions, changes to return object shape, new fields in `output()` calls, or altered error conditions break callers that parse the JSON output. The `execute-plan.md` workflow and `transition.md` workflow both call `gsd-tools.cjs phases complete` and consume `is_last_phase`, `next_phase`, and `next_phase_name` from the result. If the fix adds new fields but the callers don't handle them, or if error output format changes, workflows silently misroute.
+A central dashboard file (e.g., `.planning/dashboard.json`) tracks the status of all concurrent milestones. Two sessions both read the file, both compute an updated version in memory, both write back. The second write silently overwrites the first. The result is a dashboard that reflects Session B's milestone as "in progress" but has lost Session A's status update entirely — no error, no conflict, no trace.
 
 **Why it happens:**
-The GSD CLI uses a structured JSON output pattern (`output(result, raw, text)`) with no versioning or schema validation. Callers rely on field presence by convention. Adding new fields is safe; renaming or removing fields silently breaks callers that do field access without existence checks.
+Node.js `fs.writeFileSync` is not atomic at the OS level on macOS. The standard read-modify-write pattern used throughout GSD (`fs.readFileSync` → mutate → `fs.writeFileSync`) has a race window between read and write. With two processes hitting the same file within milliseconds (possible if both sessions commit triggers simultaneously), one write will silently overwrite the other.
 
 **How to avoid:**
-- The fix to `cmdPhaseComplete` must preserve all existing output fields (`is_last_phase`, `next_phase`, `next_phase_name`, `completed_phase`, `phase_name`, `plans_executed`, `date`, `roadmap_updated`, `state_updated`).
-- New fields can be added freely — they will be ignored by existing callers.
-- Never rename an existing output field, even if the name is misleading.
-- After fixing, run all CLI commands that consume phase-complete output: `phases complete`, the transition workflow step, and the `offer_next` step in execute-plan.md.
-- Test with: a project where phase directories exist for all phases (old behavior), and a project where later phases have no directories yet (the bug scenario).
+- Design the dashboard as append-only with per-milestone fixed-offset sections, not a shared mutable JSON blob. Each session only writes to its own section; no session reads-then-rewrites the whole file.
+- Alternatively, make each milestone its own file (`.planning/milestones/v2.0/STATUS.md`, `.planning/milestones/v2.1/STATUS.md`) and build a viewer that aggregates them at read time. No shared write target.
+- If a single dashboard JSON is required, use a file-locking library (`proper-lockfile` or `lockfile`) around every write. GSD already uses CJS — `require('proper-lockfile')` is straightforward. Never write the dashboard without acquiring the lock first.
+- Write a test that spawns two processes simultaneously updating the dashboard and verifies both updates survive. This test must pass before the dashboard is considered complete.
 
 **Warning signs:**
-- `gsd-tools.cjs phases complete` outputting `null` or `undefined` for previously populated fields after the fix.
-- Workflows routing to wrong next step after phase completion.
-- `transition.md` workflow hitting unexpected branches.
+- Dashboard showing a milestone as "not started" when it is clearly running.
+- Status updates from one session disappearing after another session commits.
+- Dashboard JSON failing `JSON.parse()` due to interleaved partial writes (indicates concurrent byte-level corruption, the worst case).
 
 **Phase to address:**
-Bug fix phase — write a before/after test fixture that captures the exact JSON output of `cmdPhaseComplete` for both scenarios before touching any code.
+Dashboard implementation phase — the write strategy (append-only vs. locked JSON vs. per-milestone files) must be selected before implementing the dashboard. Retrofitting a write-safety mechanism after the fact is significantly harder.
 
 ---
 
-### Pitfall 4: Testing Enforcement Blocking Config and Styling Changes
+### Pitfall 3: Incomplete Path Migration — Some Files Updated, Some Not
 
 **What goes wrong:**
-A mandatory test step that requires tests for all code changes will false-positive block legitimate config-only changes (updating `.planning/config.json` schema, changing `model_profile` defaults), styling/formatting changes, documentation updates, and template modifications. GSD plans frequently modify `.md` template files, workflow step prose, and `config.json` defaults — none of which are meaningfully testable with unit tests.
+The refactor changes `.planning/phases/01-foundation/` to `.planning/milestones/v2.0/phases/01-foundation/` (milestone-scoped). Phase paths are updated in `phase.cjs`, `core.cjs`, and `roadmap.cjs`. But 94 occurrences in workflow `.md` files and 83 occurrences in agent `.md` files are not updated because grep searches only covered `*.cjs`. Workflows still hardcode `.planning/phases/`, agents still read from `.planning/STATE.md`, and the verify step still resolves to the global path. The system appears to work during unit tests (which use the new path) but fails silently during live execution because workflows use the old paths.
 
 **Why it happens:**
-The test enforcement layer is written for application code patterns ("write tests for new logic") and applied globally. Config changes, Markdown template changes, and framework workflow prose don't have testable units. Enforcing the same test requirement on `templates/summary.md` as on `phase.cjs` creates friction without value.
+This is a ~270-occurrence distributed path change across 4 file types (`.cjs`, `.md` agents, `.md` workflows, `.cjs` tests). A partial grep or a change strategy that only covers one file type leaves the rest behind. The system has no path constant — `.planning/phases` is a string literal scattered across dozens of files. There is no compile-time error when a workflow references a non-existent path; it just fails at runtime.
+
+From direct analysis:
+- `get-shit-done/workflows/*.md`: 94 occurrences of `.planning/phases`
+- `agents/*.md`: 83 occurrences of `.planning/`
+- `get-shit-done/bin/lib/*.cjs`: 67 occurrences of `.planning/`
+- `tests/*.cjs`: 30 occurrences of `.planning/`
 
 **How to avoid:**
-- Test enforcement must be file-type aware. Files matching `*.md`, `*.json` config files, and template files should be exempt from the "write tests" gate.
-- The test gate should fire based on the PLAN.md `files-modified` frontmatter: if all modified files are non-code, skip mandatory test requirement and log why.
-- Enforcement rules must explicitly enumerate the exempt categories in the config (not as implicit magic): `quality.test_exemptions: ["*.md", "*.json", "templates/**", ".planning/**"]`.
-- The "write tests for new logic" requirement applies to `.cjs`, `.js`, `.ts` files with exported functions — not to config and prose.
+- Before writing any new code, create a full inventory: `grep -rn "\.planning/phases\|\.planning/STATE\|\.planning/ROADMAP" --include="*.md" --include="*.cjs"`. Count every occurrence. This is your migration checklist.
+- Do not use raw string replacement. Instead, introduce a path resolver function (`resolvePlanningPath(cwd, type, milestone)`) in `core.cjs` that centralizes path construction. Then replace string literals with resolver calls. The resolver is the single source of truth.
+- Use the backward-compatibility layer: the resolver returns `.planning/phases/` for projects without milestone workspaces, and `.planning/milestones/v2.0/phases/` for projects with workspaces. Old projects transparently use the old paths.
+- Run the full test suite after every batch of path updates, not just at the end. Incremental verification catches regressions before they compound.
+- Agent and workflow `.md` files use bash commands with hardcoded paths. These cannot be unit-tested via the CJS test suite — write end-to-end integration tests that actually execute workflow bash commands in a controlled temp project.
 
 **Warning signs:**
-- Test enforcement blocking plans that only touch `.planning/` files.
-- Verifier raising "no tests written" failures for documentation or config phases.
-- Users disabling quality enforcement entirely because it blocks config-only work.
+- Unit tests passing but live `/gsd:execute-phase` workflow failing to find PLAN.md files.
+- `find-phase` tool returning `found: true` but the workflow's own `ls .planning/phases/...` returning nothing.
+- Agent prompts referencing `.planning/phases/` paths that resolve to empty directories in new-style projects.
 
 **Phase to address:**
-Phase implementing mandatory test step and verifier quality checks — exemption logic must be part of the initial design, not retrofitted after complaints.
+Path architecture phase (first deliverable) — build the resolver and backward-compat detection before touching any other file. Every subsequent phase uses the resolver. Do not start path migration until the resolver exists and is tested.
 
 ---
 
-### Pitfall 5: Codebase Scanning Returning Noise Instead of Signal
+### Pitfall 4: Backward Compatibility Layer Breaking Existing Projects
 
 **What goes wrong:**
-The pre-implementation codebase scan (`map-codebase.md` reference in the project) finds every file in the repository and returns an undifferentiated list. The executor receives hundreds of file paths, utility function names, and import patterns. Most are irrelevant to the current task. The scan consumes context but provides no focused guidance — it's the opposite of "find existing patterns, reuse utilities."
+The compatibility layer detects "old-style" projects (`.planning/` root layout) and routes them through the old path logic. But the detection logic is wrong — it checks for the existence of `.planning/milestones/` and concludes "new-style if present, old-style if absent." Existing projects that have completed milestones already have a `.planning/milestones/` directory (it's where archived ROADMAPs live). Those projects get misidentified as "new-style" and all their paths break.
 
 **Why it happens:**
-Codebase scanning is implemented as a broad search (`find . -name "*.cjs"` style) rather than a targeted query. Without relevance filtering, signal-to-noise is low. The executor cannot distinguish between a utility function used 47 times across the codebase and a one-off helper in an archived file.
+The `.planning/milestones/` directory already exists in old-style projects that have run `milestone complete`. Looking at `cmdMilestoneComplete` in `milestone.cjs` (line 86): it creates `.planning/milestones/` as the archive directory for old-style milestone archival. The "new-style" marker cannot be the mere presence of this directory.
 
 **How to avoid:**
-- Scope scans to task-relevant directories only, derived from the PLAN's `files-modified` and `subsystem` frontmatter fields.
-- Scan for patterns, not files: "find functions that do X" (via grep for function signatures matching the task domain) rather than "list all files."
-- Limit scan output to the top 5–10 most relevant findings. Truncate with "... N more" rather than dumping everything.
-- If `.planning/codebase/` map exists (it's updated by execute-plan.md), use it as the primary lookup before running a live scan — it's already filtered to structural information.
-- Never scan `node_modules`, `.git`, `.planning/phases`, or archived phase directories.
+- Use an explicit sentinel file for new-style detection: `.planning/CONCURRENT.md` or a `"concurrent": true` key in `config.json`. The sentinel is only created when a project is explicitly upgraded. Its absence means old-style, regardless of what other directories exist.
+- Write the detection logic as a single function in `core.cjs` (`isConcurrentProject(cwd)`). Every path-branching decision calls this function. No other code re-implements the detection logic.
+- Test the compatibility layer with the three cases: (1) brand new project with no milestones, (2) old-style project with one completed milestone and a `.planning/milestones/` archive, (3) new-style concurrent project. All three must route to the correct path logic.
 
 **Warning signs:**
-- Scan output containing more than 50 results for a targeted task.
-- Executor citing files from unrelated subsystems in its implementation.
-- Context budget consumed before task execution begins on large codebases.
+- Old-style projects that have completed milestones suddenly failing with "phase not found" errors after the upgrade.
+- `cmdMilestoneComplete` paths resolving to `.planning/milestones/v1.1/phases/01-foundation/` (new-style path) when the project is actually old-style.
+- Compatibility tests passing because they only test the no-milestones case, not the already-completed-milestone case.
 
 **Phase to address:**
-Phase implementing pre-implementation codebase scan — the relevance filtering design must be defined before implementation begins.
+Compatibility layer phase — the detection sentinel must be designed before implementing the compatibility router. Document the exact sentinel chosen (config key recommended) as a framework decision in PROJECT.md before writing code.
 
 ---
 
-### Pitfall 6: Context7 Integration Adding Excessive Tokens
+### Pitfall 5: Test Suite Breakage During Structural Changes
 
 **What goes wrong:**
-Context7 docs queries return full library documentation sections — sometimes thousands of tokens covering the entire API surface of a library. An executor asked to "use the `output()` function from core.cjs" that triggers a Context7 lookup for "Node.js fs module" gets back every `fs` method, filesystem constants, stream docs, and examples. This is worse than not looking it up at all.
+The 102+ test suite creates temp directories via `createTempProject()` in `helpers.cjs`, which hardcodes `.planning/phases/` in the setup. When path structure changes, `createTempProject()` creates the old layout, and tests that exercise new-style paths fail because the test scaffold doesn't match the new structure. Tests appear "broken" but the underlying code is correct — the test scaffold is stale.
+
+Worse: tests modified to use new-style paths no longer test old-style behavior. The backward-compat layer loses test coverage silently.
 
 **Why it happens:**
-Context7 library resolution (`resolve-library-id` then `query-docs`) returns broad documentation pages by default. Without a highly specific query scoped to the exact method or pattern needed, the response covers far more than the task requires.
+The `createTempProject()` helper is shared by all 102+ tests. A single-point-of-truth for test scaffold is a virtue for serial-only code, but becomes a liability when the system needs to support two different project layouts. There is no mechanism to create a "concurrent-style temp project" vs. an "old-style temp project" — one helper serves all.
 
 **How to avoid:**
-- Context7 queries must be triggered only when the executor is about to hand-roll something that a library provides. The trigger condition is specific: "I am about to implement X from scratch, does any resolved library do this?"
-- Queries must name the exact method or pattern, not the library: "how to use Commander.js option parsing with required arguments" not "Commander.js documentation."
-- Cap Context7 integration to one query per plan execution maximum. If multiple lookups are needed, the plan is too broad and should be split.
-- Store Context7 results in the executor's working state as a summary (5–10 key facts extracted), not the full response.
-- Mark Context7 as optional when the `quality_level` is set to `fast` — skip lookups entirely in fast mode.
+- Extend `helpers.cjs` with `createConcurrentProject()` alongside the existing `createTempProject()`. The old helper remains unchanged and continues to scaffold old-style layout. New tests for concurrent features use the new helper.
+- Never modify `createTempProject()` itself. Changing the shared helper breaks all 102+ existing tests simultaneously.
+- Run the existing test suite after every structural change to confirm zero regressions before adding new tests. The sequence is: green → change → green again → add new tests.
+- For the backward-compat layer, write explicit tests that call `createTempProject()` (old-style) through the new code paths and verify they still pass. These are the regression tests for the compat layer.
 
 **Warning signs:**
-- Executor context containing more than 2,000 tokens from Context7 responses.
-- Multiple Context7 queries per plan execution.
-- Context7 being invoked for native Node.js APIs (fs, path, os) that the executor already knows well.
+- More than 5 existing tests failing after a structural change (indicates `createTempProject()` was modified or a shared assumption was broken).
+- New tests only using `createConcurrentProject()` with no tests using `createTempProject()` — the compat layer has no test coverage.
+- Test failures referencing `.planning/phases/` path as "not found" in a test that previously created it.
 
 **Phase to address:**
-Phase integrating Context7 into executor — the query discipline and token cap rules must be enforced as part of the integration spec, not left to the executor's judgment.
+Test architecture phase — extend helpers before modifying any code that tests exercise. The helper extension must be the first commit in any phase that restructures paths.
 
 ---
 
-### Pitfall 7: Quality Enforcement Levels Not Wired to Config at Implementation Time
+### Pitfall 6: Agent Prompt Drift When Parameterizing File Paths
 
 **What goes wrong:**
-The `strict/standard/fast` enforcement level config is defined in `config.json` but quality gate code is written with hardcoded "always check" logic. When users set `quality_level: fast`, the sentinel still runs full scans and Context7 lookups because the enforcement code never reads the config setting. The config key exists but has no behavioral effect.
+Agent `.md` files currently contain hardcoded bash commands like `ls .planning/phases/XX-name/*.md`. To support milestone-scoped paths, these are parameterized: `ls ${MILESTONE_WORKSPACE}/phases/XX-name/*.md`. But the parameterization is inconsistent — some agents use `${MILESTONE_WORKSPACE}`, others use `${PHASE_DIR}`, others still use the hardcoded path. The gsd-executor gets the right path, but the gsd-verifier reads from the wrong location. The verification passes (no files found) but the agent interprets "no files found" as "nothing to verify" rather than as a path error.
 
 **Why it happens:**
-Quality gate implementation is written first, config wiring is deferred as "phase 2." The gates ship without reading the config. Later, wiring the config requires understanding every gate's execution path and threading the config value through — significantly more work than wiring it correctly upfront.
+Agent `.md` files are prose, not compiled code. There is no type system, no linter, no test that runs the bash commands inside agent prompts. Parameter names are invented on the fly during editing. Without a canonical list of variable names defined in a reference file, each agent author uses whichever name feels right. The variable name used in the `init execute-phase` output JSON must exactly match the variable name referenced in the agent's bash commands — and there is no enforcement that they match.
 
 **How to avoid:**
-- Every quality gate function must read `quality_level` from config at its entry point. This is not optional and is not a follow-up.
-- Define the behavior matrix upfront before writing any gate:
-  - `fast`: no pre-task scan, no Context7, post-task diff only
-  - `standard`: targeted pre-task scan, Context7 on explicit library use, diff + duplication check
-  - `strict`: full pre-task scan, mandatory Context7 before any library use, diff + duplication + test coverage + dead code
-- Gate functions receive `qualityLevel` as a parameter or read it from config at the top. No gate should have hardcoded "always run" logic.
+- Define a canonical variable glossary in a reference file (e.g., `get-shit-done/references/path-variables.md`) before editing any agent. The glossary lists: `MILESTONE_WORKSPACE`, `PHASE_DIR`, `PLANNING_ROOT` — exactly what each resolves to, in both old-style and new-style projects, and which gsd-tools init command outputs them.
+- Use `init execute-phase` (and other `init *` commands) as the authoritative source of variables. Add new path variables to the init command outputs first; then update agent bash commands to use those output names.
+- After editing each agent, run a diff against the variable glossary to verify no invented names were introduced.
+- Test at least one full workflow execution (plan → execute → verify → transition) in both old-style and new-style project modes before declaring the agent migration complete.
 
 **Warning signs:**
-- Setting `quality_level: fast` in config and observing no change in execution time.
-- Quality gate code containing no references to `config-get` or `qualityLevel` parameter.
-- "fast mode" mentioned in docs but not in any gate's code path.
+- Bash commands in agents failing with "No such file or directory" in new-style projects even though the file exists at the correct milestone-scoped path.
+- Multiple variable names for the same concept appearing in different agent files (e.g., `$PHASE_PATH`, `$PHASE_DIR`, `$PHASE_DIRECTORY` all used in different agents for the same path).
+- Agent failing silently (interpreting missing files as "nothing to do") rather than hard erroring on path resolution failure.
 
 **Phase to address:**
-Phase implementing configurable enforcement levels — define the behavior matrix as the first deliverable of this phase, before writing any gate code.
+Agent migration phase — the variable glossary must be finalized and committed before any agent file is modified. Treat the glossary as a schema that agents must conform to.
 
 ---
 
-### Pitfall 8: Roadmap-Aware Phase Routing Fix Inconsistency Across Callers
+### Pitfall 7: State Desynchronization Between Milestone-Local and Global State
 
 **What goes wrong:**
-`cmdPhaseComplete` is fixed to parse ROADMAP.md for total phase count, but `execute-plan.md`'s `offer_next` step uses its own filesystem-based logic (comparing current phase directory to "highest phase" on disk) that is not updated. The two code paths give contradictory answers — `gsd-tools.cjs phases complete` says "next phase is Phase 3" but the `offer_next` step in the workflow says "milestone done" because it still counts filesystem directories.
+In concurrent execution, each milestone has its own local `STATE.md` in `.planning/milestones/v2.0/STATE.md`. The global `STATE.md` in `.planning/STATE.md` still exists and is consulted by commands that load project state (via `cmdStateLoad` in `state.cjs`, which hardcodes `path.join(cwd, '.planning', 'STATE.md')`). A user running `/gsd:progress` sees global state. A milestone session updates its local state. The two diverge. The global state says "Phase 1 in progress" while milestone v2.0 is actually on Phase 3 and milestone v2.1 hasn't started yet.
 
 **Why it happens:**
-The bug exists in two places: the CLI tool and the workflow prose. Fixing only one creates a split-brain state where the tool output and the workflow's routing logic disagree. The workflow's `offer_next` step uses shell commands directly (`ls .planning/phases/...`) rather than calling `gsd-tools.cjs`, so fixing the tool doesn't fix the workflow.
+`cmdStateLoad` has a single hardcoded path: `path.join(cwd, '.planning', 'STATE.md')`. All state-writing commands use the same path. There is no concept of "which milestone's state am I loading?" The state system assumes a single active state file. With two concurrent milestones, each needs its own state file, but `cmdStateGet`, `cmdStatePatch`, `cmdStateAdvancePlan`, and all other state commands resolve to the single global path.
+
+From `state.cjs` (lines 11-16): every state command begins with `path.join(cwd, '.planning', 'STATE.md')`. That is approximately 15 functions that all need milestone awareness.
 
 **How to avoid:**
-- Fix `cmdPhaseComplete` in `phase.cjs` and simultaneously update the `offer_next` step in `execute-plan.md` to use the tool's output (`is_last_phase` from `gsd-tools.cjs phases complete`) rather than re-implementing the detection logic.
-- Any phase routing logic that currently uses filesystem directory counts must be audited and updated to call the fixed CLI tool.
-- The canonical answer for "is this the last phase?" is always the output of `gsd-tools.cjs phases complete`, never a local filesystem check.
+- Pass `milestone` context into state commands via a `--milestone <version>` flag, similar to how `--cwd` is already supported. The state resolver then builds `path.join(cwd, '.planning', 'milestones', milestone, 'STATE.md')` for milestone-scoped state.
+- The global `STATE.md` becomes a read-only aggregate view computed from all milestone state files. It is never written by concurrent milestone sessions.
+- The `init execute-phase` command resolves the correct state path based on whether the project is concurrent-mode and which milestone is active. Agent bash commands use this resolved path — never construct the state path inline.
+- For old-style projects, `--milestone` is absent and the global path is used (backward-compat preserved).
 
 **Warning signs:**
-- `gsd-tools.cjs phases complete` returning `is_last_phase: false` but the workflow offering "complete milestone" to the user.
-- Two different routing outcomes depending on whether phase completion is driven by the CLI vs. the workflow.
+- `/gsd:progress` showing a plan number that is behind where the active milestone actually is.
+- Two milestone sessions both writing to the same `STATE.md` and one overwriting the other's "current plan" counter.
+- `state advance-plan` incrementing a counter that no agent actually reads, because agents resolved the milestone-local state path differently.
 
 **Phase to address:**
-Bug fix phase — the two-location fix must be atomic. Fix both in the same plan to avoid the inconsistent state window.
+State architecture phase (same phase as path architecture) — state file routing must be designed alongside path routing. Both are aspects of the same "which workspace am I in?" question.
+
+---
+
+### Pitfall 8: Conflict Manifest Not Enforced at Execution Time
+
+**What goes wrong:**
+Milestones declare which source files they intend to modify in a conflict manifest (`CONFLICT-MANIFEST.md`). Two milestones both declare they'll modify `get-shit-done/bin/lib/phase.cjs`. The framework records this as a conflict. But nothing actually stops either session from proceeding. The conflict manifest is advisory documentation — there is no runtime enforcement that blocks a session from writing to a file that another session has declared ownership of. Both sessions modify `phase.cjs`. The second commit wins. Changes from the first session are gone.
+
+**Why it happens:**
+Conflict manifests require an enforcement mechanism to have value. A markdown file declaring intent has no runtime effect. Without a locking system, a pre-commit hook that checks for declared conflicts, or some serialization protocol, the manifest is documentation that nobody enforces. Claude Code hooks could enforce this (PreToolUse hook on Write/Edit tool), but this requires hooks to read the manifest and cross-reference active milestone owners — significant infrastructure.
+
+**How to avoid:**
+- Enforce the conflict manifest via a Claude Code PreToolUse hook on file-write operations. The hook reads `.planning/CONFLICT-MANIFEST.md`, checks if the file being written is claimed by another active milestone, and exits with code 2 (block) if so.
+- The manifest format must be machine-readable (JSON or frontmatter, not prose) so the hook can parse it reliably.
+- Define an ownership protocol: milestone that starts a feature owns the files it declares until that milestone is complete. No other session can write to claimed files without a handoff process.
+- If the enforcement mechanism is too complex for v2.0, explicitly scope concurrent milestones to non-overlapping files. Document this as a required constraint: "concurrent milestones must not touch the same source files." The conflict manifest then serves as a pre-flight check, not runtime enforcement.
+
+**Warning signs:**
+- Two milestones both listing the same file in their CONFLICT-MANIFEST.md without a conflict being flagged.
+- git log showing the same file modified by two different milestone branches/sessions within the same day.
+- Conflict manifest referenced in documentation but not in any code path that executes during plan execution.
+
+**Phase to address:**
+Conflict manifest design phase — decide whether enforcement is runtime (hooks) or pre-flight (planning check only) before designing the manifest format. Pre-flight only is simpler; runtime enforcement is safer. Choose one explicitly.
+
+---
+
+### Pitfall 9: Milestone-Local Phase Numbering Collisions
+
+**What goes wrong:**
+Milestone v2.0 has phases 01–05. Milestone v2.1, running concurrently, also starts from phase 01. Both sessions write `SUMMARY.md` files as `01-01-SUMMARY.md`. If phase artifacts ever end up in a shared location (e.g., during dashboard aggregation or milestone completion), the phase-01 files collide. The dashboard shows "5 plans complete for phase 1" combining counts from both milestones. `history-digest` aggregates all `SUMMARY.md` files and double-counts phase-01 artifacts.
+
+**Why it happens:**
+Phase numbering is global in the current system — there is exactly one sequence of phase directories. With milestone-scoped workspaces, phase numbering resets per milestone. Any code that aggregates phase data (history-digest, progress, roadmap-analyze) was written assuming globally unique phase numbers. It has no awareness that phase "01" in milestone v2.0 and phase "01" in milestone v2.1 are different phases.
+
+**How to avoid:**
+- All aggregation queries must be milestone-scoped. `history-digest` must accept a `--milestone` flag and only aggregate files from that milestone's workspace. Global aggregation requires explicit opt-in.
+- Phase IDs in cross-milestone contexts must be fully qualified: `v2.0/phase-01` not just `phase-01`. The dashboard displays `v2.0/phase-01` and `v2.1/phase-01` as separate entries.
+- SUMMARY.md frontmatter must include a `milestone` field (e.g., `milestone: v2.0`) so that aggregation tools can filter correctly.
+
+**Warning signs:**
+- `history-digest` reporting double the number of plans completed for phase-01 phases.
+- Progress percentage exceeding 100% (caused by double-counting phase completions).
+- MILESTONES.md entry for v2.0 listing accomplishments from v2.1 phases (frontmatter milestone field missing or ignored).
+
+**Phase to address:**
+Phase numbering and aggregation phase — update all aggregation tools to be milestone-aware before implementing concurrent milestone creation. Test with two concurrent milestones sharing the same phase numbers.
+
+---
+
+## Part 2: V1.0/V1.1 Pitfalls (Preserved)
+
+These pitfalls from the quality enforcement milestone remain relevant during v2.0 execution because the refactor touches the same code paths.
+
+---
+
+### Pitfall 10: is_last_phase Bug Causes Premature Milestone Completion
+
+**What goes wrong:**
+`cmdPhaseComplete` determines `is_last_phase` by scanning the `.planning/phases/` filesystem directory. Unplanned future phases don't have directories, so the scan reports "no phases after current" and sets `is_last_phase = true`. Users get routed to "milestone complete" after the first phase.
+
+**Why it happens:**
+The filesystem scan is the correct query against the wrong data source. ROADMAP.md is the authoritative source of all phases (planned or not).
+
+**How to avoid:**
+Fix `cmdPhaseComplete` to parse phase numbers from ROADMAP.md. Also update `execute-plan.md`'s `offer_next` step — both locations must be fixed atomically.
+
+**Warning signs:**
+- STATE.md showing "Milestone complete" when ROADMAP.md still has unchecked phases.
+- Users completing Phase 1 of a 5-phase project and seeing "milestone complete."
+
+**Phase to address:**
+Bug fix phase (earliest in roadmap) — this must be fixed before any concurrent milestone work begins.
+
+---
+
+### Pitfall 11: Additive Changes Breaking Existing CLI Command Output Schema
+
+**What goes wrong:**
+Modifications to `cmdPhaseComplete` or other `output()` calls change the JSON result shape. Callers in `execute-plan.md` and `transition.md` rely on fields like `is_last_phase`, `next_phase`, `next_phase_name` by convention. New fields are safe; renamed or removed fields break callers silently.
+
+**How to avoid:**
+Never rename an existing output field. Add fields freely. Capture exact JSON output in a before/after test fixture before touching any command.
+
+**Phase to address:**
+Any phase that modifies CJS lib functions. Write the before fixture first.
+
+---
+
+### Pitfall 12: Quality Enforcement Levels Not Wired to Config
+
+**What goes wrong:**
+Quality gate code is written with hardcoded "always check" logic. `quality_level: fast` in config has no behavioral effect.
+
+**How to avoid:**
+Every quality gate reads `quality_level` from config at its entry point. Wire config on first implementation, not as a follow-up.
+
+**Phase to address:**
+Configurable enforcement phase — behavior matrix is the first deliverable.
 
 ---
 
 ## Technical Debt Patterns
 
-Shortcuts that seem reasonable but create long-term problems.
-
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
+| Hardcode `.planning/phases` in new concurrent code | Faster initial implementation | Path migration debt doubles with every new file | Never — use resolver function from day one |
+| Detect "concurrent project" by presence of `.planning/milestones/` directory | No new sentinel file needed | Breaks all old-style projects that have completed milestones | Never — use explicit config key sentinel |
+| Shared mutable dashboard JSON without locking | Simple implementation | Silent data loss under concurrent writes | Never — choose append-only or locked writes |
+| Copy-paste path construction across agent files | Fast agent editing | Parameter drift; inconsistent variable names; path bugs only caught in live execution | Never — define variable glossary first |
+| Global STATE.md for all concurrent milestones | No state architecture change | State desync between global view and milestone-local reality | Never for concurrent projects — milestone state must be local |
+| Advisory conflict manifest with no runtime enforcement | Simpler v1 | Concurrent sessions still corrupt shared files | Acceptable only if concurrent milestones are architecturally constrained to non-overlapping files |
 | Skip config wiring in quality gates | Faster initial implementation | Gates have no enforcement levels; `fast` mode does nothing | Never — wire config at implementation time |
-| Use broad codebase scans instead of targeted | Simpler scan code | Context budget exhaustion; low signal-to-noise | Never — targeted scans only |
-| Dump raw Context7 output into executor context | No summarization step | Token explosion; context overrun on any library task | Never — summarize to key facts |
-| Hardcode test requirement for all file types | Simpler gate logic | Blocks config and styling changes; users disable quality enforcement | Never — file-type exemptions are mandatory |
-| Fix `is_last_phase` only in `phase.cjs` | Minimal change surface | `execute-plan.md` still routes incorrectly; split-brain state | Never — both locations must be fixed atomically |
-| Add quality sentinel as prompt prefix instead of structured step | Easy to implement | Uncontrolled context growth with each added gate | Never — gates must be structured steps with budget caps |
 
 ---
 
 ## Integration Gotchas
 
-Common mistakes when connecting to external services.
-
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| Context7 library resolution | Querying broad library name ("fs", "path") | Query exact method or pattern ("fs.readFileSync options for utf-8 encoding") |
-| Context7 in executor | Triggering on every task regardless of relevance | Trigger only when executor signals "about to hand-roll X that a library provides" |
-| gsd-tools.cjs CLI | Parsing text output instead of JSON (`--raw` flag missing) | Always use `--raw` flag and parse JSON; text output is for human display only |
-| ROADMAP.md phase parsing | Using regex that requires padded numbers (`01`) | ROADMAP.md uses unpadded numbers in headers (`Phase 1:`) — match both padded and unpadded |
-| STATE.md updates | Writing STATE.md in the quality sentinel | STATE.md is owned by the executor workflow steps; sentinel must not write it |
-
----
-
-## Performance Traps
-
-Patterns that work at small scale but fail as usage grows.
-
-| Trap | Symptoms | Prevention | When It Breaks |
-|------|----------|------------|----------------|
-| Pre-task scan of full codebase | Each plan takes 2x longer; context budget exhausted before coding | Scope scan to task-relevant directories from PLAN frontmatter | Breaks at ~50 files in codebase |
-| Duplication detection scanning all files | Verifier step runs for minutes on large repos | Scope duplication check to files in `files-modified` + direct imports | Breaks at ~200 files |
-| Context7 query per library method | Multiple queries per plan; 10k+ tokens from docs | One query per plan maximum; query the pattern not the method | Breaks at plans with 3+ library usages |
-| Writing quality reports to disk per task | `.planning/` accumulates large sentinel log files | Store sentinel findings in-memory for current execution only; never persist | Breaks at 20+ plans per milestone |
+| `gsd-tools.cjs` state commands | Calling without `--milestone` flag in concurrent projects | All state commands must receive milestone context; gsd-tools router must validate milestone flag presence for concurrent projects |
+| `git commit` in concurrent sessions | Committing to same branch without pre-pull | Each milestone session must operate on a milestone-specific branch, OR shared files must be removed from concurrent writes entirely |
+| `history-digest` command | Aggregating all SUMMARY.md files across all milestones | Add `--milestone` filter; global aggregation must be explicit opt-in |
+| `validate health` command | Health check scanning `.planning/phases/` only | Health check must be milestone-aware and scan `.planning/milestones/*/phases/` in concurrent projects |
+| `roadmap analyze` command | Reading single `ROADMAP.md` | Concurrent projects need per-milestone ROADMAP.md in each workspace; global roadmap becomes index only |
+| Conflict manifest format | Human-readable prose that hooks cannot parse | Machine-readable JSON or YAML frontmatter required for any runtime enforcement |
 
 ---
 
 ## "Looks Done But Isn't" Checklist
 
-Things that appear complete but are missing critical pieces.
-
-- [ ] **Quality enforcement levels:** Config key `quality_level` exists in config.json — verify that setting `fast` actually skips scan and Context7 steps (not just defined)
-- [ ] **is_last_phase fix:** `gsd-tools.cjs phases complete 1` returns `is_last_phase: false` on a project with Phases 1–5 in ROADMAP.md but only Phase 1 directory on disk — verify with live test
-- [ ] **execute-plan.md offer_next step:** Workflow routes to "plan next phase" (not "complete milestone") after Phase 1 completion in a multi-phase project — verify both CLI tool AND workflow output
-- [ ] **Context7 token cap:** Quality sentinel adds a Context7 lookup and the total executor context stays under 50% budget — measure before shipping
-- [ ] **Test exemptions:** Plans modifying only `.md` and `.json` files do not trigger "write tests" gate — verify with a config-only plan
-- [ ] **Codebase scan scope:** Pre-task scan for a plan targeting `phase.cjs` does not return files from `node_modules`, `.planning/phases`, or unrelated subsystems
-- [ ] **Backward compatibility:** All existing workflows (`execute-plan.md`, `transition.md`, `verify-phase.md`) continue to function identically after changes to `phase.cjs`
+- [ ] **Concurrent path isolation:** Create a new-style project, run two phases in two separate terminal sessions simultaneously — verify no cross-session file reads or writes occur
+- [ ] **Backward compatibility:** Open an existing project that has run `milestone complete` (has `.planning/milestones/` with archived ROADMAP), run any gsd command — verify it uses old-style paths, not new-style
+- [ ] **Dashboard write safety:** Trigger two simultaneous milestone status updates — verify both updates survive in the dashboard without one overwriting the other
+- [ ] **Conflict manifest enforcement:** Create two milestones claiming the same source file — verify the system flags or blocks the conflict before execution begins
+- [ ] **State path routing:** In a concurrent project, run `gsd-tools state get Phase` — verify it reads the milestone-local STATE.md, not the global one
+- [ ] **Phase numbering in aggregation:** Create two concurrent milestones each with a phase-01 — run `history-digest` and verify it does not double-count phase-01 completions
+- [ ] **Test suite integrity:** Run all 102+ existing tests after path refactor — verify zero regressions (not just the new concurrent tests)
+- [ ] **Variable name consistency:** Grep all agent `.md` files for path variable names — verify all agents use the canonical names from the glossary, not invented variants
+- [ ] **is_last_phase fix:** Run `gsd-tools phase complete 1` on a project with 5 phases in ROADMAP.md but only phase-01 directory on disk — verify `is_last_phase: false` and `next_phase: 2`
 
 ---
 
 ## Recovery Strategies
 
-When pitfalls occur despite prevention, how to recover.
-
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Context budget exhausted mid-plan | MEDIUM | Split the offending plan into two smaller plans; cap scan scope; reduce Context7 from query to summary |
-| is_last_phase bug still active after fix | LOW | Manually run `gsd-tools.cjs phases complete` and check `is_last_phase` field; if wrong, verify ROADMAP.md parser is reading the correct file path |
-| Quality gates blocking valid code | LOW | Set `quality_level: fast` in `.planning/config.json` to bypass gates temporarily; investigate false positive; fix exemption rule |
-| execute-plan.md offer_next routing wrong phase | MEDIUM | Manually invoke `/gsd:plan-phase N` for the correct next phase; update `offer_next` step to use CLI tool output |
-| Context7 flooding executor context | LOW | Reduce to one Context7 query per plan; add token cap check before inserting docs into context |
-| Testing enforcement too rigid | LOW | Add file type to `quality.test_exemptions` in config; re-run verification |
+| Git merge conflict from concurrent commits | MEDIUM | Identify conflicting sessions; serialize them manually (one at a time); establish branch-per-milestone going forward |
+| Dashboard corruption from concurrent writes | MEDIUM | Restore dashboard from last clean git commit; fix write strategy before re-enabling concurrent sessions |
+| Incomplete path migration (some files still old-style) | HIGH | Run comprehensive grep inventory of all path references; create tracking issue per file; migrate remaining files systematically |
+| Old-style project broken by faulty compat detection | LOW | Add explicit sentinel key to project's `config.json`; verify detection function routes correctly |
+| Test scaffold out of sync with new project layout | LOW | Update `createConcurrentProject()` helper; do not touch `createTempProject()` |
+| State desynchronization between global and local | MEDIUM | Manually reconcile milestone-local STATE.md from git history; fix state routing before restarting sessions |
+| Phase numbering collision in aggregation | LOW | Add `milestone` frontmatter field to affected SUMMARY.md files; fix aggregation filter |
 
 ---
 
 ## Pitfall-to-Phase Mapping
 
-How roadmap phases should address these pitfalls.
-
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| Quality gates exhausting context budget | Quality Sentinel implementation phase | Measure executor context usage before and after sentinel; must stay under 50% budget |
-| is_last_phase bug | Bug fix phase (first in roadmap) | Run `gsd-tools.cjs phases complete` on a project with unplanned future phases; verify `is_last_phase: false` |
-| Additive changes breaking CLI commands | Bug fix phase | Run all CLI commands that consume phase-complete JSON; compare output schema before and after |
-| Testing enforcement blocking config changes | Test step + verifier enhancement phase | Run a config-only plan through the enforcement layer; verify no "missing tests" failure |
-| Codebase scan noise | Quality Sentinel implementation phase | Compare scan output size before and after scope filtering; must be under 50 results |
-| Context7 token explosion | Context7 integration phase | Measure Context7 contribution to executor context; must be under 2,000 tokens |
-| Enforcement levels not wired | Configurable enforcement phase | Set `quality_level: fast` and verify zero pre-task scan and zero Context7 calls |
-| Roadmap routing inconsistency across callers | Bug fix phase | Verify `execute-plan.md` offer_next and `gsd-tools.cjs phases complete` agree on next phase |
+| Git merge conflicts | Workspace isolation design | Two simultaneous `git commit` runs confirm conflict detection works |
+| Dashboard write corruption | Dashboard implementation | Concurrent write test — both updates survive |
+| Incomplete path migration | Path architecture phase (resolver function first) | All 102+ tests pass; `grep -rn "\.planning/phases"` in workflows returns 0 after migration |
+| Backward compat layer false detection | Compatibility layer phase | Test with old-style project that has completed milestones |
+| Test suite breakage | Test architecture phase (extend helpers first) | Full test suite green after each batch of changes |
+| Agent prompt drift | Agent migration phase | Variable glossary compliance check; at least one full workflow execution in both modes |
+| State desynchronization | State architecture phase | `/gsd:progress` in concurrent project shows correct milestone-local state |
+| Unenforced conflict manifest | Conflict manifest design phase | Two milestones claiming same file triggers a flag or block |
+| Phase numbering collisions | Aggregation tools phase | `history-digest` with two concurrent milestones sharing phase numbers shows correct per-milestone counts |
+| is_last_phase bug | Bug fix phase (first in roadmap) | `phase complete 1` on 5-phase project returns `is_last_phase: false` |
 
 ---
 
 ## Sources
 
-- First-party codebase analysis: `/Users/tmac/Projects/gsdup/get-shit-done/bin/lib/phase.cjs` (lines 786–802, is_last_phase bug confirmed)
-- First-party codebase analysis: `/Users/tmac/Projects/gsdup/get-shit-done/workflows/execute-plan.md` (offer_next step, independent filesystem routing logic confirmed)
-- First-party codebase analysis: `/Users/tmac/Projects/gsdup/get-shit-done/bin/lib/config.cjs` (config structure, existing workflow flags)
-- Project context: `/Users/tmac/Projects/gsdup/.planning/PROJECT.md` (requirements, constraints, known bugs)
-- Domain knowledge: Claude Code context window behavior under subagent spawning (context budget ~50% per plan execution — stated in PROJECT.md constraints)
+- First-party codebase analysis: `get-shit-done/bin/lib/state.cjs` — 15+ state functions all hardcode `.planning/STATE.md` path, zero milestone awareness
+- First-party codebase analysis: `get-shit-done/bin/lib/core.cjs` — `findPhaseInternal` hardcodes `.planning/phases` and `.planning/milestones` (archive only) patterns
+- First-party codebase analysis: `get-shit-done/bin/lib/milestone.cjs` — `cmdMilestoneComplete` creates `.planning/milestones/` directory, confirming old-style projects already have this directory
+- First-party codebase analysis: path reference counts — 94 in workflow `.md` files, 83 in agent `.md` files, 67 in `lib/*.cjs`, 30 in `tests/*.cjs`
+- First-party codebase analysis: `tests/helpers.cjs` — single `createTempProject()` helper shared by all 102+ tests, hardcodes `.planning/phases/` scaffold
+- Domain knowledge: Node.js `fs.writeFileSync` non-atomicity under concurrent writes on macOS (documented behavior, no file lock = race window)
+- Project context: `.planning/PROJECT.md` v2.0 milestone target features — milestone-scoped workspace isolation, central lock-free dashboard, conflict manifest
 
 ---
-*Pitfalls research for: AI coding agent framework quality enforcement layer (GSD Enhanced Fork)*
-*Researched: 2026-02-23*
+*Pitfalls research for: Concurrent milestone execution and workspace isolation (GSD Enhanced Fork v2.0)*
+*Researched: 2026-02-24*

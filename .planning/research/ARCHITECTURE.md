@@ -1,8 +1,8 @@
 # Architecture Research
 
-**Domain:** Agent orchestration quality enforcement — Claude Code framework (GSD)
-**Researched:** 2026-02-23
-**Confidence:** HIGH — based on direct analysis of all 11 existing agent source files, PROJECT.md, and PROPOSAL.md
+**Domain:** Concurrent milestone execution — GSD framework extension
+**Researched:** 2026-02-24
+**Confidence:** HIGH — based on direct source analysis of all lib/*.cjs modules, workflow files, and existing .planning/ layout
 
 ---
 
@@ -10,47 +10,40 @@
 
 ### System Overview
 
-The GSD pipeline is a sequential orchestration chain where each stage produces artifacts consumed by the next. Quality enforcement layers into this chain at three natural insertion points: pre-execution (planning + checking), during-execution (executor), and post-execution (verification).
+The current GSD architecture is a single-session, sequential state machine. One Claude Code session owns `.planning/` at a time. Everything — phase discovery, path resolution, dashboard state, commits — assumes exclusive write access to a single `.planning/` root.
+
+The v2.0 concurrent milestone architecture adds a **milestone-scoped layer** between the project root and the existing phase/state structure. Each milestone gets an isolated workspace under `.planning/milestones/<version>/`. A central read-mostly dashboard (`MILESTONES.md`) tracks cross-milestone status and is updated by each session when it transitions state.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                        PLANNING LAYER                                    │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐                   │
-│  │gsd-planner   │→ │gsd-plan-     │→ │  PLAN.md     │                   │
-│  │(quality      │  │checker       │  │  (quality     │                   │
-│  │ directives)  │  │(8 dims +     │  │   directives  │                   │
-│  │              │  │ quality dim) │  │   embedded)   │                   │
-│  └──────────────┘  └──────────────┘  └──────┬───────┘                   │
-├────────────────────────────────────────────  │ ──────────────────────────┤
-│                        EXECUTION LAYER        ↓                          │
+│                        PROJECT ROOT (.planning/)                         │
+│                                                                           │
 │  ┌─────────────────────────────────────────────────────────────────┐    │
-│  │                      gsd-executor                                │    │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐           │    │
-│  │  │ Pre-task     │→ │ Task impl    │→ │ Post-task    │           │    │
-│  │  │ Quality      │  │ + Context7   │  │ Quality      │           │    │
-│  │  │ Sentinel     │  │   lookup     │  │ Gate +       │           │    │
-│  │  │ (scan +      │  │ + per-file   │  │ Test gate    │           │    │
-│  │  │  baseline)   │  │   lint/type  │  │ + Commit     │           │    │
-│  │  └──────────────┘  └──────────────┘  └──────────────┘           │    │
+│  │                    CENTRAL DASHBOARD                              │    │
+│  │  MILESTONES.md   — cross-milestone status, conflict manifest     │    │
+│  │  PROJECT.md      — unchanged (project-wide context)              │    │
+│  │  config.json     — unchanged (project-wide settings)             │    │
 │  └─────────────────────────────────────────────────────────────────┘    │
-├─────────────────────────────────────────────────────────────────────────┤
-│                        VERIFICATION LAYER                                │
-│  ┌──────────────────────────┐  ┌──────────────────────────┐             │
-│  │     gsd-verifier         │  │  gsd-integration-checker │             │
-│  │  (existing 3-level +     │  │  (cross-phase wiring,    │             │
-│  │   new quality dims:      │  │   unchanged for this     │             │
-│  │   duplication, dead code,│  │   milestone)             │             │
-│  │   test coverage,         │  │                          │             │
-│  │   pattern consistency)   │  │                          │             │
-│  └──────────────────────────┘  └──────────────────────────┘             │
-├─────────────────────────────────────────────────────────────────────────┤
-│                        STATE + CONFIG LAYER                              │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐                   │
-│  │  STATE.md    │  │  ROADMAP.md  │  │  config.json │                   │
-│  │  (unchanged) │  │  (unchanged) │  │  (quality    │                   │
-│  │              │  │              │  │   level key  │                   │
-│  │              │  │              │  │   added)     │                   │
-│  └──────────────┘  └──────────────┘  └──────────────┘                   │
+│                                                                           │
+│  ┌─────────────────────┐  ┌─────────────────────┐                       │
+│  │  MILESTONE WORKSPACE │  │  MILESTONE WORKSPACE │  (one per milestone) │
+│  │  milestones/v2.0/   │  │  milestones/v2.1/   │                       │
+│  │  ├── STATE.md       │  │  ├── STATE.md        │                       │
+│  │  ├── ROADMAP.md     │  │  ├── ROADMAP.md      │                       │
+│  │  ├── REQUIREMENTS.md│  │  ├── REQUIREMENTS.md │                       │
+│  │  ├── conflict.json  │  │  ├── conflict.json   │                       │
+│  │  ├── research/      │  │  ├── research/        │                       │
+│  │  └── phases/        │  │  └── phases/          │                       │
+│  │      ├── 01-name/   │  │      ├── 01-name/     │                       │
+│  │      └── 02-name/   │  │      └── 02-name/     │                       │
+│  └─────────────────────┘  └─────────────────────┘                       │
+│                                                                           │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │             COMPATIBILITY BRIDGE (old-style projects)             │    │
+│  │  phases/      — still present for legacy projects                │    │
+│  │  STATE.md     — root-level for legacy projects                   │    │
+│  │  ROADMAP.md   — root-level for legacy projects                   │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -58,485 +51,485 @@ The GSD pipeline is a sequential orchestration chain where each stage produces a
 
 ### Component Responsibilities
 
-| Component | Existing Responsibility | Quality Enforcement Addition | Where Added |
-|-----------|------------------------|------------------------------|-------------|
-| `gsd-planner` | Decompose phases into executable plans with task breakdown, dependency graphs, goal-backward must-haves | Add quality directives to every task `<action>`: which codebase patterns to reuse, which Context7 queries to run, what tests to write | New `<quality_directives>` subsection inside `<task_breakdown>` |
-| `gsd-plan-checker` | 8 verification dimensions pre-execution | Add Dimension 9: Quality Directive Completeness — verify tasks reference codebase reuse, library docs, test expectations | New `## Dimension 9` block in `<verification_dimensions>` |
-| `gsd-executor` | Execute tasks, atomic commits, deviation handling, TDD flow | Quality Sentinel (pre-task scan, Context7 lookup, during-task lint/type gates, post-task diff review, mandatory test gate) | New `<quality_sentinel>` section, `mcp__context7__*` added to tools, `<context7_protocol>` section, modified `<execute_tasks>` step |
-| `gsd-verifier` | 3-level artifact verification (exists, substantive, wired) + anti-pattern scan | Add quality dimensions: duplication detection, dead code scan, test coverage check, pattern consistency, dependency hygiene | New `## Step 7b` block after existing Step 7 (anti-patterns) |
-| `gsd-integration-checker` | Cross-phase export/import wiring | No change required — integration checking is already thorough | None |
-| `gsd-codebase-mapper` | Analyze tech/arch/quality/concerns | No change required — already produces quality-relevant docs | None |
-| `gsd-phase-researcher` | Domain research with Context7, produces RESEARCH.md | No change required — already has Validation Architecture / Nyquist section | None |
-| `config.json` (template) | Workflow settings | Add `quality` key with `level`, `enforce_tests`, `enforce_context7`, `enforce_codebase_scan`, `enforce_lint_check` | New key in existing config template |
-
-**Agents not touched:** gsd-project-researcher, gsd-research-synthesizer, gsd-roadmapper, gsd-debugger — their responsibilities are architectural, not execution-layer.
+| Component | Current Responsibility | v2.0 Change | Confidence |
+|-----------|----------------------|-------------|------------|
+| `gsd-tools.cjs` CLI | Path resolution via hardcoded `.planning/` prefix | Add `--milestone <version>` flag; all path-generating functions accept optional milestone scope | HIGH |
+| `core.cjs: loadConfig` | Reads `.planning/config.json` | No change — config is project-scoped, not milestone-scoped | HIGH |
+| `core.cjs: findPhaseInternal` | Searches `.planning/phases/`, then `.planning/milestones/<v>-phases/` | Extend search to include `.planning/milestones/<v>/phases/` in new layout | HIGH |
+| `phase.cjs` | All paths hardcoded to `.planning/phases/` | Accept milestone-scoped phases dir as parameter | HIGH |
+| `milestone.cjs: cmdMilestoneComplete` | Archives to `.planning/milestones/` | No structural change; archives milestone workspace subfolder | MEDIUM |
+| `init.cjs` init commands | Return `.planning/` relative paths as strings | Return milestone-scoped paths when `--milestone` provided | HIGH |
+| `MILESTONES.md` | Append-only record of shipped milestones | Becomes live dashboard tracking active + archived milestones | HIGH |
+| `STATE.md` | Single file at `.planning/STATE.md` | Moved into milestone workspace: `.planning/milestones/v2.0/STATE.md` | HIGH |
+| `ROADMAP.md` | Single file at `.planning/ROADMAP.md` | Moved into milestone workspace: `.planning/milestones/v2.0/ROADMAP.md` | HIGH |
+| `conflict.json` | Does not exist | New file per milestone: declares files each milestone will touch | HIGH |
+| Workflow files (`new-milestone.md`, `plan-phase.md`, `execute-phase.md`) | Reference `.planning/` paths via init JSON | Receive milestone-scoped paths from init; no path strings hardcoded in workflows | MEDIUM |
+| Agent spec files (`gsd-executor.md`, etc.) | Receive paths via `<files_to_read>` from orchestrator | No change to agents — orchestrators pass correct paths | HIGH |
 
 ---
 
-## Recommended Project Structure (What Changes)
+## Recommended Project Structure
+
+**Decision: `.planning/milestones/<version>/` as workspace root**
+
+Use `.planning/milestones/v2.0/` (not `.planning/v2.0/`). Rationale:
+
+1. The `.planning/milestones/` directory already exists — `cmdMilestoneComplete` creates it for archives (`v1.0-phases`, `v1.1-phases`). The new layout extends the same directory for active workspaces.
+2. `.planning/v2.0/` puts milestone folders directly in `.planning/` root, mixing milestone workspaces with project-wide files (`PROJECT.md`, `config.json`, `MILESTONES.md`). This creates ambiguity — tooling must distinguish `v2.0/` (milestone) from `phases/` (legacy) and `research/` (project-wide).
+3. `.planning/milestones/v2.0/` is unambiguous: anything under `milestones/` is milestone-scoped.
 
 ```
-gsdup/
-├── agents/
-│   ├── gsd-executor.md         # PRIMARY target — largest changes
-│   │   ├── tools: add mcp__context7__*
-│   │   ├── <quality_sentinel>  # NEW section
-│   │   ├── <context7_protocol> # NEW section
-│   │   └── <execute_tasks>     # MODIFIED — add pre-task scan step
-│   ├── gsd-verifier.md         # SECONDARY target — additive quality dims
-│   │   └── <verification_process> # MODIFIED — new Step 7b
-│   └── gsd-planner.md          # TERTIARY target — task action format
-│       └── <task_breakdown>    # MODIFIED — quality directive format
-├── get-shit-done/
-│   └── templates/
-│       └── config.json         # Add quality key
-└── .planning/
-    └── (STATE.md, ROADMAP.md — unchanged)
+.planning/
+├── PROJECT.md                      # project-wide, unchanged
+├── config.json                     # project-wide settings, unchanged
+├── MILESTONES.md                   # REPURPOSED: live dashboard (was append-only log)
+│
+├── milestones/
+│   ├── v2.0/                       # ACTIVE milestone workspace (new)
+│   │   ├── STATE.md                # milestone-scoped state
+│   │   ├── ROADMAP.md              # milestone-scoped roadmap
+│   │   ├── REQUIREMENTS.md         # milestone-scoped requirements
+│   │   ├── conflict.json           # files this milestone will touch
+│   │   ├── research/               # milestone-scoped research
+│   │   │   ├── SUMMARY.md
+│   │   │   └── ARCHITECTURE.md
+│   │   └── phases/                 # milestone-scoped phases (numbered from 01)
+│   │       ├── 01-workspace-isolation/
+│   │       │   ├── 01-01-PLAN.md
+│   │       │   ├── 01-01-SUMMARY.md
+│   │       │   └── 01-RESEARCH.md
+│   │       └── 02-dashboard/
+│   │
+│   ├── v1.1-phases/                # EXISTING archive (unchanged)
+│   │   ├── 05-config-foundation/
+│   │   └── 06-commands-and-ux/
+│   └── v1.0-phases/                # EXISTING archive (unchanged)
+│       └── 01-foundation/
+│
+├── phases/                         # LEGACY: present only in old-style projects
+├── STATE.md                        # LEGACY: root-level only in old-style projects
+├── ROADMAP.md                      # LEGACY: root-level only in old-style projects
+└── REQUIREMENTS.md                 # LEGACY: root-level only in old-style projects
 ```
 
 ### Structure Rationale
 
-- **gsd-executor.md is the primary target** because quality problems originate at write-time, not detection-time. Fixing quality at source is cheaper than fixing it in verification.
-- **gsd-verifier.md is secondary** because it provides the quality backstop — if the executor's inline gates miss something, the verifier catches it at phase close.
-- **gsd-planner.md is tertiary** because quality directives embedded in task actions pre-load the executor's context with "what to reuse, what docs to consult" — reducing the executor's scan cost.
-- **config.json** provides the killswitch — `fast` mode disables expensive gates for quick experiments without changing agent files.
+- **`milestones/<version>/` per workspace:** Each active milestone is fully self-contained. One session reads/writes its workspace; other sessions are in different directories. No file-level conflicts between concurrent milestones.
+- **`phases/` starts at `01-` per milestone:** Phase numbers are milestone-scoped. v2.0 has phases 01, 02, 03. v2.1 has phases 01, 02. No global phase counter. Rationale: the old global sequential scheme (`v1.0` ended at phase 4 → `v1.1` started at phase 5) only worked because milestones were sequential. Concurrent milestones cannot share a global counter.
+- **`conflict.json` per milestone:** Declares which source files a milestone intends to modify. Written at milestone-start by `new-milestone` workflow. Read by a conflict-detection step in `execute-phase` (warn if another active milestone declared the same file). Lock-free: no coordination required to read, no exclusive access needed to write (written once at milestone creation, then read-only).
+- **`MILESTONES.md` as live dashboard:** The existing file is append-only (shipped milestones only). Repurpose it as a structured dashboard tracking active milestones with their status, phase, and conflict manifest summary. The `milestone complete` command moves an entry from active to archived. This is the single file concurrent sessions may write — addressed in Git Coordination below.
 
 ---
 
 ## Architectural Patterns
 
-### Pattern 1: Inline Sentinel (not Separate Agent)
+### Pattern 1: `--milestone` Flag for Milestone-Scoped Path Resolution
 
-**What:** Quality gates embedded inside the executor agent as a named protocol block (`<quality_sentinel>`), not as a separate spawned agent.
+**What:** Add a `--milestone <version>` global flag to `gsd-tools.cjs`. When present, all path-generating functions prepend `.planning/milestones/<version>/` instead of `.planning/`.
 
-**When to use:** When quality checks must run inline with execution because they require the executor's already-loaded task context.
+**When to use:** All commands invoked within a milestone-scoped workflow (`plan-phase`, `execute-phase`, `verify-phase`, `transition`, etc.) pass `--milestone v2.0`.
 
-**Why chosen over separate agent:** A separate quality agent would require a full context handoff (pass task context, scan results, back to executor) which burns ~30-50K tokens per task. The executor already has task context loaded. Inline sentinel adds ~5K tokens of scan overhead per task by operating within existing context.
+**Why not environment variable or config key:** An `--env` variable would require the session to `export MILESTONE=v2.0` and persist that across subshell calls — fragile in Claude Code's stateless bash environment. A config key would require reading config before every path operation. A CLI flag is explicit, composable, and visible in every bash call in workflow files — making the scope obvious when reading workflow logs.
 
-**Trade-off:** The quality sentinel consumes executor context budget. Mitigated by keeping scans targeted (grep for specific patterns, not full codebase reads) and gated on `config.quality.level`.
+**Implementation sketch (core.cjs):**
 
-**Implementation sketch:**
-```xml
-<quality_sentinel>
-## Pre-Task Protocol (runs before each type="auto" task)
+```javascript
+// In gsd-tools.cjs main():
+const msIdx = args.indexOf('--milestone');
+let milestoneScope = null;
+if (msIdx !== -1) {
+  milestoneScope = args[msIdx + 1];
+  args.splice(msIdx, 2);
+}
 
-**Step 1: Codebase Scan (targeted)**
-Search for existing patterns related to this task's domain:
-grep -r "{task_domain_term}" src/ --include="*.ts" -l 2>/dev/null | head -10
+// Threading milestone scope into path-generating functions:
+function planningRoot(cwd, milestoneScope) {
+  if (milestoneScope) {
+    return path.join(cwd, '.planning', 'milestones', milestoneScope);
+  }
+  return path.join(cwd, '.planning');
+}
 
-If similar code found: evaluate for reuse before writing new code.
-Document decision in commit message: "Reuses X from Y" or "New because X is different in Z way"
-
-**Step 2: Context7 Lookup (conditional)**
-Required before implementing: auth, validation, date/time, state management, API clients, ORM queries, any library from package.json not used before in this session.
-
-1. mcp__context7__resolve-library-id with libraryName: "{library}"
-2. mcp__context7__query-docs with libraryId: {id}, query: "{specific pattern needed}"
-3. Apply documented pattern — do not use training data assumption
-
-Skip if: config-only task, UI-only styling, no library dependencies.
-
-**Step 3: Test Baseline**
-npm test 2>&1 | tail -5  (or equivalent)
-Record: how many tests pass/fail before changes. If baseline is red, document in SUMMARY.md.
-
-## During-Task Gates (after writing each file)
-Run: tsc --noEmit (if TypeScript), lint command (if configured), affected test files.
-Fix before moving to next file.
-
-## Post-Task Review (before commit)
-Read own diff: git diff --staged
-Checklist: no TODO/FIXME left in changed lines, error cases handled, names consistent with codebase.
-</quality_sentinel>
+// All functions that currently hardcode `.planning/` call planningRoot() instead:
+// const phasesDir = path.join(cwd, '.planning', 'phases');
+// becomes:
+// const phasesDir = path.join(planningRoot(cwd, milestoneScope), 'phases');
 ```
 
-**Context budget estimate:** Pre-task scan ~2-5K tokens (targeted grep + pattern review). Context7 query ~3-8K tokens per library lookup. During-task gates: output only (no additional reads). Post-task diff read: ~1-3K tokens. Total overhead per task: ~6-16K tokens.
+**Trade-offs:**
+- All workflow files must pass `--milestone $MILESTONE_VERSION` in every tool call
+- Adds one CLI flag to every bash command in workflows
+- No runtime surprises — scope is always explicit in the bash log
+
+**What does NOT need the flag:** `config-get`, `config-set`, `commit`, `resolve-model`, `websearch` — these are project-wide operations, not milestone-scoped.
 
 ---
 
-### Pattern 2: Cascading Quality Directives (Planner → Executor)
+### Pattern 2: Compatibility Detection via Sentinel Files
 
-**What:** Planner embeds specific quality instructions directly into each task's `<action>` field, pre-loading the executor with "what to reuse" and "what docs to consult" before execution begins.
+**What:** Detect old-style vs. new-style projects by checking for the presence of sentinel structures.
 
-**When to use:** When the planner has access to codebase map documents (CONVENTIONS.md, ARCHITECTURE.md, STACK.md) that give it prior knowledge of existing patterns.
+**Detection logic:**
 
-**Why this matters:** Without cascading directives, the executor must re-discover patterns from scratch on every task (duplicate scan work). With directives, the planner does the scan once during planning and the executor just follows instructions.
+```javascript
+function detectLayoutStyle(cwd) {
+  const hasOldPhases = fs.existsSync(path.join(cwd, '.planning', 'phases'));
+  const hasMilestoneWorkspaces = (() => {
+    const msDir = path.join(cwd, '.planning', 'milestones');
+    if (!fs.existsSync(msDir)) return false;
+    // Check for at least one active workspace (has STATE.md inside)
+    const entries = fs.readdirSync(msDir, { withFileTypes: true });
+    return entries.some(e => {
+      if (!e.isDirectory()) return false;
+      // Active workspace has STATE.md; archive dirs (v1.0-phases) do not
+      return fs.existsSync(path.join(msDir, e.name, 'STATE.md'));
+    });
+  })();
 
-**Example in task action:**
-```xml
-<task type="auto">
-  <name>Task 2: Implement user validation</name>
-  <files>src/lib/validators/user.ts</files>
-  <action>
-    Quality directives:
-    - REUSE: src/lib/validators/base.ts has validateEmail() — import and use it
-    - CONSULT Context7: zod library for schema validation (project uses zod per STACK.md)
-    - TESTS: write src/lib/validators/user.test.ts with valid/invalid input cases
-
-    Implementation: Create validateUser(input) using zod schema. Import validateEmail from
-    base.ts for the email field. Do not hand-roll email regex.
-  </action>
-  <verify>...</verify>
-  <done>...</done>
-</task>
+  if (hasMilestoneWorkspaces) return 'milestone-scoped';
+  if (hasOldPhases) return 'legacy';
+  return 'uninitialized';
+}
 ```
 
-**Context budget estimate:** Each task's quality directives add ~200-400 tokens to plan size. Plans are loaded fresh per executor spawn, so no cumulative cost.
+**Compatibility rules:**
+- `legacy` style: all tools use root `.planning/` layout (current behavior, unchanged)
+- `milestone-scoped` style: tools require `--milestone <version>` for phase/state operations
+- `uninitialized`: `new-project` workflow handles setup
+
+**Where this runs:** In `cmdInitNewMilestone` and `cmdInitPlanPhase` — the two places where the workflow needs to know what layout it's working in. The result goes into the init JSON so workflows can branch on it.
+
+**Critical constraint:** The gsdup project itself is currently `legacy` style (has `.planning/phases/` — though phases were archived). Migrating to `milestone-scoped` is a deliberate choice, not automatic. The compatibility layer ensures v1.x projects continue working unchanged.
 
 ---
 
-### Pattern 3: Additive Verification Dimensions (not New Verification Passes)
+### Pattern 3: Lock-Free Dashboard via Structured MILESTONES.md
 
-**What:** New quality checks (duplication, dead code, test coverage, pattern consistency) added as additional steps inside the existing `gsd-verifier` flow — not as a new agent or separate verification pass.
+**What:** `MILESTONES.md` becomes the central dashboard. Concurrent sessions write to it only on milestone state transitions (start, phase complete, milestone complete). Format uses a structured section per milestone that can be pattern-replaced atomically.
 
-**When to use:** When checks can be done with the same grep/file-check approach the verifier already uses, on files already identified from SUMMARY.md.
+**Why lock-free:** Claude Code sessions cannot coordinate via advisory file locks — there is no shared lock server. The solution is to minimize write frequency (transitions only, not every plan) and use last-write-wins semantics acceptable for this use case. Two sessions updating their own milestone sections simultaneously would produce a merge conflict in git — handled by rebase strategy.
 
-**Why additive:** A separate quality verification agent would require spawning a new subagent with fresh context, re-loading all the phase artifacts, and returning results to the orchestrator. The verifier already has these artifacts loaded in Steps 1-7. Steps 7b+ are zero-cost from a context-loading perspective.
+**Dashboard format:**
 
-**New Step 7b structure:**
+```markdown
+# GSD Milestones
+
+## Active
+
+### v2.0 Concurrent Milestones
+**Status:** Phase 02 / 04 — executing
+**Session:** [session-id or hostname, optional]
+**Started:** 2026-02-24
+**Files declared:** bin/gsd-tools.cjs, bin/lib/core.cjs, bin/lib/phase.cjs (see conflict.json)
+**Last updated:** 2026-02-24
+
+### v2.1 Agent Teams
+**Status:** Phase 01 / 03 — planning
+**Started:** 2026-02-24
+**Files declared:** agents/gsd-executor.md, agents/gsd-planner.md
+**Last updated:** 2026-02-24
+
+## Shipped
+
+### v1.1 Quality UX (Shipped: 2026-02-24)
+**Phases completed:** 3 phases, 5 plans, 12 tasks
+...
+```
+
+**Update protocol:**
+1. At milestone start: append new `### v2.0` section under `## Active`
+2. At phase complete: pattern-replace the `**Status:**` line for that milestone section
+3. At milestone complete: move section from `## Active` to `## Shipped`, update format
+
+**Merge conflict resolution:** If two sessions update MILESTONES.md simultaneously, git will flag a conflict on the `**Status:**` lines. The resolution is simple: accept both updates (each session's section is independent). The `gsd-tools.cjs commit` function already handles `nothing_to_commit` gracefully. Recommendation: rebase strategy for the planning branch, not merge.
+
+---
+
+### Pattern 4: Conflict Manifest (conflict.json)
+
+**What:** At milestone creation, the `new-milestone` workflow prompts the user (or infers from requirements) which source files the milestone will touch. This is written to `.planning/milestones/<version>/conflict.json`.
+
+**Format:**
+
+```json
+{
+  "version": "v2.0",
+  "declared": [
+    "bin/gsd-tools.cjs",
+    "bin/lib/core.cjs",
+    "bin/lib/phase.cjs",
+    "bin/lib/init.cjs",
+    "bin/lib/milestone.cjs"
+  ],
+  "declared_at": "2026-02-24",
+  "note": "All gsd-tools modules — concurrent milestone path resolution"
+}
+```
+
+**Conflict detection in execute-phase:**
+
 ```bash
-## Step 7b: Code Quality Checks
+# At execute-phase start, check for conflicts with other active milestones
+OTHER_MILESTONES=$(ls .planning/milestones/ | grep -E "^v[0-9]" | grep -v "$(cat .planning/milestones/$MILESTONE/current-version.txt)" | grep -v ".*-phases$")
 
-# Duplication detection — find near-identical function bodies
-# (run on files from SUMMARY.md key-files, not full codebase)
-for file in ${PHASE_FILES}; do
-  # Check for functions that might duplicate existing utilities
-  func_names=$(grep -E "^(export )?function |^(export )?const .* = \(" "$file" | head -20)
-  # Cross-reference against utility directories
-  for name in $func_names; do
-    grep -r "$name" src/lib src/utils src/helpers --include="*.ts" | grep -v "$file"
-  done
-done
+for other in $OTHER_MILESTONES; do
+  # Skip if no conflict.json (old-style archive)
+  [ ! -f ".planning/milestones/$other/conflict.json" ] && continue
 
-# Test coverage check — new logic without tests
-for file in ${PHASE_FILES}; do
-  test_file="${file/.ts/.test.ts}"
-  [ ! -f "$test_file" ] && echo "WARNING: No test file for $file"
-done
+  CONFLICTS=$(node gsd-tools.cjs conflict-check \
+    --a ".planning/milestones/$MILESTONE/conflict.json" \
+    --b ".planning/milestones/$other/conflict.json")
 
-# Dead code — exports with no importers
-for file in ${PHASE_FILES}; do
-  exports=$(grep -E "^export " "$file" | grep -oE "(function|const|class) \w+" | awk '{print $2}')
-  for export in $exports; do
-    uses=$(grep -r "$export" src/ --include="*.ts" --include="*.tsx" | grep -v "import" | grep -v "$file" | wc -l)
-    [ "$uses" -eq 0 ] && echo "DEAD EXPORT: $export in $file"
-  done
+  if [ -n "$CONFLICTS" ]; then
+    echo "WARNING: Overlapping files with milestone $other: $CONFLICTS"
+    echo "Consider sequencing these milestones or splitting the conflicting work."
+  fi
 done
 ```
 
-**Context budget estimate:** Step 7b adds ~2-5K tokens of grep output to the verifier's context. Well within the verifier's budget since it doesn't spawn additional agents.
+**Conflict response is advisory, not blocking.** Two milestones touching the same file is allowed — both owners know about the overlap and can coordinate manually. GSD is a human-assisted system, not an automated CI pipeline.
 
 ---
 
-### Pattern 4: Config-Gated Quality Levels
+### Pattern 5: Phase Numbering Reset per Milestone
 
-**What:** All quality gates read `config.quality.level` before executing. Gate behavior per level:
+**What:** Phase directories inside a milestone workspace start at `01-` regardless of global phase history. No cross-milestone phase counter.
 
-| Gate | strict | standard | fast |
-|------|--------|----------|------|
-| Pre-task codebase scan | Always | Always | Skip |
-| Context7 lookup | Always | Conditional (new deps only) | Skip |
-| During-task type check | Always | Always | Skip |
-| During-task lint | Always | Always | Skip |
-| Mandatory test write | Always | New logic only | Skip |
-| Post-task diff review | Always | Always | Skip |
-| Verifier quality dims | All | Core only | Skip |
+**Why:** The current global counter (v1.0 ends at 4, v1.1 starts at 5) only worked because milestones executed sequentially. With concurrent milestones, there is no meaningful global sequence. Phase numbers are only meaningful within a milestone (`v2.0/phases/01-` is not the same as `v1.0/phases/01-`).
 
-**Implementation:** Each quality gate checks config at runtime:
-```bash
-QUALITY_CFG=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs config-get quality.level 2>/dev/null || echo "standard")
-# Gate: [ "$QUALITY_CFG" = "fast" ] && skip_gate || run_gate
-```
+**Phase reference format:** When a workflow or commit message references a phase, it should be `v2.0/01` or `v2.0/phase-01` — not bare `01`. The phase directory path already provides this context since it lives under `milestones/v2.0/phases/`.
 
-**Why this matters architecturally:** The config gate is what makes this enhancement compatible with the constraint "All changes are additive." Users with existing projects running `fast` mode experience zero behavior change. `strict` users get full enforcement. The agent files change once; behavior changes per project via config.
+**Impact on `phase complete` and `cmdPhaseComplete`:** The function currently finds "next phase" by scanning `.planning/phases/`. In milestone-scoped mode, it scans `.planning/milestones/<version>/phases/`. Phase completion updates the milestone-scoped `STATE.md` and `ROADMAP.md`, not the root files.
+
+**Impact on `findPhaseInternal`:** The archive search loop (`v[\d.]+-phases` directories) already exists. Add a parallel search for active milestone workspaces: look in `milestones/*/phases/` for directories matching `STATE.md` present (active) vs. absent (archived via old format).
 
 ---
 
 ## Data Flow
 
-### Quality-Enhanced Execution Flow
+### Milestone-Scoped Request Flow
 
 ```
-PLAN.md (with quality directives embedded by planner)
+User invokes: /gsd:plan-phase 01 --milestone v2.0
     ↓
-gsd-executor spawned (fresh context, ~200K)
+Orchestrator (plan-phase.md):
+  INIT=$(node gsd-tools.cjs init plan-phase 01 --milestone v2.0)
+  # Returns milestone-scoped paths:
+  # phase_dir: ".planning/milestones/v2.0/phases/01-workspace-isolation"
+  # state_path: ".planning/milestones/v2.0/STATE.md"
+  # roadmap_path: ".planning/milestones/v2.0/ROADMAP.md"
     ↓
-[Step: load_project_state] — reads config.quality.level
+Orchestrator passes scoped paths to subagents via <files_to_read>
     ↓
-[Step: execute_tasks] — for each task:
-    │
-    ├── [quality_sentinel: pre-task]
-    │     ├── grep codebase for similar patterns (targeted, 10-line output limit)
-    │     ├── Context7 lookup (if library used OR config=strict)
-    │     └── npm test → record baseline pass count
-    │
-    ├── [task implementation] — write code files
-    │     └── after each file: tsc --noEmit + lint + affected tests
-    │
-    └── [quality_sentinel: post-task]
-          ├── git diff --staged (read own diff)
-          ├── duplication check against scan results
-          └── test gate: write test if new logic created
+Subagents (planner, researcher) read from milestone workspace
     ↓
-[task_commit_protocol] — commit implementation + tests together
+Subagents write to milestone workspace (via paths from init)
     ↓
-SUMMARY.md created → key-files list feeds gsd-verifier
-    ↓
-gsd-verifier spawned (fresh context)
-    ↓
-[Steps 1-7: existing verification]
-    ↓
-[Step 7b: quality dimensions — NEW]
-    │   ├── duplication detection on phase files
-    │   ├── dead code / orphaned exports
-    │   ├── test coverage check (test file existence)
-    │   └── pattern consistency (naming, structure vs CONVENTIONS.md)
-    ↓
-VERIFICATION.md — includes quality findings in gaps: section
+Commit touches only .planning/milestones/v2.0/ files (isolated)
 ```
 
-### Context7 Data Flow (within executor)
+### Compatibility Detection Flow
 
 ```
-Task action references library (e.g., "zod for validation")
+User invokes: /gsd:plan-phase 5
     ↓
-quality_sentinel: pre-task
-    └── mcp__context7__resolve-library-id(libraryName: "zod")
-         → returns library ID
-    └── mcp__context7__query-docs(libraryId, query: "schema validation pattern")
-         → returns current API docs + code examples
+gsd-tools.cjs init plan-phase 5  (no --milestone flag)
     ↓
-Task implementation uses documented pattern (not training data)
+detectLayoutStyle(cwd):
+  → checks .planning/phases/ exists AND no active milestone workspaces
+  → returns 'legacy'
     ↓
-Commit message notes: "Per zod docs via Context7 (schema.parse pattern)"
+init plan-phase returns legacy paths:
+  phase_dir: ".planning/phases/05-config-foundation"
+  state_path: ".planning/STATE.md"
+  roadmap_path: ".planning/ROADMAP.md"
+    ↓
+Orchestrator proceeds with existing behavior (zero change)
 ```
 
-### Config Quality Level Data Flow
+### Conflict Detection Flow
 
 ```
-.planning/config.json
-    { "quality": { "level": "strict" } }
+Session A starts execute-phase for v2.0:
+  reads .planning/milestones/v2.0/conflict.json → ["bin/gsd-tools.cjs", ...]
+  reads all other active milestone conflict.jsons
+  cross-references → finds v2.1 also declared "agents/gsd-executor.md"
+  WARN: "v2.1 also touches agents/gsd-executor.md — coordinate before merging"
+  Execution continues (advisory only)
     ↓
-gsd-executor reads at startup (auto_mode_detection step)
-    └── QUALITY_CFG = "strict" | "standard" | "fast"
+Session A commits to git
     ↓
-Each gate reads QUALITY_CFG before running
-    └── strict: all gates active
-    └── standard: scan + context7 conditional + tests for new logic
-    └── fast: gates skipped, normal GSD flow preserved
+Session B (v2.1) later merges → git conflict on gsd-executor.md
+  Developer resolves manually
+  Conflict.json warned about this in advance
 ```
 
----
-
-## Build Order
-
-The build order is driven by what depends on what. Changes must be built in this sequence:
-
-### Phase 1: Config Foundation (unblocks everything else)
-
-**What:** Add `quality` key to `get-shit-done/templates/config.json`. Add config-read pattern to executor and verifier gate checks.
-
-**Why first:** Every quality gate reads config. Without the config key, gates cannot be conditionally enabled/disabled. This is a 1-file change with no agent logic — lowest risk, highest leverage.
-
-**Depends on:** Nothing.
-
-**File:** `get-shit-done/templates/config.json`
-
----
-
-### Phase 2: Executor Core Quality Sentinel (largest change, critical path)
-
-**What:** Modify `agents/gsd-executor.md`:
-1. Add `mcp__context7__*` to the `tools:` frontmatter line
-2. Add `<quality_sentinel>` section (pre-task, during-task, post-task protocols)
-3. Add `<context7_protocol>` section
-4. Modify `<execute_tasks>` step to call quality_sentinel at correct points
-5. Modify `<task_commit_protocol>` to include test gate before commit
-
-**Why second:** This is the highest-value change (executor is where code is written, executor is where slop originates). Everything else is backstop or upstream signaling — the executor is ground truth.
-
-**Depends on:** Phase 1 (config level determines which gates run).
-
-**File:** `agents/gsd-executor.md`
-
-**Context budget implication:** The executor's own context budget gets consumed by quality gates. Estimated impact: +15-25% context per task vs. current. This means plans with complex tasks (3 files, 30-60 min Claude time) may approach the ~50% context target sooner. Mitigation: quality gate outputs are capped (grep output limited to relevant lines, Context7 queries targeted to specific pattern needed, not full library docs).
-
----
-
-### Phase 3: Verifier Quality Dimensions (backstop layer)
-
-**What:** Modify `agents/gsd-verifier.md`:
-1. Add Step 7b: Code Quality Checks after existing Step 7 (Anti-Patterns)
-2. Update Step 9 (Overall Status) to include quality dimension failures in `gaps_found`
-3. Update VERIFICATION.md output template to include quality findings section
-
-**Why third:** The verifier is the backstop — it catches what the executor's inline gates miss. It operates on the complete phase output, so it needs Phase 2 (executor changes) to have run first to generate the test files and commit patterns it verifies.
-
-**Depends on:** Phase 2 (verifier's quality checks are meaningful only after executor has been taught to write tests; otherwise every verification fails on test coverage).
-
-**File:** `agents/gsd-verifier.md`
-
----
-
-### Phase 4: Planner Quality Directives (upstream signaling)
-
-**What:** Modify `agents/gsd-planner.md`:
-1. Add quality directive format to `<task_breakdown>` section
-2. Add instruction: task `<action>` must identify (a) existing code to reuse, (b) library docs to consult, (c) tests to write
-3. Add self-check: before returning plans, verify each task action has quality directives populated
-
-**Why fourth:** Planner quality directives pre-load executor with scan results — reducing executor scan cost. But executor can work without them (quality_sentinel runs its own scan if directives are absent). Building planner changes last means phases 1-3 are stable before we change how plans are created.
-
-**Depends on:** Phase 2 (directives are only meaningful if executor knows what to do with them; the `quality_sentinel` section in executor defines the contract planner directives fill).
-
-**File:** `agents/gsd-planner.md`
-
----
-
-### Phase 5: Plan-Checker Quality Dimension (pre-execution validation)
-
-**What:** Add Dimension 9 to `agents/gsd-plan-checker.md`: verify task actions include quality directives (codebase reference, library consultation note, test expectation). Non-blocking in standard mode, blocking in strict mode.
-
-**Why fifth (and optional at first):** Plan-checker enforces that planners follow the Phase 4 changes. Building it after the planner changes means there's something to validate. This is the least critical change — the executor's inline sentinel catches gaps regardless of whether the checker validates plan quality.
-
-**Depends on:** Phase 4 (no point checking for quality directives in plans if planner hasn't been taught to write them).
-
-**File:** `agents/gsd-plan-checker.md`
-
----
-
-## Context Budget Implications
-
-### Executor Budget Analysis
-
-Current executor context consumption per task (estimated):
-- Plan context loaded: ~15-25K tokens
-- Task implementation (write 2-4 files): ~20-40K tokens
-- Verify + commit: ~5-10K tokens
-- **Current total per task: ~40-75K tokens of a 200K budget**
-
-Quality sentinel additions per task:
-- Pre-task codebase scan (grep output, limited): ~2-5K tokens
-- Context7 lookup (1-2 queries, targeted): ~3-8K tokens
-- During-task lint/type output: ~1-2K tokens
-- Post-task diff read: ~1-3K tokens
-- Test writing (if new logic): ~10-20K tokens (significant)
-- **Quality overhead per task: ~17-38K tokens**
-
-**Net result:** Executor context per task increases from ~40-75K to ~57-113K tokens. For a 2-task plan (~50% context target), current budget allows ~100K tokens before degradation. Quality gates push this to ~114-226K — potentially exceeding the 200K fresh context budget for complex tasks.
-
-**Mitigation strategies embedded in design:**
-1. Cap grep output (`| head -10`, `-l` flag for file-list-only)
-2. Target Context7 queries narrowly ("how to use X for Y" not "all about X")
-3. Test gate applies only when new logic is created (not for config/style tasks)
-4. Config `fast` mode disables all gates when budget matters more than quality
-5. Plans should account for quality overhead: complex tasks that add quality gates should target ~40% context (not 50%) to preserve headroom
-
-### Verifier Budget Analysis
-
-Verifier budget is less constrained — it runs post-phase with a fresh context, reading already-committed artifacts via grep/file checks. Step 7b adds ~2-5K tokens of additional grep output. No significant budget concern.
-
-### Planner Budget Analysis
-
-Planner runs once per plan creation, not per task. Adding quality directive format to each task action adds ~200-400 tokens per task to the PLAN.md file. Plans are read fresh by each executor spawn — no cumulative cost. The planner's own context budget is not materially affected.
-
----
-
-## Anti-Patterns
-
-### Anti-Pattern 1: Separate Quality Agent
-
-**What people do:** Create a new `gsd-quality-checker` agent that spawns between executor tasks to validate code.
-
-**Why it's wrong:** A separate agent requires full context handoff — the orchestrator must pass the executor's task results to the quality agent, run it, collect results, and pass them back. This adds ~50-100K tokens of orchestrator overhead per task and breaks the "lean orchestrators" principle that keeps the main context at 10-15%.
-
-**Do this instead:** Inline quality sentinel within the executor agent. The executor already has task context loaded — gates run in the same context window at near-zero handoff cost.
-
----
-
-### Anti-Pattern 2: Full Codebase Scan on Each Task
-
-**What people do:** Run `grep -r "pattern" src/` across the entire source tree for every pre-task scan.
-
-**Why it's wrong:** A full grep on a large codebase produces thousands of lines of output that consume context budget. For a project with 500 TypeScript files, an unfiltered grep can return 5,000+ lines — instantly consuming 15-25K tokens of executor context, triggering quality degradation before the task even starts.
-
-**Do this instead:** Targeted scans limited by (a) search term derived from task's domain, (b) output line cap (`| head -10`), (c) file-list mode first (`-l` flag) then read only relevant files. The planner's quality directives further narrow the scan by pre-identifying relevant files.
-
----
-
-### Anti-Pattern 3: Verification Quality Checks as Blocking in All Modes
-
-**What people do:** Make Step 7b quality findings always block `status: passed`.
-
-**Why it's wrong:** Quality issues like "no test file for this utility" may be intentional in a rapid-prototyping project. Hard-blocking all phases on quality forces users who want `fast` mode to disable the entire verifier, not just the quality checks.
-
-**Do this instead:** Step 7b findings map to severity based on config level. In `strict`: duplication and missing tests are `gaps_found` blockers. In `standard`: they are warnings in the report but don't change status. In `fast`: Step 7b is skipped entirely. Verifier reads `QUALITY_CFG` at the same startup step it reads other config.
-
----
-
-### Anti-Pattern 4: Context7 on Every Import
-
-**What people do:** Resolve and query Context7 for every imported library in every task.
-
-**Why it's wrong:** A task that imports React, a utility function, and lodash does not need Context7 docs for all three. React patterns are established in the codebase (CONVENTIONS.md covers them), utility functions are local, and lodash usage is trivial. Querying Context7 for all three adds ~15-20K tokens of overhead for zero quality benefit.
-
-**Do this instead:** Context7 queries are triggered by specific conditions: (a) first use of a library in this session, (b) using a library API that could have changed (auth, ORM, HTTP clients), (c) implementing something the PROPOSAL explicitly flagged as "don't hand-roll" (auth, validation, date handling, state management). Config `standard` mode: query on new deps only. Config `fast` mode: skip all Context7 queries in executor.
+### Dashboard Update Flow
+
+```
+Session A completes phase 01 of v2.0:
+  node gsd-tools.cjs milestone-dashboard update \
+    --milestone v2.0 --status "Phase 02 / 04 — planning"
+    ↓
+  Reads MILESTONES.md
+  Pattern-replaces **Status:** line for v2.0 section
+  Writes MILESTONES.md
+  node gsd-tools.cjs commit "docs(v2.0): phase 01 complete" \
+    --files .planning/MILESTONES.md .planning/milestones/v2.0/STATE.md
+```
 
 ---
 
 ## Integration Points
 
-### Internal Boundaries
+### New vs. Modified Components
 
-| Boundary | Communication | Notes |
-|----------|---------------|-------|
-| Planner → Executor | PLAN.md file (static artifact) | Quality directives embedded in `<action>` fields; executor reads at startup |
-| Executor → Verifier | SUMMARY.md + committed files | Verifier reads key-files from SUMMARY.md frontmatter to scope quality checks |
-| Config → All Agents | `config-get quality.level` via gsd-tools | Agents read config at startup; no runtime config changes during agent run |
-| Executor → Context7 | `mcp__context7__*` MCP calls | Calls made inline during quality_sentinel pre-task step; results used immediately in same context |
-| Plan-Checker → Planner | Structured issues YAML returned to orchestrator | Revision loop unchanged; Dimension 9 issues follow same format as existing dimensions |
+| Component | New or Modified | What Changes |
+|-----------|----------------|--------------|
+| `core.cjs: planningRoot()` | NEW helper function | Central function returning `.planning/` or `.planning/milestones/<v>/` based on milestone scope |
+| `core.cjs: detectLayoutStyle()` | NEW helper function | Returns `legacy`, `milestone-scoped`, or `uninitialized` |
+| `core.cjs: findPhaseInternal()` | MODIFIED | Add search in active milestone workspaces (`milestones/*/phases/` with STATE.md) |
+| `core.cjs: getArchivedPhaseDirs()` | MODIFIED | Existing `v*-phases` pattern unchanged; also include active workspaces in appropriate contexts |
+| `core.cjs: getMilestoneInfo()` | MODIFIED | Read from milestone-scoped ROADMAP.md when milestone scope provided |
+| `phase.cjs: all functions` | MODIFIED | Accept `phasesDir` param instead of computing it internally; callers pass `planningRoot/phases` |
+| `milestone.cjs: cmdMilestoneComplete()` | MODIFIED | Archive entire milestone workspace folder; update MILESTONES.md dashboard section |
+| `init.cjs: all cmdInit* functions` | MODIFIED | Accept milestone scope; return milestone-scoped paths |
+| `commands.cjs: cmdCommit()` | NO CHANGE | Commit is project-wide (operates on git root, not .planning) |
+| `commands.cjs: new cmdConflictCheck()` | NEW | Compare two conflict.json files, return overlapping file paths |
+| `commands.cjs: new cmdMilestoneDashboard()` | NEW | Update MILESTONES.md structured section for a milestone |
+| `config.cjs` | NO CHANGE | Config is project-wide, milestone-agnostic |
+| `roadmap.cjs` | MODIFIED | Path resolution via planningRoot; milestone-scoped ROADMAP.md |
+| `state.cjs` | MODIFIED | Path resolution via planningRoot; milestone-scoped STATE.md |
+| `gsd-tools.cjs` (CLI router) | MODIFIED | Parse `--milestone` global flag; thread scope into all command calls |
+| `MILESTONES.md` template | MODIFIED | Structured dashboard format replacing append-only log |
+| `new-milestone.md` workflow | MODIFIED | Create milestone workspace dir; write conflict.json; update MILESTONES.md dashboard |
+| `plan-phase.md` workflow | MODIFIED | Pass `--milestone` to all tool calls; detect layout style from init |
+| `execute-phase.md` workflow | MODIFIED | Conflict check at start; pass `--milestone` to all tool calls |
+| Agent specs (`gsd-executor.md`, etc.) | NO CHANGE | Agents receive paths from orchestrators; no hardcoded `.planning/` references |
 
-### External Service Integration
+### Build Order (Dependency-Ordered)
 
-| Service | Integration Pattern | Notes |
-|---------|---------------------|-------|
-| Context7 MCP | `mcp__context7__resolve-library-id` + `mcp__context7__query-docs` | Added to executor's tools list in frontmatter; already used by planner and phase-researcher — same pattern |
-| gsd-tools CLI | `config-get quality.level` | New config key read via existing CLI; no new CLI commands needed |
+Build phases for v2.0 should follow this dependency order:
+
+**Phase 1: Core path resolution (unblocks everything)**
+
+Add `planningRoot()` helper and `--milestone` flag parsing to `gsd-tools.cjs` and `core.cjs`. Refactor all path-computing functions in `phase.cjs`, `state.cjs`, `roadmap.cjs` to call `planningRoot()`. No behavior change when `--milestone` not provided (backward compatible by design).
+
+Deliverable: `gsd-tools.cjs init plan-phase 1 --milestone v2.0` returns milestone-scoped paths.
+
+**Phase 2: Milestone workspace initialization (depends on Phase 1)**
+
+Modify `new-milestone.md` workflow and `cmdMilestoneComplete` to create workspace directories, write `conflict.json`, initialize `MILESTONES.md` dashboard format. Add `cmdConflictCheck` to commands.cjs.
+
+Deliverable: `/gsd:new-milestone` creates `.planning/milestones/v2.0/` with correct structure.
+
+**Phase 3: Dashboard and conflict detection (depends on Phase 2)**
+
+Add `cmdMilestoneDashboard` command. Update `execute-phase.md` with conflict check step. Write MILESTONES.md dashboard read/write logic. Test concurrent dashboard updates.
+
+Deliverable: Two active milestone workspaces show correctly in `/gsd:progress`; conflict warning fires when manifests overlap.
+
+**Phase 4: Compatibility layer and legacy detection (depends on Phase 1)**
+
+Add `detectLayoutStyle()` to core.cjs. Update `init` commands to return `layout_style` field. Update workflows to branch on `layout_style`. Test: existing projects (legacy layout) get zero behavior change.
+
+Deliverable: Running `/gsd:plan-phase 5` on the gsdup project (which has archived phases in `milestones/v1.1-phases/`) still works unchanged.
+
+**Phase 5: Routing updates — all commands and workflows (depends on Phases 1-4)**
+
+Audit every workflow file and command for hardcoded `.planning/` path strings. Replace with milestone-scoped equivalents where needed. Update `progress.md`, `complete-milestone.md`, `health.md`, `resume-project.md`.
+
+Deliverable: All existing `/gsd:*` commands work with `--milestone` flag.
+
+**Phase 6: Test coverage (depends on Phases 1-5)**
+
+Add test cases for: milestone-scoped path resolution, compatibility detection, conflict check, phase numbering within milestone workspace, MILESTONES.md dashboard update. Target: 90%+ branch coverage of new functions in core.cjs and commands.cjs.
+
+---
+
+## Anti-Patterns
+
+### Anti-Pattern 1: Global Phase Counter for Concurrent Milestones
+
+**What people do:** Continue the global sequential phase number (v1.1 ended at 7, v2.0 starts at 8, v2.1 starts at 11, etc.) across concurrent milestones.
+
+**Why it's wrong:** Concurrent milestones have no determined start order. If v2.0 starts at 8 and v2.1 starts at 11, what happens when v2.1 finishes first? Global renumbering breaks cross-references. Phase numbers become meaningless as global identifiers.
+
+**Do this instead:** Phase numbers are milestone-local, starting at `01`. Reference phases as `v2.0/01` in cross-milestone contexts. The `phases/` directory path provides unambiguous location.
+
+---
+
+### Anti-Pattern 2: Shared STATE.md for Concurrent Milestones
+
+**What people do:** Keep STATE.md at `.planning/STATE.md` and add a "current milestone" field to multiplex milestones through it.
+
+**Why it's wrong:** `STATE.md` tracks current phase, current plan, last activity, and blockers. These are all session-specific. Two sessions writing to the same STATE.md will produce interleaved, incoherent state. The current `cmdPhaseComplete` writes to STATE.md to advance the current phase pointer — two sessions doing this concurrently will corrupt the "current phase" field.
+
+**Do this instead:** Each milestone workspace owns its STATE.md. The root `MILESTONES.md` provides the cross-session view (which milestone is at which phase), but it is written only on phase transitions (low frequency), not on every plan execution.
+
+---
+
+### Anti-Pattern 3: File Locking for Dashboard Updates
+
+**What people do:** Implement an advisory lock file (`.planning/.lock`) before writing MILESTONES.md to prevent concurrent writes.
+
+**Why it's wrong:** Claude Code sessions have no reliable way to enforce file lock cleanup. If a session crashes or is interrupted while holding a lock, the lock file remains and blocks all other sessions. Lock files also require polling, which adds latency.
+
+**Do this instead:** Design MILESTONES.md so concurrent writes produce git conflicts that are trivially resolvable (each milestone's section is independent). Dashboard writes are infrequent (phase transitions only). Conflict probability is low. When it does occur, `git rebase` resolves it in seconds because each session only updates its own section.
+
+---
+
+### Anti-Pattern 4: Agent Specs with Hardcoded Paths
+
+**What people do:** Add `.planning/milestones/v2.0/` path references directly into agent spec files (`gsd-executor.md`, `gsd-planner.md`).
+
+**Why it's wrong:** Agent specs are global files in `~/.claude/get-shit-done/`. Hardcoding a milestone version in an agent spec means the spec is only correct for that version. The next milestone breaks it.
+
+**Do this instead:** Agent specs never contain filesystem paths. All paths flow through orchestrators via `<files_to_read>` blocks. Orchestrators get paths from `init` commands. `init` commands compute milestone-scoped paths. Agents are path-agnostic — they receive files, not paths.
+
+---
+
+### Anti-Pattern 5: Migrating Existing Projects Automatically
+
+**What people do:** When a project has `.planning/phases/` (legacy), automatically restructure it into `.planning/milestones/<current-version>/phases/`.
+
+**Why it's wrong:** Automatic migration changes on-disk structure without explicit user intent. It invalidates hardcoded path strings in any notes, scripts, or external references. It is irreversible (unless git reverted).
+
+**Do this instead:** Legacy projects continue working as-is indefinitely. The compatibility layer means "old-style" is a permanent valid mode, not a transitional state. Migration to milestone-scoped layout is optional and user-initiated (run `/gsd:new-milestone` which creates the workspace structure and the user can choose to migrate or not).
 
 ---
 
 ## Scaling Considerations
 
-This is an agent orchestration system, not a web application. "Scaling" here means: what happens as projects grow larger?
+This is a local filesystem orchestration system, not a web application. "Scaling" means: what happens as the number of concurrent milestones grows?
 
-| Concern | Small Project (<50 files) | Medium Project (50-500 files) | Large Project (500+ files) |
-|---------|--------------------------|-------------------------------|---------------------------|
-| Pre-task codebase scan | Negligible context cost | Moderate — output caps critical | High — output caps essential; consider STRUCTURE.md pre-loaded context |
-| Context7 queries per session | All libraries new — high query rate | Established libraries known — lower rate | Same as medium; most libraries stable |
-| Verifier Step 7b quality checks | Fast — few files per phase | Moderate — files from SUMMARY.md limit scope | Acceptable — verifier only scans phase files, not full codebase |
-| Config fast mode value | Low (small projects can afford strict) | Medium | High — large projects likely need targeted quality, not blanket strict |
+| Scale | Architecture Behavior |
+|-------|-----------------------|
+| 1 active milestone | No concurrent writes; MILESTONES.md update is serial; no conflict risk |
+| 2-3 concurrent milestones | Low conflict probability; dashboard updates may collide once per milestone; git rebase resolves |
+| 4+ concurrent milestones | MILESTONES.md becomes a merge hotspot; conflict.json cross-checks grow O(n²); consider splitting into separate repos |
 
-### Scaling Notes
+**Realistic target:** 2-3 concurrent milestones is the practical maximum for a single developer using Claude Code. The architecture supports it cleanly. 4+ milestones in one project suggests the project should be decomposed into separate repos, each with their own GSD instance.
 
-1. **First bottleneck:** Pre-task codebase scan context cost on large projects. Fix: planner quality directives pre-identify relevant files, eliminating executor's need to grep broadly.
-2. **Second bottleneck:** Context7 query rate in early phases when all libraries are "new." Fix: gsd-codebase-mapper's STACK.md documents existing library patterns — executor can check STACK.md first, only query Context7 for patterns not documented there.
+**First bottleneck:** MILESTONES.md concurrent writes. Mitigation: write only on phase transitions (not every plan). At 2-3 concurrent milestones, this is a rare event.
+
+**Second bottleneck:** Conflict manifest cross-checks. With `n` active milestones, `execute-phase` reads `n-1` conflict manifests. For `n=3`, this is 2 JSON file reads — negligible.
 
 ---
 
 ## Sources
 
-- Direct analysis of `agents/gsd-executor.md` — execution flow, deviation rules, task commit protocol, tool list
-- Direct analysis of `agents/gsd-verifier.md` — 3-level artifact verification, anti-pattern detection, step structure
-- Direct analysis of `agents/gsd-planner.md` — task anatomy, quality degradation curve, context budget rules, discovery levels
-- Direct analysis of `agents/gsd-plan-checker.md` — 8 verification dimensions including Dimension 8 (Nyquist), scope sanity thresholds
-- Direct analysis of `agents/gsd-phase-researcher.md` — Context7 tool strategy, Validation Architecture section
-- Direct analysis of `agents/gsd-codebase-mapper.md` — codebase analysis approach, doc types produced
-- Direct analysis of `agents/gsd-integration-checker.md` — cross-phase wiring verification scope
-- `.planning/PROJECT.md` — constraints, out-of-scope items, key decisions, bug list
-- `PROPOSAL.md` — gap analysis, proposed changes with code sketches, expected outcomes, risk assessment
-- **Confidence: HIGH** — all findings from direct source file analysis, no inference required
+- Direct analysis of `bin/lib/core.cjs` — `findPhaseInternal`, `getArchivedPhaseDirs`, `loadConfig`, path resolution patterns (HIGH confidence)
+- Direct analysis of `bin/lib/phase.cjs` — `cmdPhasesList`, `cmdPhaseComplete`, `cmdPhaseAdd` — all hardcode `.planning/phases/` (HIGH confidence)
+- Direct analysis of `bin/lib/init.cjs` — all `cmdInit*` functions return `.planning/` relative paths as strings (HIGH confidence)
+- Direct analysis of `bin/lib/milestone.cjs` — `cmdMilestoneComplete` creates `milestones/` dir, archives phases to `milestones/v1.0-phases/` (HIGH confidence)
+- Direct analysis of `workflows/new-milestone.md` — research, requirements, roadmap flow; all paths resolved through init (HIGH confidence)
+- Direct analysis of `workflows/plan-phase.md` — `--cwd`, `--milestone` patterns; paths from init JSON (HIGH confidence)
+- Direct analysis of `.planning/config.json` — project-scoped, not milestone-scoped (HIGH confidence)
+- Direct analysis of `.planning/milestones/` directory — existing `v1.0-phases/`, `v1.1-phases/` archive structure (HIGH confidence)
+- Direct analysis of `.planning/PROJECT.md` — v2.0 target features, constraints, compatibility requirement (HIGH confidence)
 
 ---
 
-*Architecture research for: GSD quality enforcement layer — agent orchestration system*
-*Researched: 2026-02-23*
+*Architecture research for: GSD v2.0 concurrent milestone integration*
+*Researched: 2026-02-24*
