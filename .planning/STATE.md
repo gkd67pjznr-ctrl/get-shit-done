@@ -5,16 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** v1.0 MVP shipped — planning next milestone
+**Current focus:** v1.1 Quality UX — making quality enforcement discoverable, configurable, and observable
 
 ## Current Position
 
-Phase: v1.0 complete (4 phases, 8 plans)
-Plan: All plans complete
-Status: Milestone v1.0 shipped
-Last activity: 2026-02-24 — Milestone v1.0 archived
-
-Progress: [██████████] 100%
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-23 — Milestone v1.1 started
 
 ## Performance Metrics
 

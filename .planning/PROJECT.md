@@ -25,7 +25,27 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 
 ### Active
 
-(None yet — define with next milestone)
+- [ ] `/gsd:set-quality` command for per-project quality level switching (fast/standard/strict)
+- [ ] Config migration to auto-add `quality` block to existing projects missing it
+- [ ] Quality observability — surface quality gate activity in summaries and output
+- [ ] Global defaults via `~/.gsd/defaults.json` for new project inheritance
+- [ ] `/gsd:help` shows `/gsd:reapply-patches` reminder after updates
+- [ ] Quality level displayed in `/gsd:progress` output
+- [ ] Config validation — warn on missing sections instead of silent fallback
+- [ ] Context7 token cap configuration and verification
+
+## Current Milestone: v1.1 Quality UX
+
+**Goal:** Make quality enforcement discoverable, configurable, and observable — so users know what mode they're in, can switch easily, and can see what the quality gates are doing.
+
+**Target features:**
+- `/gsd:set-quality` command (per-project toggle)
+- Config migration (auto-add quality block to existing projects)
+- Quality observability (show gate activity in summaries)
+- Global defaults (`~/.gsd/defaults.json`)
+- Help/progress UX improvements
+- Config validation (warn on missing sections)
+- Context7 token cap
 
 ### Out of Scope
 
@@ -81,4 +101,4 @@ Known bugs fixed: `is_last_phase` filesystem routing, `offer_next` ROADMAP-vs-fi
 | One Context7 query per plan maximum | Prevents context budget blowout; if multiple lookups needed, plan is too broad | — Pending (unverified in production) |
 
 ---
-*Last updated: 2026-02-24 after v1.0 milestone*
+*Last updated: 2026-02-23 after v1.1 milestone started*
