@@ -316,9 +316,101 @@ function cmdMilestoneUpdateManifest(cwd, version, files, raw) {
   output({ version, files_touched: merged, added }, raw);
 }
 
+function cmdMilestoneWriteStatus(cwd, version, options, raw) {
+  if (!version) {
+    error('version required for milestone write-status (e.g., v2.0)');
+  }
+
+  const workspaceDir = path.join(cwd, '.planning', 'milestones', version);
+  const statusPath = path.join(workspaceDir, 'STATUS.md');
+  const today = new Date().toISOString().split('T')[0];
+
+  const content = [
+    `# Status — Milestone ${version}`,
+    '',
+    `**Updated:** ${today}`,
+    `**Phase:** ${options.phase || '?'}`,
+    `**Plan:** ${options.plan || '?'}`,
+    `**Checkpoint:** ${options.checkpoint || 'unknown'}`,
+    `**Progress:** ${options.progress || '?'}`,
+    `**Status:** ${options.status || 'In Progress'}`,
+    '',
+  ].join('\n');
+
+  fs.writeFileSync(statusPath, content, 'utf-8');
+
+  // DASH-03: Update MILESTONES.md section as live dashboard side effect
+  try {
+    const milestonesPath = path.join(cwd, '.planning', 'MILESTONES.md');
+    if (fs.existsSync(milestonesPath)) {
+      let mdContent = fs.readFileSync(milestonesPath, 'utf-8');
+      const sectionContent = [
+        `## ${version}`,
+        '',
+        `**Phase:** ${options.phase || '?'} | **Plan:** ${options.plan || '?'} | **Status:** ${options.status || 'In Progress'}`,
+        `**Progress:** ${options.progress || '?'}`,
+        `**Updated:** ${today}`,
+      ].join('\n');
+
+      const escapedVersion = version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const sectionPattern = new RegExp(
+        `## ${escapedVersion}[^\\n]*\\n[\\s\\S]*?(?=\\n## |$)`
+      );
+      if (sectionPattern.test(mdContent)) {
+        mdContent = mdContent.replace(sectionPattern, sectionContent);
+      } else {
+        mdContent = mdContent.trimEnd() + '\n\n' + sectionContent + '\n';
+      }
+      fs.writeFileSync(milestonesPath, mdContent, 'utf-8');
+    }
+  } catch { /* MILESTONES.md update is non-fatal */ }
+
+  output({ version, written: true, path: statusPath }, raw);
+}
+
+function cmdManifestCheck(cwd, raw) {
+  const milestonesDir = path.join(cwd, '.planning', 'milestones');
+  const manifests = [];
+
+  try {
+    const entries = fs.readdirSync(milestonesDir, { withFileTypes: true });
+    for (const entry of entries.filter(e => e.isDirectory())) {
+      const conflictPath = path.join(milestonesDir, entry.name, 'conflict.json');
+      if (fs.existsSync(conflictPath)) {
+        const manifest = JSON.parse(fs.readFileSync(conflictPath, 'utf-8'));
+        if (manifest.status === 'active') {
+          manifests.push({ version: manifest.version, files: manifest.files_touched || [] });
+        }
+      }
+    }
+  } catch { /* graceful degrade — no milestones dir */ }
+
+  // Find overlaps: for each pair of milestones, find common files_touched
+  const conflicts = [];
+  for (let i = 0; i < manifests.length; i++) {
+    for (let j = i + 1; j < manifests.length; j++) {
+      const a = manifests[i];
+      const b = manifests[j];
+      const overlap = a.files.filter(f => b.files.includes(f));
+      if (overlap.length > 0) {
+        conflicts.push({ milestones: [a.version, b.version], files: overlap });
+      }
+    }
+  }
+
+  // CNFL-04: Always advisory — exit 0 regardless
+  output({
+    has_conflicts: conflicts.length > 0,
+    conflicts,
+    manifests_checked: manifests.length,
+  }, raw);
+}
+
 module.exports = {
   cmdRequirementsMarkComplete,
   cmdMilestoneComplete,
   cmdMilestoneNewWorkspace,
   cmdMilestoneUpdateManifest,
+  cmdMilestoneWriteStatus,
+  cmdManifestCheck,
 };
