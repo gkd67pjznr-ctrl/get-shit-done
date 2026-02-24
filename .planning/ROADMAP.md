@@ -32,6 +32,11 @@
 **Milestone Goal:** Enable multiple milestones to execute in parallel across separate Claude Code sessions with isolated workspaces, conflict awareness, and a compatibility layer for existing projects.
 
 - [ ] **Phase 8: Path Architecture Foundation** - Central path resolver and CLI flag parsing — the dependency every other phase is built on
+  **Plans:** 2 plans
+  **Requirements:** [PATH-01, PATH-02, PATH-03, PATH-04]
+  Plans:
+  - [ ] 08-01-PLAN.md — TDD planningRoot, detectLayoutStyle, and is_last_phase bug fix
+  - [ ] 08-02-PLAN.md — --milestone CLI flag parsing and init command wiring
 - [ ] **Phase 9: Milestone Workspace Initialization** - Physical workspace creation, scaffold files, and conflict manifest format
 - [ ] **Phase 10: Compatibility Layer** - Legacy project detection and permanent zero-migration old-style support
 - [ ] **Phase 11: Dashboard and Conflict Detection** - Live multi-milestone dashboard and advisory overlap detection
@@ -49,7 +54,7 @@
 | 5. Config Foundation | v1.1 | 2/2 | Complete | 2026-02-24 |
 | 6. Commands and UX | v1.1 | 2/2 | Complete | 2026-02-24 |
 | 7. Quality Observability | v1.1 | 1/1 | Complete | 2026-02-24 |
-| 8. Path Architecture Foundation | v2.0 | 0/? | Not started | - |
+| 8. Path Architecture Foundation | v2.0 | 0/2 | Planned | - |
 | 9. Milestone Workspace Initialization | v2.0 | 0/? | Not started | - |
 | 10. Compatibility Layer | v2.0 | 0/? | Not started | - |
 | 11. Dashboard and Conflict Detection | v2.0 | 0/? | Not started | - |
