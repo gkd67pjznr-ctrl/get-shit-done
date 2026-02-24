@@ -427,7 +427,10 @@ Note: `checkpoint:*` tasks have no `<action>` block, so Dimension 9 only checks 
 
 ### Process
 
-1. Read `quality.level` from config using `config-get quality.level`
+1. Read quality level using the canonical CFG-04 bash pattern:
+   ```bash
+   QUALITY_LEVEL=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs config-get quality.level 2>/dev/null || echo "fast")
+   ```
 2. For each `<task type="auto">` in each PLAN.md:
    - Parse the `<action>` element
    - Check for `<quality_scan>` presence INSIDE the `<action>` block (not as a sibling)
