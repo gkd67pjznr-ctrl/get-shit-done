@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A forked, upgraded version of the GSD (Get Shit Done) framework for Claude Code that adds quality enforcement layers to eliminate "slop" — duplicate code, shortcuts, placeholder implementations, broken integrations, and hand-rolled logic that should use libraries. The fork maintains all existing GSD fundamentals (context engineering, goal-backward verification, wave-based parallelism, atomic commits) while adding engineer-level rigor at the execution layer.
+A forked, upgraded version of the GSD (Get Shit Done) framework for Claude Code that adds quality enforcement layers to eliminate "slop" — duplicate code, shortcuts, placeholder implementations, broken integrations, and hand-rolled logic that should use libraries. The fork adds a Quality Sentinel to the executor, Context7 library lookup, mandatory testing, quality directives in the planner, and quality dimensions in the verifier — completing a full Plan→Execute→Verify quality enforcement loop gated by `quality.level` config.
 
 ## Core Value
 
@@ -12,20 +12,20 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 
 ### Validated
 
-(None yet — ship to validate)
+- ✓ Quality Sentinel system in executor agent (pre-task codebase scan, during-task quality gates, post-task diff review) — v1.0
+- ✓ Context7 integration in executor agent (library lookup before implementation, API verification, no hand-rolling) — v1.0
+- ✓ Mandatory test step in execution flow (write tests for new logic, run existing tests before commit) — v1.0
+- ✓ Pre-implementation codebase scan (find existing patterns, reuse utilities, establish test baseline) — v1.0
+- ✓ Enhanced verifier with code quality checks (duplication detection, dead code, test coverage, pattern consistency) — v1.0
+- ✓ Planner quality directives (task actions include which code to reuse, which docs to consult, what tests to write) — v1.0
+- ✓ Config quality level toggle (strict/standard/fast enforcement levels) — v1.0
+- ✓ Fix `is_last_phase` bug in `cmdPhaseComplete` — v1.0
+- ✓ Fix roadmap-aware phase routing so transition correctly identifies next unplanned phase — v1.0
+- ✓ All changes are additive (extend, don't replace existing GSD behavior) — v1.0
 
 ### Active
 
-- [ ] Quality Sentinel system in executor agent (pre-task codebase scan, during-task quality gates, post-task diff review)
-- [ ] Context7 integration in executor agent (library lookup before implementation, API verification, no hand-rolling)
-- [ ] Mandatory test step in execution flow (write tests for new logic, run existing tests before commit)
-- [ ] Pre-implementation codebase scan (find existing patterns, reuse utilities, establish test baseline)
-- [ ] Enhanced verifier with code quality checks (duplication detection, dead code, test coverage, pattern consistency)
-- [ ] Planner quality directives (task actions include which code to reuse, which docs to consult, what tests to write)
-- [ ] Config quality level toggle (strict/standard/fast enforcement levels)
-- [ ] Fix `is_last_phase` bug in `cmdPhaseComplete` — reads directories instead of ROADMAP.md for total phase count
-- [ ] Fix roadmap-aware phase routing so transition correctly identifies next unplanned phase
-- [ ] All changes are additive (extend, don't replace existing GSD behavior)
+(None yet — define with next milestone)
 
 ### Out of Scope
 
@@ -37,18 +37,25 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 - Supporting non-Claude Code runtimes (OpenCode, Gemini CLI)
 - UI/visual changes to the framework
 - Performance optimization of gsd-tools.cjs (beyond bug fixes)
+- Separate quality agent — inline sentinel burns 6-16K vs 50-100K for separate agent context handoff
+- Exhaustive pre-scan (whole codebase) — violates 50% context budget before first line of code
+- Blocking quality gates in fast mode — fast mode exists for quick experiments and prototypes
+- Silent quality improvements — all quality-driven changes tracked as deviations in SUMMARY
 
 ## Context
 
-GSD is the #1 Claude Code framework with 8.5k+ GitHub stars. It fights context rot through structured planning, subagent orchestration, and state management. The framework has excellent architect-level quality control (goal-backward methodology, dependency graphs, must-haves) but weak execution-time quality enforcement.
+Shipped v1.0 with ~18,284 LOC across CJS/JS/agent MD files.
+Tech stack: Node.js, CJS modules, Markdown agent specifications, Context7 MCP.
+102 tests passing (phase.test.cjs: 51, init.test.cjs: 9, full suite: 102).
 
-**The core problem:** Claude's executor agent has no awareness of existing codebase patterns, no library documentation lookup, optional testing, and no real-time quality validation during coding. Quality issues are discovered post-execution by the verifier — after context is already burned.
+The GSD framework now enforces quality through the complete Plan→Execute→Verify loop:
+- **Planner** generates `<quality_scan>` directives (code_to_reuse, docs_to_consult, tests_to_write)
+- **Plan-checker** validates directives via Dimension 9 (warning in standard, blocker in strict)
+- **Executor** consumes directives in Quality Sentinel Steps 1, 2, 4 (pre-task scan, library lookup, mandatory tests, diff review)
+- **Verifier** backstops with Step 7b (duplication, orphaned exports, missing tests)
+- **Config** gates everything — fast skips all, standard warns, strict blocks
 
-**The insight:** The gap isn't in planning or verification — it's in the execution layer itself. The executor needs to behave like a senior engineer, not a code generator.
-
-**Known bugs discovered through usage:**
-- `cmdPhaseComplete` in `get-shit-done/bin/lib/phase.cjs` (line 786-802): Determines `is_last_phase` by scanning phase directories on disk instead of parsing ROADMAP.md. Since undiscussed/unplanned phases don't have directories, this always returns `true` prematurely, routing users to `/gsd:complete-milestone` instead of the next phase.
-- Roadmap analysis correctly shows all phases, but phase routing doesn't use this data.
+Known bugs fixed: `is_last_phase` filesystem routing, `offer_next` ROADMAP-vs-filesystem mismatch.
 
 **Source repo:** https://github.com/gsd-build/get-shit-done (cloned into this project directory)
 
@@ -63,11 +70,15 @@ GSD is the #1 Claude Code framework with 8.5k+ GitHub stars. It fights context r
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Fork the repo (not extension layer) | Need to modify agent files directly; extension would add indirection | — Pending |
-| Quality Sentinel in executor (not separate agent) | Keeps quality checks inline with execution; separate agent would burn context on handoff | — Pending |
-| Context7 tools added to executor | Executor is where code is written; library awareness needed at coding time | — Pending |
-| Configurable quality levels | Not all projects need strict mode; quick experiments need speed | — Pending |
-| Fix bugs alongside upgrades | Known bugs affect fork usability; fixing them demonstrates quality-first approach | — Pending |
+| Fork the repo (not extension layer) | Need to modify agent files directly; extension would add indirection | ✓ Good — direct modification enabled clean quality gate integration |
+| Quality Sentinel in executor (not separate agent) | Keeps quality checks inline with execution; separate agent would burn context on handoff | ✓ Good — 6-16K overhead vs estimated 50-100K for separate agent |
+| Context7 tools added to executor | Executor is where code is written; library awareness needed at coding time | ✓ Good — library docs consulted at coding time, not planning time |
+| Configurable quality levels (fast/standard/strict) | Not all projects need strict mode; quick experiments need speed | ✓ Good — fast preserves vanilla GSD exactly (zero behavioral change) |
+| Fix bugs alongside upgrades | Known bugs affect fork usability; fixing them demonstrates quality-first approach | ✓ Good — bug fixes in Phase 1 unblocked multi-phase execution for Phases 2-4 |
+| quality.level defaults to 'fast' | Ensures zero behavioral change from vanilla GSD when quality gates introduced | ✓ Good — CFG-02 satisfied, no surprise behavior for existing users |
+| Duplication scope same-phase only | Full codebase scan too expensive; same-phase catches most real issues | ✓ Good — keeps verifier fast while catching relevant duplications |
+| N/A override guard for tests_to_write | Planner may mark N/A but if task produced exports, tests still required | ✓ Good — prevents planner error from bypassing mandatory test requirement |
+| One Context7 query per plan maximum | Prevents context budget blowout; if multiple lookups needed, plan is too broad | — Pending (unverified in production) |
 
 ---
-*Last updated: 2026-02-23 after initialization*
+*Last updated: 2026-02-24 after v1.0 milestone*
