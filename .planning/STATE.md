@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 ## Current Position
 
 Phase: 11 — Dashboard Conflict Detection (in progress)
-Plan: 01 (complete)
-Status: Phase 11 plan 01 complete — cmdMilestoneWriteStatus and cmdManifestCheck implemented via TDD, DASH-01/DASH-03/CNFL-02/CNFL-04 satisfied
-Last activity: 2026-02-24 — 11-01 complete: STATUS.md writer, MILESTONES.md dashboard update, manifest overlap detector, 10 new tests
+Plan: 02 (complete)
+Status: Phase 11 plan 02 complete — cmdProgressRenderMulti with legacy fallback, CLI routing for write-status/manifest-check, new-milestone workflow step 7.5, DASH-02/DASH-04/CNFL-03 satisfied
+Last activity: 2026-02-24 — 11-02 complete: progress multi renderer, milestone subcommands wired, workflow conflict detection, 15 dashboard tests pass
 
-**Progress:** [████████░░] 75%
+**Progress:** [█████████░] 88%
 
 ## Performance Metrics
 
@@ -38,6 +38,7 @@ Last activity: 2026-02-24 — 11-01 complete: STATUS.md writer, MILESTONES.md da
 | 09-milestone-workspace-initialization | 2 (P01: 4min, P02: 5min) | 9 min | 4.5 min |
 | 10-compatibility-layer | 1 | 8 min | 8 min |
 | Phase 11-dashboard-conflict-detection P01 | 2 | 2 tasks | 2 files |
+| Phase 11-dashboard-conflict-detection P02 | 8min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -66,6 +67,7 @@ Full v1.0 + v1.1 decision logs archived with milestones.
 - [Phase 10-compatibility-layer]: layout_style field placed after planning_root in result objects — grouped with other v2.0 compatibility fields
 - [Phase 11-dashboard-conflict-detection]: cmdMilestoneWriteStatus uses try/catch for MILESTONES.md update — STATUS.md write must succeed even if MILESTONES.md is absent
 - [Phase 11-dashboard-conflict-detection]: cmdManifestCheck always exits 0 (advisory only) — conflict detection warns on overlap, never blocks (CNFL-04)
+- [Phase 11-dashboard-conflict-detection]: table format test uses no --raw flag so output() emits JSON (with --raw and rawValue set, output() emits raw text not JSON)
 
 ### Pending Todos
 
@@ -78,5 +80,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: 11-01-PLAN.md complete — Phase 11 plan 01 complete
-Resume file: .planning/phases/11-dashboard-conflict-detection/11-01-SUMMARY.md
+Stopped at: 11-02-PLAN.md complete — Phase 11 plan 02 complete
+Resume file: .planning/phases/11-dashboard-conflict-detection/11-02-SUMMARY.md
