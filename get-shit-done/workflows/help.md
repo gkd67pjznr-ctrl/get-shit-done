@@ -312,6 +312,17 @@ Quick switch model profile for GSD agents.
 
 Usage: `/gsd:set-profile budget`
 
+**`/gsd:set-quality <level>`**
+Set quality enforcement level (fast/standard/strict).
+
+- `fast` — Skip all quality gates (fastest execution)
+- `standard` — Run quality gates, warn on issues
+- `strict` — Run quality gates, block on issues
+- Add `--global` to set default for new projects
+
+Usage: `/gsd:set-quality strict`
+Usage: `/gsd:set-quality --global standard`
+
 ### Utility Commands
 
 **`/gsd:cleanup`**
