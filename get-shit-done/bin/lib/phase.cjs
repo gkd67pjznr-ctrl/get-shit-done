@@ -4,7 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { escapeRegex, normalizePhaseName, comparePhaseNum, findPhaseInternal, getArchivedPhaseDirs, generateSlugInternal, planningRoot, detectLayoutStyle, output, error } = require('./core.cjs');
+const { escapeRegex, normalizePhaseName, comparePhaseNum, findPhaseInternal, searchPhaseInDir, getArchivedPhaseDirs, generateSlugInternal, planningRoot, detectLayoutStyle, output, error } = require('./core.cjs');
 const { extractFrontmatter } = require('./frontmatter.cjs');
 
 function cmdPhasesList(cwd, options, raw) {
@@ -702,8 +702,14 @@ function cmdPhaseComplete(cwd, phaseNum, raw, milestoneScope) {
   const normalized = normalizePhaseName(phaseNum);
   const today = new Date().toISOString().split('T')[0];
 
-  // Verify phase info
-  const phaseInfo = findPhaseInternal(cwd, phaseNum);
+  // Verify phase info — when milestoneScope is set, search milestone workspace phases dir
+  let phaseInfo;
+  if (milestoneScope) {
+    const relBase = path.join('.planning', 'milestones', milestoneScope, 'phases');
+    phaseInfo = searchPhaseInDir(phasesDir, relBase, normalized);
+  } else {
+    phaseInfo = findPhaseInternal(cwd, phaseNum);
+  }
   if (!phaseInfo) {
     error(`Phase ${phaseNum} not found`);
   }
