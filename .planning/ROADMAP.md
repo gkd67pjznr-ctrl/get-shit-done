@@ -15,6 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundation** - Fix routing bugs and establish config infrastructure that all quality gates depend on (completed 2026-02-23)
 - [x] **Phase 2: Executor Sentinel** - Add inline quality enforcement to the executor at the point where code is written (completed 2026-02-23)
 - [x] **Phase 3: Quality Dimensions** - Extend verifier, planner, and plan-checker with quality checks that complete the enforcement loop (completed 2026-02-23)
+- [ ] **Phase 4: Wire Quality Scan Handoff** - Connect planner's quality_scan directives to executor's quality_sentinel so the Plan→Execute→Verify loop completes end-to-end (gap closure)
 
 ## Phase Details
 
@@ -65,6 +66,20 @@ Plans:
 - [ ] 03-01-PLAN.md — Add Step 7b quality dimensions to `gsd-verifier.md` (duplication, dead code/orphaned exports, missing tests, severity gated by config level)
 - [ ] 03-02-PLAN.md — Add `<quality_scan>` format to planner task actions and self-check validation; add Dimension 9 to plan-checker
 
+### Phase 4: Wire Quality Scan Handoff
+**Goal**: The executor consumes planner-generated `<quality_scan>` directives (code_to_reuse, docs_to_consult, tests_to_write) so the Plan→Execute→Verify loop works end-to-end
+**Depends on**: Phase 3
+**Requirements**: EXEC-01, PLAN-01, CFG-04
+**Gap Closure:** Closes gaps from v1.0 milestone audit
+**Success Criteria** (what must be TRUE):
+  1. Executor `<quality_sentinel>` Step 1 reads `<code_to_reuse>` from the current task's `<action>` block and uses its patterns as grep input for the pre-task codebase scan
+  2. Executor `<quality_sentinel>` Step 2 reads `<docs_to_consult>` from the current task's `<action>` block before deciding on Context7 calls
+  3. Executor consumes `<tests_to_write>` from `<quality_scan>` to guide mandatory test step
+  4. Plan-checker Dimension 9 reads `quality.level` using canonical bash pattern with `|| echo "fast"` fallback guard (CFG-04 consistency)
+  5. The Plan→Execute→Verify E2E flow completes without broken handoffs
+
+Plans:
+
 ## Progress
 
 **Execution Order:**
@@ -75,3 +90,4 @@ Phases execute in numeric order: 1 → 2 → 3
 | 1. Foundation | 2/2 | Complete    | 2026-02-23 |
 | 2. Executor Sentinel | 3/3 | Complete    | 2026-02-23 |
 | 3. Quality Dimensions | 2/2 | Complete    | 2026-02-23 |
+| 4. Wire Quality Scan Handoff | 0/0 | Not Started | — |

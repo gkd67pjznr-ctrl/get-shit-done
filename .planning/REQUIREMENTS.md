@@ -22,7 +22,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Executor Quality
 
-- [x] **EXEC-01**: Executor performs targeted codebase scan before each task — grep for existing patterns, utilities, and test baseline relevant to the task
+- [ ] **EXEC-01**: Executor performs targeted codebase scan before each task — grep for existing patterns, utilities, and test baseline relevant to the task
 - [x] **EXEC-02**: Executor has Context7 MCP tools (`resolve-library-id`, `query-docs`) in its tools frontmatter and calls them before implementing code using external libraries
 - [x] **EXEC-03**: Executor runs mandatory test step for new logic — any task creating new `.cjs/.js/.ts` files with exported functions gets test coverage before commit
 - [x] **EXEC-04**: Executor performs post-task diff review before each commit — reads own diff, checks for duplication, validates naming consistency
@@ -40,7 +40,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Planner Quality
 
-- [x] **PLAN-01**: Planner task `<action>` blocks include a `<quality_scan>` subsection specifying existing code to reuse, library docs to consult, and tests to write
+- [ ] **PLAN-01**: Planner task `<action>` blocks include a `<quality_scan>` subsection specifying existing code to reuse, library docs to consult, and tests to write
 - [x] **PLAN-02**: Planner self-check verifies each task action has quality directives populated before returning the plan
 
 ### Plan-Checker
@@ -96,7 +96,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CFG-02 | Phase 1 | Complete |
 | CFG-03 | Phase 1 | Complete |
 | CFG-04 | Phase 1 | Complete |
-| EXEC-01 | Phase 2 | Complete |
+| EXEC-01 | Phase 4 | Pending |
 | EXEC-02 | Phase 2 | Complete |
 | EXEC-03 | Phase 2 | Complete |
 | EXEC-04 | Phase 2 | Complete |
@@ -108,7 +108,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VRFY-02 | Phase 3 | Complete |
 | VRFY-03 | Phase 3 | Complete |
 | VRFY-04 | Phase 3 | Complete |
-| PLAN-01 | Phase 3 | Complete |
+| PLAN-01 | Phase 4 | Pending |
 | PLAN-02 | Phase 3 | Complete |
 | PCHK-01 | Phase 3 | Complete |
 | PCHK-02 | Phase 3 | Complete |
@@ -120,4 +120,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-23*
-*Last updated: 2026-02-23 after 02-02-PLAN.md completion (EXEC-01, EXEC-03, EXEC-04, EXEC-05 marked complete)*
+*Last updated: 2026-02-23 after gap closure planning (EXEC-01, PLAN-01 reset to Pending for Phase 4)*
