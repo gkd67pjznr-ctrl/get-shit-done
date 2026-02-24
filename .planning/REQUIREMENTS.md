@@ -23,9 +23,9 @@ Requirements for concurrent milestone execution. Each maps to roadmap phases.
 
 ### Compatibility
 
-- [ ] **COMPAT-01**: Old-style projects (root-level STATE.md, ROADMAP.md, phases/) auto-detected and routed through legacy code paths without migration
-- [ ] **COMPAT-02**: Detection uses explicit `concurrent: true` sentinel in config.json, not directory presence
-- [ ] **COMPAT-03**: Compatibility is permanent — old-style projects are never forced to migrate
+- [x] **COMPAT-01**: Old-style projects (root-level STATE.md, ROADMAP.md, phases/) auto-detected and routed through legacy code paths without migration
+- [x] **COMPAT-02**: Detection uses explicit `concurrent: true` sentinel in config.json, not directory presence
+- [x] **COMPAT-03**: Compatibility is permanent — old-style projects are never forced to migrate
 
 ### Phase Numbering
 
@@ -119,9 +119,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WKSP-02 | Phase 9 | Complete |
 | WKSP-03 | Phase 9 | Complete |
 | WKSP-04 | Phase 9 | Complete |
-| COMPAT-01 | Phase 10 | Pending |
-| COMPAT-02 | Phase 10 | Pending |
-| COMPAT-03 | Phase 10 | Pending |
+| COMPAT-01 | Phase 10 | Complete |
+| COMPAT-02 | Phase 10 | Complete |
+| COMPAT-03 | Phase 10 | Complete |
 | PHASE-01 | Phase 12 | Pending |
 | PHASE-02 | Phase 12 | Pending |
 | PHASE-03 | Phase 12 | Pending |
