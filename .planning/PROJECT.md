@@ -33,7 +33,19 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 
 ### Active
 
-(None — planning next milestone)
+**Current Milestone: v2.0 Concurrent Milestones**
+
+**Goal:** Enable multiple milestones to execute in parallel across separate Claude Code sessions with isolated workspaces, conflict awareness, and a compatibility layer for existing projects.
+
+**Target features:**
+- Milestone-scoped workspace isolation (each milestone gets its own folder under `.planning/`)
+- Central lock-free dashboard tracking all milestone status
+- Conflict manifest (milestones declare source files they'll touch)
+- Milestone-scoped phase numbering (v1.2/phase-01 instead of global sequential)
+- Compatibility layer (old-style `.planning/` root projects auto-detected and still work)
+- All GSD routing updated (workflows, agents, commands, tools)
+- Agent teams research and integration (if applicable to concurrent model)
+- Test coverage for new routing and isolation logic
 
 ### Out of Scope
 
@@ -95,4 +107,4 @@ The GSD framework now enforces quality through the complete Plan→Execute→Ver
 | Quality Gates section absent in fast mode | No gates ran, nothing to report; empty section would be misleading | ✓ Good — clean SUMMARY.md in fast mode |
 
 ---
-*Last updated: 2026-02-24 after v1.1 milestone*
+*Last updated: 2026-02-24 after v2.0 milestone started*
