@@ -399,6 +399,28 @@ function getMilestoneInfo(cwd) {
   }
 }
 
+function planningRoot(cwd, milestoneScope) {
+  const base = path.join(cwd, '.planning');
+  if (milestoneScope) {
+    return path.join(base, 'milestones', milestoneScope);
+  }
+  return base;
+}
+
+function detectLayoutStyle(cwd) {
+  const configPath = path.join(cwd, '.planning', 'config.json');
+  try {
+    const raw = fs.readFileSync(configPath, 'utf-8');
+    const parsed = JSON.parse(raw);
+    if (parsed.concurrent === true) {
+      return 'milestone-scoped';
+    }
+    return 'legacy';
+  } catch {
+    return 'uninitialized';
+  }
+}
+
 module.exports = {
   MODEL_PROFILES,
   output,
@@ -418,4 +440,6 @@ module.exports = {
   pathExistsInternal,
   generateSlugInternal,
   getMilestoneInfo,
+  planningRoot,
+  detectLayoutStyle,
 };
