@@ -188,6 +188,21 @@ function cmdMilestoneComplete(cwd, version, options, raw) {
     } catch {}
   }
 
+  // Mark workspace conflict.json as complete (WKSP-04)
+  const workspaceConflict = path.join(cwd, '.planning', 'milestones', version, 'conflict.json');
+  let conflictMarkedComplete = false;
+  if (fs.existsSync(workspaceConflict)) {
+    try {
+      const manifest = JSON.parse(fs.readFileSync(workspaceConflict, 'utf-8'));
+      manifest.status = 'complete';
+      manifest.completed_at = today;
+      fs.writeFileSync(workspaceConflict, JSON.stringify(manifest, null, 2), 'utf-8');
+      conflictMarkedComplete = true;
+    } catch {
+      conflictMarkedComplete = false;
+    }
+  }
+
   const result = {
     version,
     name: milestoneName,
@@ -204,6 +219,7 @@ function cmdMilestoneComplete(cwd, version, options, raw) {
     },
     milestones_updated: true,
     state_updated: fs.existsSync(statePath),
+    conflict_marked_complete: conflictMarkedComplete,
   };
 
   output(result, raw);

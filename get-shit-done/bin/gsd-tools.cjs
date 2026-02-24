@@ -489,8 +489,14 @@ async function main() {
           milestoneName = nameArgs.join(' ') || null;
         }
         milestone.cmdMilestoneComplete(cwd, args[2], { name: milestoneName, archivePhases }, raw);
+      } else if (subcommand === 'new-workspace') {
+        milestone.cmdMilestoneNewWorkspace(cwd, args[2], {}, raw);
+      } else if (subcommand === 'update-manifest') {
+        const filesIndex = args.indexOf('--files');
+        const files = filesIndex !== -1 ? args.slice(filesIndex + 1).filter(a => !a.startsWith('--')) : [];
+        milestone.cmdMilestoneUpdateManifest(cwd, args[2], files, raw);
       } else {
-        error('Unknown milestone subcommand. Available: complete');
+        error('Unknown milestone subcommand. Available: complete, new-workspace, update-manifest');
       }
       break;
     }
