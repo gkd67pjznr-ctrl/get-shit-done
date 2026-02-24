@@ -495,8 +495,25 @@ async function main() {
         const filesIndex = args.indexOf('--files');
         const files = filesIndex !== -1 ? args.slice(filesIndex + 1).filter(a => !a.startsWith('--')) : [];
         milestone.cmdMilestoneUpdateManifest(cwd, args[2], files, raw);
+      } else if (subcommand === 'write-status') {
+        const version = args[2];
+        const phaseIdx = args.indexOf('--phase');
+        const planIdx = args.indexOf('--plan');
+        const checkpointIdx = args.indexOf('--checkpoint');
+        const progressIdx = args.indexOf('--progress');
+        const statusIdx = args.indexOf('--status');
+        const options = {
+          phase: phaseIdx !== -1 ? args[phaseIdx + 1] : null,
+          plan: planIdx !== -1 ? args[planIdx + 1] : null,
+          checkpoint: checkpointIdx !== -1 ? args[checkpointIdx + 1] : null,
+          progress: progressIdx !== -1 ? args[progressIdx + 1] : null,
+          status: statusIdx !== -1 ? args[statusIdx + 1] : null,
+        };
+        milestone.cmdMilestoneWriteStatus(cwd, version, options, raw);
+      } else if (subcommand === 'manifest-check') {
+        milestone.cmdManifestCheck(cwd, raw);
       } else {
-        error('Unknown milestone subcommand. Available: complete, new-workspace, update-manifest');
+        error('Unknown milestone subcommand. Available: complete, new-workspace, update-manifest, write-status, manifest-check');
       }
       break;
     }
@@ -516,7 +533,7 @@ async function main() {
 
     case 'progress': {
       const subcommand = args[1] || 'json';
-      commands.cmdProgressRender(cwd, subcommand, raw);
+      commands.cmdProgressRenderMulti(cwd, subcommand, raw);
       break;
     }
 

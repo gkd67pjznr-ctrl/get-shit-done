@@ -4,7 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
-const { safeReadFile, loadConfig, isGitIgnored, execGit, normalizePhaseName, comparePhaseNum, getArchivedPhaseDirs, generateSlugInternal, getMilestoneInfo, resolveModelInternal, MODEL_PROFILES, output, error, findPhaseInternal } = require('./core.cjs');
+const { safeReadFile, loadConfig, isGitIgnored, execGit, normalizePhaseName, comparePhaseNum, getArchivedPhaseDirs, generateSlugInternal, getMilestoneInfo, resolveModelInternal, MODEL_PROFILES, output, error, findPhaseInternal, detectLayoutStyle } = require('./core.cjs');
 const { extractFrontmatter } = require('./frontmatter.cjs');
 
 function cmdGenerateSlug(text, raw) {
@@ -466,6 +466,51 @@ function cmdProgressRender(cwd, format, raw) {
   }
 }
 
+function cmdProgressRenderMulti(cwd, format, raw) {
+  const layoutStyle = detectLayoutStyle(cwd);
+
+  // DASH-04: Graceful degrade for old-style projects
+  if (layoutStyle !== 'milestone-scoped') {
+    return cmdProgressRender(cwd, format, raw);
+  }
+
+  const milestonesDir = path.join(cwd, '.planning', 'milestones');
+  const milestones = [];
+
+  try {
+    const entries = fs.readdirSync(milestonesDir, { withFileTypes: true });
+    for (const entry of entries.filter(e => e.isDirectory())) {
+      const statusPath = path.join(milestonesDir, entry.name, 'STATUS.md');
+      if (fs.existsSync(statusPath)) {
+        const content = fs.readFileSync(statusPath, 'utf-8');
+        const phaseMatch = content.match(/\*\*Phase:\*\*\s*(\S+)/);
+        const planMatch = content.match(/\*\*Plan:\*\*\s*(\S+)/);
+        const progressMatch = content.match(/\*\*Progress:\*\*\s*(.+)/);
+        const statusMatch = content.match(/\*\*Status:\*\*\s*(.+)/);
+        milestones.push({
+          version: entry.name,
+          phase: phaseMatch ? phaseMatch[1] : '?',
+          plan: planMatch ? planMatch[1] : '?',
+          progress: progressMatch ? progressMatch[1].trim() : '?',
+          status: statusMatch ? statusMatch[1].trim() : 'Unknown',
+        });
+      }
+    }
+  } catch {}
+
+  if (format === 'table') {
+    let out = '# Multi-Milestone Progress\n\n';
+    out += '| Milestone | Phase | Plan | Progress | Status |\n';
+    out += '|-----------|-------|------|----------|--------|\n';
+    for (const m of milestones) {
+      out += `| ${m.version} | ${m.phase} | ${m.plan} | ${m.progress} | ${m.status} |\n`;
+    }
+    output({ rendered: out }, raw, out);
+  } else {
+    output({ milestones, layout_style: 'milestone-scoped' }, raw);
+  }
+}
+
 function cmdCheckPatches(cwd, raw) {
   const homedir = require('os').homedir();
   const gsdHome = process.env.GSD_HOME || path.join(homedir, '.gsd');
@@ -587,6 +632,7 @@ module.exports = {
   cmdSummaryExtract,
   cmdWebsearch,
   cmdProgressRender,
+  cmdProgressRenderMulti,
   cmdCheckPatches,
   cmdTodoComplete,
   cmdScaffold,
