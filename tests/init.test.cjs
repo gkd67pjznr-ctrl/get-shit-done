@@ -6,7 +6,7 @@ const { test, describe, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
-const { runGsdTools, createTempProject, cleanup } = require('./helpers.cjs');
+const { runGsdTools, runGsdToolsFull, createTempProject, cleanup } = require('./helpers.cjs');
 
 describe('init commands', () => {
   let tmpDir;
@@ -257,6 +257,165 @@ describe('config quality section', () => {
     const result = runGsdTools('config-get quality.level', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
     assert.strictEqual(JSON.parse(result.output), 'standard', 'quality.level should be standard after set');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// config auto-migration (QCFG-02)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('config auto-migration (QCFG-02)', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('config-ensure-section adds quality block to existing config missing it', () => {
+    const configPath = path.join(tmpDir, '.planning', 'config.json');
+    fs.writeFileSync(configPath, JSON.stringify({ model_profile: 'balanced', commit_docs: true }), 'utf-8');
+
+    const result = runGsdTools('config-ensure-section', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    assert.ok(config.quality, 'quality key must exist after migration');
+    assert.strictEqual(config.quality.level, 'fast', 'quality.level must default to fast');
+    assert.ok(Array.isArray(config.quality.test_exemptions), 'test_exemptions must be array');
+    assert.strictEqual(config.quality.test_exemptions.length, 4, 'must have 4 default exemptions');
+    assert.strictEqual(config.model_profile, 'balanced', 'existing model_profile must be preserved');
+    assert.strictEqual(config.commit_docs, true, 'existing commit_docs must be preserved');
+  });
+
+  test('config-ensure-section preserves existing quality block if already present', () => {
+    const configPath = path.join(tmpDir, '.planning', 'config.json');
+    fs.writeFileSync(
+      configPath,
+      JSON.stringify({ quality: { level: 'strict', test_exemptions: ['.md'] } }),
+      'utf-8'
+    );
+
+    const result = runGsdTools('config-ensure-section', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    assert.strictEqual(config.quality.level, 'strict', 'quality.level must remain strict');
+    assert.deepStrictEqual(config.quality.test_exemptions, ['.md'], 'test_exemptions must be unchanged');
+  });
+
+  test('config-ensure-section adds quality.context7_token_cap default when missing', () => {
+    const configPath = path.join(tmpDir, '.planning', 'config.json');
+    fs.writeFileSync(
+      configPath,
+      JSON.stringify({ quality: { level: 'standard' } }),
+      'utf-8'
+    );
+
+    const result = runGsdTools('config-ensure-section', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    assert.strictEqual(config.quality.context7_token_cap, 2000, 'context7_token_cap must be set to 2000');
+    assert.strictEqual(config.quality.level, 'standard', 'quality.level must not be overwritten');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// global defaults bootstrap (QCFG-03)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('global defaults bootstrap (QCFG-03)', () => {
+  let tmpDir;
+  let tempGsdHome;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+    tempGsdHome = fs.mkdtempSync(path.join(require('os').tmpdir(), 'gsd-home-test-'));
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+    fs.rmSync(tempGsdHome, { recursive: true, force: true });
+  });
+
+  test('config-ensure-section creates ~/.gsd/defaults.json on first run when absent', () => {
+    const result = runGsdToolsFull('config-ensure-section', tmpDir, { GSD_HOME: tempGsdHome });
+    assert.ok(result.success, `Command failed: ${result.stderr}`);
+
+    const defaultsPath = path.join(tempGsdHome, 'defaults.json');
+    assert.ok(fs.existsSync(defaultsPath), 'defaults.json must be created in GSD_HOME');
+
+    const defaults = JSON.parse(fs.readFileSync(defaultsPath, 'utf-8'));
+    assert.ok(defaults.quality, 'defaults.json must have quality key');
+    assert.strictEqual(defaults.quality.level, 'fast', 'defaults.json quality.level must be fast');
+  });
+
+  test('config-ensure-section inherits quality.level from existing global defaults', () => {
+    const defaultsPath = path.join(tempGsdHome, 'defaults.json');
+    fs.writeFileSync(defaultsPath, JSON.stringify({ quality: { level: 'strict' } }), 'utf-8');
+
+    const result = runGsdToolsFull('config-ensure-section', tmpDir, { GSD_HOME: tempGsdHome });
+    assert.ok(result.success, `Command failed: ${result.stderr}`);
+
+    const configPath = path.join(tmpDir, '.planning', 'config.json');
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    assert.strictEqual(config.quality.level, 'strict', 'quality.level must be inherited from global defaults');
+  });
+
+  test('config-ensure-section does not overwrite existing ~/.gsd/defaults.json', () => {
+    const defaultsPath = path.join(tempGsdHome, 'defaults.json');
+    const originalContent = { quality: { level: 'standard', test_exemptions: ['.md'] } };
+    fs.writeFileSync(defaultsPath, JSON.stringify(originalContent), 'utf-8');
+
+    runGsdToolsFull('config-ensure-section', tmpDir, { GSD_HOME: tempGsdHome });
+
+    const after = JSON.parse(fs.readFileSync(defaultsPath, 'utf-8'));
+    assert.deepStrictEqual(after, originalContent, 'defaults.json must not be modified');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// missing-section warnings (QOBS-03)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('missing-section warnings (QOBS-03)', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('loadConfig warns on stderr when quality section is missing from config', () => {
+    const configPath = path.join(tmpDir, '.planning', 'config.json');
+    fs.writeFileSync(configPath, JSON.stringify({ model_profile: 'balanced' }), 'utf-8');
+
+    const result = runGsdToolsFull('config-get model_profile', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.stderr}`);
+    assert.ok(
+      result.stderr.includes('quality'),
+      `stderr must contain warning about missing quality section, got: "${result.stderr}"`
+    );
+  });
+
+  test('loadConfig does NOT warn when quality section is present', () => {
+    const configPath = path.join(tmpDir, '.planning', 'config.json');
+    fs.writeFileSync(
+      configPath,
+      JSON.stringify({ model_profile: 'balanced', quality: { level: 'fast' } }),
+      'utf-8'
+    );
+
+    const result = runGsdToolsFull('config-get model_profile', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.stderr}`);
+    assert.strictEqual(result.stderr, '', `stderr must be empty, got: "${result.stderr}"`);
   });
 });
 
