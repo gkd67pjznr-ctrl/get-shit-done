@@ -2,13 +2,14 @@
 
 ## Milestones
 
-- ✅ **v1.0 MVP** — Phases 1-4 (shipped 2026-02-24)
-- ✅ **v1.1 Quality UX** — Phases 5-7 (shipped 2026-02-24)
+- [x] **v1.0 MVP** — Phases 1-4 (shipped 2026-02-24)
+- [x] **v1.1 Quality UX** — Phases 5-7 (shipped 2026-02-24)
+- [ ] **v2.0 Concurrent Milestones** — Phases 8-13 (in progress)
 
 ## Phases
 
 <details>
-<summary>✅ v1.0 MVP (Phases 1-4) — SHIPPED 2026-02-24</summary>
+<summary>v1.0 MVP (Phases 1-4) — SHIPPED 2026-02-24</summary>
 
 - [x] Phase 1: Foundation (2/2 plans) — completed 2026-02-23
 - [x] Phase 2: Executor Sentinel (3/3 plans) — completed 2026-02-23
@@ -18,13 +19,24 @@
 </details>
 
 <details>
-<summary>✅ v1.1 Quality UX (Phases 5-7) — SHIPPED 2026-02-24</summary>
+<summary>v1.1 Quality UX (Phases 5-7) — SHIPPED 2026-02-24</summary>
 
 - [x] Phase 5: Config Foundation (2/2 plans) — completed 2026-02-24
 - [x] Phase 6: Commands and UX (2/2 plans) — completed 2026-02-24
 - [x] Phase 7: Quality Observability (1/1 plan) — completed 2026-02-24
 
 </details>
+
+### v2.0 Concurrent Milestones (In Progress)
+
+**Milestone Goal:** Enable multiple milestones to execute in parallel across separate Claude Code sessions with isolated workspaces, conflict awareness, and a compatibility layer for existing projects.
+
+- [ ] **Phase 8: Path Architecture Foundation** - Central path resolver and CLI flag parsing — the dependency every other phase is built on
+- [ ] **Phase 9: Milestone Workspace Initialization** - Physical workspace creation, scaffold files, and conflict manifest format
+- [ ] **Phase 10: Compatibility Layer** - Legacy project detection and permanent zero-migration old-style support
+- [ ] **Phase 11: Dashboard and Conflict Detection** - Live multi-milestone dashboard and advisory overlap detection
+- [ ] **Phase 12: Full Routing Update** - All workflows, commands, and phase numbering updated to be milestone-aware
+- [ ] **Phase 13: Test Coverage** - New test helpers, branch coverage on new functions, and end-to-end verification
 
 ## Progress
 
@@ -37,3 +49,9 @@
 | 5. Config Foundation | v1.1 | 2/2 | Complete | 2026-02-24 |
 | 6. Commands and UX | v1.1 | 2/2 | Complete | 2026-02-24 |
 | 7. Quality Observability | v1.1 | 1/1 | Complete | 2026-02-24 |
+| 8. Path Architecture Foundation | v2.0 | 0/? | Not started | - |
+| 9. Milestone Workspace Initialization | v2.0 | 0/? | Not started | - |
+| 10. Compatibility Layer | v2.0 | 0/? | Not started | - |
+| 11. Dashboard and Conflict Detection | v2.0 | 0/? | Not started | - |
+| 12. Full Routing Update | v2.0 | 0/? | Not started | - |
+| 13. Test Coverage | v2.0 | 0/? | Not started | - |

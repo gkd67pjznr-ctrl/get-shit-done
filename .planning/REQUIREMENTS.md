@@ -111,46 +111,55 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PATH-01 | — | Pending |
-| PATH-02 | — | Pending |
-| PATH-03 | — | Pending |
-| PATH-04 | — | Pending |
-| WKSP-01 | — | Pending |
-| WKSP-02 | — | Pending |
-| WKSP-03 | — | Pending |
-| WKSP-04 | — | Pending |
-| COMPAT-01 | — | Pending |
-| COMPAT-02 | — | Pending |
-| COMPAT-03 | — | Pending |
-| PHASE-01 | — | Pending |
-| PHASE-02 | — | Pending |
-| PHASE-03 | — | Pending |
-| DASH-01 | — | Pending |
-| DASH-02 | — | Pending |
-| DASH-03 | — | Pending |
-| DASH-04 | — | Pending |
-| CNFL-01 | — | Pending |
-| CNFL-02 | — | Pending |
-| CNFL-03 | — | Pending |
-| CNFL-04 | — | Pending |
-| ROUTE-01 | — | Pending |
-| ROUTE-02 | — | Pending |
-| ROUTE-03 | — | Pending |
-| ROUTE-04 | — | Pending |
-| ROUTE-05 | — | Pending |
-| TEST-01 | — | Pending |
-| TEST-02 | — | Pending |
-| TEST-03 | — | Pending |
-| TEST-04 | — | Pending |
-| TEST-05 | — | Pending |
-| TEST-06 | — | Pending |
-| TEAM-01 | — | Pending |
+| PATH-01 | Phase 8 | Pending |
+| PATH-02 | Phase 8 | Pending |
+| PATH-03 | Phase 8 | Pending |
+| PATH-04 | Phase 8 | Pending |
+| WKSP-01 | Phase 9 | Pending |
+| WKSP-02 | Phase 9 | Pending |
+| WKSP-03 | Phase 9 | Pending |
+| WKSP-04 | Phase 9 | Pending |
+| COMPAT-01 | Phase 10 | Pending |
+| COMPAT-02 | Phase 10 | Pending |
+| COMPAT-03 | Phase 10 | Pending |
+| PHASE-01 | Phase 12 | Pending |
+| PHASE-02 | Phase 12 | Pending |
+| PHASE-03 | Phase 12 | Pending |
+| DASH-01 | Phase 11 | Pending |
+| DASH-02 | Phase 11 | Pending |
+| DASH-03 | Phase 11 | Pending |
+| DASH-04 | Phase 11 | Pending |
+| CNFL-01 | Phase 9 | Pending |
+| CNFL-02 | Phase 11 | Pending |
+| CNFL-03 | Phase 11 | Pending |
+| CNFL-04 | Phase 11 | Pending |
+| ROUTE-01 | Phase 12 | Pending |
+| ROUTE-02 | Phase 12 | Pending |
+| ROUTE-03 | Phase 12 | Pending |
+| ROUTE-04 | Phase 12 | Pending |
+| ROUTE-05 | Phase 12 | Pending |
+| TEST-01 | Phase 13 | Pending |
+| TEST-02 | Phase 13 | Pending |
+| TEST-03 | Phase 13 | Pending |
+| TEST-04 | Phase 13 | Pending |
+| TEST-05 | Phase 13 | Pending |
+| TEST-06 | Phase 13 | Pending |
+| TEAM-01 | Phase 12 | Pending |
 
 **Coverage:**
 - v2.0 requirements: 34 total
-- Mapped to phases: 0
-- Unmapped: 34 (pending roadmap creation)
+- Mapped to phases: 34
+- Unmapped: 0
+
+| Phase | Requirements | Count |
+|-------|-------------|-------|
+| Phase 8: Path Architecture Foundation | PATH-01, PATH-02, PATH-03, PATH-04 | 4 |
+| Phase 9: Milestone Workspace Initialization | WKSP-01, WKSP-02, WKSP-03, WKSP-04, CNFL-01 | 5 |
+| Phase 10: Compatibility Layer | COMPAT-01, COMPAT-02, COMPAT-03 | 3 |
+| Phase 11: Dashboard and Conflict Detection | DASH-01, DASH-02, DASH-03, DASH-04, CNFL-02, CNFL-03, CNFL-04 | 7 |
+| Phase 12: Full Routing Update | ROUTE-01, ROUTE-02, ROUTE-03, ROUTE-04, ROUTE-05, PHASE-01, PHASE-02, PHASE-03, TEAM-01 | 9 |
+| Phase 13: Test Coverage | TEST-01, TEST-02, TEST-03, TEST-04, TEST-05, TEST-06 | 6 |
 
 ---
 *Requirements defined: 2026-02-24*
-*Last updated: 2026-02-24 after initial definition*
+*Last updated: 2026-02-24 — traceability filled in after v2.0 roadmap creation*
