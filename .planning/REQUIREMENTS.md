@@ -16,7 +16,7 @@ Requirements for v1.1 Quality UX. Each maps to roadmap phases.
 
 ### Quality Observability
 
-- [ ] **QOBS-01**: SUMMARY.md includes a "Quality Gates" section showing what checks ran and their outcomes
+- [x] **QOBS-01**: SUMMARY.md includes a "Quality Gates" section showing what checks ran and their outcomes
 - [x] **QOBS-02**: `/gsd:progress` output displays current `quality.level` for the project
 - [x] **QOBS-03**: Config validation warns when required sections are missing instead of silently falling back
 
@@ -55,7 +55,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | QCFG-02 | Phase 5 | Complete |
 | QCFG-03 | Phase 5 | Complete |
 | QCFG-04 | Phase 6 | Complete |
-| QOBS-01 | Phase 7 | Pending |
+| QOBS-01 | Phase 7 | Complete |
 | QOBS-02 | Phase 6 | Complete |
 | QOBS-03 | Phase 5 | Complete |
 | INFR-01 | Phase 5 | Complete |

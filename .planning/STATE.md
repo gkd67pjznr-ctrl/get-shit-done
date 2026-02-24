@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-23)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** v1.1 Quality UX — Phase 6: Commands and UX
+**Current focus:** v1.1 Quality UX — Phase 7: Quality Observability
 
 ## Current Position
 
-Phase: 6 of 7 (Commands and UX)
-Plan: 2 of TBD in current phase
+Phase: 7 of 7 (Quality Observability)
+Plan: 1 of 1 in current phase
 Status: In Progress
-Last activity: 2026-02-24 — Phase 6 Plan 2 complete (set-quality command/workflow, help patches reminder, progress quality level)
+Last activity: 2026-02-24 — Phase 7 Plan 1 complete (quality gate observability: GATE_OUTCOMES tracking, Quality Gates SUMMARY section)
 
 Progress: [█░░░░░░░░░] ~5% (v1.1)
 
@@ -35,6 +35,7 @@ Progress: [█░░░░░░░░░] ~5% (v1.1)
 | 06-commands-and-ux | 2 | 8 min | 4 min |
 
 *Updated after each plan completion*
+| Phase 07-quality-observability P01 | 2 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -53,6 +54,8 @@ Full v1.0 decision log archived with milestone.
 - [Phase 06-01]: table format test uses progress table (JSON output) not --raw (raw string) for JSON.parse compatibility
 - [Phase 06-02]: help.md gets a full process wrapper around the existing reference so patches check runs first
 - [Phase 06-02]: progress.md reads quality level via config-get CLI (not hardcoded) for live config reflection
+- [Phase 07-01]: GATE_OUTCOMES initialized once per plan with GATE_OUTCOMES_INITIALIZED guard to prevent reset between tasks
+- [Phase 07-01]: Fast mode: Quality Gates section completely absent from SUMMARY.md (not empty) — no gates ran so nothing to report
 
 ### Pending Todos
 
@@ -65,5 +68,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Completed 06-commands-and-ux-02-PLAN.md
+Stopped at: Completed 07-quality-observability-01-PLAN.md
 Resume file: None
