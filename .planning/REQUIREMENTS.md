@@ -11,7 +11,7 @@ Requirements for concurrent milestone execution. Each maps to roadmap phases.
 
 - [x] **PATH-01**: `planningRoot(cwd, milestoneScope)` function in core.cjs returns `.planning/` for old-style or `.planning/milestones/<v>/` for new-style projects
 - [x] **PATH-02**: `detectLayoutStyle(cwd)` checks config.json for `concurrent: true` sentinel, returns `legacy`, `milestone-scoped`, or `uninitialized`
-- [ ] **PATH-03**: `--milestone <version>` global CLI flag parsed by gsd-tools.cjs and threaded to all phase/state/roadmap commands
+- [x] **PATH-03**: `--milestone <version>` global CLI flag parsed by gsd-tools.cjs and threaded to all phase/state/roadmap commands
 - [x] **PATH-04**: `is_last_phase` bug fixed — phase completion routing no longer prematurely marks phases as last when future phases are unplanned
 
 ### Workspace Isolation
@@ -113,7 +113,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | PATH-01 | Phase 8 | Complete |
 | PATH-02 | Phase 8 | Complete |
-| PATH-03 | Phase 8 | Pending |
+| PATH-03 | Phase 8 | Complete |
 | PATH-04 | Phase 8 | Complete |
 | WKSP-01 | Phase 9 | Pending |
 | WKSP-02 | Phase 9 | Pending |
