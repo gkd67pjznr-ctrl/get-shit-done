@@ -36,7 +36,10 @@
   2. `~/.gsd/defaults.json` exists after first GSD usage and new projects inherit quality level from it during config initialization
   3. When required config sections are absent, the user sees a warning identifying the missing section rather than a silent fallback
   4. `quality.context7_token_cap` is read from config and applied to Context7 queries; changing the value changes behavior without code edits
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 05-01-PLAN.md — Config auto-migration, global defaults bootstrap, missing-section warnings (TDD)
+- [ ] 05-02-PLAN.md — Context7 configurable token cap in executor agent (TDD)
 
 ### Phase 6: Commands and UX
 **Goal**: Users can set quality level via a dedicated command (per-project or globally), and can see the current quality level when checking progress
@@ -67,6 +70,6 @@
 | 2. Executor Sentinel | v1.0 | 3/3 | Complete | 2026-02-23 |
 | 3. Quality Dimensions | v1.0 | 2/2 | Complete | 2026-02-23 |
 | 4. Wire Quality Scan Handoff | v1.0 | 1/1 | Complete | 2026-02-24 |
-| 5. Config Foundation | v1.1 | 0/TBD | Not started | - |
+| 5. Config Foundation | v1.1 | 0/2 | Not started | - |
 | 6. Commands and UX | v1.1 | 0/TBD | Not started | - |
 | 7. Quality Observability | v1.1 | 0/TBD | Not started | - |
