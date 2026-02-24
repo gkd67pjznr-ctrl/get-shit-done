@@ -78,16 +78,19 @@ Plans:
   4. Plan-checker Dimension 9 reads `quality.level` using canonical bash pattern with `|| echo "fast"` fallback guard (CFG-04 consistency)
   5. The Plan→Execute→Verify E2E flow completes without broken handoffs
 
+**Plans**: 1 plan
+
 Plans:
+- [ ] 04-01-PLAN.md — Wire executor sentinel Steps 1, 2, and 4 to consume quality_scan directives; fix plan-checker Dimension 9 canonical bash pattern
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3
+Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 2/2 | Complete    | 2026-02-23 |
 | 2. Executor Sentinel | 3/3 | Complete    | 2026-02-23 |
 | 3. Quality Dimensions | 2/2 | Complete    | 2026-02-23 |
-| 4. Wire Quality Scan Handoff | 0/0 | Not Started | — |
+| 4. Wire Quality Scan Handoff | 0/1 | Not Started | — |
