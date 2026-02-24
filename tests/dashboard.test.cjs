@@ -7,7 +7,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
-const { createConcurrentProject, createTempProject, cleanup } = require('./helpers.cjs');
+const { createConcurrentProject, createTempProject, createLegacyProject, cleanup, runGsdToolsFull } = require('./helpers.cjs');
 
 const MILESTONE_LIB = path.join(__dirname, '..', 'get-shit-done', 'bin', 'lib', 'milestone.cjs');
 
@@ -238,5 +238,96 @@ describe('cmdManifestCheck', () => {
     );
     const result = runManifestCheck(tmpDir);
     assert.strictEqual(result.status, 0, 'must always exit 0 (advisory only, CNFL-04)');
+  });
+});
+
+describe('CLI routing for milestone write-status', () => {
+  let tmpDir;
+
+  before(() => {
+    tmpDir = createConcurrentProject('v2.0');
+  });
+
+  after(() => {
+    cleanup(tmpDir);
+  });
+
+  it('routes write-status to cmdMilestoneWriteStatus', () => {
+    const result = runGsdToolsFull(
+      ['milestone', 'write-status', 'v2.0', '--phase', '3', '--plan', '1', '--checkpoint', 'plan-complete', '--progress', '1/3 plans (33%)', '--status', 'In Progress', '--raw'],
+      tmpDir
+    );
+    assert.ok(result.success, `expected success\nstderr: ${result.stderr}\nstdout: ${result.output}`);
+    const parsed = JSON.parse(result.output);
+    assert.strictEqual(parsed.written, true, 'written should be true');
+  });
+
+  it('routes manifest-check to cmdManifestCheck', () => {
+    // Set up conflict.json so manifest-check has something to check
+    const v20Dir = path.join(tmpDir, '.planning', 'milestones', 'v2.0');
+    fs.writeFileSync(
+      path.join(v20Dir, 'conflict.json'),
+      JSON.stringify({ version: 'v2.0', status: 'active', files_touched: ['src/foo.js'] }),
+      'utf-8'
+    );
+    const result = runGsdToolsFull(['milestone', 'manifest-check', '--raw'], tmpDir);
+    assert.ok(result.success, `expected success\nstderr: ${result.stderr}\nstdout: ${result.output}`);
+    const parsed = JSON.parse(result.output);
+    assert.ok('has_conflicts' in parsed, 'has_conflicts field should exist');
+  });
+});
+
+describe('cmdProgressRenderMulti', () => {
+  let tmpDir;
+
+  before(() => {
+    tmpDir = createConcurrentProject('v2.0');
+    // Write a STATUS.md in the v2.0 workspace
+    const statusPath = path.join(tmpDir, '.planning', 'milestones', 'v2.0', 'STATUS.md');
+    fs.writeFileSync(
+      statusPath,
+      '# v2.0 Status\n\n**Phase:** 3\n**Plan:** 1\n**Checkpoint:** plan-complete\n**Progress:** 1/3 plans (33%)\n**Status:** In Progress\n',
+      'utf-8'
+    );
+  });
+
+  after(() => {
+    cleanup(tmpDir);
+  });
+
+  it('renders multi-milestone JSON for concurrent projects', () => {
+    const result = runGsdToolsFull(['progress', 'json', '--raw'], tmpDir);
+    assert.ok(result.success, `expected success\nstderr: ${result.stderr}\nstdout: ${result.output}`);
+    const parsed = JSON.parse(result.output);
+    assert.strictEqual(parsed.layout_style, 'milestone-scoped', 'layout_style should be milestone-scoped');
+    assert.ok(Array.isArray(parsed.milestones), 'milestones should be an array');
+    assert.ok(parsed.milestones.length >= 1, 'should have at least one milestone entry');
+    assert.strictEqual(parsed.milestones[0].version, 'v2.0', 'milestone version should be v2.0');
+  });
+
+  it('falls back to single-milestone progress for legacy projects', () => {
+    const legacyDir = createLegacyProject();
+    try {
+      // Add a phase directory with a PLAN.md so cmdProgressRender has something to scan
+      const phaseDir = path.join(legacyDir, '.planning', 'phases', '01-foundation');
+      fs.mkdirSync(phaseDir, { recursive: true });
+      fs.writeFileSync(path.join(phaseDir, '01-01-PLAN.md'), '# Plan\n', 'utf-8');
+      const result = runGsdToolsFull(['progress', 'json', '--raw'], legacyDir);
+      assert.ok(result.success, `expected success\nstderr: ${result.stderr}\nstdout: ${result.output}`);
+      const parsed = JSON.parse(result.output);
+      assert.ok(Array.isArray(parsed.phases), 'legacy result should have phases array');
+      assert.ok(!('milestones' in parsed), 'legacy result should NOT have milestones array');
+    } finally {
+      cleanup(legacyDir);
+    }
+  });
+
+  it('renders multi-milestone table format', () => {
+    // Without --raw, output() emits JSON; with --raw and rawValue set, it emits raw text.
+    // Use JSON mode (no --raw) to get the rendered field as JSON.
+    const result = runGsdToolsFull(['progress', 'table'], tmpDir);
+    assert.ok(result.success, `expected success\nstderr: ${result.stderr}\nstdout: ${result.output}`);
+    const parsed = JSON.parse(result.output);
+    assert.ok(parsed.rendered.includes('Multi-Milestone Progress'), 'rendered should contain Multi-Milestone Progress header');
   });
 });

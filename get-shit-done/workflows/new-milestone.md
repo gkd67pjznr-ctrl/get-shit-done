@@ -82,6 +82,30 @@ INIT=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs init new-milestone)
 
 Extract from init JSON: `researcher_model`, `synthesizer_model`, `roadmapper_model`, `commit_docs`, `research_enabled`, `current_milestone`, `project_exists`, `roadmap_exists`.
 
+## 7.5. Create Workspace and Check Conflicts
+
+If `layout_style === 'milestone-scoped'` from init context:
+
+```bash
+# Create milestone workspace
+node ~/.claude/get-shit-done/bin/gsd-tools.cjs milestone new-workspace <version> --raw
+```
+
+```bash
+# Advisory conflict detection — warns if new milestone touches same files as active milestones
+node ~/.claude/get-shit-done/bin/gsd-tools.cjs milestone manifest-check --raw
+```
+
+If `has_conflicts` is true in the manifest-check result, display a warning:
+
+```
+⚠ Conflict Advisory: <version> overlaps with <other_versions> on <N> files.
+  Overlapping files: <files>
+  This is informational only — execution will proceed normally.
+```
+
+If no conflicts or layout is legacy, continue to Step 8.
+
 ## 8. Research Decision
 
 AskUserQuestion: "Research the domain ecosystem for new features before defining requirements?"
@@ -376,6 +400,7 @@ Also: `/gsd:plan-phase [N]` — skip discussion, plan directly
 - [ ] User feedback incorporated (if any)
 - [ ] ROADMAP.md phases continue from previous milestone
 - [ ] All commits made (if planning docs committed)
+- [ ] Conflict manifest checked (if milestone-scoped layout)
 - [ ] User knows next step: `/gsd:discuss-phase [N]`
 
 **Atomic commits:** Each phase commits its artifacts immediately.
