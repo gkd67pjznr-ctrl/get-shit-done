@@ -93,6 +93,148 @@ describe('milestone complete command', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// milestone new-workspace command
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('milestone new-workspace (cmdMilestoneNewWorkspace)', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('creates workspace directory tree with scaffold files', () => {
+    const milestone = require('../get-shit-done/bin/lib/milestone.cjs');
+    milestone.cmdMilestoneNewWorkspace(tmpDir, 'v2.0', {}, true);
+
+    const workspaceDir = path.join(tmpDir, '.planning', 'milestones', 'v2.0');
+    assert.ok(fs.existsSync(workspaceDir), 'workspace dir should exist');
+    assert.ok(fs.existsSync(path.join(workspaceDir, 'phases')), 'phases/ subdir should exist');
+    assert.ok(fs.existsSync(path.join(workspaceDir, 'research')), 'research/ subdir should exist');
+    assert.ok(fs.existsSync(path.join(workspaceDir, 'STATE.md')), 'STATE.md should exist');
+    assert.ok(fs.existsSync(path.join(workspaceDir, 'ROADMAP.md')), 'ROADMAP.md should exist');
+    assert.ok(fs.existsSync(path.join(workspaceDir, 'REQUIREMENTS.md')), 'REQUIREMENTS.md should exist');
+    assert.ok(fs.existsSync(path.join(workspaceDir, 'conflict.json')), 'conflict.json should exist');
+  });
+
+  test('scaffold files contain version and status', () => {
+    const milestone = require('../get-shit-done/bin/lib/milestone.cjs');
+    milestone.cmdMilestoneNewWorkspace(tmpDir, 'v2.0', {}, true);
+
+    const workspaceDir = path.join(tmpDir, '.planning', 'milestones', 'v2.0');
+    const stateContent = fs.readFileSync(path.join(workspaceDir, 'STATE.md'), 'utf-8');
+    assert.ok(stateContent.includes('v2.0'), 'STATE.md should contain version');
+    assert.ok(stateContent.includes('Initializing'), 'STATE.md should have Initializing status');
+  });
+
+  test('conflict.json has correct schema', () => {
+    const milestone = require('../get-shit-done/bin/lib/milestone.cjs');
+    milestone.cmdMilestoneNewWorkspace(tmpDir, 'v2.0', {}, true);
+
+    const workspaceDir = path.join(tmpDir, '.planning', 'milestones', 'v2.0');
+    const conflict = JSON.parse(fs.readFileSync(path.join(workspaceDir, 'conflict.json'), 'utf-8'));
+    assert.strictEqual(conflict.version, 'v2.0');
+    assert.strictEqual(conflict.status, 'active');
+    assert.ok(Array.isArray(conflict.files_touched), 'files_touched should be array');
+    assert.strictEqual(conflict.files_touched.length, 0, 'files_touched should be empty');
+    assert.ok(conflict.created_at, 'created_at should be present');
+  });
+
+  test('is idempotent — second run does not overwrite existing files', () => {
+    const milestone = require('../get-shit-done/bin/lib/milestone.cjs');
+    milestone.cmdMilestoneNewWorkspace(tmpDir, 'v2.0', {}, true);
+
+    // Modify STATE.md after first run
+    const workspaceDir = path.join(tmpDir, '.planning', 'milestones', 'v2.0');
+    const statePath = path.join(workspaceDir, 'STATE.md');
+    fs.writeFileSync(statePath, '# Custom State Content', 'utf-8');
+
+    // Second run should not overwrite
+    milestone.cmdMilestoneNewWorkspace(tmpDir, 'v2.0', {}, true);
+    const stateContent = fs.readFileSync(statePath, 'utf-8');
+    assert.strictEqual(stateContent, '# Custom State Content', 'second run should not overwrite STATE.md');
+  });
+
+  test('errors when version is not provided', () => {
+    const { runGsdToolsFull } = require('./helpers.cjs');
+    // We call directly and expect error() to throw (process.exit)
+    const milestone = require('../get-shit-done/bin/lib/milestone.cjs');
+    assert.throws(
+      () => milestone.cmdMilestoneNewWorkspace(tmpDir, '', {}, true),
+      'should throw when version is missing'
+    );
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// milestone update-manifest command
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('milestone update-manifest (cmdMilestoneUpdateManifest)', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+    // Set up a workspace first
+    const milestone = require('../get-shit-done/bin/lib/milestone.cjs');
+    milestone.cmdMilestoneNewWorkspace(tmpDir, 'v2.0', {}, true);
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('merges files into files_touched', () => {
+    const milestone = require('../get-shit-done/bin/lib/milestone.cjs');
+    milestone.cmdMilestoneUpdateManifest(tmpDir, 'v2.0', ['a.js', 'b.js'], true);
+
+    const conflictPath = path.join(tmpDir, '.planning', 'milestones', 'v2.0', 'conflict.json');
+    const conflict = JSON.parse(fs.readFileSync(conflictPath, 'utf-8'));
+    assert.deepStrictEqual(conflict.files_touched.sort(), ['a.js', 'b.js'].sort());
+  });
+
+  test('deduplicates files — same file added twice appears once', () => {
+    const milestone = require('../get-shit-done/bin/lib/milestone.cjs');
+    milestone.cmdMilestoneUpdateManifest(tmpDir, 'v2.0', ['a.js'], true);
+    milestone.cmdMilestoneUpdateManifest(tmpDir, 'v2.0', ['a.js'], true);
+
+    const conflictPath = path.join(tmpDir, '.planning', 'milestones', 'v2.0', 'conflict.json');
+    const conflict = JSON.parse(fs.readFileSync(conflictPath, 'utf-8'));
+    assert.strictEqual(conflict.files_touched.length, 1, 'deduplication: a.js should appear only once');
+  });
+
+  test('accumulates files across multiple calls', () => {
+    const milestone = require('../get-shit-done/bin/lib/milestone.cjs');
+    milestone.cmdMilestoneUpdateManifest(tmpDir, 'v2.0', ['a.js', 'b.js'], true);
+    milestone.cmdMilestoneUpdateManifest(tmpDir, 'v2.0', ['c.js'], true);
+
+    const conflictPath = path.join(tmpDir, '.planning', 'milestones', 'v2.0', 'conflict.json');
+    const conflict = JSON.parse(fs.readFileSync(conflictPath, 'utf-8'));
+    assert.deepStrictEqual(conflict.files_touched.sort(), ['a.js', 'b.js', 'c.js'].sort());
+  });
+
+  test('errors when version is not provided', () => {
+    const milestone = require('../get-shit-done/bin/lib/milestone.cjs');
+    assert.throws(
+      () => milestone.cmdMilestoneUpdateManifest(tmpDir, '', ['a.js'], true),
+      'should throw when version is missing'
+    );
+  });
+
+  test('errors when conflict.json does not exist', () => {
+    const milestone = require('../get-shit-done/bin/lib/milestone.cjs');
+    assert.throws(
+      () => milestone.cmdMilestoneUpdateManifest(tmpDir, 'v99.0', ['a.js'], true),
+      'should throw when conflict.json not found'
+    );
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // validate consistency command
 // ─────────────────────────────────────────────────────────────────────────────
 
