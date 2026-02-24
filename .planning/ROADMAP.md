@@ -68,6 +68,10 @@ Plans:
 **Goal:** All workflows, commands, and phase numbering updated to be milestone-aware — `--milestone` flag threaded through every gsd-tools.cjs call, phase numbering resets per milestone, and canonical path variable glossary committed.
 **Depends on:** Phase 8 (path architecture), Phase 11 (dashboard for progress routing)
 **Requirements:** [ROUTE-01, ROUTE-02, ROUTE-03, ROUTE-04, ROUTE-05, PHASE-01, PHASE-02, PHASE-03, TEAM-01]
+**Plans:** 2 plans
+Plans:
+- [ ] 12-01-PLAN.md — Thread milestoneScope through remaining init commands, cmdPhaseComplete, path variable glossary, and integration tests
+- [ ] 12-02-PLAN.md — Thread MILESTONE_FLAG through workflow files and document Agent Teams research findings
 
 ### Phase 13: Test Coverage
 **Goal:** Comprehensive test coverage for all v2.0 concurrent milestone functionality — new test helpers, branch coverage on new functions, and end-to-end verification across both layout modes.
