@@ -77,6 +77,16 @@ function loadConfig(cwd) {
     const raw = fs.readFileSync(configPath, 'utf-8');
     const parsed = JSON.parse(raw);
 
+    // Warn on missing required config sections
+    const requiredSections = ['quality'];
+    for (const section of requiredSections) {
+      if (parsed[section] === undefined) {
+        process.stderr.write(
+          `Warning: config.json missing required section "${section}" — run config-ensure-section to fix\n`
+        );
+      }
+    }
+
     const get = (key, nested) => {
       if (parsed[key] !== undefined) return parsed[key];
       if (nested && parsed[nested.section] && parsed[nested.section][nested.field] !== undefined) {

@@ -2,7 +2,7 @@
  * GSD Tools Test Helpers
  */
 
-const { execSync } = require('child_process');
+const { execSync, spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
@@ -26,6 +26,23 @@ function runGsdTools(args, cwd = process.cwd()) {
   }
 }
 
+// Helper to run gsd-tools command, always returning stdout and stderr unconditionally.
+// Uses spawnSync so stderr is always captured regardless of exit code.
+function runGsdToolsFull(args, cwd = process.cwd(), envOverrides = {}) {
+  const argList = typeof args === 'string' ? args.split(' ') : args;
+  const result = spawnSync('node', [TOOLS_PATH, ...argList], {
+    cwd,
+    encoding: 'utf-8',
+    env: { ...process.env, ...envOverrides },
+  });
+  return {
+    success: result.status === 0,
+    output: (result.stdout || '').trim(),
+    stderr: (result.stderr || '').trim(),
+    error: result.status !== 0 ? (result.stderr || '').trim() || result.error?.message || '' : undefined,
+  };
+}
+
 // Create temp directory structure
 function createTempProject() {
   const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'gsd-test-'));
@@ -37,4 +54,4 @@ function cleanup(tmpDir) {
   fs.rmSync(tmpDir, { recursive: true, force: true });
 }
 
-module.exports = { runGsdTools, createTempProject, cleanup, TOOLS_PATH };
+module.exports = { runGsdTools, runGsdToolsFull, createTempProject, cleanup, TOOLS_PATH };

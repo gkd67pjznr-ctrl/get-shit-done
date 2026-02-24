@@ -19,20 +19,14 @@ function cmdConfigEnsureSection(cwd, raw) {
     error('Failed to create .planning directory: ' + err.message);
   }
 
-  // Check if config already exists
-  if (fs.existsSync(configPath)) {
-    const result = { created: false, reason: 'already_exists' };
-    output(result, raw, 'exists');
-    return;
-  }
-
   // Detect Brave Search API key availability
   const homedir = require('os').homedir();
-  const braveKeyFile = path.join(homedir, '.gsd', 'brave_api_key');
+  const gsdHome = process.env.GSD_HOME || path.join(homedir, '.gsd');
+  const braveKeyFile = path.join(gsdHome, 'brave_api_key');
   const hasBraveSearch = !!(process.env.BRAVE_API_KEY || fs.existsSync(braveKeyFile));
 
-  // Load user-level defaults from ~/.gsd/defaults.json if available
-  const globalDefaultsPath = path.join(homedir, '.gsd', 'defaults.json');
+  // Load user-level defaults from GSD_HOME/defaults.json if available
+  const globalDefaultsPath = path.join(gsdHome, 'defaults.json');
   let userDefaults = {};
   try {
     if (fs.existsSync(globalDefaultsPath)) {
@@ -40,6 +34,69 @@ function cmdConfigEnsureSection(cwd, raw) {
     }
   } catch (err) {
     // Ignore malformed global defaults, fall back to hardcoded
+  }
+
+  // Required quality defaults with context7_token_cap
+  const requiredQualityDefaults = {
+    level: 'fast',
+    test_exemptions: ['.md', '.json', 'templates/**', '.planning/**'],
+    context7_token_cap: 2000,
+  };
+
+  // Bootstrap global defaults.json on first GSD usage (if absent)
+  const bootstrapGlobalDefaults = () => {
+    if (!fs.existsSync(globalDefaultsPath)) {
+      try {
+        fs.mkdirSync(gsdHome, { recursive: true });
+        fs.writeFileSync(globalDefaultsPath, JSON.stringify({ quality: { level: 'fast' } }, null, 2), 'utf-8');
+      } catch (err) {
+        // Non-fatal: silently skip if we cannot write global defaults
+      }
+    }
+  };
+
+  // Check if config already exists — migrate if needed
+  if (fs.existsSync(configPath)) {
+    let config;
+    try {
+      config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    } catch (err) {
+      error('Failed to read config.json: ' + err.message);
+    }
+
+    let migrated = false;
+    let reason = 'already_exists';
+
+    if (config.quality === undefined) {
+      // Auto-migrate: add quality block using user defaults for level if available
+      config.quality = {
+        ...requiredQualityDefaults,
+        ...(userDefaults.quality || {}),
+      };
+      migrated = true;
+      reason = 'quality_section_added';
+    } else if (config.quality.context7_token_cap === undefined) {
+      // Add missing context7_token_cap
+      config.quality.context7_token_cap = requiredQualityDefaults.context7_token_cap;
+      migrated = true;
+      reason = 'context7_token_cap_added';
+    }
+
+    if (migrated) {
+      try {
+        fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
+      } catch (err) {
+        error('Failed to write config.json: ' + err.message);
+      }
+      bootstrapGlobalDefaults();
+      const result = { created: false, migrated: true, reason };
+      output(result, raw, 'migrated');
+      return;
+    }
+
+    const result = { created: false, reason: 'already_exists' };
+    output(result, raw, 'exists');
+    return;
   }
 
   // Create default config (user-level defaults override hardcoded defaults)
@@ -58,10 +115,7 @@ function cmdConfigEnsureSection(cwd, raw) {
     },
     parallelization: true,
     brave_search: hasBraveSearch,
-    quality: {
-      level: 'fast',
-      test_exemptions: ['.md', '.json', 'templates/**', '.planning/**'],
-    },
+    quality: requiredQualityDefaults,
   };
   const defaults = {
     ...hardcoded,
@@ -72,6 +126,7 @@ function cmdConfigEnsureSection(cwd, raw) {
 
   try {
     fs.writeFileSync(configPath, JSON.stringify(defaults, null, 2), 'utf-8');
+    bootstrapGlobalDefaults();
     const result = { created: true, path: '.planning/config.json' };
     output(result, raw, 'created');
   } catch (err) {
@@ -141,6 +196,16 @@ function cmdConfigGet(cwd, keyPath, raw) {
   } catch (err) {
     if (err.message.startsWith('No config.json')) throw err;
     error('Failed to read config.json: ' + err.message);
+  }
+
+  // Warn when required config sections are absent
+  const requiredSections = ['quality'];
+  for (const section of requiredSections) {
+    if (config[section] === undefined) {
+      process.stderr.write(
+        `Warning: config.json missing required section "${section}" — run config-ensure-section to fix\n`
+      );
+    }
   }
 
   // Traverse dot-notation path (e.g., "workflow.auto_advance")
