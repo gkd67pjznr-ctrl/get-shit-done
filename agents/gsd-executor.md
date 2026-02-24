@@ -115,23 +115,43 @@ QUALITY_LEVEL=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs config-get qualit
 
 **Step 1: Targeted Codebase Scan** (skip if `fast`)
 
-Identify the task's domain from its `<name>` and `<files>` fields. Run targeted grep against files relevant to this domain only — not the full codebase.
+Read `<code_to_reuse>` from the current task's `<action>` block in the PLAN.md.
 
-```bash
-# Example: task involves "validators" → scan src/lib/validators/ and src/utils/
-# Cap output: pipe to head -10 to limit results
-grep -rn "export.*function\|export const" src/lib/ --include="*.cjs" 2>/dev/null | head -10
-```
+**If `<code_to_reuse>` contains `Known:` entries:**
+- Evaluate each named file/function as a reuse candidate before writing new code.
 
-Rules:
-- Scope to directories named in the task's `<files>` field or adjacent utility directories
-- Search for existing exported functions that match the task's domain term
-- If similar function found: evaluate for reuse before writing new code
+**If `<code_to_reuse>` contains `Grep pattern:` lines:**
+- Run each pattern exactly as specified. Cap output with `| head -10`.
+  ```bash
+  # Use the pattern from <code_to_reuse> directly:
+  # e.g., grep -rn "cmdConfigGet\|quality.level" get-shit-done/bin/lib/ --include="*.cjs" | head -10
+  ```
+- These patterns encode the planner's domain analysis — prefer them over generic export scans.
+
+**If `<code_to_reuse>` says `N/A` (or is absent — task predates Phase 4):**
+- Fall back: identify domain from `<name>` and `<files>`, run generic targeted grep scoped to directories the task touches. Cap with `| head -10`.
+
+**Rules (all cases):**
 - Maximum 10 lines of grep output — truncate with `| head -10`
+- If similar function found: evaluate for reuse before writing new code
 - Document reuse decision in commit message: "Reuses X from Y" or "New because X differs in Z way"
 - Never scan `node_modules`, `.git`, `.planning/`, or archived phase directories
 
-**Step 2: Context7 Lookup** (see `<context7_protocol>` section — skip if `fast`)
+**Step 2: Context7 Lookup** (skip if `fast`)
+
+Read `<docs_to_consult>` from the current task's `<action>` block in the PLAN.md.
+
+**If `<docs_to_consult>` contains a `Context7:` entry** (e.g., `Context7: /org/library — query "specific question"`):
+- Call Context7 for this library with the specified query. The planner has pre-identified this as needed.
+- Skip the standard trigger heuristics — proceed directly to the Context7 call.
+
+**If `<docs_to_consult>` says `N/A — no external library dependencies`:**
+- Skip Context7 entirely for this task. The planner determined no docs are needed.
+
+**If `<docs_to_consult>` contains only a `Description:` (no Context7 ID), or is absent:**
+- Apply the standard trigger heuristics from `<context7_protocol>`.
+
+Token discipline: one Context7 query per plan execution maximum (see `<context7_protocol>`).
 
 **Step 3: Test Baseline** (skip if `fast`)
 ```bash
@@ -145,12 +165,22 @@ Record: pass count before changes. If baseline is red, document in SUMMARY.md un
 
 **Step 4: Test Gate** (standard: new `.cjs/.js/.ts` with exports only; strict: always; fast: skip)
 
-For each file produced by this task:
-- If file is `.cjs`, `.js`, or `.ts` AND contains `export` keyword:
-  - Check if corresponding test file exists (same name + `.test.` prefix)
-  - If test file missing: write it now, before commit
-  - Test file must exercise the exported function(s) with at least one success and one edge case
-- Files matching `quality.test_exemptions` (`.md`, `.json`, `templates/**`, `.planning/**`) are exempt — skip test gate for these files
+Read `<tests_to_write>` from the current task's `<action>` block in the PLAN.md.
+
+**If `<tests_to_write>` specifies a `File:` path and behavior description:**
+- Use that file path for the test file.
+- Use the described behaviors as the test cases (success cases and edge cases specified).
+
+**If `<tests_to_write>` says `N/A — no new exported logic`:**
+- Skip the test gate for this task, UNLESS the task produced a `.cjs/.js/.ts` file with
+  exports that is not in `quality.test_exemptions`. In that case, write tests and log
+  as a deviation (Rule 2: planner marked N/A but new exported logic was produced).
+
+**If `<tests_to_write>` is absent (task predates Phase 4):**
+- Fall back to current behavior: derive test file path and test cases from the produced
+  files and their exported function signatures.
+
+Files matching `quality.test_exemptions` (`.md`, `.json`, `templates/**`, `.planning/**`) are always exempt — skip test gate for these files.
 
 **Step 5: Diff Review** (standard and strict; skip if `fast`)
 ```bash
