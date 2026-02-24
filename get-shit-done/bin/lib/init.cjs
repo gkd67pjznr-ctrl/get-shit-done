@@ -79,6 +79,9 @@ function cmdInitExecutePhase(cwd, phase, raw, milestoneScope) {
     // Milestone scope (v2.0 concurrent execution)
     milestone_scope: milestoneScope || null,
     planning_root: planningRoot(cwd, milestoneScope),
+
+    // Layout detection (v2.0 compatibility)
+    layout_style: detectLayoutStyle(cwd),
   };
 
   output(result, raw);
@@ -138,6 +141,9 @@ function cmdInitPlanPhase(cwd, phase, raw, milestoneScope) {
     // Milestone scope (v2.0 concurrent execution)
     milestone_scope: milestoneScope || null,
     planning_root: planningRoot(cwd, milestoneScope),
+
+    // Layout detection (v2.0 compatibility)
+    layout_style: detectLayoutStyle(cwd),
   };
 
   if (phaseInfo?.directory) {

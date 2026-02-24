@@ -54,4 +54,32 @@ function cleanup(tmpDir) {
   fs.rmSync(tmpDir, { recursive: true, force: true });
 }
 
-module.exports = { runGsdTools, runGsdToolsFull, createTempProject, cleanup, TOOLS_PATH };
+// Create a legacy-style project (has config.json but NO concurrent:true)
+// Use for COMPAT-01/02/03 compatibility tests. DO NOT modify createTempProject.
+function createLegacyProject() {
+  const tmpDir = createTempProject();
+  fs.writeFileSync(
+    path.join(tmpDir, '.planning', 'config.json'),
+    JSON.stringify({ mode: 'yolo', commit_docs: true }),
+    'utf-8'
+  );
+  return tmpDir;
+}
+
+// Create a concurrent/milestone-scoped project (config.json with concurrent:true + workspace)
+// Use for milestone-scoped scenario tests. Also needed by Phase 13 (TEST-01).
+function createConcurrentProject(version = 'v2.0') {
+  const tmpDir = createTempProject();
+  fs.writeFileSync(
+    path.join(tmpDir, '.planning', 'config.json'),
+    JSON.stringify({ concurrent: true }),
+    'utf-8'
+  );
+  const workspaceDir = path.join(tmpDir, '.planning', 'milestones', version);
+  fs.mkdirSync(path.join(workspaceDir, 'phases'), { recursive: true });
+  fs.writeFileSync(path.join(workspaceDir, 'STATE.md'), '# State\n', 'utf-8');
+  fs.writeFileSync(path.join(workspaceDir, 'ROADMAP.md'), '# Roadmap\n', 'utf-8');
+  return tmpDir;
+}
+
+module.exports = { runGsdTools, runGsdToolsFull, createTempProject, createLegacyProject, createConcurrentProject, cleanup, TOOLS_PATH };
