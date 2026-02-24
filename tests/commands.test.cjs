@@ -6,7 +6,8 @@ const { test, describe, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
-const { runGsdTools, createTempProject, cleanup } = require('./helpers.cjs');
+const os = require('os');
+const { runGsdTools, runGsdToolsFull, createTempProject, cleanup } = require('./helpers.cjs');
 
 describe('history-digest command', () => {
   let tmpDir;
@@ -657,5 +658,199 @@ describe('scaffold command', () => {
     const output = JSON.parse(result.output);
     assert.strictEqual(output.created, false, 'should not overwrite');
     assert.strictEqual(output.reason, 'already_exists');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// set-quality command (QCFG-01, QCFG-04)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('set-quality command (QCFG-01, QCFG-04)', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+    // Write an existing config with quality.level = 'fast'
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'config.json'),
+      JSON.stringify({ quality: { level: 'fast' } }, null, 2),
+      'utf-8'
+    );
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('sets quality.level to strict for current project', () => {
+    const result = runGsdTools('set-quality strict', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.updated, true, 'updated should be true');
+    assert.strictEqual(output.level, 'strict', 'level should be strict');
+    assert.strictEqual(output.scope, 'project', 'scope should be project');
+
+    // Verify it was actually written
+    const getResult = runGsdTools('config-get quality.level', tmpDir);
+    assert.ok(getResult.success, `config-get failed: ${getResult.error}`);
+    const val = JSON.parse(getResult.output);
+    assert.strictEqual(val, 'strict', 'quality.level in config should be strict');
+  });
+
+  test('rejects invalid quality level', () => {
+    const result = runGsdTools('set-quality turbo', tmpDir);
+    assert.ok(!result.success, 'command should fail for invalid level');
+    assert.ok(result.error.includes('Invalid quality level'), `error should mention "Invalid quality level", got: ${result.error}`);
+  });
+
+  test('accepts all three valid levels', () => {
+    for (const level of ['fast', 'standard', 'strict']) {
+      const result = runGsdTools(`set-quality ${level}`, tmpDir);
+      assert.ok(result.success, `set-quality ${level} failed: ${result.error}`);
+      const out = JSON.parse(result.output);
+      assert.strictEqual(out.level, level, `level should be ${level}`);
+    }
+  });
+
+  test('--global writes quality.level to defaults.json', () => {
+    const gsdHomeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-home-test-'));
+    try {
+      // Pre-create defaults.json with existing quality setting
+      fs.writeFileSync(
+        path.join(gsdHomeDir, 'defaults.json'),
+        JSON.stringify({ quality: { level: 'fast' } }, null, 2),
+        'utf-8'
+      );
+
+      const result = runGsdToolsFull(['set-quality', '--global', 'standard'], tmpDir, { GSD_HOME: gsdHomeDir });
+      assert.ok(result.success, `Command failed: ${result.stderr}`);
+
+      const defaults = JSON.parse(fs.readFileSync(path.join(gsdHomeDir, 'defaults.json'), 'utf-8'));
+      assert.strictEqual(defaults.quality.level, 'standard', 'defaults.json should have standard');
+    } finally {
+      fs.rmSync(gsdHomeDir, { recursive: true, force: true });
+    }
+  });
+
+  test('--global creates defaults.json if absent', () => {
+    const gsdHomeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-home-test-'));
+    try {
+      // Empty GSD_HOME - no defaults.json
+      const result = runGsdToolsFull(['set-quality', '--global', 'strict'], tmpDir, { GSD_HOME: gsdHomeDir });
+      assert.ok(result.success, `Command failed: ${result.stderr}`);
+
+      const defaultsPath = path.join(gsdHomeDir, 'defaults.json');
+      assert.ok(fs.existsSync(defaultsPath), 'defaults.json should be created');
+      const defaults = JSON.parse(fs.readFileSync(defaultsPath, 'utf-8'));
+      assert.strictEqual(defaults.quality.level, 'strict', 'defaults.json should have strict');
+    } finally {
+      fs.rmSync(gsdHomeDir, { recursive: true, force: true });
+    }
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// check-patches command (INFR-02)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('check-patches command (INFR-02)', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('returns has_patches false when no patches directory', () => {
+    const gsdHomeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-home-test-'));
+    try {
+      const result = runGsdToolsFull(['check-patches'], tmpDir, { GSD_HOME: gsdHomeDir });
+      assert.ok(result.success, `Command failed: ${result.stderr}`);
+
+      const out = JSON.parse(result.output);
+      assert.strictEqual(out.has_patches, false, 'has_patches should be false');
+    } finally {
+      fs.rmSync(gsdHomeDir, { recursive: true, force: true });
+    }
+  });
+
+  test('returns has_patches true when patches directory with backup-meta.json exists', () => {
+    const gsdHomeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-home-test-'));
+    try {
+      // Create gsd-local-patches/backup-meta.json inside temp GSD_HOME
+      const patchesDir = path.join(gsdHomeDir, 'gsd-local-patches');
+      fs.mkdirSync(patchesDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(patchesDir, 'backup-meta.json'),
+        JSON.stringify({ files: ['workflows/help.md'], from_version: '1.0.0' }, null, 2),
+        'utf-8'
+      );
+
+      const result = runGsdToolsFull(['check-patches'], tmpDir, { GSD_HOME: gsdHomeDir });
+      assert.ok(result.success, `Command failed: ${result.stderr}`);
+
+      const out = JSON.parse(result.output);
+      assert.strictEqual(out.has_patches, true, 'has_patches should be true');
+      assert.strictEqual(out.file_count, 1, 'file_count should be 1');
+    } finally {
+      fs.rmSync(gsdHomeDir, { recursive: true, force: true });
+    }
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// progress quality-level display (QOBS-02)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('progress quality-level display (QOBS-02)', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+    // Write ROADMAP.md
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      `# Roadmap v1.0 MVP\n`
+    );
+    // Create a phase with one plan
+    const p1 = path.join(tmpDir, '.planning', 'phases', '01-foundation');
+    fs.mkdirSync(p1, { recursive: true });
+    fs.writeFileSync(path.join(p1, '01-01-PLAN.md'), '# Plan');
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('JSON progress output includes quality_level field', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'config.json'),
+      JSON.stringify({ quality: { level: 'standard' } }, null, 2),
+      'utf-8'
+    );
+
+    const result = runGsdTools('progress json', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const out = JSON.parse(result.output);
+    assert.strictEqual(out.quality_level, 'standard', 'quality_level should be standard');
+  });
+
+  test('table progress output includes quality level line', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'config.json'),
+      JSON.stringify({ quality: { level: 'strict' } }, null, 2),
+      'utf-8'
+    );
+
+    const result = runGsdTools('progress table --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const out = JSON.parse(result.output);
+    assert.ok(out.rendered.includes('strict'), `table output should include "strict", got: ${out.rendered}`);
   });
 });
