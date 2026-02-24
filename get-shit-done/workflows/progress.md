@@ -89,6 +89,9 @@ Use this instead of manually reading/parsing ROADMAP.md.
 ```bash
 # Get formatted progress bar
 PROGRESS_BAR=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs progress bar --raw)
+
+# Get current quality level
+QUALITY_LEVEL=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs config-get quality.level 2>/dev/null || echo 'fast')
 ```
 
 Present:
@@ -98,6 +101,7 @@ Present:
 
 **Progress:** {PROGRESS_BAR}
 **Profile:** [quality/balanced/budget]
+**Quality:** $QUALITY_LEVEL
 
 ## Recent Work
 - [Phase X, Plan Y]: [what was accomplished - 1 line from summary-extract]

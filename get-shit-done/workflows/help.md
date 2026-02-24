@@ -1,6 +1,36 @@
 <purpose>
-Display the complete GSD command reference. Output ONLY the reference content. Do NOT add project-specific analysis, git status, next-step suggestions, or any commentary beyond the reference.
+Display the complete GSD command reference. Checks for pending local patches before showing the reference, and displays a reminder banner if patches need reapplying. Output ONLY the reference content (plus any patches banner). Do NOT add project-specific analysis, git status, next-step suggestions, or any commentary beyond the reference.
 </purpose>
+
+<process>
+
+<step name="check_patches">
+Check for pending local patches:
+
+```bash
+PATCHES=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs check-patches)
+```
+
+Parse the JSON output. If `has_patches` is true, display a reminder banner BEFORE the reference:
+
+```
+---
+**Patches need reapplying.** You have {file_count} local modification(s) from v{from_version} that need to be merged into the current GSD version.
+
+Run: `/gsd:reapply-patches`
+---
+
+```
+
+If `has_patches` is false, skip the banner entirely (display nothing extra).
+</step>
+
+<step name="show_reference">
+Output the complete GSD command reference from the <reference> section below.
+Display the reference content directly — no additions or modifications beyond the patches banner above.
+</step>
+
+</process>
 
 <reference>
 # GSD Command Reference
