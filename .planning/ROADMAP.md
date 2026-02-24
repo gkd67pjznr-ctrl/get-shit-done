@@ -50,7 +50,10 @@ Plans:
   2. User runs `/gsd:set-quality --global standard` and `~/.gsd/defaults.json` is updated; new projects initialized after this inherit the global level
   3. `/gsd:progress` output includes the current quality level so users know what mode they are in without inspecting config files
   4. `/gsd:help` output shows a `/gsd:reapply-patches` reminder at the top when patches exist that need reapplying after a framework update
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 06-01-PLAN.md — TDD backend: set-quality CLI, check-patches, progress quality-level
+- [ ] 06-02-PLAN.md — UX layer: set-quality command/workflow, help patches reminder, progress display
 
 ### Phase 7: Quality Observability
 **Goal**: Execution summaries surface what quality gates ran and what they found, so users can see the quality enforcement loop in action
@@ -71,5 +74,5 @@ Plans:
 | 3. Quality Dimensions | v1.0 | 2/2 | Complete | 2026-02-23 |
 | 4. Wire Quality Scan Handoff | v1.0 | 1/1 | Complete | 2026-02-24 |
 | 5. Config Foundation | 2/2 | Complete   | 2026-02-24 | - |
-| 6. Commands and UX | v1.1 | 0/TBD | Not started | - |
+| 6. Commands and UX | v1.1 | 0/2 | Not started | - |
 | 7. Quality Observability | v1.1 | 0/TBD | Not started | - |
