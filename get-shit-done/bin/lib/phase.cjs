@@ -798,6 +798,25 @@ function cmdPhaseComplete(cwd, phaseNum, raw) {
     }
   } catch {}
 
+  // Fallback: check ROADMAP.md for higher phases not yet completed on disk
+  if (isLastPhase && fs.existsSync(roadmapPath)) {
+    try {
+      const roadmapContent = fs.readFileSync(roadmapPath, 'utf-8');
+      const phasePattern = /[-*]\s*\[([x ])\]\s*\*{0,2}Phase\s+(\d+[A-Z]?(?:\.\d+)*):/gi;
+      let m;
+      while ((m = phasePattern.exec(roadmapContent)) !== null) {
+        const isComplete = m[1].toLowerCase() === 'x';
+        const foundPhaseNum = m[2];
+        if (!isComplete && comparePhaseNum(foundPhaseNum, phaseNum) > 0) {
+          isLastPhase = false;
+          break;
+        }
+      }
+    } catch {
+      // If ROADMAP.md can't be read, keep the directory-based result
+    }
+  }
+
   // Update STATE.md
   if (fs.existsSync(statePath)) {
     let stateContent = fs.readFileSync(statePath, 'utf-8');

@@ -1033,10 +1033,9 @@ describe('phase complete command', () => {
     assert.ok(result.success, `Command should succeed even without REQUIREMENTS.md: ${result.error}`);
   });
 
-  test('is_last_phase uses filesystem not ROADMAP (3 phases in ROADMAP, 1 on disk = last phase)', () => {
-    // ROADMAP declares 3 phases, but only phase 01 directory exists on disk
-    // Bug behavior: is_last_phase=false (ROADMAP says more phases exist)
-    // Correct behavior: is_last_phase=true (no next phase dir on disk)
+  test('is_last_phase uses ROADMAP fallback when phases 2 and 3 exist in ROADMAP but not on disk', () => {
+    // ROADMAP declares 3 phases; only phase 01 directory exists on disk.
+    // Fixed behavior: is_last_phase=false because ROADMAP has incomplete higher phases.
     fs.writeFileSync(
       path.join(tmpDir, '.planning', 'ROADMAP.md'),
       `# Roadmap
@@ -1071,8 +1070,8 @@ describe('phase complete command', () => {
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.is_last_phase, true, 'filesystem has no next phase dir — must be last phase');
-    assert.strictEqual(output.next_phase, null, 'no next phase should exist');
+    assert.strictEqual(output.is_last_phase, false, 'ROADMAP has incomplete higher phases — not the last phase');
+    assert.strictEqual(output.next_phase, null, 'no next phase directory exists on disk');
   });
 
   test('multi-phase routing: 3 phases on disk, completing phase 1 routes to phase 2', () => {
@@ -1315,6 +1314,103 @@ describe('letter-suffix phase sorting', () => {
       ['12-foundation', '12.1-inserted', '12A-split', '12A.1-bugfix', '12B-hotfix', '13-deploy'],
       'letter-suffix phases should sort correctly'
     );
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// is_last_phase ROADMAP.md fallback regression tests
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('is_last_phase roadmap fallback', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  // Helper to build minimal test project for phase 8 completion
+  function setupPhase8Project(tmpDir, roadmapContent) {
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      roadmapContent
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      `# State\n\n**Current Phase:** 08\n**Current Phase Name:** Path Architecture Foundation\n**Status:** In progress\n**Current Plan:** 08-01\n**Last Activity:** 2026-02-24\n**Last Activity Description:** Working on phase 8\n`
+    );
+
+    const p8 = path.join(tmpDir, '.planning', 'phases', '08-path-architecture-foundation');
+    fs.mkdirSync(p8, { recursive: true });
+    fs.writeFileSync(path.join(p8, '08-01-PLAN.md'), '---\nphase: 08\nplan: 01\n---\n# Plan');
+    fs.writeFileSync(path.join(p8, '08-01-SUMMARY.md'), '# Summary');
+  }
+
+  test('is_last_phase is false when higher phase exists in ROADMAP.md but not on disk', () => {
+    setupPhase8Project(tmpDir, `# Roadmap
+
+- [x] **Phase 8: Path Architecture Foundation** - done
+- [ ] **Phase 9: Milestone Workspace Initialization** - not started
+
+## Progress
+
+| Phase | Status |
+|-------|--------|
+| 8. Path Architecture Foundation | Complete |
+| 9. Milestone Workspace Initialization | Not started |
+`);
+    // Phase 9 directory does NOT exist on disk — this is the bug trigger
+
+    const result = runGsdTools('phase complete 08', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.is_last_phase, false, 'Should be false because Phase 9 exists as incomplete in ROADMAP.md');
+  });
+
+  test('is_last_phase is true when phase really is the last in ROADMAP.md', () => {
+    setupPhase8Project(tmpDir, `# Roadmap
+
+- [x] **Phase 8: Path Architecture Foundation** - done
+
+## Progress
+
+| Phase | Status |
+|-------|--------|
+| 8. Path Architecture Foundation | Complete |
+`);
+    // No Phase 9 in ROADMAP at all
+
+    const result = runGsdTools('phase complete 08', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.is_last_phase, true, 'Should be true because no higher phase in ROADMAP.md');
+  });
+
+  test('is_last_phase is true when all higher phases in ROADMAP.md are already complete', () => {
+    setupPhase8Project(tmpDir, `# Roadmap
+
+- [x] **Phase 8: Path Architecture Foundation** - done
+- [x] **Phase 9: Milestone Workspace Initialization** - already complete
+
+## Progress
+
+| Phase | Status |
+|-------|--------|
+| 8. Path Architecture Foundation | Complete |
+| 9. Milestone Workspace Initialization | Complete |
+`);
+    // Phase 9 is marked complete [x], so Phase 8 IS the last incomplete one
+
+    const result = runGsdTools('phase complete 08', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.is_last_phase, true, 'Should be true because Phase 9 is already complete [x]');
   });
 });
 
