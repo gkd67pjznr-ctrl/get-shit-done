@@ -22,7 +22,7 @@ Requirements for v1.1 Quality UX. Each maps to roadmap phases.
 
 ### Infrastructure
 
-- [ ] **INFR-01**: Context7 per-query token cap is configurable via `quality.context7_token_cap` in config
+- [x] **INFR-01**: Context7 per-query token cap is configurable via `quality.context7_token_cap` in config
 - [ ] **INFR-02**: `/gsd:help` shows `/gsd:reapply-patches` reminder at top when patches exist to reapply
 
 ## Future Requirements
@@ -58,7 +58,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | QOBS-01 | Phase 7 | Pending |
 | QOBS-02 | Phase 6 | Pending |
 | QOBS-03 | Phase 5 | Complete |
-| INFR-01 | Phase 5 | Pending |
+| INFR-01 | Phase 5 | Complete |
 | INFR-02 | Phase 6 | Pending |
 
 **Coverage:**

@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-23)
 ## Current Position
 
 Phase: 5 of 7 (Config Foundation)
-Plan: 1 of TBD in current phase
+Plan: 2 of TBD in current phase
 Status: In Progress
-Last activity: 2026-02-23 — Phase 5 Plan 1 complete (config auto-migration, global defaults, missing-section warnings)
+Last activity: 2026-02-24 — Phase 5 Plan 2 complete (context7 token cap configurable via quality.context7_token_cap)
 
 Progress: [█░░░░░░░░░] ~5% (v1.1)
 
@@ -31,7 +31,7 @@ Progress: [█░░░░░░░░░] ~5% (v1.1)
 | 02-executor-sentinel | 3 | 3 min | 1 min |
 | 03-quality-dimensions | 2 | 2 min | 1 min |
 | 04-wire-quality-scan-handoff | 1 | 3 min | 3 min |
-| 05-config-foundation | 1 | 3 min | 3 min |
+| 05-config-foundation | 2 | 5 min | 2.5 min |
 
 *Updated after each plan completion*
 
@@ -44,6 +44,9 @@ Full v1.0 decision log archived with milestone.
 - [Phase 05-01]: spawnSync vs execSync: runGsdToolsFull uses spawnSync for unconditional stderr capture; execSync only exposes stderr on non-zero exit
 - [Phase 05-01]: Missing-section warning added to cmdConfigGet (not just loadConfig): config-get reads config directly without invoking loadConfig
 - [Phase 05-01]: GSD_HOME env var pattern: allows tests and users to override global defaults location; braveKeyFile also updated to use gsdHome
+- [Phase 05-02]: Executor reads quality.context7_token_cap at query time (bash one-liner) so config changes take effect immediately without agent restart
+- [Phase 05-02]: TOKEN_CAP bash fallback to '2000' keeps executor safe if config-get fails for any reason
+- [Phase 05-02]: Both context7_protocol and quality_sentinel Step 2 updated so all Context7 call paths use the configurable cap
 
 ### Pending Todos
 
@@ -51,10 +54,10 @@ None.
 
 ### Blockers/Concerns
 
-- Context7 token volume: Runtime token counts unverified (API quota exceeded during research). Run a test query before setting the cap. Start at 2,000 token cap per query. (Addressed by INFR-01 in Phase 5)
+None.
 
 ## Session Continuity
 
-Last session: 2026-02-23
-Stopped at: Completed 05-config-foundation-01-PLAN.md
+Last session: 2026-02-24
+Stopped at: Completed 05-config-foundation-02-PLAN.md
 Resume file: None
