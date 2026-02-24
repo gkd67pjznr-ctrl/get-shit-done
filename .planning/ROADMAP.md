@@ -63,7 +63,9 @@ Plans:
   1. SUMMARY.md written after plan execution includes a "Quality Gates" section listing which sentinel steps ran (pre-task scan, library lookup, test step, diff review) and their outcomes (passed, warned, skipped)
   2. The Quality Gates section is absent (not present as empty) when quality.level is fast, since fast mode skips all gates
   3. In strict mode, any gate that blocked execution is identified in the section so the user understands why a plan stopped
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 07-01-PLAN.md — Quality gate outcome tracking in executor and summary templates
 
 ## Progress
 
@@ -75,4 +77,4 @@ Plans:
 | 4. Wire Quality Scan Handoff | v1.0 | 1/1 | Complete | 2026-02-24 |
 | 5. Config Foundation | 2/2 | Complete   | 2026-02-24 | - |
 | 6. Commands and UX | 2/2 | Complete   | 2026-02-24 | - |
-| 7. Quality Observability | v1.1 | 0/TBD | Not started | - |
+| 7. Quality Observability | v1.1 | 0/1 | Not started | - |
