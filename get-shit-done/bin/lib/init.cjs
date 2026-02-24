@@ -5,7 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
-const { loadConfig, resolveModelInternal, findPhaseInternal, getRoadmapPhaseInternal, pathExistsInternal, generateSlugInternal, getMilestoneInfo, normalizePhaseName, planningRoot, output, error } = require('./core.cjs');
+const { loadConfig, resolveModelInternal, findPhaseInternal, getRoadmapPhaseInternal, pathExistsInternal, generateSlugInternal, getMilestoneInfo, normalizePhaseName, planningRoot, detectLayoutStyle, output, error } = require('./core.cjs');
 
 function cmdInitExecutePhase(cwd, phase, raw, milestoneScope) {
   if (!phase) {
@@ -253,6 +253,11 @@ function cmdInitNewMilestone(cwd, raw) {
     project_path: '.planning/PROJECT.md',
     roadmap_path: '.planning/ROADMAP.md',
     state_path: '.planning/STATE.md',
+
+    // Layout detection for workspace branching
+    layout_style: detectLayoutStyle(cwd),
+    milestones_dir: '.planning/milestones',
+    milestones_dir_exists: pathExistsInternal(cwd, '.planning/milestones'),
   };
 
   output(result, raw);

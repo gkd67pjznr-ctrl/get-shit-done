@@ -244,6 +244,126 @@ describe('milestone update-manifest (cmdMilestoneUpdateManifest)', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Phase 09 Plan 02 — CLI routing integration tests
+// ─────────────────────────────────────────────────────────────────────────────
+
+const { runGsdToolsFull } = require('./helpers.cjs');
+
+describe('milestone new-workspace via CLI routing (Plan 02)', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('milestone new-workspace via CLI creates workspace directory tree', () => {
+    const result = runGsdToolsFull(['milestone', 'new-workspace', 'v3.0', '--raw'], tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.created, true, 'created should be true');
+    assert.strictEqual(output.version, 'v3.0');
+
+    const workspaceDir = path.join(tmpDir, '.planning', 'milestones', 'v3.0');
+    assert.ok(fs.existsSync(workspaceDir), 'workspace dir should exist');
+    assert.ok(fs.existsSync(path.join(workspaceDir, 'STATE.md')), 'STATE.md should exist');
+    assert.ok(fs.existsSync(path.join(workspaceDir, 'ROADMAP.md')), 'ROADMAP.md should exist');
+    assert.ok(fs.existsSync(path.join(workspaceDir, 'REQUIREMENTS.md')), 'REQUIREMENTS.md should exist');
+    assert.ok(fs.existsSync(path.join(workspaceDir, 'conflict.json')), 'conflict.json should exist');
+    assert.ok(fs.existsSync(path.join(workspaceDir, 'phases')), 'phases/ should exist');
+    assert.ok(fs.existsSync(path.join(workspaceDir, 'research')), 'research/ should exist');
+  });
+
+  test('milestone update-manifest via CLI updates files_touched in conflict.json', () => {
+    // Create workspace first
+    runGsdToolsFull(['milestone', 'new-workspace', 'v3.0', '--raw'], tmpDir);
+
+    // Update manifest with two files
+    const result = runGsdToolsFull(['milestone', 'update-manifest', 'v3.0', '--files', 'a.js', 'b.js', '--raw'], tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const conflictPath = path.join(tmpDir, '.planning', 'milestones', 'v3.0', 'conflict.json');
+    const conflict = JSON.parse(fs.readFileSync(conflictPath, 'utf-8'));
+    assert.ok(conflict.files_touched.includes('a.js'), 'a.js should be in files_touched');
+    assert.ok(conflict.files_touched.includes('b.js'), 'b.js should be in files_touched');
+  });
+
+  test('milestone complete marks workspace conflict.json as complete', () => {
+    // Create workspace
+    runGsdToolsFull(['milestone', 'new-workspace', 'v3.0', '--raw'], tmpDir);
+
+    // Create minimal ROADMAP.md and STATE.md required by cmdMilestoneComplete
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      '# Roadmap v3.0\n'
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      '# State\n\n**Status:** In progress\n**Last Activity:** 2026-02-24\n**Last Activity Description:** Working\n'
+    );
+
+    const result = runGsdToolsFull(['milestone', 'complete', 'v3.0', '--raw'], tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.conflict_marked_complete, true, 'conflict_marked_complete should be true');
+
+    const conflictPath = path.join(tmpDir, '.planning', 'milestones', 'v3.0', 'conflict.json');
+    const conflict = JSON.parse(fs.readFileSync(conflictPath, 'utf-8'));
+    assert.strictEqual(conflict.status, 'complete', 'conflict.json status should be complete');
+    assert.ok(conflict.completed_at, 'conflict.json should have completed_at timestamp');
+  });
+
+  test('milestone complete without workspace succeeds (old-style compat, conflict_marked_complete is false)', () => {
+    // No workspace created — old-style project
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      '# Roadmap v1.0\n'
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      '# State\n\n**Status:** In progress\n**Last Activity:** 2026-02-24\n**Last Activity Description:** Working\n'
+    );
+
+    const result = runGsdToolsFull(['milestone', 'complete', 'v1.0', '--raw'], tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.conflict_marked_complete, false, 'conflict_marked_complete should be false for old-style projects');
+  });
+});
+
+describe('init new-milestone returns layout_style (Plan 02)', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('init new-milestone returns layout_style, milestones_dir, and milestones_dir_exists', () => {
+    const result = runGsdToolsFull(['init', 'new-milestone', '--raw'], tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(typeof output.layout_style, 'string', 'layout_style should be a string');
+    assert.ok(
+      ['legacy', 'milestone-scoped', 'uninitialized'].includes(output.layout_style),
+      `layout_style should be one of legacy/milestone-scoped/uninitialized, got: ${output.layout_style}`
+    );
+    assert.strictEqual(output.milestones_dir, '.planning/milestones', 'milestones_dir should be the standard path');
+    assert.strictEqual(typeof output.milestones_dir_exists, 'boolean', 'milestones_dir_exists should be a boolean');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // validate consistency command
 // ─────────────────────────────────────────────────────────────────────────────
 
