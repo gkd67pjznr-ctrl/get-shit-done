@@ -1,0 +1,117 @@
+---
+phase: 15-integration-fixes
+plan: 01
+subsystem: infra
+tags: [milestone-scoped, path-resolution, roadmap, init, planningRoot]
+
+# Dependency graph
+requires: []
+provides:
+  - Milestone-scoped path resolution in cmdInitPlanPhase (state_path, roadmap_path, requirements_path)
+  - Milestone-scoped ROADMAP.md reading in cmdRoadmapGetPhase and cmdRoadmapAnalyze
+  - milestoneScope forwarded from gsd-tools.cjs router to both roadmap commands
+  - Regression tests for INTG-01 and INTG-02 fixes
+affects: [plan-phase, roadmap, execute-phase, milestone workflows]
+
+# Tech tracking
+tech-stack:
+  added: []
+  patterns:
+    - "Hoist `const root = planningRoot(cwd, milestoneScope)` before result object and reuse it for all path computations"
+    - "Use `path.relative(cwd, path.join(root, 'FILE.md'))` for milestone-aware file paths"
+    - "All roadmap command functions accept milestoneScope as final parameter and use planningRoot"
+
+key-files:
+  created:
+    - tests/init.test.cjs (INTG-01 regression test added)
+    - tests/roadmap.test.cjs (INTG-02 regression tests added)
+  modified:
+    - get-shit-done/bin/lib/init.cjs
+    - get-shit-done/bin/lib/roadmap.cjs
+    - get-shit-done/bin/gsd-tools.cjs
+
+key-decisions:
+  - "Do not use --raw flag for roadmap get-phase tests — raw mode outputs section text not JSON (consistent with existing test pattern)"
+  - "planningRoot(cwd, null) returns .planning/ so path.relative produces same string as old hardcoded value — backward compat guaranteed by function contract"
+
+patterns-established:
+  - "Pattern: planningRoot hoisting — compute root once before result object, reuse for all path fields"
+
+requirements-completed: [INTG-01, INTG-02]
+
+# Metrics
+duration: 15min
+completed: 2026-02-25
+---
+
+# Phase 15 Plan 01: Integration Fixes Summary
+
+**Milestone-scoped path resolution fixed in cmdInitPlanPhase and both roadmap commands by threading planningRoot() through instead of hardcoded .planning/ strings**
+
+## Performance
+
+- **Duration:** ~15 min
+- **Started:** 2026-02-25T00:00:00Z
+- **Completed:** 2026-02-25T00:15:00Z
+- **Tasks:** 3
+- **Files modified:** 5
+
+## Accomplishments
+
+- Fixed cmdInitPlanPhase to return milestone-scoped state_path/roadmap_path/requirements_path when --milestone flag provided (INTG-01)
+- Fixed cmdRoadmapGetPhase and cmdRoadmapAnalyze to read ROADMAP.md from milestone workspace when --milestone flag provided (INTG-02)
+- Fixed cmdRoadmapAnalyze phasesDir to also use planningRoot (was reading root phases/ even when milestone scoped)
+- Added 5 regression tests (1 for INTG-01, 4 for INTG-02) — all pass
+- All 73 non-pre-existing tests pass; 3 pre-existing quality.level default failures are unrelated
+
+## Task Commits
+
+Each task was committed atomically:
+
+1. **Task 1: Fix cmdInitPlanPhase milestone-scoped path resolution (INTG-01)** - `b50f573` (fix)
+2. **Task 2: Wire milestoneScope into roadmap commands (INTG-02)** - `3afb613` (fix)
+3. **Task 3: Add milestone-scoped regression tests for both fixes** - `d33fa6a` (test)
+
+## Files Created/Modified
+
+- `get-shit-done/bin/lib/init.cjs` - Hoisted planningRoot() call, replaced 3 hardcoded paths with path.relative(cwd, path.join(root, ...))
+- `get-shit-done/bin/lib/roadmap.cjs` - Added planningRoot to imports; added milestoneScope param to cmdRoadmapGetPhase and cmdRoadmapAnalyze; fixed roadmapPath and phasesDir
+- `get-shit-done/bin/gsd-tools.cjs` - Router now forwards milestoneScope to cmdRoadmapGetPhase and cmdRoadmapAnalyze calls
+- `tests/init.test.cjs` - Added createConcurrentProject import; added INTG-01 regression test
+- `tests/roadmap.test.cjs` - Added createConcurrentProject import; added 4-test describe block for INTG-02
+
+## Decisions Made
+
+- Used get-phase without --raw flag in new roadmap tests (consistent with existing test pattern — raw mode outputs section text, not JSON)
+- planningRoot backward compatibility is guaranteed by function contract: planningRoot(cwd, null) returns path.join(cwd, '.planning'), so path.relative produces '.planning/FILE.md' identical to old hardcoded strings
+
+## Deviations from Plan
+
+### Auto-fixed Issues
+
+**1. [Rule 1 - Bug] Test used --raw for roadmap get-phase causing JSON parse failure**
+- **Found during:** Task 3 (adding regression tests)
+- **Issue:** Plan template used `--raw` flag for roadmap get-phase tests, but the `output()` function in raw mode prints the section string (not JSON) when rawValue is provided. Tests failed with "Unexpected token '#'"
+- **Fix:** Removed `--raw` from roadmap get-phase test calls (consistent with existing roadmap tests)
+- **Files modified:** tests/roadmap.test.cjs
+- **Verification:** All 4 new roadmap tests now pass
+- **Committed in:** d33fa6a (Task 3 commit)
+
+---
+
+**Total deviations:** 1 auto-fixed (1 bug in plan template test code)
+**Impact on plan:** Test code fix only — no scope change, fixes do not deviate from plan intent.
+
+## Issues Encountered
+
+None - fixes were straightforward. The --raw behavior of output() required adapting the test code from the plan template, but the fix was trivial.
+
+## Next Phase Readiness
+
+- INTG-01 and INTG-02 are resolved — milestone-scoped plan-phase and roadmap workflows now correct
+- No remaining INTEGRATION blockers for v3.0 concurrent milestone execution
+- Ready to proceed with Phase 16+
+
+---
+*Phase: 15-integration-fixes*
+*Completed: 2026-02-25*

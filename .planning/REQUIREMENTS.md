@@ -9,8 +9,8 @@ Requirements for v3.0 Tech Debt System. Each maps to roadmap phases.
 
 ### Integration Fixes
 
-- [ ] **INTG-01**: `cmdInitPlanPhase` returns milestone-aware paths via `planningRoot()` instead of hardcoded `.planning/`
-- [ ] **INTG-02**: `cmdRoadmapGetPhase` and `cmdRoadmapAnalyze` respect `--milestone` flag for milestone-scoped ROADMAP.md
+- [x] **INTG-01**: `cmdInitPlanPhase` returns milestone-aware paths via `planningRoot()` instead of hardcoded `.planning/`
+- [x] **INTG-02**: `cmdRoadmapGetPhase` and `cmdRoadmapAnalyze` respect `--milestone` flag for milestone-scoped ROADMAP.md
 
 ### Debt Tracking
 
@@ -71,8 +71,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INTG-01 | Phase 15 | Pending |
-| INTG-02 | Phase 15 | Pending |
+| INTG-01 | Phase 15 | Complete |
+| INTG-02 | Phase 15 | Complete |
 | DEBT-01 | Phase 16 | Pending |
 | DEBT-02 | Phase 16 | Pending |
 | DEBT-03 | Phase 16 | Pending |

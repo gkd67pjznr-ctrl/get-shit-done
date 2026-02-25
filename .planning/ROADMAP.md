@@ -45,7 +45,7 @@
 
 **Milestone Goal:** Build infrastructure for systematic tech debt tracking and resolution, plus a project migration tool for existing `.planning/` folders.
 
-- [ ] **Phase 15: Integration Fixes** - Fix milestone-scoped path resolution bugs in `cmdInitPlanPhase` and roadmap commands
+- [x] **Phase 15: Integration Fixes** - Fix milestone-scoped path resolution bugs in `cmdInitPlanPhase` and roadmap commands (completed 2026-02-25)
 - [ ] **Phase 16: Core Debt Module** - DEBT.md schema, `debt.cjs` CLI commands, concurrent-safe writes
 - [ ] **Phase 17: Migration Tool** - `migrate.cjs` with dry-run default, additive-only apply, and undo manifest
 - [ ] **Phase 18: Agent Wiring** - Executor, verifier, and debugger auto-log discovered debt with quality-level gating
@@ -61,7 +61,7 @@
 - `cmdInitPlanPhase` returns milestone-aware paths via `planningRoot()` instead of hardcoded `.planning/`
 - `cmdRoadmapGetPhase` and `cmdRoadmapAnalyze` respect `--milestone` flag for milestone-scoped ROADMAP.md
 
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 - [ ] 15-01-PLAN.md — Fix milestone-scoped path resolution in init and roadmap commands with regression tests
@@ -129,7 +129,7 @@ Plans:
 | 12. Full Routing Update | v2.0 | 2/2 | Complete | 2026-02-24 |
 | 13. Test Coverage | v2.0 | 2/2 | Complete | 2026-02-25 |
 | 14. Integration Wiring Fix | v2.0 | 1/1 | Complete | 2026-02-25 |
-| 15. Integration Fixes | v3.0 | 0/? | Not started | - |
+| 15. Integration Fixes | 1/1 | Complete   | 2026-02-25 | - |
 | 16. Core Debt Module | v3.0 | 0/? | Not started | - |
 | 17. Migration Tool | v3.0 | 0/? | Not started | - |
 | 18. Agent Wiring | v3.0 | 0/? | Not started | - |
