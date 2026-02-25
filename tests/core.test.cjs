@@ -56,6 +56,11 @@ describe('planningRoot', () => {
     assert.ok(path.isAbsolute(legacy), 'legacy path should be absolute');
     assert.ok(path.isAbsolute(scoped), 'milestone-scoped path should be absolute');
   });
+
+  test('returns legacy path when second arg is empty string', () => {
+    const result = planningRoot(tmpDir, '');
+    assert.strictEqual(result, path.join(tmpDir, '.planning'));
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -104,5 +109,12 @@ describe('detectLayoutStyle', () => {
     fs.writeFileSync(configPath, '{ not valid json }', 'utf-8');
     const result = detectLayoutStyle(tmpDir);
     assert.strictEqual(result, 'uninitialized');
+  });
+
+  test('returns legacy when concurrent is non-boolean truthy value', () => {
+    const configPath = path.join(tmpDir, '.planning', 'config.json');
+    fs.writeFileSync(configPath, JSON.stringify({ concurrent: 'yes' }), 'utf-8');
+    const result = detectLayoutStyle(tmpDir);
+    assert.strictEqual(result, 'legacy');
   });
 });
