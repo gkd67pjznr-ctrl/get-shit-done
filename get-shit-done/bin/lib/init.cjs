@@ -94,6 +94,7 @@ function cmdInitPlanPhase(cwd, phase, raw, milestoneScope) {
   }
 
   const config = loadConfig(cwd);
+  const root = planningRoot(cwd, milestoneScope);
   const phaseInfo = findPhaseInternal(cwd, phase);
 
   const roadmapPhase = getRoadmapPhaseInternal(cwd, phase);
@@ -134,14 +135,14 @@ function cmdInitPlanPhase(cwd, phase, raw, milestoneScope) {
     planning_exists: pathExistsInternal(cwd, '.planning'),
     roadmap_exists: pathExistsInternal(cwd, '.planning/ROADMAP.md'),
 
-    // File paths
-    state_path: '.planning/STATE.md',
-    roadmap_path: '.planning/ROADMAP.md',
-    requirements_path: '.planning/REQUIREMENTS.md',
+    // File paths (milestone-scoped when milestoneScope provided)
+    state_path: path.relative(cwd, path.join(root, 'STATE.md')),
+    roadmap_path: path.relative(cwd, path.join(root, 'ROADMAP.md')),
+    requirements_path: path.relative(cwd, path.join(root, 'REQUIREMENTS.md')),
 
     // Milestone scope (v2.0 concurrent execution)
     milestone_scope: milestoneScope || null,
-    planning_root: planningRoot(cwd, milestoneScope),
+    planning_root: root,
 
     // Layout detection (v2.0 compatibility)
     layout_style: detectLayoutStyle(cwd),
