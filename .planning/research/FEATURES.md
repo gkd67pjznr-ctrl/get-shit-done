@@ -1,28 +1,27 @@
 # Feature Research
 
-**Domain:** AI Coding Agent Framework — Concurrent Milestone Execution (GSD v2.0)
-**Researched:** 2026-02-24
-**Confidence:** HIGH (official Claude Code docs read directly; git worktree docs confirmed; agent teams docs read directly; monorepo patterns corroborated by multiple sources)
+**Domain:** Tech Debt Tracking Hub + Project Migration Tool + Debugger-Driven Debt Resolution (GSD v3.0)
+**Researched:** 2026-02-25
+**Confidence:** HIGH (internal codebase analysis direct; tech debt register patterns confirmed by multiple authoritative sources; migration tool safety patterns verified against established tools like Flyway/Liquibase; Debug2Fix framework from peer-reviewed arxiv paper)
 
 ---
 
 ## Context: What GSD Already Has (Baseline for This Milestone)
 
-Before mapping the feature landscape, understand what already exists so nothing in this milestone
-duplicates completed work. All features in this milestone must be additive.
+The v3.0 feature set layers ON TOP of the existing v1.x/v2.x system. Nothing below duplicates completed work.
 
-| Existing Feature | Where | Concurrency Relevance |
-|-----------------|-------|----------------------|
-| Sequential milestone execution | All workflows | The fundamental constraint being removed. One milestone runs at a time in the root `.planning/` folder. |
-| Global phase numbering | phase.cjs, all workflows | Phases numbered globally (phase-01 through phase-67+). Concurrent milestones require per-milestone numbering. |
-| `.planning/` root layout | File system | ROADMAP.md, STATE.md, REQUIREMENTS.md, research/, phases/ all at root. Must coexist with new per-milestone folders. |
-| `complete-milestone` archival | gsd-tools.cjs | Archives to `.planning/completed-milestones/vX.Y/`. Needs updating for per-milestone workspace structure. |
-| gsd-tools.cjs commands | Node.js CJS | `init`, `commit`, `config-set`, `phase-complete`, etc. All assume single-milestone context. |
-| GSD routing workflows | execute-plan.md, etc. | All route using global phase numbers and root `.planning/` paths. |
-| Quality enforcement system | v1.0/v1.1 | Independent of concurrency — carries forward unchanged to concurrent milestones. |
-| `/gsd:progress`, `/gsd:set-quality`, `/gsd:help` | slash commands | Progress must be updated to show all concurrent milestones. set-quality stays unchanged. |
+| Existing Feature | Where | v3.0 Relevance |
+|-----------------|-------|----------------|
+| Quality Sentinel (pre-task scan, Context7, mandatory tests, diff review) | executor agent | Sentinel is the detection side — v3.0 adds the tracking and resolution side |
+| Quality dimensions in verifier (duplication, orphaned exports, missing tests) | verifier agent | Verifier finds debt-generating patterns — v3.0 gives executor/verifier a place to log what they find |
+| Planner quality directives (code to reuse, docs to consult, tests to write) | planner agent | Planner can check DEBT.md during planning to avoid re-introducing known debt |
+| Config quality levels (fast/standard/strict) | config.json | Debt logging can be gated on quality level (strict logs everything; fast skips) |
+| Concurrent milestone workspaces with isolation | v2.0 | DEBT.md is global (project-level), not per-milestone — debt transcends milestones |
+| TO-DOS.md for manual todo tracking | .planning/ | Tech debt ≠ todos: todos are tasks to complete; debt is deliberate shortcuts or discovered quality issues with structured metadata |
+| `/gsd:progress`, `/gsd:set-quality`, `/gsd:help` | slash commands | New `/gsd:fix-debt` command joins this set |
+| `list-todos` command in gsd-tools.cjs | CLI | New `debt-log` and `debt-list` commands join this set |
 
-**The gap:** GSD assumes exactly one milestone is active at any time. All state files, phase numbering, routing logic, and commands are designed for single-milestone sequential execution. Users who want to work on feature B while feature A is still in progress have no mechanism for it — they must wait, creating bottlenecks on multi-track projects.
+**The gap:** GSD's Quality Sentinel can detect problems (pattern violations, missing tests, API workarounds) but has no structured place to record them. Discovered debt is currently either silently dropped, left as a TODO comment in code, or placed in TO-DOS.md as an unstructured note. Neither gives the information needed to prioritize, assign, or systematically resolve debt later. No on-demand "go fix specific debt item" workflow exists — users must manually read DEBT.md and construct the fix themselves.
 
 ---
 
@@ -30,155 +29,165 @@ duplicates completed work. All features in this milestone must be additive.
 
 ### Table Stakes (Users Expect These)
 
-Features that concurrent milestone execution must have. Missing any of these means "this isn't
-really concurrent execution — it's just a workaround."
+Features that a tech debt tracking system must have. Missing any of these means the system is incomplete for its stated purpose.
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| Milestone-scoped workspace isolation | Users expect concurrent milestones to not collide on the same files. Every concurrent execution system (CI/CD parallel jobs, git worktrees, Verdent 1.5, monorepo task runners) isolates workspaces by default. Without this, two Claude sessions editing `STATE.md` simultaneously corrupt each other's state. | MEDIUM | Each milestone gets its own folder under `.planning/milestones/v{version}/`. Root `.planning/` files become global-only (MILESTONES.md, PROJECT.md, config.json). Milestone-owned files (ROADMAP.md, STATE.md, REQUIREMENTS.md, phases/) move inside the milestone folder. |
-| Central milestone status dashboard | Users running concurrent milestones need to see all of them at a glance. CI/CD pipelines all have a dashboard view. GitHub Actions, Turborepo, and Nx all surface parallel job status in one place. `/gsd:progress` must aggregate across active milestones, not just show the "current" one. | MEDIUM | Implemented as a lock-free read-only pattern: each milestone writes its own `STATUS.md` inside its workspace folder. Dashboard reads all STATUS.md files and renders a summary. No file locking needed — dashboard is read-only, each milestone owns its own STATUS.md exclusively. |
-| Milestone-scoped phase numbering | When two milestones run concurrently, their phases cannot share a global sequence. v1.2's phase-01 and v1.3's phase-01 must coexist without collision. This is expected by analogy to any parallel execution system — GitHub Actions jobs each have their own step numbering. | MEDIUM | Phase numbering scoped to milestone: `v1.2/phase-01`, `v1.3/phase-01`. The `phase-complete` command, ROADMAP.md references, and routing logic all switch from global sequential numbers to `{milestone}/{phase}` identifiers. Existing projects with global phase numbers remain valid — compatibility layer handles them. |
-| Conflict manifest (file ownership declaration) | Users expect a mechanism to prevent two milestones from touching the same source files uncoordinated. Monorepo tools (Turborepo `--affected`, Nx project graph) provide dependency and ownership information as table stakes. Without conflict detection, concurrent milestones silently create merge conflicts that surface only at commit time — too late. | HIGH | Each milestone declares `files_touched` in its REQUIREMENTS.md or a dedicated `MANIFEST.md`. When a new milestone is initialized, GSD checks for overlap with active milestones and warns. This is NOT automatic locking (lock-free design) — it's declarative coordination. The user decides how to resolve; GSD surfaces the conflict. |
-| Compatibility layer for existing projects | Users with existing GSD projects (root-level `.planning/` layout, global phase numbers) expect the upgrade to not break them. Every successful version transition in developer tooling (Nx 16→17, Turborepo 1.x→2.x, Node.js LTS upgrades) provides a compatibility layer that auto-detects old structure and continues to work. | MEDIUM | Auto-detection: if `.planning/ROADMAP.md` exists at root but `.planning/milestones/` does not, GSD treats the project as old-style and uses root-level layout. If `.planning/milestones/` exists, GSD uses the new per-milestone layout. No migration step required — both coexist. Existing projects opt in by creating their first milestone folder. |
-| Updated GSD routing for concurrent model | Workflows, commands, and tools that route phase operations (plan-phase, execute-phase, phase-complete) must correctly resolve the active milestone context. Users expect routing to "just work" in both old-style and new-style layouts. If routing breaks, the entire framework stalls. | HIGH | Every routing function checks: is this old-style (root `.planning/ROADMAP.md` exists, no `milestones/` dir) or new-style (milestone folder exists)? Route accordingly. The `gsd-tools.cjs` commands receive a `--milestone` flag or infer the active milestone from the current working context. |
+| Structured debt entry format (DEBT.md hub) | Every mature debt register (Jira, GitHub Issues, arc42, agile teams) uses structured entries with: ID, type, severity, component, description, date, status. An unstructured file is a junk drawer — you can't sort, filter, or assign from it. Industry consensus on these fields is strong (otherCode.io, Scrum.org, CMU SEI all agree). | LOW | Fields: `id` (TD-NNN), `type` (code/test/architecture/integration), `severity` (critical/high/medium/low), `component` (file or module path), `description`, `date_logged`, `logged_by` (agent or milestone ref), `status` (open/in-progress/resolved/deferred), `resolution_plan` (optional). Markdown table or frontmatter-style entries. Already have precedent in TO-DOS.md format. |
+| CLI command for agents to log debt (`debt-log`) | The Quality Sentinel runs inside executor agents. Agents can't edit DEBT.md directly without risk of clobbering concurrent writes. They need a `gsd-tools.cjs debt-log` command — just like `state update` and `todo complete` — that safely appends an entry. This is exactly how `list-todos` and `state update` work for their respective domains. | LOW | `node gsd-tools.cjs debt-log --type code --severity medium --component "lib/init.cjs:138" --description "..."` — appends to `.planning/DEBT.md` atomically. Returns new entry ID. Must be safe to call concurrently from parallel plan subagents (append-only, no read-modify-write). |
+| Debt status lifecycle (open → in-progress → resolved/deferred) | Every tech debt register in industry uses status tracking. Without status, DEBT.md becomes append-only noise — items are never marked resolved, so the file grows forever and becomes unusable. Scrum.org and otherCode.io both identify status as a required field. | LOW | Status transitions: `open` (default) → `in-progress` (when fix-debt picks it up) → `resolved` (when verifier confirms fix) or `deferred` (explicitly postponed). CLI command to update: `gsd-tools.cjs debt-status TD-001 resolved`. |
+| List/query debt entries (`debt-list`) | A debt register that can't be queried is a write-only system. Agents and humans need to look up debt by status, type, severity, or component. Analogous to `list-todos` which already exists. | LOW | `node gsd-tools.cjs debt-list [--status open] [--type code] [--severity critical]` — returns JSON array of matching entries. Used by `/gsd:fix-debt` to pick the next item to address. |
+| Executor/verifier auto-log wiring | The value of structured debt tracking is automatic capture — not requiring engineers to manually document every shortcut. The Quality Sentinel already detects issues (workarounds, missing tests, pattern violations). Without wiring its findings to DEBT.md, detection has no persistent record. This is the "write" side of the system; `debt-log` is the "write API" the agents call. | MEDIUM | In executor agent: when Quality Sentinel flags a known issue that can't be fixed in this plan (out of scope, too risky), call `gsd-tools.cjs debt-log` before moving on. In verifier agent: when quality dimensions find duplication or orphaned exports not addressed by the plan, call `debt-log` with those findings. Gate on quality level — `strict` logs all findings; `standard` logs only unresolved critical/high; `fast` skips all debt logging. |
+| Project migration tool (`.planning/` restructure) | Projects on old layouts (pre-v2.0) have `.planning/` structures that differ from current spec. A tool that can inspect, report gaps, and apply safe structural updates is expected in any mature framework. Database migration tools (Flyway, Liquibase) established the bar: dry-run first, idempotent apply, never lose data. This is the project equivalent. | MEDIUM | `node gsd-tools.cjs migrate [--dry-run] [--from vX.Y]` — inspects current `.planning/` layout, identifies what's missing vs current spec (e.g., missing `config.json` sections, missing `DEBT.md`, wrong folder structure), reports what would change, then applies with `--apply`. Never destructive — no file deletion, only additions and moves with backup. |
+| INTEGRATION-3 and INTEGRATION-4 bug fixes | These are known gaps documented in TO-DOS.md. INTEGRATION-3: `cmdInitPlanPhase` uses hardcoded paths instead of `planningRoot()`. INTEGRATION-4: roadmap commands ignore `--milestone` flag. These are not "new features" — they are correctness bugs in v2.0 shipping code that affect milestone-scoped projects. Fixing them is prerequisite plumbing for v3.0 stability. | LOW | Direct code fixes: INTEGRATION-3 in `bin/lib/init.cjs` lines 138-140; INTEGRATION-4 in `bin/lib/roadmap.cjs` + CLI router in `gsd-tools.cjs` lines 436-438. Pattern: match `cmdInitExecutePhase` which already does this correctly. |
 
 ### Differentiators (Competitive Advantage)
 
-Features that distinguish GSD's concurrent execution from ad-hoc "just open two Claude windows."
+Features that distinguish GSD's debt system from "just a TODO list" or manual Jira tagging.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| Lock-free dashboard pattern | Other tools use file locks or database state for concurrent status — fragile under network filesystem or process kill. GSD's lock-free pattern (each milestone owns its own STATUS.md, dashboard is read-only aggregator) is both simpler and more resilient. A killed Claude session cannot corrupt the dashboard by holding a stale lock. | LOW | Each milestone workspace contains `STATUS.md` with: milestone name, current phase, last activity timestamp, active plan name, and a one-line progress summary. Dashboard script reads all `STATUS.md` files in `milestones/*/STATUS.md`. Zero race conditions — each file has exactly one writer (the milestone's Claude session). |
-| Conflict manifest with overlap detection at init time | Detecting conflicts at milestone initialization (not at execution time) is the differentiator. Monorepo tools detect affected packages at build time (after changes exist). GSD can detect potential conflicts before any code is written — at the `/gsd:new-milestone` step when the manifest is declared. This means "these two milestones will conflict" is surfaced before either starts, not after hours of work. | MEDIUM | `MANIFEST.md` contains `files_touched: [list of source files this milestone will modify]`. `gsd-tools.cjs manifest-check` reads all active milestone manifests and reports overlaps. Called automatically during `/gsd:new-milestone` flow. Reports: "WARNING: v2.0 and v2.1 both declare src/lib/router.js — coordinate before executing concurrently." |
-| Agent Teams integration research | Claude Code Agent Teams (experimental, enabled via `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`) provide a natural mechanism for milestone coordination: each milestone could be a teammate in an Agent Team, with a lead coordinating conflict resolution and status. This is a higher-order integration that GSD is positioned to exploit because it already uses the Claude Code agentic architecture. | HIGH | Research verdict: Agent Teams are best suited for intra-milestone parallelism (parallel phases within one milestone) rather than inter-milestone coordination. Agent Teams use a shared task list in `~/.claude/tasks/{team-name}/` and require active session coordination. GSD's concurrent milestones model (separate Claude Code sessions, possibly days apart) is better served by the file-based coordination model. Agent Teams should be documented as an option for "parallel phases" use case, not the primary coordination mechanism for concurrent milestones. |
-| Per-milestone quality config inheritance | When a new concurrent milestone is initialized, it inherits the project's global quality config but can override per-milestone. This means a hotfix milestone can run at `quality.level: fast` while a feature milestone runs at `quality.level: strict` — simultaneously. | LOW | Milestone `config.json` in the milestone folder overrides the root `config.json` for that milestone's sessions. Existing quality config inheritance chain: global `~/.gsd/defaults.json` → root `.planning/config.json` → milestone `.planning/milestones/vX.Y/config.json`. |
-| Graceful degrade to sequential for single-milestone projects | Projects that only ever have one active milestone should experience zero difference from v1.x behavior. The concurrent model should not add visible overhead for the common case. | LOW | Detection: if exactly one milestone folder exists (or old-style root layout), GSD skips all concurrent-coordination logic. Dashboard shows only one milestone. Manifest check is a no-op. STATUS.md is written but `/gsd:progress` just shows it inline (no aggregation needed). |
+| `/gsd:fix-debt` skill (debugger-driven resolution) | Other debt systems track and report — they don't *fix*. GSD can use a structured debt entry as the input to a targeted resolution workflow: read the debt entry, read the affected component, diagnose the root cause using the Debug2Fix pattern (inspect runtime state, not just static analysis), implement the fix, run tests, verify, mark resolved. This closes the loop: discover → log → fix → verify — entirely within the agent framework. | HIGH | Slash command that: (1) reads DEBT.md, picks an entry (by ID or by priority), (2) spawns an executor subagent with the debt entry as context, (3) subagent implements the fix using the standard execute-plan flow, (4) verifier confirms fix, (5) `debt-status` updates entry to resolved. The Debug2Fix approach (step through runtime state, not just static analysis) is the key differentiator — it finds root causes, not just surface manifestations. |
+| Quality-level-gated debt logging | Debt logging that is always-on would create noise in fast-mode projects. The existing quality level config (fast/standard/strict) gates whether debt is logged at all, and at what threshold. `fast` = no auto-logging (zero overhead for experiment projects); `standard` = log critical/high severity only; `strict` = log everything including medium severity. This aligns with the existing principle that quality enforcement is configurable, not forced. | LOW | Config-driven behavior using existing `quality.level` from `config.json`. No new config keys needed — piggybacks on the established gating pattern. Already have precedent in how executor quality gates are gated. |
+| Debt linked to its originating phase/plan | A debt entry logged during phase-03 plan-02 carries that provenance. When `/gsd:fix-debt` picks up the entry, it knows *exactly* where the debt was introduced — the plan that created it, the milestone it belongs to. This makes root-cause analysis O(1) instead of requiring a git blame + code archaeology session. | LOW | Add `source_phase` and `source_plan` fields to debt entry. Executor agent passes these when calling `debt-log` (already has phase/plan context from its PLAN.md). |
+| Debt metrics in `/gsd:progress` | Progress output currently shows phase completion, plan completion, and quality gate activity. Adding debt counts (open/resolved this milestone) makes tech debt visible at the same glance as phase progress — not buried in a separate file. Visibility drives resolution. | LOW | `progress` command already queries multiple sources (STATE.md, ROADMAP.md, STATUS.md). Add `debt-list --status open --format count` to the progress render. Show: "Tech debt: 3 open (1 critical, 2 medium)". |
+| Migration tool dry-run with diff report | Most migration tools only tell you what they're about to do. GSD's migration tool should show a structured diff: "Would add: DEBT.md, would update config.json (add `debt` section), would rename: phases/phase-01 → phases/phase-01 (no change)." This is the Flyway dry-run pattern applied to filesystem structure. Users can review before applying. | LOW | `--dry-run` flag produces a markdown-formatted "what would change" report. `--apply` flag performs the actual changes. Idempotent — running `--apply` twice is safe. |
 
 ### Anti-Features (Things to Deliberately NOT Build)
 
-Features that seem like natural additions but break GSD's fundamental design principles or create more
-problems than they solve.
+Features that seem like natural additions but violate GSD's design principles or create more problems than they solve.
 
 | Anti-Feature | Why Requested | Why Problematic | Alternative |
 |--------------|---------------|-----------------|-------------|
-| File locking for concurrent writes | "Two Claude sessions editing the same file will corrupt it" sounds like it needs a lock. | File locking on a local filesystem breaks silently when processes are killed. Stale locks block all sessions indefinitely. Claude sessions can be interrupted at any time (user kills terminal, context limit hit, rate limit pause). A stale lock with no recovery mechanism is worse than no lock. Claude Code + git worktrees already provides isolation at the OS level — separate working directories mean no concurrent write collisions on workspace files. | Workspace isolation (separate milestone folders) eliminates write collisions on state files. Conflict manifest (declarative ownership) surfaces source file conflicts before execution. No lock needed. |
-| Automatic conflict resolution | "GSD should merge the conflicting changes automatically when two milestones touch the same file" seems like a nice feature. | Automatic merge of concurrent code changes requires semantic understanding of what the changes do and whether they're compatible. Git's textual merge can produce syntactically valid but semantically broken code. Claude Code cannot evaluate whether two concurrent milestones' changes to `router.js` are compatible without reading both changes and understanding the intent of each. Silently wrong > detectably wrong. | Surface the conflict clearly (manifest overlap warning + clear diff at commit time). Leave resolution to the human. Provide tooling to inspect what each milestone changed (`manifest-diff` command), not to merge it automatically. |
-| Centralized lock file for "active milestone" | "Track which milestone is currently active in a central `active-milestone.json`" seems like an obvious coordination mechanism. | A centralized state file for "active" status in a concurrent system requires that all writers agree on when they've released the "active" status and all readers agree on when it's valid. Claude sessions can be interrupted, leaving the file pointing to a milestone that is no longer actually executing. This creates a "split-brain" where GSD thinks milestone A is active but the user is actually running milestone B. | Lock-free model: every milestone is potentially "active" at any time. Routing infers context from the milestone folder the user invokes commands from (or from an explicit `--milestone vX.Y` flag). No central "active" state. |
-| Automatic milestone dependency ordering | "If milestone B depends on milestone A's changes, GSD should prevent B from starting until A is complete" seems like CI/CD-inspired orchestration. | Milestone dependencies in GSD span days or weeks of work, not minutes. The value of concurrent execution is precisely that loosely-coupled milestones can proceed in parallel without waiting. Adding mandatory dependency gates reintroduces the sequential bottleneck that concurrent execution is meant to remove. Tight dependencies (B requires A's shipped code) indicate the milestones should be sequential anyway. | Conflict manifest surfaces file-level overlap (a proxy for dependency). If user declares B depends on A in REQUIREMENTS.md, that's documentation — not an enforced gate. Sequential execution remains the right model for tightly-coupled milestones. |
-| Multi-session real-time status sync | "Claude sessions should broadcast status updates to each other in real-time as they execute" sounds like agent team coordination. | This requires a running coordination process (or polling loop) separate from the executing Claude sessions. Claude Code sessions are not long-running server processes — they execute and terminate. Inter-session real-time sync via IPC or websockets would require an always-on daemon that GSD has no infrastructure for. | File-based STATUS.md polling is the right model: each session writes its status at natural checkpoints (plan start, task complete, phase complete). Dashboard reads STATUS.md files on-demand. Eventual consistency (seconds-stale status) is fine for milestones that take hours to days. |
-| Rewriting milestone/phase lifecycle | "Concurrent milestones need a new lifecycle model" sounds reasonable. | GSD's project → milestone → phase → plan → execute → verify lifecycle works. Concurrency is a property of the execution context (multiple sessions running separate milestones), not of the lifecycle itself. Rewriting the lifecycle would break existing users and introduce novel failure modes. PROJECT.md is explicit: "Out of scope: changing the core workflow lifecycle." | Add concurrency support as an orthogonal dimension: the lifecycle stays the same, but the workspace folder and phase numbering become milestone-scoped. Routing functions add a "which milestone am I in?" resolution step, but the lifecycle steps themselves are unchanged. |
-| Nested concurrent milestones (milestones within milestones) | "A milestone could spawn sub-milestones for parallel sub-features" extends the concurrent model further. | Claude Code Agent Teams documentation explicitly states "No nested teams: teammates cannot spawn their own teams." The same constraint applies here — nested concurrency creates coordination complexity that grows exponentially (who resolves conflicts between sub-milestones? what happens if a parent milestone is cancelled?). | For intra-milestone parallelism, use Agent Teams (research finding: best fit for parallel phases within one milestone). For inter-milestone parallelism, use the concurrent milestone model. No nesting. |
+| Automatic debt prioritization / scoring | "Score each debt entry 1-100 based on severity + age + component churn" sounds like it adds intelligence to prioritization. | Prioritization requires business context that an automated scorer cannot have. A high-severity debt item in a component scheduled for deletion next sprint is lower priority than a medium item in a critical shared utility. Auto-scoring creates false confidence and anchors decision-making on a number that ignores business reality. | Surface the raw fields (severity, age, component) in `debt-list` output. Let the engineer sort and filter. Decision stays with the human. |
+| Real-time debt dashboard / web UI | "Show a live dashboard of all open debt" sounds like useful visibility. | GSD is a file-based, Claude Code-embedded framework. Adding a web UI or a server process violates the architectural constraint: zero daemon processes, no always-on services. An HTTP server for debt visualization would require port management, startup scripts, and would break the "open Claude Code, run GSD" simplicity. | `/gsd:progress` shows debt counts inline. `debt-list --format table` renders markdown tables that Claude Code can display. Zero server required. |
+| Debt estimation and burndown tracking | "Estimate hours for each debt item, track burndown over time" sounds like complete project management. | Effort estimation for tech debt is famously unreliable. Debt items regularly take 10x the estimated time because root causes are only discovered during the fix. Building estimation infrastructure creates bureaucratic overhead for data that is mostly wrong. The existing GSD pattern: PLAN.md has task estimates for planned work; debt resolution is unplanned by nature. | Debt items have `resolution_plan` (a text field describing the approach). Engineers estimate as needed. Don't track burndown in GSD — that's what project management tools are for. |
+| Automatic debt resolution without human review | "If severity is low and the fix is obvious, just auto-fix it" seems like a useful optimization. | Autonomous code changes without human review accumulate their own debt. A "low severity" fix that restructures an import tree can break downstream consumers in ways the agent can't detect without full codebase awareness. The existing GSD constraint: all code changes go through plan→execute→verify with a human in the loop. | `/gsd:fix-debt` creates a standard plan and executes it — the human reviews the plan before execution and reviews the SUMMARY.md after. No unreviewed automated fixes. |
+| Debt assigned to external systems (Jira, Linear) | "Sync DEBT.md entries to Jira tickets automatically" sounds like integration value. | GSD is a Claude Code framework embedded in a `.planning/` folder. External API calls to project management tools add: authentication secrets, network dependencies, rate limits, and bidirectional sync conflicts. DEBT.md is a plain Markdown file in the repo — it's already in the version-controlled, discoverable, searchable location. | DEBT.md entries are Markdown. If a team wants to create a Jira ticket from a debt entry, they copy-paste. No sync infrastructure needed. |
+| Per-milestone DEBT.md isolation | "Each milestone should have its own debt register" sounds like a natural extension of milestone isolation. | Tech debt is a project-level concern, not a milestone concern. A debt item discovered in v2.0 might be fixed in v3.0 or v4.0. Isolating debt per-milestone breaks the continuous tracking: debt discovered in v2.0 would disappear from view when v2.0 is archived. The existing milestone isolation (STATE.md, ROADMAP.md) applies to *execution state*, not to cross-cutting concerns like debt. | DEBT.md lives at `.planning/DEBT.md` — the same level as PROJECT.md and TO-DOS.md. It is global to the project. Entries carry `source_phase` and `source_plan` to link back to their milestone of origin. |
+| Destructive migration (delete old files) | "Clean up old structure by removing deprecated files" seems like good hygiene. | A migration tool that deletes files has no safe undo. The downside risk (data loss, broken project) is catastrophic and irreversible. Flyway and Liquibase never delete data in migrations — they add columns, create tables, move rows. Deletion is a separate, explicit, human-driven step. | Migration tool is additive only: creates missing files, adds missing config sections, moves files with a backup copy. The old file stays in place until the human explicitly deletes it after verifying the migration worked. |
 
 ---
 
 ## Feature Dependencies
 
 ```
-[Milestone-scoped workspace isolation]
-    └──required by──> [Milestone-scoped phase numbering]
-         (phase numbers are inside the workspace, can't scope them without isolated folders)
-    └──required by──> [Lock-free dashboard pattern]
-         (dashboard reads per-milestone STATUS.md files; without isolation, there's nothing to aggregate)
-    └──required by──> [Updated GSD routing]
-         (routing must resolve milestone folder path; requires the folder to exist and be scoped)
-    └──required by──> [Per-milestone quality config inheritance]
-         (milestone config.json lives inside the milestone workspace folder)
+[INTEGRATION-3 + INTEGRATION-4 bug fixes]
+    └──prerequisite for──> [All v3.0 features]
+         (milestone-scoped projects are broken without these fixes; debt logging from milestone-scoped
+          executors would read/write wrong paths)
 
-[Compatibility layer for existing projects]
-    └──required by──> [Updated GSD routing]
-         (routing must handle both old-style root layout AND new-style milestone folders)
-    └──gates──> [All other new features]
-         (new features apply only to new-style milestone layout; old-style uses legacy routing)
+[DEBT.md hub (structured entry format)]
+    └──required by──> [CLI debt-log command]
+         (the file must exist and have a defined format before agents can write to it)
+    └──required by──> [debt-list command]
+         (list command reads and parses DEBT.md)
+    └──required by──> [Executor/verifier auto-log wiring]
+         (wiring calls debt-log, which writes to DEBT.md)
+    └──required by──> [/gsd:fix-debt skill]
+         (fix-debt reads DEBT.md to pick an entry to resolve)
+    └──required by──> [Debt metrics in /gsd:progress]
+         (progress command queries DEBT.md for counts)
 
-[Conflict manifest (file ownership declaration)]
-    └──requires──> [Milestone-scoped workspace isolation]
-         (manifests live in milestone workspace folders; requires workspace isolation first)
-    └──enhances──> [Lock-free dashboard pattern]
-         (dashboard can show conflict warnings alongside status for overlapping milestones)
-    └──informs──> [Updated GSD routing]
-         (routing commands can check manifest before allowing execution in conflicted milestones)
+[CLI debt-log command]
+    └──required by──> [Executor/verifier auto-log wiring]
+         (wiring calls this CLI command; wiring cannot exist without the command)
+    └──required by──> [/gsd:fix-debt skill (status updates)]
+         (fix-debt calls debt-log or debt-status to mark resolved)
 
-[Lock-free dashboard pattern]
-    └──requires──> [Milestone-scoped workspace isolation]
-         (must have per-milestone STATUS.md files to aggregate)
-    └──enhances──> [/gsd:progress command]
-         (progress command becomes a dashboard renderer, not a single-milestone status report)
+[debt-list command]
+    └──required by──> [/gsd:fix-debt skill (entry selection)]
+         (fix-debt calls debt-list to find the next open entry to resolve)
+    └──required by──> [Debt metrics in /gsd:progress]
+         (progress command calls debt-list --format count)
 
-[Agent Teams integration research]
-    └──informs──> [Lock-free dashboard pattern]
-         (Agent Teams show that shared task lists are coordination overkill for milestone-level parallelism)
-    └──informs──> [Conflict manifest]
-         (Agent Teams' file-locking for task claiming establishes the reference pattern for ownership declaration)
-    └──independent of──> [All structural features]
-         (Agent Teams integration, if pursued, is a separate optional capability layer on top)
+[Executor/verifier auto-log wiring]
+    └──requires──> [CLI debt-log command]
+    └──requires──> [DEBT.md hub]
+    └──enhances──> [/gsd:fix-debt skill]
+         (fix-debt is most valuable when there's a backlog of real debt to resolve;
+          auto-logging fills that backlog automatically)
 
-[Per-milestone quality config inheritance]
-    └──requires──> [Milestone-scoped workspace isolation]
-         (milestone config.json lives in the milestone workspace)
-    └──requires──> [Existing quality config system (v1.0/v1.1)]
-         (already built — this feature extends the inheritance chain, not replaces it)
+[/gsd:fix-debt skill]
+    └──requires──> [DEBT.md hub]
+    └──requires──> [debt-list command]
+    └──requires──> [CLI debt-log command] (for status updates)
+    └──requires──> [Executor/verifier auto-log wiring] (to have meaningful debt to fix)
+    └──independent of──> [Project migration tool]
 
-[Updated GSD routing]
-    └──requires──> [Milestone-scoped workspace isolation]
-    └──requires──> [Compatibility layer for existing projects]
-    └──required by──> [Test coverage for new routing and isolation logic]
-         (tests verify routing resolution logic for both layout styles)
+[Project migration tool]
+    └──independent of──> [DEBT.md hub, debt-log, fix-debt]
+         (migration is a structural concern; debt system is a content/tracking concern)
+    └──can create──> [DEBT.md hub] (as part of migration — add missing files)
+    └──can fix──> [INTEGRATION-3/INTEGRATION-4 outcomes]
+         (migration can rewrite config.json to add missing sections cleanly)
+
+[Quality-level-gated debt logging]
+    └──requires──> [CLI debt-log command]
+    └──requires──> [Existing quality.level config (v1.x)]
+         (already built — piggybacks on existing gating infrastructure)
+
+[Debt linked to phase/plan provenance]
+    └──requires──> [DEBT.md hub] (fields must be defined)
+    └──requires──> [CLI debt-log command] (fields passed as args)
+    └──enhances──> [/gsd:fix-debt skill] (makes root-cause analysis faster)
 ```
 
 ### Dependency Notes
 
-- **Workspace isolation is the root dependency:** Everything else (dashboard, phase numbering, routing, config inheritance, manifest) requires workspace isolation to exist first. Implement workspace isolation in Phase 1.
+- **Bug fixes are the root prerequisite.** INTEGRATION-3 and INTEGRATION-4 must be fixed before any other v3.0 feature is built. Milestone-scoped path resolution is broken without these fixes; debt logging from within a milestone-scoped executor would read and write from the wrong `.planning/` root.
 
-- **Compatibility layer gates adoption:** Without the compatibility layer, existing GSD users (v1.0/v1.1 projects) cannot upgrade without a manual migration. Compatibility layer must be part of Phase 1 alongside workspace isolation.
+- **DEBT.md format locks in before CLI.** The entry format (field names, status values, ID scheme) must be decided before the `debt-log` command is implemented. Changing the format after CLI is built requires schema migration.
 
-- **Routing is the most load-bearing change:** Every workflow, command, and tool touches routing. Routing must resolve the correct milestone context or the entire framework produces wrong outputs. Updated routing with both old-style and new-style support is the critical path for all user-facing behavior.
+- **debt-log before wiring.** The executor/verifier wiring just calls `debt-log` — it cannot be built until that command exists. The wiring itself is the lightest part of the feature; it's the command that has substance.
 
-- **Conflict manifest is independent of execution correctness:** If the manifest is missing, GSD still works — milestones run without conflict detection. Manifest is a safety feature, not a structural one. Can be implemented after the structural features (isolation, numbering, routing, compatibility) are complete and stable.
+- **debt-list before fix-debt.** `/gsd:fix-debt` needs to query for open entries before it can pick one to fix. `debt-list` must be implemented and tested first.
 
-- **Agent Teams are research-resolved:** Research confirms Agent Teams are not the right coordination mechanism for concurrent milestones (different use case: intra-session vs inter-session parallelism). Document as "use Agent Teams for parallel phases, file-based coordination for concurrent milestones." No code integration needed for the v2.0 milestone.
+- **Migration tool is fully independent.** It addresses structural concerns (`.planning/` folder layout, config.json completeness) that are orthogonal to the debt tracking features. Can be built in any order relative to DEBT.md features.
 
-- **Test coverage depends on routing:** Tests for new routing and isolation logic can only be written after the routing logic is implemented. Test phase is last.
+- **fix-debt is the highest complexity feature.** It is a new workflow that orchestrates: read → select → plan → execute → verify → status-update. It depends on every other feature in the debt system being stable first. Build it last.
 
 ---
 
 ## MVP Definition
 
-### Launch With (v2.0 — This Milestone)
+### Launch With (v3.0 — This Milestone)
 
-Minimum viable concurrent execution — what's needed to validate that two milestones can actually run
-without corrupting each other.
+Minimum viable tech debt system — what's needed to get structured, persistent, queryable debt tracking into GSD.
 
-- [ ] **Milestone-scoped workspace isolation** — Per-milestone folder at `.planning/milestones/vX.Y/` containing ROADMAP.md, STATE.md, REQUIREMENTS.md, and phases/. Root `.planning/` retains only global files (PROJECT.md, MILESTONES.md, config.json, research/). Without this, nothing else is possible. Depends on: nothing (pure structural addition).
+- [ ] **INTEGRATION-3 + INTEGRATION-4 fixes** — prerequisite correctness; milestone-scoped projects must work before any debt logging from them is meaningful.
 
-- [ ] **Compatibility layer (old-style auto-detection)** — Auto-detect root-level `.planning/ROADMAP.md` as old-style layout; route using legacy logic. Auto-detect `.planning/milestones/` as new-style layout; route using milestone-scoped logic. Existing projects work unchanged. Depends on: workspace isolation (new-style detection requires the milestone folder to exist).
+- [ ] **DEBT.md hub with defined entry format** — the file and format are the foundation. Without a stable schema, everything built on top must be rebuilt. Field set: id, type, severity, component, description, date_logged, logged_by, status, source_phase, source_plan.
 
-- [ ] **Milestone-scoped phase numbering** — Phase references become `{milestone}/{phase}` (e.g., `v1.2/phase-01`) in ROADMAP.md, commands, and routing. The `phase-complete` command accepts `--milestone` flag. Depends on: workspace isolation (phases live inside milestone folder).
+- [ ] **`gsd-tools.cjs debt-log` command** — agents call this to record debt atomically. Append-only, safe for concurrent callers, returns new entry ID. The write API for the debt system.
 
-- [ ] **Updated GSD routing** — All workflows (plan-phase, execute-phase, discuss-phase), all commands (phase-complete, commit), and all agents that reference phase paths updated to resolve milestone-scoped paths. Detect old-style vs new-style and route accordingly. Depends on: workspace isolation, compatibility layer.
+- [ ] **`gsd-tools.cjs debt-list` command** — query debt by status/type/severity. JSON output for agent consumption. The read API for the debt system.
 
-- [ ] **Lock-free dashboard** — Each milestone writes `STATUS.md` in its workspace folder at natural checkpoints (plan start, plan complete, phase complete). `/gsd:progress` reads all `STATUS.md` files and renders a multi-milestone summary table. Old-style projects continue to show single-milestone progress. Depends on: workspace isolation, updated routing.
+- [ ] **`gsd-tools.cjs debt-status` command** — update a debt entry's status. Enables the resolved/deferred lifecycle transitions.
 
-- [ ] **Conflict manifest** — `MANIFEST.md` in each milestone workspace declares `files_touched: []`. `gsd-tools.cjs manifest-check` detects overlaps across active milestones. Called automatically during `/gsd:new-milestone` flow. Does NOT block execution — reports warnings only. Depends on: workspace isolation.
+- [ ] **Executor/verifier auto-log wiring** — the point where debt tracking becomes automatic rather than manual. Quality Sentinel and verifier quality dimensions call `debt-log` when they find issues that can't be fixed in the current plan. Gated on quality level.
 
-- [ ] **Test coverage for new routing and isolation logic** — Tests verify: old-style layout routed correctly, new-style layout routed correctly, milestone-scoped phase numbers resolve correctly, manifest overlap detection fires, compatibility layer does not break existing behavior. Depends on: all above features implemented.
+- [ ] **`/gsd:fix-debt` skill** — on-demand debt resolution workflow. Reads DEBT.md, selects an entry, runs a targeted executor subagent to fix it, verifier confirms, status updated to resolved.
 
-### Add After Validation (v2.x)
+- [ ] **Project migration tool** — `gsd-tools.cjs migrate [--dry-run] [--apply]`. Inspects `.planning/` against current spec, reports gaps, applies additive changes. Idempotent, never destructive.
 
-Features to add once the concurrent model is validated in real projects.
+### Add After Validation (v3.x)
 
-- [ ] **Agent Teams integration for parallel phases** — Document and possibly provide a scaffold for using Claude Code Agent Teams within a single milestone to parallelize phases. Trigger: user reports that sequential phases within a milestone are a bottleneck. Evidence from research: Agent Teams are best for intra-milestone parallelism (parallel code review, competing hypotheses). The mechanism already exists; GSD would provide a workflow scaffold, not new infrastructure.
+Features to add once the debt system is in active use and generating real debt entries.
 
-- [ ] **Conflict manifest enforcement (optional gate)** — Add an opt-in mode where overlapping manifest conflicts block milestone execution (not just warn). Trigger: user requests hard enforcement after experiencing a merge conflict from concurrent milestones. Keep as opt-in — default is warn-only (additive principle).
+- [ ] **Debt metrics in `/gsd:progress`** — show open/resolved debt counts in progress output. Trigger: DEBT.md is accumulating real entries from auto-logging and the counts are meaningful enough to surface.
 
-- [ ] **Dashboard live refresh** — `/gsd:progress --watch` polls `STATUS.md` files and refreshes the display. Trigger: user runs two milestones simultaneously and wants real-time status without re-running the command. Implementation: standard polling loop with configurable interval.
+- [ ] **Debt pruning command (`debt-archive`)** — move resolved/deferred entries older than N days to `DEBT-ARCHIVE.md` to keep DEBT.md scannable. Trigger: DEBT.md grows past ~20 entries and readability degrades.
 
-### Future Consideration (v2.x+)
+- [ ] **Planner integration: check DEBT.md before planning** — planner reads DEBT.md for open items related to the phase's components before writing tasks. Trigger: users report that planners re-introduce known debt that's already logged.
 
-Features that require significantly more design work or external dependencies.
+### Future Consideration (v3.x+)
 
-- [ ] **Cross-milestone dependency tracking** — Milestone A can declare a dependency on milestone B's completion. GSD warns if A's execution would be blocked. Complexity: requires a dependency graph data structure and a way to express "milestone A ships before milestone B can start." Trigger: product-market fit confirmed, users request formalized dependency management.
+Features that require more design work or ecosystem maturity.
 
-- [ ] **Milestone workspace git worktree integration** — Each milestone could automatically create a git worktree (`claude --worktree`) for true OS-level file isolation on source files (not just .planning/ state files). Complexity: requires knowledge of whether the project uses git; must not interfere with the project's own git workflow. Trigger: users report source file conflicts (manifest check wasn't enough) and request stronger isolation.
+- [ ] **Debt-to-PLAN.md conversion** — generate a full PLAN.md from a debt entry for when `/gsd:fix-debt` is overkill and a more formal phased fix is needed. Requires PLAN.md template system integration.
+
+- [ ] **Debt age / SLA warnings** — flag debt entries that have been open longer than a configurable threshold (e.g., 30 days). Requires tracking `date_logged` meaningfully and a reporting mechanism. Trigger: teams want accountability for old debt.
 
 ---
 
@@ -186,63 +195,71 @@ Features that require significantly more design work or external dependencies.
 
 | Feature | User Value | Implementation Cost | Priority |
 |---------|------------|---------------------|----------|
-| Milestone-scoped workspace isolation | HIGH — without it, concurrent execution is impossible | MEDIUM — folder structure change + path updates | P1 |
-| Compatibility layer (old-style auto-detection) | HIGH — zero-breakage upgrade is table stakes | MEDIUM — detection logic + routing fork | P1 |
-| Updated GSD routing | HIGH — broken routing = broken framework | HIGH — touches all workflows, commands, agents | P1 |
-| Milestone-scoped phase numbering | HIGH — phases must be addressable per-milestone | MEDIUM — numbering scheme + command updates | P1 |
-| Lock-free dashboard | MEDIUM — status visibility improves UX, not correctness | LOW — read-only STATUS.md aggregation | P2 |
-| Conflict manifest | MEDIUM — prevents user mistakes, not framework failures | MEDIUM — manifest format + overlap detection | P2 |
-| Test coverage | HIGH — unverified routing = latent bugs | MEDIUM — test cases for both layout styles | P1 |
-| Agent Teams research documentation | LOW — informational, no code | LOW — document findings, no implementation | P3 |
+| INTEGRATION-3 + INTEGRATION-4 fixes | HIGH — correctness prerequisite | LOW — known exact fix location | P1 |
+| DEBT.md hub (entry format definition) | HIGH — foundation for all debt features | LOW — format design + file creation | P1 |
+| `debt-log` CLI command | HIGH — write API; executors need this | LOW — append-only, ~80 LOC | P1 |
+| `debt-list` CLI command | HIGH — read API; fix-debt + progress need this | LOW — filter/format, ~60 LOC | P1 |
+| `debt-status` CLI command | MEDIUM — lifecycle management | LOW — single-field update, ~40 LOC | P1 |
+| Executor/verifier auto-log wiring | HIGH — makes tracking automatic | MEDIUM — executor agent edits + quality gate integration | P1 |
+| `/gsd:fix-debt` skill | HIGH — closes the detect→fix loop | HIGH — new workflow orchestration | P1 |
+| Project migration tool | MEDIUM — eases onboarding for existing projects | MEDIUM — inspection logic + additive apply | P1 |
+| Debt metrics in `/gsd:progress` | LOW-MEDIUM — visibility improvement | LOW — one `debt-list` call in progress render | P2 |
+| Debt-linked provenance (source_phase/source_plan) | MEDIUM — accelerates root-cause in fix-debt | LOW — fields in debt-log args, no new command | P1 (include in debt-log design) |
+| Quality-level-gated logging | MEDIUM — prevents fast-mode overhead | LOW — one `if quality.level !== 'fast'` gate | P1 (include in wiring) |
 
 **Priority key:**
-- P1: Must have for v2.0 to be a valid concurrent execution system
-- P2: Should have, meaningfully improves safety and UX
-- P3: Nice to have, informational value only
+- P1: Must have for v3.0 to deliver its stated goal (structured debt tracking + migration tool)
+- P2: Should have, meaningfully improves UX; add when P1 is stable
+- P3: Nice to have, future consideration
 
 ---
 
-## Competitor / Reference System Analysis
+## Reference System Analysis
 
-How similar tools handle the same problems — patterns GSD should follow or learn from:
+How existing tech debt systems and migration tools handle the same problems — patterns GSD should follow:
 
-| Feature | Git Worktrees (Claude Code built-in) | Turborepo / Nx (monorepo) | GitHub Actions (parallel jobs) | Claude Agent Teams | GSD v2.0 Approach |
-|---------|--------------------------------------|--------------------------|-------------------------------|-------------------|-------------------|
-| Workspace isolation | Per-worktree directory at `.claude/worktrees/{name}/`; each has its own branch and files | Per-package directory; each package is isolated by default | Per-job environment; job runners are independent | Per-teammate context window; teammates don't share files | Per-milestone folder at `.planning/milestones/vX.Y/` |
-| Conflict detection | None (relies on git branch divergence at merge time) | Project graph (`--affected`) detects which packages are impacted | `needs:` keyword for job dependencies; no file-level detection | File locking via task JSON for task claiming; no source file detection | Declarative manifest at milestone init time; overlap detection before execution starts |
-| Status dashboard | None built-in (user checks each worktree manually) | `turbo run --dry` shows task graph; live output for parallel tasks | GitHub Actions UI shows all job statuses in parallel | Lead session shows teammate status in terminal; Shift+Down to cycle | Lock-free STATUS.md aggregation; `/gsd:progress` renders all milestone statuses |
-| Compatibility | Old sessions use old branch; no auto-migration | Each version is independent; package.json manages transitions | Workflow files are versioned independently | N/A (experimental feature with no backwards compatibility concerns yet) | Auto-detect old-style root layout; route to legacy code path without migration |
-| Phase/step numbering | Per-worktree (worktree name is the namespace) | Per-package task (package name + task name) | Per-job step (job name + step number) | Per-task in shared task list (task ID is unique across team) | Per-milestone phase (`vX.Y/phase-NN`) |
-| Lock mechanism | OS-level file isolation (different directories) | No file locking (separate packages don't share files by design) | Job isolation (jobs run in separate environments) | JSON file locking for task claiming via file atomics | No file locking; workspace isolation + manifest declaration |
+| Feature | Tech Debt Master (tdm) | Technical Debt Register (Scrum.org pattern) | Flyway / Liquibase (migration tools) | GSD v3.0 Approach |
+|---------|------------------------|---------------------------------------------|--------------------------------------|-------------------|
+| Entry structure | AI-generated, file-level severity + context | 10 fields: description, reason, impact, location, priority, owner, date, effort, plan, status | Migration scripts versioned with checksum | DEBT.md with 10 structured fields; markdown table or frontmatter; ID scheme TD-NNN |
+| Discovery | Continuous scanning + LLM analysis | Manual entry by team members | N/A (database schema-driven) | Auto-logging by Quality Sentinel + verifier; manual via `debt-log` for agents |
+| Status tracking | Interactive CLI triage | Open / In Progress / Resolved | Applied / Pending / Failed | open / in-progress / resolved / deferred |
+| Fix workflow | Expose via MCP server for coding agent consumption | Manual fix + mark resolved | Forward-fix new migration (never rollback in prod) | `/gsd:fix-debt` skill: read entry → plan → execute → verify → mark resolved |
+| Prioritization | Business impact + remediation effort | Component proximity to upcoming work | Migration order by version number | `debt-list --severity critical` — filter, don't auto-score |
+| Idempotency | N/A | N/A | Checksum table prevents re-application | Migration tool: check what already exists, skip if present, never overwrite |
+| Dry run | N/A | N/A | `--dry-run` flag standard | `migrate --dry-run` shows diff report before `--apply` |
 
-**Key lessons from reference systems:**
+**Key lessons:**
 
-1. **Git worktrees (Claude Code's own pattern):** The `--worktree` flag creates isolated directories. GSD's milestone folder approach is the planning-layer equivalent — isolated state directories, not locked files. (Source: official Claude Code docs, HIGH confidence)
+1. **Ten-field entry structure is industry consensus.** The otherCode.io Technical Debt Records format, the CMU SEI documentation pattern, and Scrum.org's register template all converge on the same ~10 fields. GSD should use this established set rather than inventing a novel schema. (Sources: otherCode.io article, Scrum.org blog — HIGH confidence)
 
-2. **Turborepo `--affected`:** Detects which packages changed and only runs affected tasks. GSD's conflict manifest is analogous — declare which files a milestone "affects" and detect overlap. Turborepo detects after changes exist; GSD detects before changes start. (Source: Turborepo 2.1 docs, MEDIUM confidence)
+2. **Status = open/in-progress/resolved/deferred.** These four states cover the full lifecycle. "Deferred" (explicit postponement) is important — it distinguishes "we know about this and chose not to fix it now" from "open, nobody's looked at it yet." Without deferred, items languish in open state indefinitely. (Sources: multiple tech debt register templates — HIGH confidence)
 
-3. **Agent Teams task claiming:** Uses file-based locking (`~/.claude/tasks/{team-name}/`) to prevent two teammates from claiming the same task. GSD's manifest approach is softer (warn, not lock) which is intentional — milestone execution is asynchronous across days/sessions, not synchronous within a team session. (Source: official Claude Code Agent Teams docs, HIGH confidence)
+3. **Forward-fix, never rollback.** Flyway and Liquibase's core principle for production migrations: if a migration has a problem, create a new migration that fixes it — never reverse-apply the old one. GSD's migration tool should follow this: if a project has an odd existing structure, add what's needed without touching what exists. (Sources: Flyway docs, Liquibase docs — MEDIUM confidence via WebSearch)
 
-4. **Agent Teams NOT the right model for inter-milestone coordination:** Agent Teams require all teammates to be active simultaneously in a shared session. GSD's concurrent milestones are independent Claude Code sessions that may run days apart. File-based coordination (STATUS.md, MANIFEST.md) is the correct pattern for asynchronous multi-session work. (Source: official Agent Teams docs + limitations section, HIGH confidence)
+4. **Debug2Fix subagent pattern for fix workflows.** The arxiv.org Debug2Fix paper (Feb 2025) establishes that a dedicated debugging subagent — focused solely on inspecting runtime state, not implementing fixes — improves fix quality by >20% vs. static analysis alone. `/gsd:fix-debt` should use this pattern: a diagnostic subagent first, then an implementation subagent. (Source: arxiv.org/html/2602.18571 — MEDIUM confidence, peer-reviewed research)
+
+5. **Append-only writes for concurrent safety.** The `debt-log` command can be called from parallel plan subagents. Append-only file writes are safe without locks — each write adds a new entry with a new ID, never modifying existing entries. Only `debt-status` modifies existing entries, and it should use the existing `atomicWrite()` pattern (temp file + rename). (Pattern established in v2.0 lock-free dashboard design — HIGH confidence)
 
 ---
 
 ## Sources
 
-- [Claude Code Docs — Orchestrate teams of Claude Code sessions](https://code.claude.com/docs/en/agent-teams) — HIGH confidence (official Anthropic docs; read directly; covers architecture, task list, file locking pattern, limitations)
-- [Claude Code Docs — Run parallel Claude Code sessions with Git worktrees](https://code.claude.com/docs/en/common-workflows#run-parallel-claude-code-sessions-with-git-worktrees) — HIGH confidence (official Anthropic docs; `--worktree` flag; `.claude/worktrees/` path; subagent `isolation: worktree` frontmatter; read directly)
-- [Claude Code Swarm Orchestration Skill gist (kieranklaassen)](https://gist.github.com/kieranklaassen/4f2aba89594a4aea4ad64d753984b2ea) — MEDIUM confidence (community pattern; corroborates agent teams task claiming and file-based coordination patterns)
-- [Verdent 1.5.0 Blog — Workspace Isolation and Multi-Agent Execution](https://www.verdent.ai/blog/introducing-verdent-1-5-0) — MEDIUM confidence (comparable AI coding tool; confirms "changes for one task never silently leak into another" as user expectation; manual curation of merge-back is the pattern)
-- [Turborepo Guide (Strapi)](https://strapi.io/blog/turborepo-guide) — MEDIUM confidence (describes `--affected` flag, parallel task execution, dependency graph; establishes monorepo patterns as reference)
-- [Turborepo, Nx, and Lerna 2026 (DEV Community)](https://dev.to/dataformathub/turborepo-nx-and-lerna-the-truth-about-monorepo-tooling-in-2026-71) — MEDIUM confidence (ecosystem survey; confirms parallel execution and affected-file detection as standard patterns)
-- [Claude Code Agent Teams Complete Guide (claudefa.st)](https://claudefa.st/blog/guide/agents/agent-teams) — MEDIUM confidence (community guide; corroborates official docs)
-- [Superpowers Issue #469 — Leverage Agent Teams for parallel plan execution](https://github.com/obra/superpowers/issues/469) — LOW confidence (single GitHub issue; useful as evidence others are thinking about this space but not an authoritative source)
-- Internal: `.planning/PROJECT.md` — HIGH confidence (direct read; defines v2.0 target features explicitly)
-- Internal: `.planning/STATE.md` — HIGH confidence (direct read; current milestone state)
-- Internal: `.planning/MILESTONES.md` — HIGH confidence (direct read; v1.0/v1.1 capabilities baseline)
-- Internal: `.planning/research/ARCHITECTURE.md` — HIGH confidence (direct read; existing routing and layout patterns)
+- [otherCode.io — Technical Debt Records: 10 fields, status lifecycle, format options](https://othercode.io/blog/technical-debt-records) — HIGH confidence (direct fetch, primary source for entry schema)
+- [Scrum.org — Using a Technical Debt Register in Scrum](https://www.scrum.org/resources/blog/using-technical-debt-register-scrum) — HIGH confidence (official Scrum framework guidance, status field values)
+- [markheath.net — How Should You Track Technical Debt?](https://markheath.net/post/technical-debt-register) — MEDIUM confidence (practitioner article; categories and field set corroborate otherCode.io)
+- [Debug2Fix: Supercharging Coding Agents with Interactive Debugging Capabilities](https://arxiv.org/html/2602.18571) — MEDIUM confidence (peer-reviewed arxiv paper, Feb 2025; subagent pattern + >20% improvement on Java benchmarks)
+- [ChatPRD — How to Systematically Reduce Technical Debt Using AI Agents](https://www.chatprd.ai/how-i-ai/workflows/how-to-systematically-reduce-technical-debt-using-ai-agents) — MEDIUM confidence (practitioner workflow; 5-phase identify→analyze→task→assign→review pattern)
+- [Technical Debt Master (N+1 Blog) — AI-Powered Code Analysis with Local LLMs](https://nikiforovall.blog/ai/2025/08/09/tech-debt-master.html) — MEDIUM confidence (comparable tool; 3-phase discover→triage→resolve pattern via MCP)
+- [Flyway — Migration Command Dry Runs](https://documentation.red-gate.com/fd/migration-command-dry-runs-275218517.html) — MEDIUM confidence (authoritative migration tool docs; dry-run pattern)
+- [Nick Janetakis — CLI Tools That Support Previews, Dry Runs or Non-Destructive Actions](https://nickjanetakis.com/blog/cli-tools-that-support-previews-dry-runs-or-non-destructive-actions) — MEDIUM confidence (CLI UX best practices for migration-style tools)
+- [CMU SEI — Experiences Documenting and Remediating Enterprise Technical Debt](https://www.sei.cmu.edu/blog/experiences-documenting-and-remediating-enterprise-technical-debt/) — MEDIUM confidence (academic/enterprise practitioner experience)
+- Internal: `.planning/PROJECT.md` v3.0 target features — HIGH confidence (direct read, canonical requirements)
+- Internal: `.planning/TO-DOS.md` INTEGRATION-3/INTEGRATION-4 — HIGH confidence (direct read, exact file/line locations)
+- Internal: `get-shit-done/bin/gsd-tools.cjs` command list — HIGH confidence (direct read, existing command surface for extension)
+- Internal: `get-shit-done/workflows/execute-phase.md` — HIGH confidence (direct read, executor agent context for wiring design)
+- Internal: `.planning/research/FEATURES.md` (v2.0) — HIGH confidence (direct read, baseline for what already exists)
 
 ---
 
-*Feature research for: GSD v2.0 Concurrent Milestones — concurrent execution, workspace isolation, conflict awareness*
-*Researched: 2026-02-24*
+*Feature research for: GSD v3.0 Tech Debt System — structured debt tracking, CLI debt commands, executor/verifier wiring, fix-debt skill, project migration tool*
+*Researched: 2026-02-25*

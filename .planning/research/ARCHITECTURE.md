@@ -1,535 +1,578 @@
 # Architecture Research
 
-**Domain:** Concurrent milestone execution — GSD framework extension
-**Researched:** 2026-02-24
-**Confidence:** HIGH — based on direct source analysis of all lib/*.cjs modules, workflow files, and existing .planning/ layout
+**Domain:** Tech debt tracking system + CLI debt logging + agent wiring + /gsd:fix-debt skill + project migration tool — integrated into GSD Enhanced Fork v3.0
+**Researched:** 2026-02-25
+**Confidence:** HIGH (direct codebase inspection of all affected modules, no training-data guesswork)
 
 ---
 
-## Standard Architecture
+## System Overview
 
-### System Overview
-
-The current GSD architecture is a single-session, sequential state machine. One Claude Code session owns `.planning/` at a time. Everything — phase discovery, path resolution, dashboard state, commits — assumes exclusive write access to a single `.planning/` root.
-
-The v2.0 concurrent milestone architecture adds a **milestone-scoped layer** between the project root and the existing phase/state structure. Each milestone gets an isolated workspace under `.planning/milestones/<version>/`. A central read-mostly dashboard (`MILESTONES.md`) tracks cross-milestone status and is updated by each session when it transitions state.
+The existing system has a layered structure. The three v3.0 features slot into specific layers without architectural displacement:
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        PROJECT ROOT (.planning/)                         │
-│                                                                           │
-│  ┌─────────────────────────────────────────────────────────────────┐    │
-│  │                    CENTRAL DASHBOARD                              │    │
-│  │  MILESTONES.md   — cross-milestone status, conflict manifest     │    │
-│  │  PROJECT.md      — unchanged (project-wide context)              │    │
-│  │  config.json     — unchanged (project-wide settings)             │    │
-│  └─────────────────────────────────────────────────────────────────┘    │
-│                                                                           │
-│  ┌─────────────────────┐  ┌─────────────────────┐                       │
-│  │  MILESTONE WORKSPACE │  │  MILESTONE WORKSPACE │  (one per milestone) │
-│  │  milestones/v2.0/   │  │  milestones/v2.1/   │                       │
-│  │  ├── STATE.md       │  │  ├── STATE.md        │                       │
-│  │  ├── ROADMAP.md     │  │  ├── ROADMAP.md      │                       │
-│  │  ├── REQUIREMENTS.md│  │  ├── REQUIREMENTS.md │                       │
-│  │  ├── conflict.json  │  │  ├── conflict.json   │                       │
-│  │  ├── research/      │  │  ├── research/        │                       │
-│  │  └── phases/        │  │  └── phases/          │                       │
-│  │      ├── 01-name/   │  │      ├── 01-name/     │                       │
-│  │      └── 02-name/   │  │      └── 02-name/     │                       │
-│  └─────────────────────┘  └─────────────────────┘                       │
-│                                                                           │
-│  ┌─────────────────────────────────────────────────────────────────┐    │
-│  │             COMPATIBILITY BRIDGE (old-style projects)             │    │
-│  │  phases/      — still present for legacy projects                │    │
-│  │  STATE.md     — root-level for legacy projects                   │    │
-│  │  ROADMAP.md   — root-level for legacy projects                   │    │
-│  └─────────────────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────┐
+│                       Command Layer                               │
+│  commands/gsd/debug.md    commands/gsd/set-quality.md            │
+│  [NEW] commands/gsd/fix-debt.md                                   │
+├───────────────────────────────────────────────────────────────────┤
+│                      Workflow Layer                               │
+│  workflows/execute-phase.md   workflows/plan-phase.md  etc.      │
+│  (no new workflow files needed for v3.0)                          │
+├───────────────────────────────────────────────────────────────────┤
+│                       Agent Layer                                 │
+│  agents/gsd-executor.md    agents/gsd-verifier.md               │
+│  agents/gsd-debugger.md                                          │
+│  [MODIFY all three to wire debt logging]                          │
+├───────────────────────────────────────────────────────────────────┤
+│                       CLI Layer                                   │
+│  get-shit-done/bin/gsd-tools.cjs  (CLI router)                   │
+│  [MODIFY: add 'debt' case + 'migrate' case to switch]            │
+├───────────────────────────────────────────────────────────────────┤
+│                    Module Layer (bin/lib/)                        │
+│  core.cjs  state.cjs  config.cjs  phase.cjs  roadmap.cjs        │
+│  milestone.cjs  verify.cjs  init.cjs  template.cjs  etc.        │
+│  [NEW] debt.cjs   [NEW] migrate.cjs                              │
+│  [MODIFY] roadmap.cjs (INTEGRATION-4)                            │
+│  [MODIFY] init.cjs (INTEGRATION-3)                               │
+├───────────────────────────────────────────────────────────────────┤
+│                   File-State Layer (.planning/)                   │
+│  STATE.md  ROADMAP.md  REQUIREMENTS.md  config.json  TO-DOS.md  │
+│  debug/  (existing)                                              │
+│  [NEW] DEBT.md   (per planningRoot — milestone-scoped aware)     │
+└───────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### Component Responsibilities
+## Component Responsibilities
 
-| Component | Current Responsibility | v2.0 Change | Confidence |
-|-----------|----------------------|-------------|------------|
-| `gsd-tools.cjs` CLI | Path resolution via hardcoded `.planning/` prefix | Add `--milestone <version>` flag; all path-generating functions accept optional milestone scope | HIGH |
-| `core.cjs: loadConfig` | Reads `.planning/config.json` | No change — config is project-scoped, not milestone-scoped | HIGH |
-| `core.cjs: findPhaseInternal` | Searches `.planning/phases/`, then `.planning/milestones/<v>-phases/` | Extend search to include `.planning/milestones/<v>/phases/` in new layout | HIGH |
-| `phase.cjs` | All paths hardcoded to `.planning/phases/` | Accept milestone-scoped phases dir as parameter | HIGH |
-| `milestone.cjs: cmdMilestoneComplete` | Archives to `.planning/milestones/` | No structural change; archives milestone workspace subfolder | MEDIUM |
-| `init.cjs` init commands | Return `.planning/` relative paths as strings | Return milestone-scoped paths when `--milestone` provided | HIGH |
-| `MILESTONES.md` | Append-only record of shipped milestones | Becomes live dashboard tracking active + archived milestones | HIGH |
-| `STATE.md` | Single file at `.planning/STATE.md` | Moved into milestone workspace: `.planning/milestones/v2.0/STATE.md` | HIGH |
-| `ROADMAP.md` | Single file at `.planning/ROADMAP.md` | Moved into milestone workspace: `.planning/milestones/v2.0/ROADMAP.md` | HIGH |
-| `conflict.json` | Does not exist | New file per milestone: declares files each milestone will touch | HIGH |
-| Workflow files (`new-milestone.md`, `plan-phase.md`, `execute-phase.md`) | Reference `.planning/` paths via init JSON | Receive milestone-scoped paths from init; no path strings hardcoded in workflows | MEDIUM |
-| Agent spec files (`gsd-executor.md`, etc.) | Receive paths via `<files_to_read>` from orchestrator | No change to agents — orchestrators pass correct paths | HIGH |
+### New Components (v3.0)
+
+| Component | Type | Responsibility |
+|-----------|------|----------------|
+| `DEBT.md` | File-state | Central hub of all logged tech debt entries. Structured Markdown, machine-readable. Lives at `planningRoot(cwd, milestoneScope)/DEBT.md` |
+| `debt.cjs` | Module | CLI operations: `debt log`, `debt list`, `debt resolve`. Reads/writes DEBT.md using regex-on-Markdown pattern matching existing codebase conventions |
+| `migrate.cjs` | Module | Inspects `.planning/` layout, applies migration rules to bring a project folder to current spec. One-shot idempotent operation |
+| `commands/gsd/fix-debt.md` | Command (skill) | Orchestrator skill for on-demand debt resolution via debugger-driven investigation loop |
+
+### Modified Components (v3.0)
+
+| Component | Change | Scope |
+|-----------|--------|-------|
+| `gsd-tools.cjs` | Add `debt` and `migrate` command cases to the main `switch` router | 2 new `case` blocks, ~20 lines each |
+| `agents/gsd-executor.md` | Add `<debt_logging>` instruction inside existing `<quality_sentinel>` post-task protocol | ~20-line additive section |
+| `agents/gsd-verifier.md` | Add debt-logging instruction for unresolvable gaps discovered during verification | ~15-line additive section |
+| `agents/gsd-debugger.md` | Add debt-logging instruction when root cause is a confirmed known-workaround | ~10-line additive section inside `fix_and_verify` step |
+| `get-shit-done/bin/lib/roadmap.cjs` | INTEGRATION-4 fix: add `milestoneScope` param to `cmdRoadmapGetPhase` and `cmdRoadmapAnalyze`, use `planningRoot()` for path | Lines ~10 and ~94 |
+| `get-shit-done/bin/lib/init.cjs` | INTEGRATION-3 fix: replace hardcoded `.planning/STATE.md` etc. with `planningRoot()`-derived paths in `cmdInitPlanPhase` | Lines ~138-140 |
+| `get-shit-done/bin/gsd-tools.cjs` | INTEGRATION-4 fix: pass `milestoneScope` to `roadmap.cmdRoadmapGetPhase` and `roadmap.cmdRoadmapAnalyze` | Lines ~436-438 |
 
 ---
 
-## Recommended Project Structure
-
-**Decision: `.planning/milestones/<version>/` as workspace root**
-
-Use `.planning/milestones/v2.0/` (not `.planning/v2.0/`). Rationale:
-
-1. The `.planning/milestones/` directory already exists — `cmdMilestoneComplete` creates it for archives (`v1.0-phases`, `v1.1-phases`). The new layout extends the same directory for active workspaces.
-2. `.planning/v2.0/` puts milestone folders directly in `.planning/` root, mixing milestone workspaces with project-wide files (`PROJECT.md`, `config.json`, `MILESTONES.md`). This creates ambiguity — tooling must distinguish `v2.0/` (milestone) from `phases/` (legacy) and `research/` (project-wide).
-3. `.planning/milestones/v2.0/` is unambiguous: anything under `milestones/` is milestone-scoped.
+## Recommended Project Structure (New Files Only)
 
 ```
-.planning/
-├── PROJECT.md                      # project-wide, unchanged
-├── config.json                     # project-wide settings, unchanged
-├── MILESTONES.md                   # REPURPOSED: live dashboard (was append-only log)
-│
-├── milestones/
-│   ├── v2.0/                       # ACTIVE milestone workspace (new)
-│   │   ├── STATE.md                # milestone-scoped state
-│   │   ├── ROADMAP.md              # milestone-scoped roadmap
-│   │   ├── REQUIREMENTS.md         # milestone-scoped requirements
-│   │   ├── conflict.json           # files this milestone will touch
-│   │   ├── research/               # milestone-scoped research
-│   │   │   ├── SUMMARY.md
-│   │   │   └── ARCHITECTURE.md
-│   │   └── phases/                 # milestone-scoped phases (numbered from 01)
-│   │       ├── 01-workspace-isolation/
-│   │       │   ├── 01-01-PLAN.md
-│   │       │   ├── 01-01-SUMMARY.md
-│   │       │   └── 01-RESEARCH.md
-│   │       └── 02-dashboard/
-│   │
-│   ├── v1.1-phases/                # EXISTING archive (unchanged)
-│   │   ├── 05-config-foundation/
-│   │   └── 06-commands-and-ux/
-│   └── v1.0-phases/                # EXISTING archive (unchanged)
-│       └── 01-foundation/
-│
-├── phases/                         # LEGACY: present only in old-style projects
-├── STATE.md                        # LEGACY: root-level only in old-style projects
-├── ROADMAP.md                      # LEGACY: root-level only in old-style projects
-└── REQUIREMENTS.md                 # LEGACY: root-level only in old-style projects
+get-shit-done/
+├── bin/
+│   ├── gsd-tools.cjs           # MODIFY: add debt + migrate command cases
+│   └── lib/
+│       ├── debt.cjs            # NEW: DEBT.md CRUD operations
+│       └── migrate.cjs         # NEW: .planning/ layout migration tool
+
+agents/
+├── gsd-executor.md             # MODIFY: add debt-log instruction post-task
+├── gsd-verifier.md             # MODIFY: add debt-log instruction for gaps
+└── gsd-debugger.md             # MODIFY: add debt-log instruction at fix step
+
+commands/gsd/
+└── fix-debt.md                 # NEW: /gsd:fix-debt orchestrator skill
+
+get-shit-done/templates/
+└── DEBT.md                     # NEW: template for debt hub (mirrors STATE.md template)
+
+tests/
+└── debt.test.cjs               # NEW: debt.cjs + migrate.cjs unit tests
 ```
 
-### Structure Rationale
-
-- **`milestones/<version>/` per workspace:** Each active milestone is fully self-contained. One session reads/writes its workspace; other sessions are in different directories. No file-level conflicts between concurrent milestones.
-- **`phases/` starts at `01-` per milestone:** Phase numbers are milestone-scoped. v2.0 has phases 01, 02, 03. v2.1 has phases 01, 02. No global phase counter. Rationale: the old global sequential scheme (`v1.0` ended at phase 4 → `v1.1` started at phase 5) only worked because milestones were sequential. Concurrent milestones cannot share a global counter.
-- **`conflict.json` per milestone:** Declares which source files a milestone intends to modify. Written at milestone-start by `new-milestone` workflow. Read by a conflict-detection step in `execute-phase` (warn if another active milestone declared the same file). Lock-free: no coordination required to read, no exclusive access needed to write (written once at milestone creation, then read-only).
-- **`MILESTONES.md` as live dashboard:** The existing file is append-only (shipped milestones only). Repurpose it as a structured dashboard tracking active milestones with their status, phase, and conflict manifest summary. The `milestone complete` command moves an entry from active to archived. This is the single file concurrent sessions may write — addressed in Git Coordination below.
+The `DEBT.md` file itself lives in the user's project at runtime (`.planning/DEBT.md` for legacy projects, `.planning/milestones/<version>/DEBT.md` for milestone-scoped projects). The template lives in the framework source tree and is used to initialize DEBT.md when it does not exist.
 
 ---
 
 ## Architectural Patterns
 
-### Pattern 1: `--milestone` Flag for Milestone-Scoped Path Resolution
+### Pattern 1: Module + CLI Router (Established — Follow Exactly)
 
-**What:** Add a `--milestone <version>` global flag to `gsd-tools.cjs`. When present, all path-generating functions prepend `.planning/milestones/<version>/` instead of `.planning/`.
+**What:** New capability = new `lib/*.cjs` module + new `case` in the `gsd-tools.cjs` `switch`. Never add business logic directly in the router.
 
-**When to use:** All commands invoked within a milestone-scoped workflow (`plan-phase`, `execute-phase`, `verify-phase`, `transition`, etc.) pass `--milestone v2.0`.
+**When to use:** Every new gsd-tools command follows this pattern. The entire lib/ directory demonstrates it: `state.cjs`, `config.cjs`, `roadmap.cjs`, `milestone.cjs`, `verify.cjs`, `init.cjs` all follow the same shape.
 
-**Why not environment variable or config key:** An `--env` variable would require the session to `export MILESTONE=v2.0` and persist that across subshell calls — fragile in Claude Code's stateless bash environment. A config key would require reading config before every path operation. A CLI flag is explicit, composable, and visible in every bash call in workflow files — making the scope obvious when reading workflow logs.
+**Trade-offs:** Slightly more boilerplate (export functions + wire in router), but enables unit testing of modules in isolation without spawning the CLI process. The existing test suite (8 test files, 232 passing) relies entirely on this boundary.
 
-**Implementation sketch (core.cjs):**
-
+**debt.cjs pattern:**
 ```javascript
-// In gsd-tools.cjs main():
-const msIdx = args.indexOf('--milestone');
-let milestoneScope = null;
-if (msIdx !== -1) {
-  milestoneScope = args[msIdx + 1];
-  args.splice(msIdx, 2);
+// get-shit-done/bin/lib/debt.cjs
+const fs = require('fs');
+const path = require('path');
+const { output, error, planningRoot } = require('./core.cjs');
+
+function cmdDebtLog(cwd, milestoneScope, opts, raw) {
+  const root = planningRoot(cwd, milestoneScope);
+  const debtPath = path.join(root, 'DEBT.md');
+  // append structured entry, output { logged: true, id: 'DEBT-007' }
 }
 
-// Threading milestone scope into path-generating functions:
-function planningRoot(cwd, milestoneScope) {
-  if (milestoneScope) {
-    return path.join(cwd, '.planning', 'milestones', milestoneScope);
+function cmdDebtList(cwd, milestoneScope, opts, raw) { /* ... */ }
+function cmdDebtResolve(cwd, milestoneScope, id, opts, raw) { /* ... */ }
+
+module.exports = { cmdDebtLog, cmdDebtList, cmdDebtResolve };
+```
+
+**Router wiring (gsd-tools.cjs):**
+```javascript
+case 'debt': {
+  const debt = require('./lib/debt.cjs');
+  const subcommand = args[1];
+  if (subcommand === 'log') {
+    const descIdx = args.indexOf('--description');
+    const sevIdx = args.indexOf('--severity');
+    const catIdx = args.indexOf('--category');
+    const srcIdx = args.indexOf('--source');
+    debt.cmdDebtLog(cwd, milestoneScope, {
+      description: descIdx !== -1 ? args[descIdx + 1] : null,
+      severity: sevIdx !== -1 ? args[sevIdx + 1] : 'medium',
+      category: catIdx !== -1 ? args[catIdx + 1] : 'implementation',
+      source: srcIdx !== -1 ? args[srcIdx + 1] : null,
+    }, raw);
+  } else if (subcommand === 'list') {
+    const statusIdx = args.indexOf('--status');
+    debt.cmdDebtList(cwd, milestoneScope, {
+      status: statusIdx !== -1 ? args[statusIdx + 1] : 'open',
+    }, raw);
+  } else if (subcommand === 'resolve') {
+    const debtId = args[2];
+    const commitIdx = args.indexOf('--commit');
+    debt.cmdDebtResolve(cwd, milestoneScope, debtId, {
+      commit: commitIdx !== -1 ? args[commitIdx + 1] : null,
+    }, raw);
+  } else {
+    error('Unknown debt subcommand. Available: log, list, resolve');
   }
-  return path.join(cwd, '.planning');
+  break;
 }
-
-// All functions that currently hardcode `.planning/` call planningRoot() instead:
-// const phasesDir = path.join(cwd, '.planning', 'phases');
-// becomes:
-// const phasesDir = path.join(planningRoot(cwd, milestoneScope), 'phases');
 ```
 
-**Trade-offs:**
-- All workflow files must pass `--milestone $MILESTONE_VERSION` in every tool call
-- Adds one CLI flag to every bash command in workflows
-- No runtime surprises — scope is always explicit in the bash log
+### Pattern 2: planningRoot() for All File Paths (Non-Negotiable)
 
-**What does NOT need the flag:** `config-get`, `config-set`, `commit`, `resolve-model`, `websearch` — these are project-wide operations, not milestone-scoped.
+**What:** Every path to a `.planning/` file must go through `planningRoot(cwd, milestoneScope)`. No hardcoded `.planning/` strings in new code.
 
----
+**When to use:** Always. In every new module. The existing INTEGRATION-3 and INTEGRATION-4 bugs are direct consequences of violating this pattern. Adding a third violation in v3.0 would be a regression.
 
-### Pattern 2: Compatibility Detection via Sentinel Files
+**Trade-offs:** None. This is a correctness requirement. Hardcoded paths silently read the wrong file for milestone-scoped projects.
 
-**What:** Detect old-style vs. new-style projects by checking for the presence of sentinel structures.
-
-**Detection logic:**
-
+**Example:**
 ```javascript
-function detectLayoutStyle(cwd) {
-  const hasOldPhases = fs.existsSync(path.join(cwd, '.planning', 'phases'));
-  const hasMilestoneWorkspaces = (() => {
-    const msDir = path.join(cwd, '.planning', 'milestones');
-    if (!fs.existsSync(msDir)) return false;
-    // Check for at least one active workspace (has STATE.md inside)
-    const entries = fs.readdirSync(msDir, { withFileTypes: true });
-    return entries.some(e => {
-      if (!e.isDirectory()) return false;
-      // Active workspace has STATE.md; archive dirs (v1.0-phases) do not
-      return fs.existsSync(path.join(msDir, e.name, 'STATE.md'));
-    });
-  })();
+// CORRECT
+const root = planningRoot(cwd, milestoneScope);
+const debtPath = path.join(root, 'DEBT.md');
 
-  if (hasMilestoneWorkspaces) return 'milestone-scoped';
-  if (hasOldPhases) return 'legacy';
-  return 'uninitialized';
-}
+// WRONG — silently breaks milestone-scoped projects
+const debtPath = path.join(cwd, '.planning', 'DEBT.md');
 ```
 
-**Compatibility rules:**
-- `legacy` style: all tools use root `.planning/` layout (current behavior, unchanged)
-- `milestone-scoped` style: tools require `--milestone <version>` for phase/state operations
-- `uninitialized`: `new-project` workflow handles setup
+### Pattern 3: Agent Instruction Injection (Additive, Section-Tagged)
 
-**Where this runs:** In `cmdInitNewMilestone` and `cmdInitPlanPhase` — the two places where the workflow needs to know what layout it's working in. The result goes into the init JSON so workflows can branch on it.
+**What:** Modifications to agent `.md` files are added as new XML-tagged sections appended to existing named sections. Never replace existing content — only add.
 
-**Critical constraint:** The gsdup project itself is currently `legacy` style (has `.planning/phases/` — though phases were archived). Migrating to `milestone-scoped` is a deliberate choice, not automatic. The compatibility layer ensures v1.x projects continue working unchanged.
+**When to use:** Wiring executor, verifier, and debugger agents to emit debt log calls.
 
----
+**Trade-offs:** Each new section costs context tokens on every agent spawn. Keep additions minimal (under 25 lines each). Use conditional phrasing ("only log when a shortcut was taken") to prevent noise.
 
-### Pattern 3: Lock-Free Dashboard via Structured MILESTONES.md
-
-**What:** `MILESTONES.md` becomes the central dashboard. Concurrent sessions write to it only on milestone state transitions (start, phase complete, milestone complete). Format uses a structured section per milestone that can be pattern-replaced atomically.
-
-**Why lock-free:** Claude Code sessions cannot coordinate via advisory file locks — there is no shared lock server. The solution is to minimize write frequency (transitions only, not every plan) and use last-write-wins semantics acceptable for this use case. Two sessions updating their own milestone sections simultaneously would produce a merge conflict in git — handled by rebase strategy.
-
-**Dashboard format:**
-
-```markdown
-# GSD Milestones
-
-## Active
-
-### v2.0 Concurrent Milestones
-**Status:** Phase 02 / 04 — executing
-**Session:** [session-id or hostname, optional]
-**Started:** 2026-02-24
-**Files declared:** bin/gsd-tools.cjs, bin/lib/core.cjs, bin/lib/phase.cjs (see conflict.json)
-**Last updated:** 2026-02-24
-
-### v2.1 Agent Teams
-**Status:** Phase 01 / 03 — planning
-**Started:** 2026-02-24
-**Files declared:** agents/gsd-executor.md, agents/gsd-planner.md
-**Last updated:** 2026-02-24
-
-## Shipped
-
-### v1.1 Quality UX (Shipped: 2026-02-24)
-**Phases completed:** 3 phases, 5 plans, 12 tasks
-...
-```
-
-**Update protocol:**
-1. At milestone start: append new `### v2.0` section under `## Active`
-2. At phase complete: pattern-replace the `**Status:**` line for that milestone section
-3. At milestone complete: move section from `## Active` to `## Shipped`, update format
-
-**Merge conflict resolution:** If two sessions update MILESTONES.md simultaneously, git will flag a conflict on the `**Status:**` lines. The resolution is simple: accept both updates (each session's section is independent). The `gsd-tools.cjs commit` function already handles `nothing_to_commit` gracefully. Recommendation: rebase strategy for the planning branch, not merge.
-
----
-
-### Pattern 4: Conflict Manifest (conflict.json)
-
-**What:** At milestone creation, the `new-milestone` workflow prompts the user (or infers from requirements) which source files the milestone will touch. This is written to `.planning/milestones/<version>/conflict.json`.
-
-**Format:**
-
-```json
-{
-  "version": "v2.0",
-  "declared": [
-    "bin/gsd-tools.cjs",
-    "bin/lib/core.cjs",
-    "bin/lib/phase.cjs",
-    "bin/lib/init.cjs",
-    "bin/lib/milestone.cjs"
-  ],
-  "declared_at": "2026-02-24",
-  "note": "All gsd-tools modules — concurrent milestone path resolution"
-}
-```
-
-**Conflict detection in execute-phase:**
+**Example (executor debt logging addition):**
+```xml
+<debt_logging>
+After completing any task where a known shortcut, workaround, or incomplete
+solution was applied, log it before committing:
 
 ```bash
-# At execute-phase start, check for conflicts with other active milestones
-OTHER_MILESTONES=$(ls .planning/milestones/ | grep -E "^v[0-9]" | grep -v "$(cat .planning/milestones/$MILESTONE/current-version.txt)" | grep -v ".*-phases$")
-
-for other in $OTHER_MILESTONES; do
-  # Skip if no conflict.json (old-style archive)
-  [ ! -f ".planning/milestones/$other/conflict.json" ] && continue
-
-  CONFLICTS=$(node gsd-tools.cjs conflict-check \
-    --a ".planning/milestones/$MILESTONE/conflict.json" \
-    --b ".planning/milestones/$other/conflict.json")
-
-  if [ -n "$CONFLICTS" ]; then
-    echo "WARNING: Overlapping files with milestone $other: $CONFLICTS"
-    echo "Consider sequencing these milestones or splitting the conflicting work."
-  fi
-done
+node ~/.claude/get-shit-done/bin/gsd-tools.cjs debt log \
+  --description "brief description of the shortcut or gap" \
+  --severity medium \
+  --category implementation \
+  --source "phase-${PHASE_NUMBER} plan-${PLAN_NUMBER}"
 ```
 
-**Conflict response is advisory, not blocking.** Two milestones touching the same file is allowed — both owners know about the overlap and can coordinate manually. GSD is a human-assisted system, not an automated CI pipeline.
+Only log when actual debt exists. Do not log for clean implementations.
+</debt_logging>
+```
 
+### Pattern 4: Command Skill as Lean Orchestrator (Follow /gsd:debug Pattern)
+
+**What:** `/gsd:fix-debt` is a command file in `commands/gsd/fix-debt.md` that acts as a lean orchestrator — reads DEBT.md entries, presents options, spawns `gsd-debugger` with debt context, handles the return, marks debt resolved.
+
+**When to use:** Any on-demand user-facing skill that requires an investigate-fix cycle. The `commands/gsd/debug.md` file is the canonical model: 160 lines, purely orchestration, zero code changes, spawns Task() for all real work.
+
+**Trade-offs:** Adds a new slash-command entry point. Overhead is minimal since orchestrators stay at 10-15% context (the established GSD principle).
+
+**fix-debt.md structure:**
+```markdown
+---
+name: gsd:fix-debt
+description: Investigate and resolve tracked tech debt items
+argument-hint: [debt-id or description]
+allowed-tools:
+  - Read
+  - Bash
+  - Task
+  - AskUserQuestion
 ---
 
-### Pattern 5: Phase Numbering Reset per Milestone
+<process>
+## 1. Load Debt Registry
+node gsd-tools.cjs debt list --status open
 
-**What:** Phase directories inside a milestone workspace start at `01-` regardless of global phase history. No cross-milestone phase counter.
+## 2. Select Target
+If $ARGUMENTS matches a DEBT-NNN ID: use it directly.
+Else if $ARGUMENTS is text: find matching entry by description.
+Else: display open items, ask user to pick via AskUserQuestion.
 
-**Why:** The current global counter (v1.0 ends at 4, v1.1 starts at 5) only worked because milestones executed sequentially. With concurrent milestones, there is no meaningful global sequence. Phase numbers are only meaningful within a milestone (`v2.0/phases/01-` is not the same as `v1.0/phases/01-`).
+## 3. Spawn gsd-debugger
+Pass debt entry as investigation context with symptoms_prefilled: true.
+goal: find_and_fix
 
-**Phase reference format:** When a workflow or commit message references a phase, it should be `v2.0/01` or `v2.0/phase-01` — not bare `01`. The phase directory path already provides this context since it lives under `milestones/v2.0/phases/`.
+## 4. Handle Return
+On DEBUG COMPLETE: node gsd-tools.cjs debt resolve DEBT-NNN --commit <hash>
+On ROOT CAUSE FOUND (no fix): present to user, offer plan-phase --gaps
+On CHECKPOINT REACHED: spawn continuation agent (same as debug.md pattern)
+</process>
+```
 
-**Impact on `phase complete` and `cmdPhaseComplete`:** The function currently finds "next phase" by scanning `.planning/phases/`. In milestone-scoped mode, it scans `.planning/milestones/<version>/phases/`. Phase completion updates the milestone-scoped `STATE.md` and `ROADMAP.md`, not the root files.
+### Pattern 5: Regex-on-Markdown for File Operations (Established — Match Existing Code)
 
-**Impact on `findPhaseInternal`:** The archive search loop (`v[\d.]+-phases` directories) already exists. Add a parallel search for active milestone workspaces: look in `milestones/*/phases/` for directories matching `STATE.md` present (active) vs. absent (archived via old format).
+**What:** DEBT.md is read and written using regex pattern matching on Markdown content. No YAML frontmatter, no JSON, no AST parsing.
+
+**When to use:** All file operations in `debt.cjs`. This matches how `roadmap.cjs`, `state.cjs`, and `milestone.cjs` all operate on their respective Markdown files.
+
+**Trade-offs:** Less structured than JSON/YAML but consistent with the whole codebase. Regex-on-Markdown is maintainable as long as the file structure is stable (which it is — DEBT.md has a defined schema).
+
+**Example:**
+```javascript
+// Read open entries: match ### DEBT-NNN headers in ## Open section
+const openSectionMatch = content.match(/## Open\n([\s\S]*?)(?=## Resolved|$)/);
+const entryPattern = /### (DEBT-\d+)\n([\s\S]*?)(?=### DEBT-|\n## |$)/g;
+
+// Append new entry (same pattern as state.cjs adding blockers)
+const newEntry = `### ${newId}\n- **Description:** ${opts.description}\n...`;
+const updatedContent = content.replace(
+  /## Open\n/,
+  `## Open\n\n${newEntry}\n`
+);
+```
 
 ---
 
 ## Data Flow
 
-### Milestone-Scoped Request Flow
+### Debt Logging Flow (Executor Path)
 
 ```
-User invokes: /gsd:plan-phase 01 --milestone v2.0
+gsd-executor agent executes task
+    |
+    ↓ (shortcut or workaround applied)
+agent runs: node gsd-tools.cjs debt log --description "..." --severity medium --source "phase-3 plan-2"
+    |
     ↓
-Orchestrator (plan-phase.md):
-  INIT=$(node gsd-tools.cjs init plan-phase 01 --milestone v2.0)
-  # Returns milestone-scoped paths:
-  # phase_dir: ".planning/milestones/v2.0/phases/01-workspace-isolation"
-  # state_path: ".planning/milestones/v2.0/STATE.md"
-  # roadmap_path: ".planning/milestones/v2.0/ROADMAP.md"
+CLI router → debt.cjs:cmdDebtLog(cwd, milestoneScope, opts, raw)
+    |
+    ↓ resolves path via planningRoot(cwd, milestoneScope)
+DEBT.md ← appends structured entry with sequential ID, timestamp, source, severity
+    |
     ↓
-Orchestrator passes scoped paths to subagents via <files_to_read>
-    ↓
-Subagents (planner, researcher) read from milestone workspace
-    ↓
-Subagents write to milestone workspace (via paths from init)
-    ↓
-Commit touches only .planning/milestones/v2.0/ files (isolated)
+output({ logged: true, id: "DEBT-007" }) printed to stdout
+agent sees confirmation, proceeds to commit
 ```
 
-### Compatibility Detection Flow
+### Debt Resolution Flow (/gsd:fix-debt Path)
 
 ```
-User invokes: /gsd:plan-phase 5
+User: /gsd:fix-debt DEBT-007
+    |
     ↓
-gsd-tools.cjs init plan-phase 5  (no --milestone flag)
-    ↓
-detectLayoutStyle(cwd):
-  → checks .planning/phases/ exists AND no active milestone workspaces
-  → returns 'legacy'
-    ↓
-init plan-phase returns legacy paths:
-  phase_dir: ".planning/phases/05-config-foundation"
-  state_path: ".planning/STATE.md"
-  roadmap_path: ".planning/ROADMAP.md"
-    ↓
-Orchestrator proceeds with existing behavior (zero change)
+commands/gsd/fix-debt.md (orchestrator)
+    |
+    ↓ node gsd-tools.cjs debt list --status open
+DEBT.md → structured list of open entries printed
+    |
+    ↓ orchestrator selects DEBT-007, constructs debugger prompt
+    ↓ spawns Task(subagent_type="gsd-debugger", symptoms_prefilled=true)
+gsd-debugger agent investigates, applies fix, returns DEBUG COMPLETE
+    |
+    ↓ orchestrator receives DEBUG COMPLETE with commit hash
+    ↓ node gsd-tools.cjs debt resolve DEBT-007 --commit abc1234
+DEBT.md ← entry moved to ## Resolved section, timestamp + commit recorded
 ```
 
-### Conflict Detection Flow
+### Migration Flow
 
 ```
-Session A starts execute-phase for v2.0:
-  reads .planning/milestones/v2.0/conflict.json → ["bin/gsd-tools.cjs", ...]
-  reads all other active milestone conflict.jsons
-  cross-references → finds v2.1 also declared "agents/gsd-executor.md"
-  WARN: "v2.1 also touches agents/gsd-executor.md — coordinate before merging"
-  Execution continues (advisory only)
+User runs: node gsd-tools.cjs migrate [--dry-run]
+    |
     ↓
-Session A commits to git
-    ↓
-Session B (v2.1) later merges → git conflict on gsd-executor.md
-  Developer resolves manually
-  Conflict.json warned about this in advance
+CLI router → migrate.cjs:cmdMigrate(cwd, { dryRun }, raw)
+    |
+    ├─ detectLayoutStyle(cwd) → 'legacy' | 'milestone-scoped' | 'uninitialized'
+    ├─ reads .planning/ directory structure
+    ├─ checks each migration condition (idempotent — skip if already satisfied):
+    │   ├─ config.json has quality block? if not → add it (reuse config.cjs logic)
+    │   ├─ config.json has context7_token_cap? if not → add it
+    │   ├─ DEBT.md exists at planningRoot? if not → create from template
+    │   └─ (future conditions as spec evolves)
+    |
+    ↓ dry-run: reports what would change without writing
+    ↓ normal: applies changes, reports what was done
+output({ migrated: true, changes: [...] }, raw, summary_string)
 ```
 
-### Dashboard Update Flow
+### INTEGRATION-3 Fix Data Flow
 
 ```
-Session A completes phase 01 of v2.0:
-  node gsd-tools.cjs milestone-dashboard update \
-    --milestone v2.0 --status "Phase 02 / 04 — planning"
-    ↓
-  Reads MILESTONES.md
-  Pattern-replaces **Status:** line for v2.0 section
-  Writes MILESTONES.md
-  node gsd-tools.cjs commit "docs(v2.0): phase 01 complete" \
-    --files .planning/MILESTONES.md .planning/milestones/v2.0/STATE.md
+cmdInitPlanPhase(cwd, phase, raw, milestoneScope)
+    |
+    ↓ [BEFORE FIX]: returns hardcoded strings
+    │   state_path: '.planning/STATE.md'           ← always root, ignores milestone
+    │   roadmap_path: '.planning/ROADMAP.md'       ← always root, ignores milestone
+    │   requirements_path: '.planning/REQUIREMENTS.md'
+    |
+    ↓ [AFTER FIX]:
+    const root = planningRoot(cwd, milestoneScope);
+    state_path = path.relative(cwd, path.join(root, 'STATE.md'))
+    roadmap_path = path.relative(cwd, path.join(root, 'ROADMAP.md'))
+    requirements_path = path.relative(cwd, path.join(root, 'REQUIREMENTS.md'))
+    └─ for legacy: '.planning/STATE.md' (same as before — backward compatible)
+    └─ for milestone-scoped: '.planning/milestones/v3.0/STATE.md' (correct)
 ```
+
+### INTEGRATION-4 Fix Data Flow
+
+```
+gsd-tools.cjs router receives: roadmap get-phase 3 --milestone v3.0
+    |
+    ↓ [BEFORE FIX]: milestoneScope parsed but never passed to roadmap module
+    │   roadmap.cmdRoadmapGetPhase(cwd, args[2], raw)  ← drops milestoneScope
+    │   inside cmdRoadmapGetPhase: hardcodes '.planning/ROADMAP.md'
+    │   reads WRONG file for milestone-scoped projects
+    |
+    ↓ [AFTER FIX]:
+    roadmap.cmdRoadmapGetPhase(cwd, args[2], raw, milestoneScope)  ← pass it
+    inside cmdRoadmapGetPhase:
+      const roadmapPath = path.join(planningRoot(cwd, milestoneScope), 'ROADMAP.md')
+    └─ reads correct file for both legacy and milestone-scoped projects
+```
+
+---
+
+## DEBT.md Schema
+
+The central hub is structured Markdown with two required anchor sections and a consistent entry format:
+
+```markdown
+# Tech Debt Registry
+
+<!-- Entries managed by gsd-tools debt commands. ID sequence is append-only. -->
+
+## Open
+
+### DEBT-001
+- **Description:** Auth token refresh hand-rolled instead of using jose library
+- **Severity:** medium
+- **Category:** implementation
+- **Source:** phase-3 plan-2 task-1
+- **Logged:** 2026-02-25T14:30:00Z
+- **Status:** open
+
+## Resolved
+
+### DEBT-002
+- **Description:** Hardcoded timeout of 5000ms, should come from config
+- **Severity:** low
+- **Category:** configuration
+- **Source:** phase-2 plan-1 task-3
+- **Logged:** 2026-02-20T09:00:00Z
+- **Resolved:** 2026-02-25T16:45:00Z
+- **Commit:** abc1234
+- **Status:** resolved
+```
+
+**Design decisions:**
+- IDs are sequential (`DEBT-001`, `DEBT-002`) — human-readable and stable as CLI arguments
+- `planningRoot(cwd, milestoneScope)` determines file location — milestone-scoped projects get per-milestone debt registries (debt is scoped to where it was introduced)
+- `## Open` and `## Resolved` are required anchors for the CLI parser
+- Machine-parseable via regex on `### DEBT-NNN` headers and `- **Key:** value` lines — no YAML frontmatter needed, consistent with how `state.cjs` and `roadmap.cjs` operate
+- `resolve` moves entry from `## Open` to `## Resolved` (append to resolved section, remove from open section)
 
 ---
 
 ## Integration Points
 
-### New vs. Modified Components
+### Internal Module Boundaries
 
-| Component | New or Modified | What Changes |
-|-----------|----------------|--------------|
-| `core.cjs: planningRoot()` | NEW helper function | Central function returning `.planning/` or `.planning/milestones/<v>/` based on milestone scope |
-| `core.cjs: detectLayoutStyle()` | NEW helper function | Returns `legacy`, `milestone-scoped`, or `uninitialized` |
-| `core.cjs: findPhaseInternal()` | MODIFIED | Add search in active milestone workspaces (`milestones/*/phases/` with STATE.md) |
-| `core.cjs: getArchivedPhaseDirs()` | MODIFIED | Existing `v*-phases` pattern unchanged; also include active workspaces in appropriate contexts |
-| `core.cjs: getMilestoneInfo()` | MODIFIED | Read from milestone-scoped ROADMAP.md when milestone scope provided |
-| `phase.cjs: all functions` | MODIFIED | Accept `phasesDir` param instead of computing it internally; callers pass `planningRoot/phases` |
-| `milestone.cjs: cmdMilestoneComplete()` | MODIFIED | Archive entire milestone workspace folder; update MILESTONES.md dashboard section |
-| `init.cjs: all cmdInit* functions` | MODIFIED | Accept milestone scope; return milestone-scoped paths |
-| `commands.cjs: cmdCommit()` | NO CHANGE | Commit is project-wide (operates on git root, not .planning) |
-| `commands.cjs: new cmdConflictCheck()` | NEW | Compare two conflict.json files, return overlapping file paths |
-| `commands.cjs: new cmdMilestoneDashboard()` | NEW | Update MILESTONES.md structured section for a milestone |
-| `config.cjs` | NO CHANGE | Config is project-wide, milestone-agnostic |
-| `roadmap.cjs` | MODIFIED | Path resolution via planningRoot; milestone-scoped ROADMAP.md |
-| `state.cjs` | MODIFIED | Path resolution via planningRoot; milestone-scoped STATE.md |
-| `gsd-tools.cjs` (CLI router) | MODIFIED | Parse `--milestone` global flag; thread scope into all command calls |
-| `MILESTONES.md` template | MODIFIED | Structured dashboard format replacing append-only log |
-| `new-milestone.md` workflow | MODIFIED | Create milestone workspace dir; write conflict.json; update MILESTONES.md dashboard |
-| `plan-phase.md` workflow | MODIFIED | Pass `--milestone` to all tool calls; detect layout style from init |
-| `execute-phase.md` workflow | MODIFIED | Conflict check at start; pass `--milestone` to all tool calls |
-| Agent specs (`gsd-executor.md`, etc.) | NO CHANGE | Agents receive paths from orchestrators; no hardcoded `.planning/` references |
+| Boundary | Communication | Notes |
+|----------|---------------|-------|
+| `gsd-tools.cjs` → `debt.cjs` | `require('./lib/debt.cjs')` | Same require pattern as all other lib modules |
+| `gsd-tools.cjs` → `migrate.cjs` | `require('./lib/migrate.cjs')` | Same require pattern |
+| `debt.cjs` → `core.cjs` | Imports `planningRoot`, `output`, `error` | Standard dependency on core utilities |
+| `migrate.cjs` → `core.cjs` | Imports `planningRoot`, `detectLayoutStyle`, `loadConfig` | Standard dependency |
+| `migrate.cjs` → `config.cjs` | Calls `cmdConfigEnsureSection` logic or imports its helpers | Reuse existing migration logic for quality block |
+| `gsd-executor.md` → CLI | `node gsd-tools.cjs debt log ...` (bash subprocess call) | Same pattern as existing `state update`, `verify-summary` calls |
+| `gsd-verifier.md` → CLI | `node gsd-tools.cjs debt log ...` (bash subprocess call) | Same pattern |
+| `gsd-debugger.md` → CLI | `node gsd-tools.cjs debt log ...` (bash subprocess call) | Same pattern |
+| `fix-debt.md` → CLI | `node gsd-tools.cjs debt list`, `debt resolve` (bash calls) | Same pattern as `debug.md` uses `state load` |
+| `fix-debt.md` → `gsd-debugger` | `Task(subagent_type="gsd-debugger", ...)` | Identical to `commands/gsd/debug.md` spawn pattern |
 
-### Build Order (Dependency-Ordered)
+### Agent Wiring Integration Points
 
-Build phases for v2.0 should follow this dependency order:
+| Agent | Where to Wire | What to Add | Condition |
+|-------|---------------|-------------|-----------|
+| `gsd-executor.md` | Inside `<quality_sentinel>` post-task section | `<debt_logging>` section with bash call | "Only log when a shortcut was taken" |
+| `gsd-verifier.md` | After gap discovery in verification process | Instruction to log unresolvable gaps | "Log if gap cannot be fixed in this phase" |
+| `gsd-debugger.md` | In `fix_and_verify` step, before `archive_session` | Instruction to log if fix is a known workaround | "Log if fix is temporary or incomplete" |
 
-**Phase 1: Core path resolution (unblocks everything)**
+### INTEGRATION-3 Fix — Exact Touch Points
 
-Add `planningRoot()` helper and `--milestone` flag parsing to `gsd-tools.cjs` and `core.cjs`. Refactor all path-computing functions in `phase.cjs`, `state.cjs`, `roadmap.cjs` to call `planningRoot()`. No behavior change when `--milestone` not provided (backward compatible by design).
+| File | Line Range | Change |
+|------|-----------|--------|
+| `get-shit-done/bin/lib/init.cjs` | ~138-140 | Replace hardcoded `'.planning/STATE.md'` etc. with `path.relative(cwd, path.join(root, 'STATE.md'))` where `root = planningRoot(cwd, milestoneScope)` |
+| Note | | `planning_root` is already computed at line ~144; refactor to compute it earlier and reuse |
 
-Deliverable: `gsd-tools.cjs init plan-phase 1 --milestone v2.0` returns milestone-scoped paths.
+### INTEGRATION-4 Fix — Exact Touch Points
 
-**Phase 2: Milestone workspace initialization (depends on Phase 1)**
+| File | Lines | Change |
+|------|-------|--------|
+| `get-shit-done/bin/lib/roadmap.cjs` | ~10 | Add `milestoneScope` param to `cmdRoadmapGetPhase`; replace hardcoded `'.planning/ROADMAP.md'` with `path.join(planningRoot(cwd, milestoneScope), 'ROADMAP.md')` |
+| `get-shit-done/bin/lib/roadmap.cjs` | ~94 | Add `milestoneScope` param to `cmdRoadmapAnalyze`; same path fix |
+| `get-shit-done/bin/gsd-tools.cjs` | ~436 | Update `roadmap get-phase` dispatch: pass `milestoneScope` as 4th arg |
+| `get-shit-done/bin/gsd-tools.cjs` | ~438 | Update `roadmap analyze` dispatch: pass `milestoneScope` as 3rd arg |
 
-Modify `new-milestone.md` workflow and `cmdMilestoneComplete` to create workspace directories, write `conflict.json`, initialize `MILESTONES.md` dashboard format. Add `cmdConflictCheck` to commands.cjs.
+---
 
-Deliverable: `/gsd:new-milestone` creates `.planning/milestones/v2.0/` with correct structure.
+## Build Order (Dependency Graph)
 
-**Phase 3: Dashboard and conflict detection (depends on Phase 2)**
+Dependencies flow strictly downward. Build in this order:
 
-Add `cmdMilestoneDashboard` command. Update `execute-phase.md` with conflict check step. Write MILESTONES.md dashboard read/write logic. Test concurrent dashboard updates.
+```
+Phase 1: Integration Fixes (no deps on v3.0 code, unblocks milestone-scoped testing)
+    INTEGRATION-3: init.cjs cmdInitPlanPhase path fix
+    INTEGRATION-4: roadmap.cjs milestoneScope param + gsd-tools.cjs router fix
+    Tests: update routing.test.cjs and init.test.cjs for milestone-scoped correctness
+    ↓
+Phase 2: Core Debt Module (depends on core.cjs only)
+    get-shit-done/templates/DEBT.md (template file)
+    get-shit-done/bin/lib/debt.cjs (cmdDebtLog, cmdDebtList, cmdDebtResolve)
+    gsd-tools.cjs 'debt' case wiring
+    tests/debt.test.cjs (debt.cjs unit tests)
+    ↓
+Phase 3: Migration Tool (depends on config.cjs + core.cjs)
+    get-shit-done/bin/lib/migrate.cjs (cmdMigrate with --dry-run flag)
+    gsd-tools.cjs 'migrate' case wiring
+    tests/debt.test.cjs or separate migrate.test.cjs
+    ↓
+Phase 4: Agent Wiring (depends on debt.cjs CLI being available and tested)
+    agents/gsd-executor.md: add <debt_logging> section
+    agents/gsd-verifier.md: add debt logging instruction
+    agents/gsd-debugger.md: add debt logging at fix step
+    ↓
+Phase 5: /gsd:fix-debt Skill (depends on debt.cjs + debugger wiring)
+    commands/gsd/fix-debt.md (orchestrator skill)
+```
 
-Deliverable: Two active milestone workspaces show correctly in `/gsd:progress`; conflict warning fires when manifests overlap.
-
-**Phase 4: Compatibility layer and legacy detection (depends on Phase 1)**
-
-Add `detectLayoutStyle()` to core.cjs. Update `init` commands to return `layout_style` field. Update workflows to branch on `layout_style`. Test: existing projects (legacy layout) get zero behavior change.
-
-Deliverable: Running `/gsd:plan-phase 5` on the gsdup project (which has archived phases in `milestones/v1.1-phases/`) still works unchanged.
-
-**Phase 5: Routing updates — all commands and workflows (depends on Phases 1-4)**
-
-Audit every workflow file and command for hardcoded `.planning/` path strings. Replace with milestone-scoped equivalents where needed. Update `progress.md`, `complete-milestone.md`, `health.md`, `resume-project.md`.
-
-Deliverable: All existing `/gsd:*` commands work with `--milestone` flag.
-
-**Phase 6: Test coverage (depends on Phases 1-5)**
-
-Add test cases for: milestone-scoped path resolution, compatibility detection, conflict check, phase numbering within milestone workspace, MILESTONES.md dashboard update. Target: 90%+ branch coverage of new functions in core.cjs and commands.cjs.
+**Rationale:**
+- Integration fixes first because they unblock correct behavior for all subsequent milestone-scoped testing. Debt.cjs itself needs `planningRoot()` to work correctly for milestone-scoped projects, which requires INTEGRATION-4's roadmap fix to be testable end-to-end.
+- `debt.cjs` before agent wiring: agents call the CLI subprocess, so the CLI command must exist and be tested before agents invoke it.
+- Migration tool before agent wiring: `migrate.cjs` can be tested in complete isolation; no dependency on agents.
+- Agent wiring before `/gsd:fix-debt`: the skill reads DEBT.md entries that agents write; the write path must exist first.
+- `/gsd:fix-debt` last: pure orchestrator, all its dependencies (debt CLI + debugger agent) must exist first.
 
 ---
 
 ## Anti-Patterns
 
-### Anti-Pattern 1: Global Phase Counter for Concurrent Milestones
+### Anti-Pattern 1: Hardcoded `.planning/` Paths in New Modules
 
-**What people do:** Continue the global sequential phase number (v1.1 ended at 7, v2.0 starts at 8, v2.1 starts at 11, etc.) across concurrent milestones.
+**What people do:** `path.join(cwd, '.planning', 'DEBT.md')` in new module code.
 
-**Why it's wrong:** Concurrent milestones have no determined start order. If v2.0 starts at 8 and v2.1 starts at 11, what happens when v2.1 finishes first? Global renumbering breaks cross-references. Phase numbers become meaningless as global identifiers.
+**Why it's wrong:** Silently reads the wrong file for milestone-scoped projects. INTEGRATION-3 and INTEGRATION-4 exist because of exactly this mistake in previously-written code. Adding a third instance in v3.0 would be a direct regression of the v2.0 architecture contract.
 
-**Do this instead:** Phase numbers are milestone-local, starting at `01`. Reference phases as `v2.0/01` in cross-milestone contexts. The `phases/` directory path provides unambiguous location.
+**Do this instead:** `const root = planningRoot(cwd, milestoneScope); const debtPath = path.join(root, 'DEBT.md');`
 
----
+### Anti-Pattern 2: Business Logic in the CLI Router
 
-### Anti-Pattern 2: Shared STATE.md for Concurrent Milestones
+**What people do:** Put file I/O, parsing logic, or computation inside the `case 'debt':` block in `gsd-tools.cjs`.
 
-**What people do:** Keep STATE.md at `.planning/STATE.md` and add a "current milestone" field to multiplex milestones through it.
+**Why it's wrong:** The router cannot be unit-tested without spawning a child process. The entire test suite (8 files, 232 tests) relies on testing module functions directly via `require('../get-shit-done/bin/lib/debt.cjs')`. Logic in the router bypasses this test boundary.
 
-**Why it's wrong:** `STATE.md` tracks current phase, current plan, last activity, and blockers. These are all session-specific. Two sessions writing to the same STATE.md will produce interleaved, incoherent state. The current `cmdPhaseComplete` writes to STATE.md to advance the current phase pointer — two sessions doing this concurrently will corrupt the "current phase" field.
+**Do this instead:** All logic in `lib/debt.cjs`. Router only parses flags and calls module functions. Target: 10-15 lines per case in the router.
 
-**Do this instead:** Each milestone workspace owns its STATE.md. The root `MILESTONES.md` provides the cross-session view (which milestone is at which phase), but it is written only on phase transitions (low frequency), not on every plan execution.
+### Anti-Pattern 3: Monolithic DEBT.md Parser
 
----
+**What people do:** Write a full Markdown AST parser or YAML-based structure for DEBT.md.
 
-### Anti-Pattern 3: File Locking for Dashboard Updates
+**Why it's wrong:** The existing codebase uses lightweight regex for all Markdown file operations (see `roadmap.cjs` lines 320-350, `state.cjs` blockers, `milestone.cjs` requirements). Introducing a new dependency or parsing strategy creates an inconsistency that future maintainers must track.
 
-**What people do:** Implement an advisory lock file (`.planning/.lock`) before writing MILESTONES.md to prevent concurrent writes.
+**Do this instead:** Regex-on-Markdown matching the existing pattern. Parse `### DEBT-NNN` headers and `- **Key:** value` lines. Append new entries as string blocks. Exact same approach as `state.cjs` appending blockers.
 
-**Why it's wrong:** Claude Code sessions have no reliable way to enforce file lock cleanup. If a session crashes or is interrupted while holding a lock, the lock file remains and blocks all other sessions. Lock files also require polling, which adds latency.
+### Anti-Pattern 4: Unconditional Debt Logging in Agent Instructions
 
-**Do this instead:** Design MILESTONES.md so concurrent writes produce git conflicts that are trivially resolvable (each milestone's section is independent). Dashboard writes are infrequent (phase transitions only). Conflict probability is low. When it does occur, `git rebase` resolves it in seconds because each session only updates its own section.
+**What people do:** Agent instructions log a debt entry after every single task as a safety measure.
 
----
+**Why it's wrong:** DEBT.md becomes noise — hundreds of entries for non-debt executions. The signal value of the registry disappears. The `/gsd:fix-debt` skill would present an unmanageable list to the user.
 
-### Anti-Pattern 4: Agent Specs with Hardcoded Paths
+**Do this instead:** Agent instructions must be explicitly conditional: "If a shortcut, workaround, or incomplete solution was applied, log it. If the implementation is clean and complete, do not log."
 
-**What people do:** Add `.planning/milestones/v2.0/` path references directly into agent spec files (`gsd-executor.md`, `gsd-planner.md`).
+### Anti-Pattern 5: /gsd:fix-debt Directly Modifying Code
 
-**Why it's wrong:** Agent specs are global files in `~/.claude/get-shit-done/`. Hardcoding a milestone version in an agent spec means the spec is only correct for that version. The next milestone breaks it.
+**What people do:** Make `fix-debt.md` contain implementation logic that reads files, forms hypotheses, and writes fixes.
 
-**Do this instead:** Agent specs never contain filesystem paths. All paths flow through orchestrators via `<files_to_read>` blocks. Orchestrators get paths from `init` commands. `init` commands compute milestone-scoped paths. Agents are path-agnostic — they receive files, not paths.
+**Why it's wrong:** Violates the established pattern that commands are orchestrators only. The `commands/gsd/debug.md` precedent is clear: orchestrators spawn Task() for all real work. Commands that mix orchestration and implementation burn context on the orchestrator side and cannot benefit from fresh 200K subagent contexts.
 
----
+**Do this instead:** `fix-debt.md` selects debt items and constructs the investigation prompt, then spawns `gsd-debugger`. All code investigation and changes happen inside the spawned agent.
 
-### Anti-Pattern 5: Migrating Existing Projects Automatically
+### Anti-Pattern 6: Per-Milestone Debt Commands Without milestoneScope
 
-**What people do:** When a project has `.planning/phases/` (legacy), automatically restructure it into `.planning/milestones/<current-version>/phases/`.
+**What people do:** Call `node gsd-tools.cjs debt log ...` from inside a milestone-scoped workflow without the `--milestone` flag.
 
-**Why it's wrong:** Automatic migration changes on-disk structure without explicit user intent. It invalidates hardcoded path strings in any notes, scripts, or external references. It is irreversible (unless git reverted).
+**Why it's wrong:** Logs debt to the root `.planning/DEBT.md` instead of the milestone workspace. Debt from v3.0 work appears in the wrong registry. In milestone-scoped projects this is especially confusing because `.planning/DEBT.md` may not even exist.
 
-**Do this instead:** Legacy projects continue working as-is indefinitely. The compatibility layer means "old-style" is a permanent valid mode, not a transitional state. Migration to milestone-scoped layout is optional and user-initiated (run `/gsd:new-milestone` which creates the workspace structure and the user can choose to migrate or not).
+**Do this instead:** Workflow orchestrators that know their `MILESTONE_FLAG` must pass it to all `gsd-tools` calls including `debt log`. The agent wiring instructions should use `${MILESTONE_FLAG}` in the bash template, same as all other workflow commands.
 
 ---
 
 ## Scaling Considerations
 
-This is a local filesystem orchestration system, not a web application. "Scaling" means: what happens as the number of concurrent milestones grows?
+This is a CLI orchestration tool, not a web service. "Scaling" here means project size and debt volume.
 
-| Scale | Architecture Behavior |
-|-------|-----------------------|
-| 1 active milestone | No concurrent writes; MILESTONES.md update is serial; no conflict risk |
-| 2-3 concurrent milestones | Low conflict probability; dashboard updates may collide once per milestone; git rebase resolves |
-| 4+ concurrent milestones | MILESTONES.md becomes a merge hotspot; conflict.json cross-checks grow O(n²); consider splitting into separate repos |
-
-**Realistic target:** 2-3 concurrent milestones is the practical maximum for a single developer using Claude Code. The architecture supports it cleanly. 4+ milestones in one project suggests the project should be decomposed into separate repos, each with their own GSD instance.
-
-**First bottleneck:** MILESTONES.md concurrent writes. Mitigation: write only on phase transitions (not every plan). At 2-3 concurrent milestones, this is a rare event.
-
-**Second bottleneck:** Conflict manifest cross-checks. With `n` active milestones, `execute-phase` reads `n-1` conflict manifests. For `n=3`, this is 2 JSON file reads — negligible.
+| Concern | Mitigation |
+|---------|------------|
+| DEBT.md grows large over time | `debt list --status open` filters; resolved entries remain for audit history |
+| Milestone-scoped projects accumulate per-milestone DEBT.md files | Correct by design — debt is scoped to where it was introduced; `debt list` in a milestone context shows only that milestone's debt |
+| Migration tool applied to large `.planning/` dirs | O(n) file scan, no external calls, idempotent — safe to run repeatedly |
+| Sequential IDs in DEBT.md across concurrent milestones | Each milestone's DEBT.md has its own ID sequence (DEBT-001 in v3.0 and DEBT-001 in v3.1 are different items in different files — no global collision) |
 
 ---
 
 ## Sources
 
-- Direct analysis of `bin/lib/core.cjs` — `findPhaseInternal`, `getArchivedPhaseDirs`, `loadConfig`, path resolution patterns (HIGH confidence)
-- Direct analysis of `bin/lib/phase.cjs` — `cmdPhasesList`, `cmdPhaseComplete`, `cmdPhaseAdd` — all hardcode `.planning/phases/` (HIGH confidence)
-- Direct analysis of `bin/lib/init.cjs` — all `cmdInit*` functions return `.planning/` relative paths as strings (HIGH confidence)
-- Direct analysis of `bin/lib/milestone.cjs` — `cmdMilestoneComplete` creates `milestones/` dir, archives phases to `milestones/v1.0-phases/` (HIGH confidence)
-- Direct analysis of `workflows/new-milestone.md` — research, requirements, roadmap flow; all paths resolved through init (HIGH confidence)
-- Direct analysis of `workflows/plan-phase.md` — `--cwd`, `--milestone` patterns; paths from init JSON (HIGH confidence)
-- Direct analysis of `.planning/config.json` — project-scoped, not milestone-scoped (HIGH confidence)
-- Direct analysis of `.planning/milestones/` directory — existing `v1.0-phases/`, `v1.1-phases/` archive structure (HIGH confidence)
-- Direct analysis of `.planning/PROJECT.md` — v2.0 target features, constraints, compatibility requirement (HIGH confidence)
+- Direct codebase inspection: `/Users/tmac/Projects/gsdup/get-shit-done/bin/gsd-tools.cjs` — full router pattern, existing command cases
+- Direct codebase inspection: `/Users/tmac/Projects/gsdup/get-shit-done/bin/lib/core.cjs` — `planningRoot()`, `detectLayoutStyle()`, `output()`, `error()`
+- Direct codebase inspection: `/Users/tmac/Projects/gsdup/get-shit-done/bin/lib/config.cjs` — `cmdConfigEnsureSection` migration pattern (model for migrate.cjs)
+- Direct codebase inspection: `/Users/tmac/Projects/gsdup/agents/gsd-executor.md` — `<quality_sentinel>` section structure, post-task protocol
+- Direct codebase inspection: `/Users/tmac/Projects/gsdup/agents/gsd-verifier.md` — verification process structure, gap reporting
+- Direct codebase inspection: `/Users/tmac/Projects/gsdup/agents/gsd-debugger.md` — `fix_and_verify` step, `archive_session` step
+- Direct codebase inspection: `/Users/tmac/Projects/gsdup/commands/gsd/debug.md` — canonical orchestrator command pattern (model for fix-debt.md)
+- Direct codebase inspection: `/Users/tmac/Projects/gsdup/.planning/TO-DOS.md` — INTEGRATION-3 and INTEGRATION-4 exact fix specifications with line numbers
+- Direct codebase inspection: `/Users/tmac/Projects/gsdup/.planning/PROJECT.md` — v3.0 target features, constraints, key decisions
+- Direct codebase inspection: `/Users/tmac/Projects/gsdup/tests/helpers.cjs` — test pattern: `require('../get-shit-done/bin/lib/...')` for module-level testing
 
 ---
 
-*Architecture research for: GSD v2.0 concurrent milestone integration*
-*Researched: 2026-02-24*
+*Architecture research for: GSD v3.0 Tech Debt System + Migration Tool*
+*Researched: 2026-02-25*
