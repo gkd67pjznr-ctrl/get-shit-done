@@ -88,7 +88,7 @@ Plans:
 **Goal:** Normalize orphaned/misplaced planning files in `.planning/milestones/`, update stale tracking artifacts, and fix two systemic GSD flow flaws: plan-level checkbox updates in `cmdRoadmapUpdatePlanProgress` and milestone workspace finalization in `cmdMilestoneComplete`.
 **Requirements:** CLEAN-01, CLEAN-02, FLOW-01, FLOW-02
 **Depends on:** Phase 16
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [x] 16.1-01-PLAN.md — Normalize milestones directory structure and update stale tracking files

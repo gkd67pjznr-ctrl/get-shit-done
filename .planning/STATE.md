@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-25)
 ## Current Position
 
 Phase: 16.1 of 19 (Planning Directory Cleanup and GSD Flow Fixes)
-Plan: 1 of 2
-Status: Plan 01 complete
-Last activity: 2026-02-25 — Phase 16.1 Plan 01 complete (milestones cleanup, stale tracking updated)
+Plan: 2 of 2
+Status: Plan 02 complete — Phase 16.1 DONE
+Last activity: 2026-02-25 — Phase 16.1 Plan 02 complete (FLOW-01, FLOW-02 delivered — plan checkbox flip and milestone workspace finalization)
 
 Progress: [███░░░░░░░] 30% (v3.0 milestone)
 
@@ -29,7 +29,7 @@ Progress: [███░░░░░░░] 30% (v3.0 milestone)
 |-------|-------|-------|----------|
 | 15 | 1 | 15 min | 15 min |
 | 16 | 1 | 2 min | 2 min |
-| 16.1 | 1/2 | 3 min | 3 min |
+| 16.1 | 2/2 | 21 min | 10.5 min |
 
 *Updated after each plan completion*
 
@@ -59,6 +59,9 @@ Phase 16 decisions:
 Phase 16.1 Plan 01 decisions:
 - .planning/TO-DOS.md is caught by root gitignore pattern 'TO-DOS.md' — force-added with git add -f (legitimate planning artifact)
 - v3.0 milestone workspace deleted (not archived) — never used, contained contradictory design decisions, new-milestone can re-create if needed
+- [Phase 16.1]: phaseInfo.plans returns filenames — no path.basename() needed in plan-level flip loop
+- [Phase 16.1]: Test assertions check workspace ROADMAP not archived root — workspace is the correct artifact to verify finalization
+- [Phase 16.1]: escapeRegex added to milestone.cjs imports from core.cjs (was not previously imported)
 
 ### Pending Todos
 
@@ -80,5 +83,5 @@ None. Phase 15 Plan 01 complete. INTG-01 and INTG-02 resolved.
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: Phase 16.1 Plan 01 complete (16.1-01-SUMMARY.md created)
-Next step: Execute Phase 16.1 Plan 02 — TDD plan-level checkbox flip and milestone workspace finalization code fixes
+Stopped at: Phase 16.1 Plan 02 complete (16.1-02-SUMMARY.md created)
+Next step: Phase 17 planning — debt migration tool

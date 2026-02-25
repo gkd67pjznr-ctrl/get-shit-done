@@ -35,8 +35,8 @@ Requirements for v3.0 Tech Debt System. Each maps to roadmap phases.
 
 - [x] **CLEAN-01**: Orphaned/misplaced files in `.planning/milestones/` are normalized — v-test deleted, v2.0 root files moved into `v2.0/`, v2.0-phases contents moved into `v2.0/phases/`, v3.0 stale workspace deleted
 - [x] **CLEAN-02**: Stale tracking files updated — TO-DOS.md resolved items marked, v2.0 MILESTONE-AUDIT.md status updated, MILESTONES.md has v3.0 entry, root ROADMAP plan checkboxes for phases 15+16 flipped to `[x]`
-- [ ] **FLOW-01**: `cmdRoadmapUpdatePlanProgress` flips individual plan-level `- [ ]` to `- [x]` checkboxes when phase is complete (extends existing phase-level checkbox pattern)
-- [ ] **FLOW-02**: `cmdMilestoneComplete` finalizes milestone workspace ROADMAP (updates plan checkboxes, progress table, phase checkboxes) before archiving, with guard for legacy/no-workspace projects
+- [x] **FLOW-01**: `cmdRoadmapUpdatePlanProgress` flips individual plan-level `- [ ]` to `- [x]` checkboxes when phase is complete (extends existing phase-level checkbox pattern)
+- [x] **FLOW-02**: `cmdMilestoneComplete` finalizes milestone workspace ROADMAP (updates plan checkboxes, progress table, phase checkboxes) before archiving, with guard for legacy/no-workspace projects
 
 ### Migration Tool
 
@@ -86,8 +86,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DEBT-04 | Phase 16 | Complete |
 | CLEAN-01 | Phase 16.1 | Complete |
 | CLEAN-02 | Phase 16.1 | Complete |
-| FLOW-01 | Phase 16.1 | Pending |
-| FLOW-02 | Phase 16.1 | Pending |
+| FLOW-01 | Phase 16.1 | Complete |
+| FLOW-02 | Phase 16.1 | Complete |
 | MIGR-01 | Phase 17 | Pending |
 | MIGR-02 | Phase 17 | Pending |
 | MIGR-03 | Phase 17 | Pending |
