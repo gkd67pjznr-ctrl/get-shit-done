@@ -458,3 +458,46 @@ Plans:
 // phase add command
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────────────────────
+// milestone-scoped roadmap update-plan-progress
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('milestone-scoped roadmap update-plan-progress', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createConcurrentProject('v3.0');
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('cmdRoadmapUpdatePlanProgress with milestoneScope reads/writes workspace ROADMAP', () => {
+    // Write ROADMAP.md in the milestone workspace
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'milestones', 'v3.0', 'ROADMAP.md'),
+      `# Roadmap v3.0\n\n### Phase 3.1: Test\n**Goal:** Test\n**Plans:** 1/1 plans complete\nPlans:\n- [ ] 3.1-01-PLAN.md -- Some desc\n`
+    );
+
+    // Create phase directory with both PLAN and SUMMARY (complete)
+    const phaseDir = path.join(tmpDir, '.planning', 'milestones', 'v3.0', 'phases', '3.1-test');
+    fs.mkdirSync(phaseDir, { recursive: true });
+    fs.writeFileSync(path.join(phaseDir, '3.1-01-PLAN.md'), '# Plan');
+    fs.writeFileSync(path.join(phaseDir, '3.1-01-SUMMARY.md'), '# Summary');
+
+    const result = runGsdTools('--milestone v3.0 roadmap update-plan-progress 3.1 --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    // Read the milestone workspace ROADMAP.md and assert checkbox was flipped
+    const roadmapContent = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'milestones', 'v3.0', 'ROADMAP.md'),
+      'utf-8'
+    );
+    assert.ok(
+      roadmapContent.includes('- [x] 3.1-01-PLAN.md'),
+      `Expected [x] checkbox in milestone ROADMAP, got:\n${roadmapContent}`
+    );
+  });
+});
+

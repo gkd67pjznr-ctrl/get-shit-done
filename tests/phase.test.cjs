@@ -6,7 +6,7 @@ const { test, describe, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
-const { runGsdTools, createTempProject, cleanup } = require('./helpers.cjs');
+const { runGsdTools, runGsdToolsFull, createTempProject, createConcurrentProject, cleanup } = require('./helpers.cjs');
 
 describe('phases list command', () => {
   let tmpDir;
@@ -1417,4 +1417,95 @@ describe('is_last_phase roadmap fallback', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // milestone complete command
 // ─────────────────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+// milestone-scoped phase operations
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('milestone-scoped phase operations', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createConcurrentProject('v3.0');
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('cmdFindPhase with milestoneScope finds phase in workspace', () => {
+    // Create a phase directory in the milestone workspace
+    fs.mkdirSync(
+      path.join(tmpDir, '.planning', 'milestones', 'v3.0', 'phases', '3.1-test'),
+      { recursive: true }
+    );
+
+    const result = runGsdTools('--milestone v3.0 find-phase 3.1', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.found, true, 'phase should be found');
+    assert.ok(
+      output.directory.includes('milestones/v3.0'),
+      `directory should be in milestone workspace, got: ${output.directory}`
+    );
+  });
+
+  test('cmdPhasePlanIndex with milestoneScope indexes workspace phases', () => {
+    const phaseDir = path.join(tmpDir, '.planning', 'milestones', 'v3.0', 'phases', '3.1-setup');
+    fs.mkdirSync(phaseDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(phaseDir, '3.1-01-PLAN.md'),
+      '---\nwave: 1\nautonomous: true\n---\n## Task 1: Test'
+    );
+
+    const result = runGsdTools('--milestone v3.0 phase-plan-index 3.1', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.plans.length, 1, 'should have 1 plan');
+    assert.strictEqual(output.plans[0].id, '3.1-01', 'plan id should be 3.1-01');
+  });
+
+  test('cmdPhaseAdd with milestoneScope generates milestone-prefix numbering', () => {
+    // Write a ROADMAP with one existing phase in the milestone workspace
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'milestones', 'v3.0', 'ROADMAP.md'),
+      '# Roadmap v3.0\n\n### Phase 3.1: Foundation\n**Goal:** Setup\n'
+    );
+
+    const result = runGsdTools('--milestone v3.0 phase add New Feature', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.ok(
+      String(output.phase_number).startsWith('3.'),
+      `phase_number should use 3.N numbering, got: ${output.phase_number}`
+    );
+    assert.ok(
+      output.directory.includes('milestones/v3.0'),
+      `directory should be in milestone workspace, got: ${output.directory}`
+    );
+  });
+
+  test('phases list with --milestone lists milestone workspace phases', () => {
+    // Create two phase directories in the milestone workspace
+    fs.mkdirSync(
+      path.join(tmpDir, '.planning', 'milestones', 'v3.0', 'phases', '3.1-alpha'),
+      { recursive: true }
+    );
+    fs.mkdirSync(
+      path.join(tmpDir, '.planning', 'milestones', 'v3.0', 'phases', '3.2-beta'),
+      { recursive: true }
+    );
+
+    const result = runGsdTools('--milestone v3.0 phases list', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.ok(Array.isArray(output.directories), 'directories should be an array');
+    assert.ok(output.directories.includes('3.1-alpha'), `should include 3.1-alpha, got: ${JSON.stringify(output.directories)}`);
+    assert.ok(output.directories.includes('3.2-beta'), `should include 3.2-beta, got: ${JSON.stringify(output.directories)}`);
+  });
+});
 
