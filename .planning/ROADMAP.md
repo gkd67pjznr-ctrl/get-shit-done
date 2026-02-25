@@ -51,6 +51,66 @@
 - [ ] **Phase 18: Agent Wiring** - Executor, verifier, and debugger auto-log discovered debt with quality-level gating
 - [ ] **Phase 19: /gsd:fix-debt Skill** - On-demand orchestrator skill routing debt entries through diagnosis and fix execution
 
+### Phase 15: Integration Fixes
+
+**Goal:** Fix milestone-scoped path resolution bugs so that `cmdInitPlanPhase` and roadmap commands work correctly with milestone-scoped layouts.
+
+**Requirements:** INTG-01, INTG-02
+
+**Scope:**
+- `cmdInitPlanPhase` returns milestone-aware paths via `planningRoot()` instead of hardcoded `.planning/`
+- `cmdRoadmapGetPhase` and `cmdRoadmapAnalyze` respect `--milestone` flag for milestone-scoped ROADMAP.md
+
+**Plans:** 1 plan
+
+Plans:
+- [ ] 15-01-PLAN.md — Fix milestone-scoped path resolution in init and roadmap commands with regression tests
+
+### Phase 16: Core Debt Module
+
+**Goal:** Create the DEBT.md schema and `debt.cjs` CLI commands for structured tech debt tracking with concurrent-safe writes.
+
+**Requirements:** DEBT-01, DEBT-02, DEBT-03, DEBT-04
+
+**Scope:**
+- DEBT.md hub with structured entry format (TD-NNN IDs, 10 fields)
+- `gsd-tools debt log` command for atomic append
+- `gsd-tools debt list` command with filtering (JSON output)
+- `gsd-tools debt resolve` command for status transitions
+
+### Phase 17: Migration Tool
+
+**Goal:** Build `migrate.cjs` that inspects and upgrades existing `.planning/` folders with dry-run default, additive-only apply, and undo manifest.
+
+**Requirements:** MIGR-01, MIGR-02, MIGR-03
+
+**Scope:**
+- `gsd-tools migrate --dry-run` inspects layout and reports changes
+- `gsd-tools migrate --apply` performs additive-only structural changes with undo manifest
+- Idempotent — running `--apply` multiple times produces same result
+
+### Phase 18: Agent Wiring
+
+**Goal:** Wire executor, verifier, and debugger agents to auto-log discovered debt with quality-level gating.
+
+**Requirements:** WIRE-01, WIRE-02, WIRE-03, WIRE-04
+
+**Scope:**
+- Executor auto-logs debt when Quality Sentinel finds unfixable issues
+- Verifier auto-logs unresolved quality dimension findings
+- Debt logging gated on quality level (fast=off, standard=critical/high, strict=all)
+- Entries include source phase and plan provenance
+
+### Phase 19: /gsd:fix-debt Skill
+
+**Goal:** Create on-demand orchestrator skill that routes debt entries through diagnosis and fix execution.
+
+**Requirements:** FIXD-01, FIXD-02
+
+**Scope:**
+- Skill reads DEBT.md, selects entry by ID or priority, routes through debugger
+- Applies fix via plan execution, verifies result, marks entry resolved
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
