@@ -73,3 +73,13 @@
 
 ---
 
+
+## v3.0 Tech Debt System (In Progress)
+
+**Goal:** Build infrastructure for systematic tech debt tracking and resolution, plus a project migration tool for existing `.planning/` folders.
+
+**Phases:** 5 planned (15-19) + 1 inserted (16.1)
+**Status:** In progress — Phases 15-16 complete, Phase 16.1 in progress
+
+---
+

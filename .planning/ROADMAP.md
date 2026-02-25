@@ -64,7 +64,7 @@
 **Plans:** 1/1 plans complete
 
 Plans:
-- [ ] 15-01-PLAN.md — Fix milestone-scoped path resolution in init and roadmap commands with regression tests
+- [x] 15-01-PLAN.md — Fix milestone-scoped path resolution in init and roadmap commands with regression tests
 
 ### Phase 16: Core Debt Module
 
@@ -81,7 +81,7 @@ Plans:
 **Plans:** 1/1 plans complete
 
 Plans:
-- [ ] 16-01-PLAN.md — Create debt.cjs module (all three commands) + test suite + router wiring (TDD)
+- [x] 16-01-PLAN.md — Create debt.cjs module (all three commands) + test suite + router wiring (TDD)
 
 ### Phase 16.1: Planning directory cleanup and GSD flow fixes (INSERTED)
 

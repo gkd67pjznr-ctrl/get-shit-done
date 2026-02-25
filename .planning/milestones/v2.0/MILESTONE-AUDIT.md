@@ -1,12 +1,12 @@
 ---
 milestone: v2.0
 audited: 2026-02-24T20:00:00Z
-status: gaps_found
+status: resolved
 scores:
   requirements: 34/34
   phases: 7/7
-  integration: 4/6
-  flows: 3/6
+  integration: 6/6
+  flows: 6/6
 gaps:
   requirements: []
   integration:
@@ -17,6 +17,7 @@ gaps:
       lines: "138-140"
       affected_requirements: ["ROUTE-02"]
       fix: "Derive paths from planningRoot(cwd, milestoneScope) like cmdInitExecutePhase does at lines 76-77"
+      resolution: "Fixed in Phase 15 Plan 01 — cmdInitPlanPhase now derives paths from planningRoot()"
     - id: "INTEGRATION-4"
       severity: "high"
       description: "cmdRoadmapGetPhase and cmdRoadmapAnalyze hardcode .planning/ROADMAP.md and do not accept milestoneScope parameter; CLI router does not pass milestoneScope to roadmap commands"
@@ -26,6 +27,7 @@ gaps:
       router_lines: "436-438"
       affected_requirements: ["ROUTE-01", "ROUTE-02", "ROUTE-03", "PATH-01"]
       fix: "Add milestoneScope parameter to cmdRoadmapGetPhase and cmdRoadmapAnalyze; use planningRoot(cwd, milestoneScope) for roadmap path resolution; update CLI router to pass milestoneScope"
+      resolution: "Fixed in Phase 15 Plan 01 — milestoneScope param added to cmdRoadmapGetPhase and cmdRoadmapAnalyze"
   flows:
     - id: "FLOW-1"
       name: "Plan-Phase in Milestone Context"
@@ -33,18 +35,21 @@ gaps:
       break_point: "cmdInitPlanPhase returns .planning/STATE.md instead of .planning/milestones/v2.0/STATE.md"
       affected_requirements: ["ROUTE-02"]
       caused_by: "INTEGRATION-3"
+      resolution: "Fixed in Phase 15 Plan 01 — cmdInitPlanPhase now returns milestone-scoped paths"
     - id: "FLOW-2"
       name: "Roadmap Analysis in Milestone Context"
       severity: "high"
       break_point: "cmdRoadmapGetPhase ignores --milestone flag, reads root .planning/ROADMAP.md"
       affected_requirements: ["ROUTE-01", "ROUTE-02"]
       caused_by: "INTEGRATION-4"
+      resolution: "Fixed in Phase 15 Plan 01 — cmdRoadmapGetPhase now respects --milestone flag"
     - id: "FLOW-3"
       name: "Progress Dashboard Roadmap Analysis"
       severity: "medium"
       break_point: "cmdRoadmapAnalyze in progress.md reads root ROADMAP.md not milestone workspace"
       affected_requirements: ["ROUTE-03", "DASH-02"]
       caused_by: "INTEGRATION-4"
+      resolution: "Fixed in Phase 15 Plan 01 — cmdRoadmapAnalyze now respects --milestone flag"
 tech_debt:
   - phase: "cross-phase"
     items:
@@ -56,7 +61,7 @@ tech_debt:
 **Milestone Goal:** Enable multiple milestones to execute in parallel across separate Claude Code sessions with isolated workspaces, conflict awareness, and a compatibility layer for existing projects.
 
 **Audited:** 2026-02-24
-**Status:** gaps_found
+**Status:** resolved
 **Previous Audit:** 2026-02-24T19:00:00Z (triggered Phase 14 gap closure)
 
 ## Scores
@@ -65,8 +70,8 @@ tech_debt:
 |-----------|-------|-------|
 | Requirements | 34/34 | All requirements satisfied per 3-source cross-reference |
 | Phases | 7/7 | All 7 phase VERIFICATION.md files present and passed |
-| Integration | 4/6 | 2 high-severity cross-phase wiring gaps (NEW — not same as previous audit) |
-| E2E Flows | 3/6 | 3 flows broken in milestone-scoped context |
+| Integration | 6/6 | 2 high-severity gaps resolved in Phase 15 Plan 01 |
+| E2E Flows | 6/6 | 3 broken flows fixed in Phase 15 Plan 01 |
 
 ## Phase Verification Summary
 
