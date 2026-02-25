@@ -65,6 +65,11 @@ Plans:
 - `gsd-tools migrate --apply` performs additive-only structural changes with undo manifest
 - Idempotent — running `--apply` multiple times produces same result
 
+**Plans:** 1 plan
+
+Plans:
+- [ ] 3.3-01-PLAN.md — TDD: migrate.cjs module (inspectLayout + dry-run + apply) with test suite and router wiring
+
 ### Phase 3.4: Agent Wiring
 
 **Goal:** Wire executor, verifier, and debugger agents to auto-log discovered debt with quality-level gating.
@@ -94,7 +99,7 @@ Plans:
 | 3.1. Integration Fixes | 1/1 | Complete | 2026-02-25 |
 | 3.2. Core Debt Module | 1/1 | Complete | 2026-02-25 |
 | 3.2.1. Planning Directory Cleanup | 2/2 | Complete | 2026-02-25 |
-| 3.3. Migration Tool | 0/? | Not started | - |
+| 3.3. Migration Tool | 0/1 | In Progress | - |
 | 3.4. Agent Wiring | 0/? | Not started | - |
 | 3.5. /gsd:fix-debt Skill | 0/? | Not started | - |
 
