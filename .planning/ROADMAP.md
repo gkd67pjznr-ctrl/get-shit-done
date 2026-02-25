@@ -83,6 +83,17 @@ Plans:
 Plans:
 - [ ] 16-01-PLAN.md — Create debt.cjs module (all three commands) + test suite + router wiring (TDD)
 
+### Phase 16.1: Planning directory cleanup and GSD flow fixes (INSERTED)
+
+**Goal:** Normalize orphaned/misplaced planning files in `.planning/milestones/`, update stale tracking artifacts, and fix two systemic GSD flow flaws: plan-level checkbox updates in `cmdRoadmapUpdatePlanProgress` and milestone workspace finalization in `cmdMilestoneComplete`.
+**Requirements:** CLEAN-01, CLEAN-02, FLOW-01, FLOW-02
+**Depends on:** Phase 16
+**Plans:** 2 plans
+
+Plans:
+- [ ] 16.1-01-PLAN.md — Normalize milestones directory structure and update stale tracking files
+- [ ] 16.1-02-PLAN.md — TDD: Plan-level checkbox flip and milestone workspace finalization code fixes
+
 ### Phase 17: Migration Tool
 
 **Goal:** Build `migrate.cjs` that inspects and upgrades existing `.planning/` folders with dry-run default, additive-only apply, and undo manifest.
