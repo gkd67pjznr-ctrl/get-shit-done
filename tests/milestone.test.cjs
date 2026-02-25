@@ -364,6 +364,147 @@ describe('init new-milestone returns layout_style (Plan 02)', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// milestone workspace finalization (FLOW-02)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('milestone workspace finalization (cmdMilestoneComplete)', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('updates workspace ROADMAP plan checkboxes before archiving', () => {
+    // Root ROADMAP.md (required by cmdMilestoneComplete)
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      '# Roadmap v2.0\n\n### Phase 8: Feature\n**Goal:** Build features\n'
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      '# State\n\n**Status:** In progress\n**Last Activity:** 2026-02-25\n**Last Activity Description:** Working\n'
+    );
+
+    // Create workspace with ROADMAP.md containing unchecked plan lines
+    const workspaceDir = path.join(tmpDir, '.planning', 'milestones', 'v2.0');
+    fs.mkdirSync(workspaceDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(workspaceDir, 'ROADMAP.md'),
+      `# Roadmap v2.0
+
+### Phase 8: Feature
+**Goal:** Build features
+**Plans:** 1/1 plans complete
+Plans:
+- [ ] 08-01-PLAN.md — Feature plan
+
+| 8 | Feature | 1/1 | Complete | 2026-02-25 |
+`
+    );
+    fs.writeFileSync(
+      path.join(workspaceDir, 'conflict.json'),
+      JSON.stringify({ version: 'v2.0', created_at: '2026-02-25', status: 'active', files_touched: [] }, null, 2)
+    );
+
+    // Create a phase dir with PLAN + SUMMARY so phase is considered complete
+    const phaseDir = path.join(tmpDir, '.planning', 'phases', '08-feature');
+    fs.mkdirSync(phaseDir, { recursive: true });
+    fs.writeFileSync(path.join(phaseDir, '08-01-PLAN.md'), '# Plan');
+    fs.writeFileSync(path.join(phaseDir, '08-01-SUMMARY.md'), '# Summary');
+
+    const result = runGsdToolsFull(['milestone', 'complete', 'v2.0', '--raw'], tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    // The archived ROADMAP at milestones/v2.0-ROADMAP.md should have [x] plan checkboxes
+    const archivedRoadmap = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'milestones', 'v2.0-ROADMAP.md'), 'utf-8'
+    );
+    assert.ok(
+      archivedRoadmap.includes('- [x] 08-01-PLAN.md'),
+      `Expected [x] plan checkbox in archived ROADMAP, got:\n${archivedRoadmap}`
+    );
+  });
+
+  test('updates workspace ROADMAP phase-level checkboxes before archiving', () => {
+    // Root ROADMAP.md
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      '# Roadmap v2.0\n\n### Phase 8: Feature\n**Goal:** Build features\n'
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      '# State\n\n**Status:** In progress\n**Last Activity:** 2026-02-25\n**Last Activity Description:** Working\n'
+    );
+
+    // Create workspace with ROADMAP.md containing unchecked phase-level checkbox
+    const workspaceDir = path.join(tmpDir, '.planning', 'milestones', 'v2.0');
+    fs.mkdirSync(workspaceDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(workspaceDir, 'ROADMAP.md'),
+      `# Roadmap v2.0
+
+## Phases
+
+- [ ] **Phase 8: Feature**
+
+### Phase 8: Feature
+**Goal:** Build features
+**Plans:** 1/1 plans complete
+Plans:
+- [ ] 08-01-PLAN.md — Feature plan
+`
+    );
+    fs.writeFileSync(
+      path.join(workspaceDir, 'conflict.json'),
+      JSON.stringify({ version: 'v2.0', created_at: '2026-02-25', status: 'active', files_touched: [] }, null, 2)
+    );
+
+    // Complete phase
+    const phaseDir = path.join(tmpDir, '.planning', 'phases', '08-feature');
+    fs.mkdirSync(phaseDir, { recursive: true });
+    fs.writeFileSync(path.join(phaseDir, '08-01-PLAN.md'), '# Plan');
+    fs.writeFileSync(path.join(phaseDir, '08-01-SUMMARY.md'), '# Summary');
+
+    const result = runGsdToolsFull(['milestone', 'complete', 'v2.0', '--raw'], tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const archivedRoadmap = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'milestones', 'v2.0-ROADMAP.md'), 'utf-8'
+    );
+    assert.ok(
+      archivedRoadmap.includes('[x]') && archivedRoadmap.includes('Phase 8'),
+      `Expected [x] phase checkbox in archived ROADMAP, got:\n${archivedRoadmap}`
+    );
+  });
+
+  test('skips finalization gracefully when no workspace exists (legacy mode)', () => {
+    // NO workspace directory — legacy project
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      '# Roadmap v2.0\n\n### Phase 8: Feature\n**Goal:** Build features\n'
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      '# State\n\n**Status:** In progress\n**Last Activity:** 2026-02-25\n**Last Activity Description:** Working\n'
+    );
+
+    // No workspace directory created
+    const result = runGsdToolsFull(['milestone', 'complete', 'v2.0', '--raw'], tmpDir);
+    assert.ok(result.success, `Command should not throw for legacy mode: ${result.error}`);
+
+    // Standard archive should still work
+    assert.ok(
+      fs.existsSync(path.join(tmpDir, '.planning', 'milestones', 'v2.0-ROADMAP.md')),
+      'archived root ROADMAP should still be created'
+    );
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // validate consistency command
 // ─────────────────────────────────────────────────────────────────────────────
 
