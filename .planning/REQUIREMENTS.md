@@ -159,6 +159,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Phase 11: Dashboard and Conflict Detection | DASH-01, DASH-02, DASH-03, DASH-04, CNFL-02, CNFL-03, CNFL-04 | 7 |
 | Phase 12: Full Routing Update | ROUTE-01, ROUTE-02, ROUTE-03, ROUTE-04, ROUTE-05, PHASE-01, PHASE-02, PHASE-03, TEAM-01 | 9 |
 | Phase 13: Test Coverage | TEST-01, TEST-02, TEST-03, TEST-04, TEST-05, TEST-06 | 6 |
+| Phase 14: Integration Wiring Fix | Gap closure (DASH-01, DASH-02, DASH-03, CNFL-01, CNFL-02) | 5 (fixes) |
 
 ---
 *Requirements defined: 2026-02-24*
