@@ -45,6 +45,23 @@
  *   requirements mark-complete <ids>   Mark requirement IDs as complete in REQUIREMENTS.md
  *                                      Accepts: REQ-01,REQ-02 or REQ-01 REQ-02 or [REQ-01, REQ-02]
  *
+ * Debt Operations:
+ *   debt log                           Append a new tech debt entry to .planning/DEBT.md
+ *     --type <code|test|docs|config|arch>
+ *     --severity <critical|high|medium|low>
+ *     --component <name>
+ *     --description <text>
+ *     --logged-by <name>
+ *     --source-phase <phase>
+ *     --source-plan <plan>
+ *   debt list                          List debt entries with optional filters
+ *     [--status <open|in-progress|resolved|deferred>]
+ *     [--severity <critical|high|medium|low>]
+ *     [--type <code|test|docs|config|arch>]
+ *   debt resolve                       Transition a debt entry's status
+ *     --id <TD-NNN>
+ *     --status <open|in-progress|resolved|deferred>
+ *
  * Milestone Operations:
  *   milestone complete <version>       Archive milestone, create MILESTONES.md
  *     [--name <name>]
@@ -138,6 +155,7 @@ const milestone = require('./lib/milestone.cjs');
 const commands = require('./lib/commands.cjs');
 const init = require('./lib/init.cjs');
 const frontmatter = require('./lib/frontmatter.cjs');
+const debt = require('./lib/debt.cjs');
 
 // ─── CLI Router ───────────────────────────────────────────────────────────────
 
@@ -450,6 +468,47 @@ async function main() {
         milestone.cmdRequirementsMarkComplete(cwd, args.slice(2), raw);
       } else {
         error('Unknown requirements subcommand. Available: mark-complete');
+      }
+      break;
+    }
+
+    case 'debt': {
+      const subcommand = args[1];
+      if (subcommand === 'log') {
+        const typeIdx = args.indexOf('--type');
+        const severityIdx = args.indexOf('--severity');
+        const componentIdx = args.indexOf('--component');
+        const descriptionIdx = args.indexOf('--description');
+        const loggedByIdx = args.indexOf('--logged-by');
+        const sourcePhasIdx = args.indexOf('--source-phase');
+        const sourcePlanIdx = args.indexOf('--source-plan');
+        debt.cmdDebtLog(cwd, {
+          type: typeIdx !== -1 ? args[typeIdx + 1] : null,
+          severity: severityIdx !== -1 ? args[severityIdx + 1] : null,
+          component: componentIdx !== -1 ? args[componentIdx + 1] : null,
+          description: descriptionIdx !== -1 ? args[descriptionIdx + 1] : null,
+          logged_by: loggedByIdx !== -1 ? args[loggedByIdx + 1] : null,
+          source_phase: sourcePhasIdx !== -1 ? args[sourcePhasIdx + 1] : null,
+          source_plan: sourcePlanIdx !== -1 ? args[sourcePlanIdx + 1] : null,
+        }, raw);
+      } else if (subcommand === 'list') {
+        const statusIdx = args.indexOf('--status');
+        const severityIdx = args.indexOf('--severity');
+        const typeIdx = args.indexOf('--type');
+        debt.cmdDebtList(cwd, {
+          status: statusIdx !== -1 ? args[statusIdx + 1] : null,
+          severity: severityIdx !== -1 ? args[severityIdx + 1] : null,
+          type: typeIdx !== -1 ? args[typeIdx + 1] : null,
+        }, raw);
+      } else if (subcommand === 'resolve') {
+        const idIdx = args.indexOf('--id');
+        const statusIdx = args.indexOf('--status');
+        debt.cmdDebtResolve(cwd, {
+          id: idIdx !== -1 ? args[idIdx + 1] : null,
+          status: statusIdx !== -1 ? args[statusIdx + 1] : null,
+        }, raw);
+      } else {
+        error('Unknown debt subcommand. Available: log, list, resolve');
       }
       break;
     }
