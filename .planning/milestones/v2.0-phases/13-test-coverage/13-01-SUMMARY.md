@@ -65,7 +65,7 @@ Each task was committed atomically:
 1. **Task 1: Add branch coverage tests to core.test.cjs** - `8e2c0cf` (test)
 2. **Task 2: Add branch coverage tests to dashboard.test.cjs** - `9713cef` (test)
 
-**Plan metadata:** `[final commit]` (docs: complete plan)
+**Plan metadata:** `179181d` (docs: complete plan)
 
 ## Files Created/Modified
 - `tests/core.test.cjs` - Added 2 tests: planningRoot('') and detectLayoutStyle({concurrent:'yes'})

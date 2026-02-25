@@ -110,3 +110,19 @@ None beyond pre-existing test failures (3 config test failures present before th
 ---
 *Phase: 12-full-routing-update*
 *Completed: 2026-02-24*
+
+## Self-Check: PASSED
+
+All files verified present, all commits verified in git log.
+- get-shit-done/workflows/execute-phase.md: FOUND
+- get-shit-done/workflows/plan-phase.md: FOUND
+- get-shit-done/workflows/transition.md: FOUND
+- get-shit-done/workflows/verify-work.md: FOUND
+- get-shit-done/workflows/progress.md: FOUND
+- get-shit-done/workflows/resume-project.md: FOUND
+- get-shit-done/workflows/complete-milestone.md: FOUND
+- get-shit-done/references/agent-teams.md: FOUND
+- .planning/phases/12-full-routing-update/12-02-SUMMARY.md: FOUND
+- Commit 77395e8 (Task 1): FOUND
+- Commit fe3e1e1 (Task 2): FOUND
+- Commit 4095eba (metadata): FOUND

@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A forked, upgraded version of the GSD (Get Shit Done) framework for Claude Code that adds quality enforcement layers to eliminate "slop" — duplicate code, shortcuts, placeholder implementations, broken integrations, and hand-rolled logic that should use libraries. The fork adds a Quality Sentinel to the executor, Context7 library lookup, mandatory testing, quality directives in the planner, quality dimensions in the verifier, and user-facing quality configuration and observability — completing a full Plan→Execute→Verify quality enforcement loop gated by `quality.level` config with full visibility into what the gates are doing.
+A forked, upgraded version of the GSD (Get Shit Done) framework for Claude Code that adds quality enforcement and concurrent milestone execution. Quality layers eliminate "slop" via a Quality Sentinel, Context7 library lookup, mandatory testing, and quality dimensions — completing a full Plan→Execute→Verify quality enforcement loop. Concurrent milestone support enables multiple milestones to execute in parallel across separate Claude Code sessions with isolated workspaces, lock-free dashboards, advisory conflict detection, and full backward compatibility with legacy projects.
 
 ## Core Value
 
@@ -31,54 +31,50 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 - ✓ Config validation — warn on missing sections instead of silent fallback — v1.1
 - ✓ Context7 token cap configuration and verification — v1.1
 
+- ✓ `planningRoot()` central path resolver for milestone-scoped and legacy projects — v2.0
+- ✓ `detectLayoutStyle()` three-state detection (legacy/milestone-scoped/uninitialized) via config.json sentinel — v2.0
+- ✓ `--milestone` CLI flag parsed and threaded to all init commands and workflows — v2.0
+- ✓ `is_last_phase` ROADMAP.md fallback for incomplete unplanned phases — v2.0
+- ✓ Milestone workspace isolation (`.planning/milestones/<v>/` with STATE.md, ROADMAP.md, REQUIREMENTS.md, conflict.json) — v2.0
+- ✓ Lock-free multi-milestone dashboard (per-milestone STATUS.md, MILESTONES.md live updates) — v2.0
+- ✓ Advisory conflict detection (manifest-check reads all active conflict.json, warns on overlap, never blocks) — v2.0
+- ✓ Legacy compatibility layer (old-style projects auto-detected, zero migration required, permanent support) — v2.0
+- ✓ Full routing update (MILESTONE_FLAG in all 7 workflows, milestoneScope in all 7 init commands) — v2.0
+- ✓ Milestone-scoped phase numbering (resets per workspace, qualified cross-references) — v2.0
+- ✓ E2E test coverage for both layout modes (legacy + milestone-scoped lifecycle tests) — v2.0
+- ✓ Agent Teams research documented (recommended for intra-milestone parallelism, deferred to v2.1) — v2.0
+
 ### Active
 
-**Current Milestone: v2.0 Concurrent Milestones**
-
-**Goal:** Enable multiple milestones to execute in parallel across separate Claude Code sessions with isolated workspaces, conflict awareness, and a compatibility layer for existing projects.
-
-**Target features:**
-- Milestone-scoped workspace isolation (each milestone gets its own folder under `.planning/`)
-- Central lock-free dashboard tracking all milestone status
-- Conflict manifest (milestones declare source files they'll touch)
-- Milestone-scoped phase numbering (v1.2/phase-01 instead of global sequential)
-- Compatibility layer (old-style `.planning/` root projects auto-detected and still work)
-- All GSD routing updated (workflows, agents, commands, tools)
-- Agent teams research and integration (if applicable to concurrent model)
-- Test coverage for new routing and isolation logic
+(No active milestone — next milestone not yet started)
 
 ### Out of Scope
 
 - Rewriting GSD from scratch — this is an upgrade, not a rewrite
 - Changing the core workflow lifecycle (project → milestone → phase → plan → execute → verify)
 - Changing the agent orchestration pattern (lean orchestrators, fresh subagent contexts)
-- Changing the state management system (STATE.md, ROADMAP.md, REQUIREMENTS.md)
 - Changing the commit strategy or wave-based parallelism
 - Supporting non-Claude Code runtimes (OpenCode, Gemini CLI)
 - UI/visual changes to the framework
-- Performance optimization of gsd-tools.cjs (beyond bug fixes)
 - Separate quality agent — inline sentinel burns 6-16K vs 50-100K for separate agent context handoff
 - Exhaustive pre-scan (whole codebase) — violates 50% context budget before first line of code
 - Blocking quality gates in fast mode — fast mode exists for quick experiments and prototypes
-- Silent quality improvements — all quality-driven changes tracked as deviations in SUMMARY
-- New quality gate types (security, a11y) — need to validate existing gates work first
-- Custom quality rules — premature, need production validation
-- Quality dashboard/reporting UI — CLI-only project, text output sufficient
+- File locking for concurrent writes — stale locks from killed sessions worse than no locks; workspace isolation eliminates the need
+- Automatic conflict resolution — semantic correctness of concurrent code changes cannot be automated
+- Nested concurrent milestones — exponential coordination complexity, Agent Teams docs confirm "no nested teams"
+- Real-time inter-session sync — requires always-on daemon; file-based STATUS.md polling at checkpoints is sufficient
 
 ## Context
 
-Shipped v1.1 with ~29,471 LOC across CJS/JS/agent MD files.
+Shipped v2.0 with 11,371 LOC across CJS source + test files, plus workflow/agent Markdown specifications.
 Tech stack: Node.js, CJS modules, Markdown agent specifications, Context7 MCP.
-102+ tests passing across init, commands, and phase test suites.
+232 tests passing (235 total, 3 pre-existing config defaults failures) across 8 test suites.
 
-The GSD framework now enforces quality through the complete Plan→Execute→Verify loop:
-- **Planner** generates `<quality_scan>` directives (code_to_reuse, docs_to_consult, tests_to_write)
-- **Plan-checker** validates directives via Dimension 9 (warning in standard, blocker in strict)
-- **Executor** consumes directives in Quality Sentinel Steps 1-5 (pre-task scan, library lookup, mandatory tests, diff review) with GATE_OUTCOMES tracking
-- **Verifier** backstops with Step 7b (duplication, orphaned exports, missing tests)
-- **Config** gates everything — fast skips all, standard warns, strict blocks
-- **Observability** — Quality Gates section in SUMMARY.md shows what ran and what happened
-- **UX** — `/gsd:set-quality` to switch levels, `/gsd:progress` shows current level, `/gsd:help` reminds about patches
+**Quality enforcement** (v1.0-v1.1): Full Plan→Execute→Verify loop with Quality Sentinel, Context7 library lookup, mandatory testing, quality dimensions, config-gated enforcement levels (fast/standard/strict), and observability.
+
+**Concurrent milestones** (v2.0): Workspace isolation via `planningRoot()`, three-state layout detection, `--milestone` flag threading, lock-free dashboards, advisory conflict detection, and permanent legacy compatibility.
+
+**Known tech debt:** 2 integration gaps in milestone-scoped plan-phase and roadmap commands (tracked in `.planning/TO-DOS.md`).
 
 ## Constraints
 
@@ -105,6 +101,13 @@ The GSD framework now enforces quality through the complete Plan→Execute→Ver
 | Direct config.json reads for quality.level | loadConfig doesn't expose quality section in return object | ✓ Good — cmdProgressRender reads accurate value |
 | GATE_OUTCOMES per-plan initialization | Prevent reset between tasks; guard variable ensures single init | ✓ Good — outcomes accumulate across all tasks in a plan |
 | Quality Gates section absent in fast mode | No gates ran, nothing to report; empty section would be misleading | ✓ Good — clean SUMMARY.md in fast mode |
+| planningRoot() as single path resolver | All modules call one function, no string literals for .planning/ paths | ✓ Good — clean dependency chain, easy to test |
+| detectLayoutStyle() uses config.json sentinel | Directory presence detection is fragile; explicit `concurrent: true` flag is unambiguous | ✓ Good — archive directories don't trigger false positives |
+| Workspace isolation (not file locking) | Stale locks from killed sessions worse than no locks; directory isolation is sufficient | ✓ Good — no lock cleanup needed, each session works in its own directory |
+| Lock-free dashboard via STATUS.md | Per-milestone STATUS.md files aggregated at read time; no write coordination | ✓ Good — no split-brain, no lock contention |
+| Advisory-only conflict detection | Semantic correctness of concurrent changes can't be automated; surface overlaps, let humans decide | ✓ Good — warnings visible without blocking execution |
+| Agent Teams deferred to v2.1 | Wrong for inter-milestone concurrency; right for intra-milestone phase parallelism | ✓ Good — research documented, clean v2.1 path |
+| Permanent legacy compatibility | Old-style projects never forced to migrate; detection is additive | ✓ Good — zero migration burden, existing projects unaffected |
 
 ---
-*Last updated: 2026-02-24 after v2.0 milestone started*
+*Last updated: 2026-02-25 after v2.0 milestone shipped*

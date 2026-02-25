@@ -46,3 +46,30 @@
 
 ---
 
+
+## v2.0 Concurrent Milestones (Shipped: 2026-02-25)
+
+**Delivered:** Concurrent milestone execution — isolated workspaces per milestone, lock-free dashboard, advisory conflict detection, full routing update across all workflows, and backward-compatible legacy support with zero migration required.
+
+**Phases:** 7 phases, 13 plans
+**Code:** 108 files changed (+26,299 / -5,442)
+**Timeline:** 1 day (2026-02-24 → 2026-02-25)
+**Git range:** feat(08-01) → docs(phase-13)
+**Requirements:** 34/34 satisfied
+**Tests:** 232/235 passing (87 new v2.0 tests)
+
+**Key accomplishments:**
+1. `planningRoot()` and `detectLayoutStyle()` — single path resolver and three-state layout detection as foundation for all milestone-scoped operations
+2. Workspace isolation — `new-milestone` creates `.planning/milestones/<v>/` with STATE.md, ROADMAP.md, REQUIREMENTS.md, conflict.json, phases/, research/
+3. Advisory conflict detection — `manifest-check` reads all active milestone conflict.json files and reports overlapping file paths (exit 0 always)
+4. Live multi-milestone dashboard — `cmdMilestoneWriteStatus` updates per-milestone STATUS.md at natural checkpoints, `cmdProgressRenderMulti` aggregates all active milestones
+5. Full routing update — `--milestone` flag threaded through all 7 workflow files and all 7 init commands, `MILESTONE_FLAG` construction pattern standardized
+6. Comprehensive test coverage — E2E lifecycle tests for both legacy and milestone-scoped modes, 90%+ branch coverage on all new functions
+
+**Known Gaps (accepted as tech debt):**
+- INTEGRATION-3: `cmdInitPlanPhase` hardcodes `state_path`/`roadmap_path` instead of using `planningRoot`
+- INTEGRATION-4: `cmdRoadmapGetPhase` and `cmdRoadmapAnalyze` ignore `--milestone` flag
+- Tracked in `.planning/TO-DOS.md`
+
+---
+

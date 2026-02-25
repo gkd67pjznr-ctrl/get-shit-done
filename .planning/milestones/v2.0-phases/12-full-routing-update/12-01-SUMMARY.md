@@ -119,3 +119,16 @@ None beyond the auto-fixed bug above.
 ---
 *Phase: 12-full-routing-update*
 *Completed: 2026-02-24*
+
+## Self-Check: PASSED
+
+All files verified present, all commits verified in git log.
+- get-shit-done/bin/lib/init.cjs: FOUND
+- get-shit-done/bin/lib/phase.cjs: FOUND
+- get-shit-done/bin/gsd-tools.cjs: FOUND
+- tests/routing.test.cjs: FOUND
+- get-shit-done/references/path-variables.md: FOUND
+- .planning/phases/12-full-routing-update/12-01-SUMMARY.md: FOUND
+- Commit eb22dd1 (Task 1): FOUND
+- Commit 547d0a0 (Task 2): FOUND
+- Commit f641ae4 (metadata): FOUND
