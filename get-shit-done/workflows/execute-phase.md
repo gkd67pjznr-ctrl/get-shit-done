@@ -177,6 +177,22 @@ Execute each wave in sequence. Within a wave: parallel if `PARALLELIZATION=true`
 
    If `layout_style` is not `"milestone-scoped"`, skip this step (legacy projects unaffected).
 
+   **4b. Update conflict manifest (files touched this wave):**
+
+   If `layout_style` from init is `"milestone-scoped"` and `MILESTONE_VERSION` is not empty:
+
+   ```bash
+   # Populate conflict manifest with files touched by this phase's plans (CNFL-01, CNFL-02)
+   PHASE_FILES=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs phase-plan-index "${PHASE_NUMBER}" \
+     | jq -r '.plans[].files_modified[]?' 2>/dev/null | sort -u | tr '\n' ' ')
+   if [ -n "$PHASE_FILES" ]; then
+     node ~/.claude/get-shit-done/bin/gsd-tools.cjs milestone update-manifest "${MILESTONE_VERSION}" \
+       --files ${PHASE_FILES} --raw
+   fi
+   ```
+
+   If `layout_style` is not `"milestone-scoped"`, skip this step (legacy projects unaffected).
+
    If pass:
    ```
    ---
