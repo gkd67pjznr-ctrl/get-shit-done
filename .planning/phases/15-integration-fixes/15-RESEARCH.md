@@ -1,0 +1,365 @@
+# Phase 15: Integration Fixes - Research
+
+**Researched:** 2026-02-25
+**Domain:** Node.js CLI path resolution — `gsd-tools.cjs` internal wiring
+**Confidence:** HIGH
+
+---
+
+<phase_requirements>
+## Phase Requirements
+
+| ID | Description | Research Support |
+|----|-------------|-----------------|
+| INTG-01 | `cmdInitPlanPhase` returns milestone-aware paths via `planningRoot()` instead of hardcoded `.planning/` | Fix identified: lines 138-140 in `get-shit-done/bin/lib/init.cjs`. Pattern to follow: `cmdInitExecutePhase` lines 76-77. `planningRoot()` already called at line 144. |
+| INTG-02 | `cmdRoadmapGetPhase` and `cmdRoadmapAnalyze` respect `--milestone` flag for milestone-scoped ROADMAP.md | Fix identified: add `milestoneScope` param to both functions in `get-shit-done/bin/lib/roadmap.cjs`; import `planningRoot` from `core.cjs`; update CLI router lines 436-438 in `get-shit-done/bin/gsd-tools.cjs` to pass `milestoneScope`. |
+</phase_requirements>
+
+---
+
+## Summary
+
+Phase 15 is a pure bug-fix phase. Two integration gaps were discovered during the v2.0 milestone audit (documented in `.planning/milestones/v2.0-MILESTONE-AUDIT.md`) and explicitly tracked in `.planning/TO-DOS.md`. Both bugs cause milestone-scoped commands to silently read root-level `.planning/` files instead of the correct milestone workspace files.
+
+**Bug 1 (INTG-01):** `cmdInitPlanPhase` in `get-shit-done/bin/lib/init.cjs` accepts a `milestoneScope` parameter and correctly computes `planning_root` via `planningRoot(cwd, milestoneScope)` at line 144, but then hardcodes the three file path outputs (`state_path`, `roadmap_path`, `requirements_path`) to `.planning/*` at lines 138-140. The sibling function `cmdInitExecutePhase` already has the correct pattern at lines 76-77.
+
+**Bug 2 (INTG-02):** `cmdRoadmapGetPhase` and `cmdRoadmapAnalyze` in `get-shit-done/bin/lib/roadmap.cjs` both hardcode `path.join(cwd, '.planning', 'ROADMAP.md')` and do not accept a `milestoneScope` parameter at all. The CLI router at lines 436-438 of `gsd-tools.cjs` calls both functions without forwarding `milestoneScope` even though the flag is already parsed from the CLI args. Three E2E flows break as a result: FLOW-1 (plan-phase in milestone context), FLOW-2 (roadmap analysis in milestone context), FLOW-3 (progress dashboard roadmap analysis).
+
+**Primary recommendation:** Apply two surgical changes — (1) fix 3 hardcoded path lines in `cmdInitPlanPhase`, and (2) add `milestoneScope` parameter + `planningRoot` import + 2 router call updates in the roadmap layer. Both fixes follow already-established patterns in the same codebase; no new libraries or design decisions required.
+
+---
+
+## Standard Stack
+
+### Core
+
+| Library | Version | Purpose | Why Standard |
+|---------|---------|---------|--------------|
+| Node.js `path` | built-in | Path joining, relative path computation | Already used throughout `init.cjs` and `core.cjs` |
+| Node.js `fs` | built-in | File I/O | Already used throughout |
+| `planningRoot()` from `core.cjs` | project | Converts `(cwd, milestoneScope)` → absolute planning root path | The established v2.0 pattern; used in `cmdInitExecutePhase`, `cmdInitResume`, `cmdInitProgress`, `cmdInitMilestoneOp` |
+
+### Supporting
+
+| Library | Version | Purpose | When to Use |
+|---------|---------|---------|-------------|
+| `path.relative(cwd, absolutePath)` | built-in | Convert absolute path back to cwd-relative string for JSON output | All init commands return relative paths for portability |
+
+### Alternatives Considered
+
+| Instead of | Could Use | Tradeoff |
+|------------|-----------|----------|
+| `planningRoot(cwd, milestoneScope)` | Inline conditional `milestoneScope ? ... : ...` | Inline duplicates logic already centralized in `planningRoot`; don't inline |
+
+**Installation:** No new packages. Pure internal wiring using existing Node.js built-ins.
+
+---
+
+## Architecture Patterns
+
+### Recommended Project Structure
+
+No structural changes. All changes are confined to:
+
+```
+get-shit-done/bin/
+├── gsd-tools.cjs           # CLI router — update 2 call sites (lines 436, 438)
+└── lib/
+    ├── init.cjs            # cmdInitPlanPhase — fix 3 hardcoded paths (lines 138-140)
+    └── roadmap.cjs         # cmdRoadmapGetPhase + cmdRoadmapAnalyze — add milestoneScope + planningRoot
+```
+
+### Pattern 1: Milestone-Aware Path Computation (The Established Pattern)
+
+**What:** Compute `root = planningRoot(cwd, milestoneScope)` once, then derive all file paths relative to that root using `path.relative(cwd, path.join(root, 'FILE.md'))`.
+
+**When to use:** Any init command that returns file paths in its JSON output and supports the `--milestone` flag.
+
+**Example — `cmdInitExecutePhase` (the correct reference implementation):**
+```javascript
+// Source: get-shit-done/bin/lib/init.cjs lines 16, 76-78
+const root = planningRoot(cwd, milestoneScope);
+// ...
+state_path: path.relative(cwd, path.join(root, 'STATE.md')),
+roadmap_path: path.relative(cwd, path.join(root, 'ROADMAP.md')),
+config_path: '.planning/config.json',  // config is always at project root, never milestone-scoped
+```
+
+**Apply same pattern to `cmdInitPlanPhase`:**
+```javascript
+// BEFORE (lines 138-140 of init.cjs) — BUG:
+state_path: '.planning/STATE.md',
+roadmap_path: '.planning/ROADMAP.md',
+requirements_path: '.planning/REQUIREMENTS.md',
+
+// AFTER — FIX:
+const root = planningRoot(cwd, milestoneScope);  // compute BEFORE the result object
+// ...
+state_path: path.relative(cwd, path.join(root, 'STATE.md')),
+roadmap_path: path.relative(cwd, path.join(root, 'ROADMAP.md')),
+requirements_path: path.relative(cwd, path.join(root, 'REQUIREMENTS.md')),
+```
+
+Note: `planning_root: planningRoot(cwd, milestoneScope)` at line 144 currently calls `planningRoot` a second time. The fix should hoist this to a single `const root = planningRoot(...)` before the result object (same as `cmdInitExecutePhase`), then use `root` for both the paths and `planning_root: root`.
+
+### Pattern 2: Milestone-Scoped Roadmap Path in Roadmap Commands
+
+**What:** Add `milestoneScope` as a last parameter to both roadmap functions; import `planningRoot` from `core.cjs`; replace the hardcoded path with `path.join(planningRoot(cwd, milestoneScope), 'ROADMAP.md')`.
+
+**Example — fix for `cmdRoadmapGetPhase`:**
+```javascript
+// Source: get-shit-done/bin/lib/roadmap.cjs
+
+// BEFORE (line 7 — missing planningRoot import):
+const { escapeRegex, normalizePhaseName, output, error, findPhaseInternal } = require('./core.cjs');
+
+// AFTER:
+const { escapeRegex, normalizePhaseName, output, error, findPhaseInternal, planningRoot } = require('./core.cjs');
+
+// BEFORE (line 9-10 — missing param, hardcoded path):
+function cmdRoadmapGetPhase(cwd, phaseNum, raw) {
+  const roadmapPath = path.join(cwd, '.planning', 'ROADMAP.md');
+
+// AFTER:
+function cmdRoadmapGetPhase(cwd, phaseNum, raw, milestoneScope) {
+  const roadmapPath = path.join(planningRoot(cwd, milestoneScope), 'ROADMAP.md');
+```
+
+**Example — fix for `cmdRoadmapAnalyze`:**
+```javascript
+// BEFORE (line 93-94):
+function cmdRoadmapAnalyze(cwd, raw) {
+  const roadmapPath = path.join(cwd, '.planning', 'ROADMAP.md');
+
+// AFTER:
+function cmdRoadmapAnalyze(cwd, raw, milestoneScope) {
+  const roadmapPath = path.join(planningRoot(cwd, milestoneScope), 'ROADMAP.md');
+```
+
+Note: `cmdRoadmapAnalyze` also uses `phasesDir = path.join(cwd, '.planning', 'phases')` at line 102. This should also use `planningRoot`:
+```javascript
+// BEFORE (line 102):
+const phasesDir = path.join(cwd, '.planning', 'phases');
+
+// AFTER:
+const phasesDir = path.join(planningRoot(cwd, milestoneScope), 'phases');
+```
+
+### Pattern 3: CLI Router — Forwarding milestoneScope
+
+**What:** Update the `case 'roadmap':` block in `gsd-tools.cjs` to pass `milestoneScope` to both functions.
+
+**Example:**
+```javascript
+// Source: get-shit-done/bin/gsd-tools.cjs lines 433-445
+
+// BEFORE (lines 436, 438):
+roadmap.cmdRoadmapGetPhase(cwd, args[2], raw);
+roadmap.cmdRoadmapAnalyze(cwd, raw);
+
+// AFTER:
+roadmap.cmdRoadmapGetPhase(cwd, args[2], raw, milestoneScope);
+roadmap.cmdRoadmapAnalyze(cwd, raw, milestoneScope);
+```
+
+`cmdRoadmapUpdatePlanProgress` does not use `milestoneScope` (it calls `findPhaseInternal` and writes to the roadmap determined by `roadmapPath = path.join(cwd, '.planning', 'ROADMAP.md')` at line 225). Whether this also needs fixing is a separate concern not covered by INTG-02 requirements.
+
+### Anti-Patterns to Avoid
+
+- **Calling `planningRoot` twice:** `cmdInitPlanPhase` currently calls it at line 144 as `planningRoot(cwd, milestoneScope)` in the result object. Hoist to a `const root` variable before the result object — same as the established pattern in `cmdInitExecutePhase`.
+- **Hardcoding `.planning/` in new code:** Any path that consumers use to read STATE.md, ROADMAP.md, or REQUIREMENTS.md must go through `planningRoot()` when `milestoneScope` is available.
+- **Modifying `getRoadmapPhaseInternal` in `core.cjs`:** This internal helper also hardcodes `.planning/ROADMAP.md` (line 322), but `cmdInitPlanPhase` uses it only to extract `phase_req_ids` — not for output paths. The INTG-01 fix is only about the three output path fields. Do not modify `core.cjs` unless a separate requirement calls for it.
+
+---
+
+## Don't Hand-Roll
+
+| Problem | Don't Build | Use Instead | Why |
+|---------|-------------|-------------|-----|
+| Milestone path resolution | Inline conditional `milestoneScope ? path.join(cwd, '.planning', 'milestones', milestoneScope) : path.join(cwd, '.planning')` | `planningRoot(cwd, milestoneScope)` from `core.cjs` | Already handles null/undefined milestoneScope, returns base `.planning/` path when not scoped |
+| Relative path from absolute | Manual string slicing | `path.relative(cwd, absolutePath)` | Handles OS path separators correctly |
+
+**Key insight:** Both `planningRoot` and the `path.relative` pattern are already established in the same file being modified. This phase is strictly about applying an existing pattern to two places that missed it.
+
+---
+
+## Common Pitfalls
+
+### Pitfall 1: Forgetting `phasesDir` in `cmdRoadmapAnalyze`
+
+**What goes wrong:** Fix only the `roadmapPath` (line 94) but leave `phasesDir = path.join(cwd, '.planning', 'phases')` at line 102 hardcoded. The roadmap is read from the right place but disk-status checks scan the wrong phases directory.
+
+**Why it happens:** There are two hardcoded paths in `cmdRoadmapAnalyze`, not one. The audit explicitly calls out line 94 but line 102 is the same class of bug.
+
+**How to avoid:** Search `cmdRoadmapAnalyze` body for every `path.join(cwd, '.planning',` occurrence and replace each with the `planningRoot`-derived equivalent.
+
+**Warning signs:** `disk_status` always returns `no_directory` for milestone-scoped projects even after the roadmap path is fixed.
+
+### Pitfall 2: Mismatched Existing Test Assertions
+
+**What goes wrong:** The existing test `'init plan-phase returns file paths'` in `tests/init.test.cjs` (line 47-50) asserts:
+```javascript
+assert.strictEqual(output.state_path, '.planning/STATE.md');
+assert.strictEqual(output.roadmap_path, '.planning/ROADMAP.md');
+assert.strictEqual(output.requirements_path, '.planning/REQUIREMENTS.md');
+```
+These pass for the legacy (non-milestone) case. After the fix, they should continue to pass when no `--milestone` flag is given, because `planningRoot(cwd, null)` returns `.planning/` and `path.relative` produces the same strings.
+
+**Why it happens:** The fix is backward-compatible — `planningRoot(cwd, null)` returns `path.join(cwd, '.planning')`, so `path.relative(cwd, path.join(root, 'STATE.md'))` = `.planning/STATE.md`. Exactly what the current test expects.
+
+**How to avoid:** Verify the existing test suite still passes before adding new milestone-scoped tests.
+
+### Pitfall 3: Not Adding New Tests for the Fixed Behavior
+
+**What goes wrong:** The bugs are fixed but there's no regression protection. The next developer to touch these files could re-introduce the same hardcoding.
+
+**Why it happens:** Existing tests only test the legacy path (no `--milestone`). No test currently asserts that milestone-scoped calls return the correct paths.
+
+**How to avoid:** Add tests for:
+1. `init plan-phase --milestone v2.0` returns milestone-scoped `state_path`, `roadmap_path`, `requirements_path`
+2. `roadmap get-phase N --milestone v2.0` reads the milestone workspace ROADMAP.md
+3. `roadmap analyze --milestone v2.0` reads the milestone workspace ROADMAP.md
+
+Use `createConcurrentProject()` from `tests/helpers.cjs` (already exists, creates workspace at `.planning/milestones/v2.0/`).
+
+### Pitfall 4: Breaking `cmdRoadmapUpdatePlanProgress`
+
+**What goes wrong:** When updating the roadmap function signatures, accidentally adding `milestoneScope` to `cmdRoadmapUpdatePlanProgress` and then not passing it from the router — or passing it incorrectly.
+
+**Why it happens:** The function appears in the same file and the router block for three subcommands.
+
+**How to avoid:** `cmdRoadmapUpdatePlanProgress` is not in scope for INTG-02. Leave its signature unchanged.
+
+---
+
+## Code Examples
+
+Verified patterns from source files:
+
+### planningRoot — How It Works
+```javascript
+// Source: get-shit-done/bin/lib/core.cjs lines 402-407
+function planningRoot(cwd, milestoneScope) {
+  const base = path.join(cwd, '.planning');
+  if (milestoneScope) {
+    return path.join(base, 'milestones', milestoneScope);
+  }
+  return base;
+}
+```
+
+### Reference: How cmdInitExecutePhase Does It Correctly (INTG-01 model)
+```javascript
+// Source: get-shit-done/bin/lib/init.cjs lines 16, 76-78
+function cmdInitExecutePhase(cwd, phase, raw, milestoneScope) {
+  // ...
+  const root = planningRoot(cwd, milestoneScope);
+  // ...
+  const result = {
+    // ...
+    state_path: path.relative(cwd, path.join(root, 'STATE.md')),
+    roadmap_path: path.relative(cwd, path.join(root, 'ROADMAP.md')),
+    config_path: '.planning/config.json',
+    // ...
+    planning_root: root,
+  };
+}
+```
+
+### Reference: cmdInitPlanPhase Bug (Lines 138-144 as-is)
+```javascript
+// Source: get-shit-done/bin/lib/init.cjs lines 138-144 — CURRENT BUGGY STATE
+state_path: '.planning/STATE.md',              // hardcoded — BUG
+roadmap_path: '.planning/ROADMAP.md',          // hardcoded — BUG
+requirements_path: '.planning/REQUIREMENTS.md', // hardcoded — BUG
+// ...
+milestone_scope: milestoneScope || null,
+planning_root: planningRoot(cwd, milestoneScope),  // correct but called a 2nd time
+```
+
+### Reference: Roadmap Commands Bug (Lines 9-10, 93-94 as-is)
+```javascript
+// Source: get-shit-done/bin/lib/roadmap.cjs lines 9-10 — CURRENT BUGGY STATE
+function cmdRoadmapGetPhase(cwd, phaseNum, raw) {         // no milestoneScope param
+  const roadmapPath = path.join(cwd, '.planning', 'ROADMAP.md'); // hardcoded — BUG
+
+// Source: get-shit-done/bin/lib/roadmap.cjs lines 93-94 — CURRENT BUGGY STATE
+function cmdRoadmapAnalyze(cwd, raw) {                    // no milestoneScope param
+  const roadmapPath = path.join(cwd, '.planning', 'ROADMAP.md'); // hardcoded — BUG
+  // ...
+  const phasesDir = path.join(cwd, '.planning', 'phases'); // also hardcoded — BUG (line 102)
+```
+
+### Test Helper for Milestone-Scoped Tests
+```javascript
+// Source: tests/helpers.cjs lines 71-83
+function createConcurrentProject(version = 'v2.0') {
+  const tmpDir = createTempProject();
+  fs.writeFileSync(
+    path.join(tmpDir, '.planning', 'config.json'),
+    JSON.stringify({ concurrent: true }),
+    'utf-8'
+  );
+  const workspaceDir = path.join(tmpDir, '.planning', 'milestones', version);
+  fs.mkdirSync(path.join(workspaceDir, 'phases'), { recursive: true });
+  fs.writeFileSync(path.join(workspaceDir, 'STATE.md'), '# State\n', 'utf-8');
+  fs.writeFileSync(path.join(workspaceDir, 'ROADMAP.md'), '# Roadmap\n', 'utf-8');
+  return tmpDir;
+}
+```
+
+---
+
+## State of the Art
+
+| Old Approach | Current Approach | When Changed | Impact |
+|--------------|------------------|--------------|--------|
+| All `init` commands hardcode `.planning/` | `cmdInitExecutePhase`, `cmdInitResume`, `cmdInitProgress`, etc. use `planningRoot()` | v2.0 (Phase 8-12) | `cmdInitPlanPhase` missed this update |
+| No milestone scope | `milestoneScope` parsed from `--milestone` flag by CLI router | v2.0 (Phase 8) | Router already passes it to most commands; roadmap commands were missed |
+
+**Deprecated/outdated:**
+- Hardcoded `.planning/` in path fields: replaced by `planningRoot(cwd, milestoneScope)` + `path.relative` pattern since v2.0
+
+---
+
+## Open Questions
+
+1. **Does `cmdRoadmapUpdatePlanProgress` also need milestone scoping?**
+   - What we know: It also hardcodes `path.join(cwd, '.planning', 'ROADMAP.md')` at line 225 of `roadmap.cjs`
+   - What's unclear: Whether any workflow calls it with `--milestone` in the current skill/workflow files
+   - Recommendation: Defer to a separate tech debt entry. It is not referenced by INTG-02 and the task description does not include it. Fixing it in this phase risks scope creep without requirement coverage.
+
+2. **Should `getRoadmapPhaseInternal` in `core.cjs` (line 322) also be fixed?**
+   - What we know: It hardcodes `.planning/ROADMAP.md`; called by `cmdInitPlanPhase` and `cmdInitPhaseOp` for `phase_req_ids` extraction
+   - What's unclear: Whether milestone-scoped agents need correct `phase_req_ids` extracted from the milestone ROADMAP.md
+   - Recommendation: This is a potential follow-on gap, but INTG-01 only calls out the three output path fields. Treat as a separate observation. If the planner wants to include it, it is a safe additive fix: add `milestoneScope` param, update callers similarly.
+
+---
+
+## Sources
+
+### Primary (HIGH confidence)
+
+All findings are derived directly from reading the source code of the project. No external library documentation is needed — this is an internal wiring fix using Node.js built-ins.
+
+- `get-shit-done/bin/lib/init.cjs` — `cmdInitPlanPhase` (lines 91-175), `cmdInitExecutePhase` (lines 10-89) — reference pattern
+- `get-shit-done/bin/lib/roadmap.cjs` — `cmdRoadmapGetPhase` (lines 9-91), `cmdRoadmapAnalyze` (lines 93-218)
+- `get-shit-done/bin/lib/core.cjs` — `planningRoot` function (lines 402-407), `getRoadmapPhaseInternal` (lines 320-352)
+- `get-shit-done/bin/gsd-tools.cjs` — CLI router, `milestoneScope` parsing (lines 172-184), roadmap case (lines 433-445)
+- `.planning/milestones/v2.0-MILESTONE-AUDIT.md` — INTEGRATION-3 and INTEGRATION-4 gap documentation
+- `.planning/TO-DOS.md` — INTEGRATION-3 and INTEGRATION-4 fix specifications
+- `tests/init.test.cjs` — existing test assertions, milestone-flag test suite (lines 202-284)
+- `tests/helpers.cjs` — `createConcurrentProject()` helper (lines 71-83)
+- `tests/roadmap.test.cjs` — existing roadmap tests (no milestone tests currently)
+
+---
+
+## Metadata
+
+**Confidence breakdown:**
+- Standard stack: HIGH — pure Node.js built-ins, no external dependencies
+- Architecture: HIGH — fix pattern directly observed in sibling functions in same file
+- Pitfalls: HIGH — pitfalls derived from reading existing code and test assertions, not speculation
+
+**Research date:** 2026-02-25
+**Valid until:** Indefinite — this is internal code, no external dependency versions to expire
