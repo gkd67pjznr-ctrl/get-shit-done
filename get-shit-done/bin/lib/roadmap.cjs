@@ -270,13 +270,24 @@ function cmdRoadmapUpdatePlanProgress(cwd, phaseNum, raw) {
     : `${summaryCount}/${planCount} plans executed`;
   roadmapContent = roadmapContent.replace(planCountPattern, `$1${planCountText}`);
 
-  // If complete: check checkbox
+  // If complete: check phase-level checkbox
   if (isComplete) {
     const checkboxPattern = new RegExp(
       `(-\\s*\\[)[ ](\\]\\s*.*Phase\\s+${phaseEscaped}[:\\s][^\\n]*)`,
       'i'
     );
     roadmapContent = roadmapContent.replace(checkboxPattern, `$1x$2 (completed ${today})`);
+  }
+
+  // Plan-level checkboxes: flip individual plan lines to [x] when phase is complete
+  if (isComplete && phaseInfo.plans && phaseInfo.plans.length > 0) {
+    for (const planFile of phaseInfo.plans) {
+      const planPattern = new RegExp(
+        `(-\\s*\\[)[ ](\\]\\s*${escapeRegex(planFile)})`,
+        'gi'
+      );
+      roadmapContent = roadmapContent.replace(planPattern, '$1x$2');
+    }
   }
 
   fs.writeFileSync(roadmapPath, roadmapContent, 'utf-8');
