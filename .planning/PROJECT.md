@@ -46,7 +46,17 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 
 ### Active
 
-(No active milestone — next milestone not yet started)
+#### Current Milestone: v3.0 Tech Debt System
+
+**Goal:** Build infrastructure for systematic tech debt tracking and resolution, plus a project migration tool for existing `.planning/` folders.
+
+**Target features:**
+- Central DEBT.md hub with structured entries
+- CLI command for agents to log debt during execution
+- Executor/verifier wiring to auto-log discovered debt
+- `/gsd:fix-debt` on-demand skill for debugger-driven debt resolution
+- Project migration tool to reorganize `.planning/` to current specs
+- Fix INTEGRATION-3 and INTEGRATION-4 known gaps
 
 ### Out of Scope
 
@@ -110,4 +120,4 @@ Tech stack: Node.js, CJS modules, Markdown agent specifications, Context7 MCP.
 | Permanent legacy compatibility | Old-style projects never forced to migrate; detection is additive | ✓ Good — zero migration burden, existing projects unaffected |
 
 ---
-*Last updated: 2026-02-25 after v2.0 milestone shipped*
+*Last updated: 2026-02-25 after v3.0 milestone started*

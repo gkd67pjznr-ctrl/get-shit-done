@@ -5,15 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-25)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Planning next milestone
+**Current focus:** v3.0 Tech Debt System
 
 ## Current Position
 
-Phase: All complete
-Status: v2.0 Concurrent Milestones shipped 2026-02-25
-Last activity: 2026-02-25 - Completed quick task 1: install gsd modifications for local testing and development
-
-**Milestones shipped:** v1.0 MVP, v1.1 Quality UX, v2.0 Concurrent Milestones
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-25 — Milestone v3.0 started
 
 ## Accumulated Context
 
@@ -41,5 +40,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: v2.0 milestone completed and archived
-Next step: /gsd:new-milestone or fix integration gaps from TO-DOS.md
+Stopped at: v3.0 milestone initialization
+Next step: Define requirements, create roadmap
