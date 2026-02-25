@@ -6,7 +6,7 @@ const { test, describe, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
-const { runGsdTools, runGsdToolsFull, createTempProject, cleanup } = require('./helpers.cjs');
+const { runGsdTools, runGsdToolsFull, createTempProject, createConcurrentProject, cleanup } = require('./helpers.cjs');
 
 describe('init commands', () => {
   let tmpDir;
@@ -281,6 +281,35 @@ describe('--milestone flag parsing (PATH-03)', () => {
       !parsed.planning_root.includes('milestones'),
       `planning_root should not contain milestones: ${parsed.planning_root}`
     );
+  });
+
+  test('init plan-phase returns milestone-scoped file paths with --milestone (INTG-01)', () => {
+    // Use createConcurrentProject which sets up .planning/milestones/v2.0/ workspace
+    const concurrentDir = createConcurrentProject('v2.0');
+    try {
+      // Create a phase directory in the milestone workspace for findPhaseInternal to discover
+      fs.mkdirSync(path.join(concurrentDir, '.planning', 'milestones', 'v2.0', 'phases', '01-test'), { recursive: true });
+      // Write milestone-scoped ROADMAP.md with phase section
+      fs.writeFileSync(
+        path.join(concurrentDir, '.planning', 'milestones', 'v2.0', 'ROADMAP.md'),
+        '# Roadmap\n## Phases\n### Phase 1: Test\n'
+      );
+
+      const result = runGsdTools('--milestone v2.0 init plan-phase 1 --raw', concurrentDir);
+      assert.ok(result.success, `Command should succeed: ${result.error || ''}`);
+      const parsed = JSON.parse(result.output);
+
+      // Verify milestone-scoped paths (not hardcoded .planning/)
+      const expectedPrefix = path.join('.planning', 'milestones', 'v2.0');
+      assert.strictEqual(parsed.state_path, path.join(expectedPrefix, 'STATE.md'),
+        `state_path should be milestone-scoped: ${parsed.state_path}`);
+      assert.strictEqual(parsed.roadmap_path, path.join(expectedPrefix, 'ROADMAP.md'),
+        `roadmap_path should be milestone-scoped: ${parsed.roadmap_path}`);
+      assert.strictEqual(parsed.requirements_path, path.join(expectedPrefix, 'REQUIREMENTS.md'),
+        `requirements_path should be milestone-scoped: ${parsed.requirements_path}`);
+    } finally {
+      cleanup(concurrentDir);
+    }
   });
 });
 

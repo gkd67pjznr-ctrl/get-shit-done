@@ -6,7 +6,7 @@ const { test, describe, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
-const { runGsdTools, createTempProject, cleanup } = require('./helpers.cjs');
+const { runGsdTools, createTempProject, createConcurrentProject, cleanup } = require('./helpers.cjs');
 
 describe('roadmap get-phase command', () => {
   let tmpDir;
@@ -256,6 +256,71 @@ describe('roadmap analyze command', () => {
     assert.strictEqual(output.phases[0].depends_on, 'Nothing');
     assert.strictEqual(output.phases[1].goal, 'Build features');
     assert.strictEqual(output.phases[1].depends_on, 'Phase 1');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// milestone-scoped roadmap commands (INTG-02)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('milestone-scoped roadmap commands (INTG-02)', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createConcurrentProject('v2.0');
+    // Write a real ROADMAP.md in the milestone workspace
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'milestones', 'v2.0', 'ROADMAP.md'),
+      `# Roadmap v2.0\n\n## Phases\n\n### Phase 1: Foundation\n**Goal:** Set up infrastructure\n\n### Phase 2: Features\n**Goal:** Build features\n`
+    );
+    // Create phase directories in milestone workspace
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'milestones', 'v2.0', 'phases', '01-foundation'), { recursive: true });
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('roadmap get-phase reads milestone-scoped ROADMAP.md', () => {
+    const result = runGsdTools('--milestone v2.0 roadmap get-phase 1', tmpDir);
+    assert.ok(result.success, `Command should succeed: ${result.error || ''}`);
+    const parsed = JSON.parse(result.output);
+    assert.strictEqual(parsed.found, true, 'Phase 1 should be found in milestone ROADMAP');
+    assert.strictEqual(parsed.phase_name, 'Foundation');
+    assert.strictEqual(parsed.goal, 'Set up infrastructure');
+  });
+
+  test('roadmap get-phase returns not found for missing phase in milestone', () => {
+    const result = runGsdTools('--milestone v2.0 roadmap get-phase 99', tmpDir);
+    assert.ok(result.success, `Command should succeed: ${result.error || ''}`);
+    const parsed = JSON.parse(result.output);
+    assert.strictEqual(parsed.found, false);
+  });
+
+  test('roadmap analyze reads milestone-scoped ROADMAP.md', () => {
+    const result = runGsdTools('--milestone v2.0 roadmap analyze --raw', tmpDir);
+    assert.ok(result.success, `Command should succeed: ${result.error || ''}`);
+    const parsed = JSON.parse(result.output);
+    assert.ok(Array.isArray(parsed.phases), 'phases should be an array');
+    assert.ok(parsed.phases.length >= 1, `Should find phases in milestone ROADMAP: ${JSON.stringify(parsed.phases)}`);
+    // Verify it found our milestone-specific phases
+    const phase1 = parsed.phases.find(p => p.number === '1');
+    assert.ok(phase1, 'Phase 1 should exist');
+    assert.strictEqual(phase1.name, 'Foundation');
+  });
+
+  test('roadmap analyze without --milestone reads root ROADMAP.md', () => {
+    // Write a different ROADMAP at root level to prove it reads the right one
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      '# Root Roadmap\n\n### Phase 1: Root Phase\n**Goal:** Root goal\n'
+    );
+    const result = runGsdTools('roadmap analyze --raw', tmpDir);
+    assert.ok(result.success, `Command should succeed: ${result.error || ''}`);
+    const parsed = JSON.parse(result.output);
+    const phase1 = parsed.phases.find(p => p.number === '1');
+    assert.ok(phase1, 'Phase 1 should exist');
+    assert.strictEqual(phase1.name, 'Root Phase', 'Should read from root ROADMAP, not milestone');
   });
 });
 
