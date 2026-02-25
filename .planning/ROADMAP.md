@@ -135,7 +135,7 @@ Plans:
 | 13. Test Coverage | v2.0 | 2/2 | Complete | 2026-02-25 |
 | 14. Integration Wiring Fix | v2.0 | 1/1 | Complete | 2026-02-25 |
 | 15. Integration Fixes | 1/1 | Complete    | 2026-02-25 | - |
-| 16. Core Debt Module | 1/1 | Complete   | 2026-02-25 | - |
+| 16. Core Debt Module | 1/1 | Complete    | 2026-02-25 | - |
 | 17. Migration Tool | v3.0 | 0/? | Not started | - |
 | 18. Agent Wiring | v3.0 | 0/? | Not started | - |
 | 19. /gsd:fix-debt Skill | v3.0 | 0/? | Not started | - |
