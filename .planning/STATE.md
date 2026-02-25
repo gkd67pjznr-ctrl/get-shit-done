@@ -41,6 +41,7 @@ Last activity: 2026-02-24 — 12-02 complete: full workflow routing layer for mi
 | Phase 11-dashboard-conflict-detection P02 | 8min | 2 tasks | 4 files |
 | Phase 12-full-routing-update P01 | 12min | 2 tasks | 5 files |
 | Phase 12 P02 | 3min | 2 tasks | 8 files |
+| Phase 14-integration-wiring-fix P01 | 1 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -77,6 +78,8 @@ Full v1.0 + v1.1 decision logs archived with milestones.
 - [Phase 12]: transition.md adds init execute-phase call in load_project_state to obtain layout_style — no prior init existed in that workflow
 - [Phase 12]: complete-milestone.md extracts MILESTONE_VERSION from first arg of $ARGUMENTS — version is always arg 1 when invoked as /gsd:complete-milestone v2.0
 - [Phase 12]: standalone workflows extract --milestone from $ARGUMENTS via sed — users can invoke verify-work, progress, resume-project with --milestone flag
+- [Phase 14-integration-wiring-fix]: MILESTONE_VERSION uses alias (MILESTONE_VERSION=$MILESTONE_SCOPE) not a separate jq call — avoids redundant subshell and ensures same source as MILESTONE_FLAG
+- [Phase 14-integration-wiring-fix]: update-manifest placed as step 4b in wave loop, collecting all plans' files_modified — safe because cmdMilestoneUpdateManifest deduplicates with Set
 
 ### Pending Todos
 
