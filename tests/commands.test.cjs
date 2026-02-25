@@ -768,7 +768,7 @@ describe('check-patches command (INFR-02)', () => {
   test('returns has_patches false when no patches directory', () => {
     const gsdHomeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-home-test-'));
     try {
-      const result = runGsdToolsFull(['check-patches'], tmpDir, { GSD_HOME: gsdHomeDir });
+      const result = runGsdToolsFull(['check-patches'], tmpDir, { GSD_HOME: gsdHomeDir, HOME: gsdHomeDir });
       assert.ok(result.success, `Command failed: ${result.stderr}`);
 
       const out = JSON.parse(result.output);

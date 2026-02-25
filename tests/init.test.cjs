@@ -329,28 +329,38 @@ describe('config quality section', () => {
   });
 
   test('config-ensure-section creates quality key with fast default', () => {
-    const result = runGsdTools('config-ensure-section', tmpDir);
-    assert.ok(result.success, `Command failed: ${result.error}`);
+    const isolatedHome = fs.mkdtempSync(path.join(require('os').tmpdir(), 'gsd-quality-test-'));
+    try {
+      const result = runGsdToolsFull(['config-ensure-section'], tmpDir, { GSD_HOME: isolatedHome, HOME: isolatedHome });
+      assert.ok(result.success, `Command failed: ${result.stderr}`);
 
-    const configPath = path.join(tmpDir, '.planning', 'config.json');
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      const configPath = path.join(tmpDir, '.planning', 'config.json');
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 
-    assert.ok(config.quality, 'quality key must exist');
-    assert.strictEqual(config.quality.level, 'fast', 'default level must be fast');
-    assert.ok(Array.isArray(config.quality.test_exemptions), 'test_exemptions must be array');
-    assert.ok(config.quality.test_exemptions.includes('.md'), 'must include .md exemption');
-    assert.ok(config.quality.test_exemptions.includes('.json'), 'must include .json exemption');
-    assert.ok(config.quality.test_exemptions.includes('templates/**'), 'must include templates/** exemption');
-    assert.ok(config.quality.test_exemptions.includes('.planning/**'), 'must include .planning/** exemption');
+      assert.ok(config.quality, 'quality key must exist');
+      assert.strictEqual(config.quality.level, 'fast', 'default level must be fast');
+      assert.ok(Array.isArray(config.quality.test_exemptions), 'test_exemptions must be array');
+      assert.ok(config.quality.test_exemptions.includes('.md'), 'must include .md exemption');
+      assert.ok(config.quality.test_exemptions.includes('.json'), 'must include .json exemption');
+      assert.ok(config.quality.test_exemptions.includes('templates/**'), 'must include templates/** exemption');
+      assert.ok(config.quality.test_exemptions.includes('.planning/**'), 'must include .planning/** exemption');
+    } finally {
+      fs.rmSync(isolatedHome, { recursive: true, force: true });
+    }
   });
 
   test('config-get quality.level returns fast on fresh config', () => {
-    // First ensure config exists
-    runGsdTools('config-ensure-section', tmpDir);
+    const isolatedHome = fs.mkdtempSync(path.join(require('os').tmpdir(), 'gsd-quality-test-'));
+    try {
+      // First ensure config exists (isolated from real user defaults)
+      runGsdToolsFull(['config-ensure-section'], tmpDir, { GSD_HOME: isolatedHome, HOME: isolatedHome });
 
-    const result = runGsdTools('config-get quality.level', tmpDir);
-    assert.ok(result.success, `Command failed: ${result.error}`);
-    assert.strictEqual(JSON.parse(result.output), 'fast', 'quality.level should be fast');
+      const result = runGsdToolsFull(['config-get', 'quality.level'], tmpDir, { GSD_HOME: isolatedHome, HOME: isolatedHome });
+      assert.ok(result.success, `Command failed: ${result.stderr}`);
+      assert.strictEqual(JSON.parse(result.output), 'fast', 'quality.level should be fast');
+    } finally {
+      fs.rmSync(isolatedHome, { recursive: true, force: true });
+    }
   });
 
   test('config-get quality.test_exemptions returns array', () => {
@@ -439,16 +449,21 @@ describe('config auto-migration (QCFG-02)', () => {
     const configPath = path.join(tmpDir, '.planning', 'config.json');
     fs.writeFileSync(configPath, JSON.stringify({ model_profile: 'balanced', commit_docs: true }), 'utf-8');
 
-    const result = runGsdTools('config-ensure-section', tmpDir);
-    assert.ok(result.success, `Command failed: ${result.error}`);
+    const isolatedHome = fs.mkdtempSync(path.join(require('os').tmpdir(), 'gsd-quality-test-'));
+    try {
+      const result = runGsdToolsFull(['config-ensure-section'], tmpDir, { GSD_HOME: isolatedHome, HOME: isolatedHome });
+      assert.ok(result.success, `Command failed: ${result.stderr}`);
 
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-    assert.ok(config.quality, 'quality key must exist after migration');
-    assert.strictEqual(config.quality.level, 'fast', 'quality.level must default to fast');
-    assert.ok(Array.isArray(config.quality.test_exemptions), 'test_exemptions must be array');
-    assert.strictEqual(config.quality.test_exemptions.length, 4, 'must have 4 default exemptions');
-    assert.strictEqual(config.model_profile, 'balanced', 'existing model_profile must be preserved');
-    assert.strictEqual(config.commit_docs, true, 'existing commit_docs must be preserved');
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      assert.ok(config.quality, 'quality key must exist after migration');
+      assert.strictEqual(config.quality.level, 'fast', 'quality.level must default to fast');
+      assert.ok(Array.isArray(config.quality.test_exemptions), 'test_exemptions must be array');
+      assert.strictEqual(config.quality.test_exemptions.length, 4, 'must have 4 default exemptions');
+      assert.strictEqual(config.model_profile, 'balanced', 'existing model_profile must be preserved');
+      assert.strictEqual(config.commit_docs, true, 'existing commit_docs must be preserved');
+    } finally {
+      fs.rmSync(isolatedHome, { recursive: true, force: true });
+    }
   });
 
   test('config-ensure-section preserves existing quality block if already present', () => {
