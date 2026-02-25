@@ -164,9 +164,9 @@ function cmdVerifyPlanStructure(cwd, filePath, raw) {
   }, raw, errors.length === 0 ? 'valid' : 'invalid');
 }
 
-function cmdVerifyPhaseCompleteness(cwd, phase, raw) {
+function cmdVerifyPhaseCompleteness(cwd, phase, raw, milestoneScope) {
   if (!phase) { error('phase required'); }
-  const phaseInfo = findPhaseInternal(cwd, phase);
+  const phaseInfo = findPhaseInternal(cwd, phase, milestoneScope);
   if (!phaseInfo || !phaseInfo.found) {
     output({ error: 'Phase not found', phase }, raw);
     return;

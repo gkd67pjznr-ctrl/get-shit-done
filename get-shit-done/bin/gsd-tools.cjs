@@ -283,7 +283,7 @@ async function main() {
     }
 
     case 'find-phase': {
-      phase.cmdFindPhase(cwd, args[1], raw);
+      phase.cmdFindPhase(cwd, args[1], raw, milestoneScope);
       break;
     }
 
@@ -358,7 +358,7 @@ async function main() {
       if (subcommand === 'plan-structure') {
         verify.cmdVerifyPlanStructure(cwd, args[2], raw);
       } else if (subcommand === 'phase-completeness') {
-        verify.cmdVerifyPhaseCompleteness(cwd, args[2], raw);
+        verify.cmdVerifyPhaseCompleteness(cwd, args[2], raw, milestoneScope);
       } else if (subcommand === 'references') {
         verify.cmdVerifyReferences(cwd, args[2], raw);
       } else if (subcommand === 'commits') {
@@ -441,7 +441,7 @@ async function main() {
           phase: phaseIndex !== -1 ? args[phaseIndex + 1] : null,
           includeArchived: args.includes('--include-archived'),
         };
-        phase.cmdPhasesList(cwd, options, raw);
+        phase.cmdPhasesList(cwd, options, raw, milestoneScope);
       } else {
         error('Unknown phases subcommand. Available: list');
       }
@@ -455,7 +455,7 @@ async function main() {
       } else if (subcommand === 'analyze') {
         roadmap.cmdRoadmapAnalyze(cwd, raw, milestoneScope);
       } else if (subcommand === 'update-plan-progress') {
-        roadmap.cmdRoadmapUpdatePlanProgress(cwd, args[2], raw);
+        roadmap.cmdRoadmapUpdatePlanProgress(cwd, args[2], raw, milestoneScope);
       } else {
         error('Unknown roadmap subcommand. Available: get-phase, analyze, update-plan-progress');
       }
@@ -516,14 +516,14 @@ async function main() {
     case 'phase': {
       const subcommand = args[1];
       if (subcommand === 'next-decimal') {
-        phase.cmdPhaseNextDecimal(cwd, args[2], raw);
+        phase.cmdPhaseNextDecimal(cwd, args[2], raw, milestoneScope);
       } else if (subcommand === 'add') {
-        phase.cmdPhaseAdd(cwd, args.slice(2).join(' '), raw);
+        phase.cmdPhaseAdd(cwd, args.slice(2).join(' '), raw, milestoneScope);
       } else if (subcommand === 'insert') {
-        phase.cmdPhaseInsert(cwd, args[2], args.slice(3).join(' '), raw);
+        phase.cmdPhaseInsert(cwd, args[2], args.slice(3).join(' '), raw, milestoneScope);
       } else if (subcommand === 'remove') {
         const forceFlag = args.includes('--force');
-        phase.cmdPhaseRemove(cwd, args[2], { force: forceFlag }, raw);
+        phase.cmdPhaseRemove(cwd, args[2], { force: forceFlag }, raw, milestoneScope);
       } else if (subcommand === 'complete') {
         phase.cmdPhaseComplete(cwd, args[2], raw, milestoneScope);
       } else {
@@ -664,7 +664,7 @@ async function main() {
     }
 
     case 'phase-plan-index': {
-      phase.cmdPhasePlanIndex(cwd, args[1], raw);
+      phase.cmdPhasePlanIndex(cwd, args[1], raw, milestoneScope);
       break;
     }
 

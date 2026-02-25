@@ -78,8 +78,17 @@
 
 **Goal:** Build infrastructure for systematic tech debt tracking and resolution, plus a project migration tool for existing `.planning/` folders.
 
-**Phases:** 5 planned (15-19) + 1 inserted (16.1)
-**Status:** In progress — Phases 15-16 complete, Phase 16.1 in progress
+**Workspace:** `.planning/milestones/v3.0/`
+**Phases:** 6 (3.1-3.5 + 3.2.1)
+**Status:** In progress — Phases 3.1, 3.2, 3.2.1 complete. Next: Phase 3.3
+
+**Phase Mapping (legacy → scoped):**
+- Phase 15 → Phase 3.1 (Integration Fixes)
+- Phase 16 → Phase 3.2 (Core Debt Module)
+- Phase 16.1 → Phase 3.2.1 (Planning Directory Cleanup and GSD Flow Fixes)
+- Phase 17 → Phase 3.3 (Migration Tool)
+- Phase 18 → Phase 3.4 (Agent Wiring)
+- Phase 19 → Phase 3.5 (/gsd:fix-debt Skill)
 
 ---
 

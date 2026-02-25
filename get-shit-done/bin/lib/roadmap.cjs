@@ -217,14 +217,14 @@ function cmdRoadmapAnalyze(cwd, raw, milestoneScope) {
   output(result, raw);
 }
 
-function cmdRoadmapUpdatePlanProgress(cwd, phaseNum, raw) {
+function cmdRoadmapUpdatePlanProgress(cwd, phaseNum, raw, milestoneScope) {
   if (!phaseNum) {
     error('phase number required for roadmap update-plan-progress');
   }
 
-  const roadmapPath = path.join(cwd, '.planning', 'ROADMAP.md');
+  const roadmapPath = path.join(planningRoot(cwd, milestoneScope), 'ROADMAP.md');
 
-  const phaseInfo = findPhaseInternal(cwd, phaseNum);
+  const phaseInfo = findPhaseInternal(cwd, phaseNum, milestoneScope);
   if (!phaseInfo) {
     error(`Phase ${phaseNum} not found`);
   }

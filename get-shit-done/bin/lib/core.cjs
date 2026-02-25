@@ -164,9 +164,9 @@ function escapeRegex(value) {
 function normalizePhaseName(phase) {
   const match = String(phase).match(/^(\d+)([A-Z])?((?:\.\d+)*)/i);
   if (!match) return phase;
-  const padded = match[1].padStart(2, '0');
-  const letter = match[2] ? match[2].toUpperCase() : '';
   const decimal = match[3] || '';
+  const padded = decimal ? match[1] : match[1].padStart(2, '0');
+  const letter = match[2] ? match[2].toUpperCase() : '';
   return padded + letter + decimal;
 }
 
@@ -243,13 +243,21 @@ function searchPhaseInDir(baseDir, relBase, normalized) {
   }
 }
 
-function findPhaseInternal(cwd, phase) {
+function findPhaseInternal(cwd, phase, milestoneScope) {
   if (!phase) return null;
 
-  const phasesDir = path.join(cwd, '.planning', 'phases');
   const normalized = normalizePhaseName(phase);
 
+  // When milestoneScope is provided, search milestone workspace phases
+  if (milestoneScope) {
+    const root = planningRoot(cwd, milestoneScope);
+    const phasesDir = path.join(root, 'phases');
+    const relBase = path.join('.planning', 'milestones', milestoneScope, 'phases');
+    return searchPhaseInDir(phasesDir, relBase, normalized);
+  }
+
   // Search current phases first
+  const phasesDir = path.join(cwd, '.planning', 'phases');
   const current = searchPhaseInDir(phasesDir, path.join('.planning', 'phases'), normalized);
   if (current) return current;
 
@@ -317,9 +325,9 @@ function getArchivedPhaseDirs(cwd) {
 
 // ─── Roadmap & model utilities ────────────────────────────────────────────────
 
-function getRoadmapPhaseInternal(cwd, phaseNum) {
+function getRoadmapPhaseInternal(cwd, phaseNum, milestoneScope) {
   if (!phaseNum) return null;
-  const roadmapPath = path.join(cwd, '.planning', 'ROADMAP.md');
+  const roadmapPath = path.join(planningRoot(cwd, milestoneScope), 'ROADMAP.md');
   if (!fs.existsSync(roadmapPath)) return null;
 
   try {
@@ -385,9 +393,9 @@ function generateSlugInternal(text) {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
-function getMilestoneInfo(cwd) {
+function getMilestoneInfo(cwd, milestoneScope) {
   try {
-    const roadmap = fs.readFileSync(path.join(cwd, '.planning', 'ROADMAP.md'), 'utf-8');
+    const roadmap = fs.readFileSync(path.join(planningRoot(cwd, milestoneScope), 'ROADMAP.md'), 'utf-8');
     const versionMatch = roadmap.match(/v(\d+\.\d+)/);
     const nameMatch = roadmap.match(/## .*v\d+\.\d+[:\s]+([^\n(]+)/);
     return {

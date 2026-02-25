@@ -14,10 +14,10 @@ function cmdInitExecutePhase(cwd, phase, raw, milestoneScope) {
 
   const config = loadConfig(cwd);
   const root = planningRoot(cwd, milestoneScope);
-  const phaseInfo = findPhaseInternal(cwd, phase);
-  const milestone = getMilestoneInfo(cwd);
+  const phaseInfo = findPhaseInternal(cwd, phase, milestoneScope);
+  const milestone = getMilestoneInfo(cwd, milestoneScope);
 
-  const roadmapPhase = getRoadmapPhaseInternal(cwd, phase);
+  const roadmapPhase = getRoadmapPhaseInternal(cwd, phase, milestoneScope);
   const reqMatch = roadmapPhase?.section?.match(/^\*\*Requirements\*\*:[^\S\n]*([^\n]*)$/m);
   const reqExtracted = reqMatch
     ? reqMatch[1].replace(/[\[\]]/g, '').split(',').map(s => s.trim()).filter(Boolean).join(', ')
@@ -95,9 +95,9 @@ function cmdInitPlanPhase(cwd, phase, raw, milestoneScope) {
 
   const config = loadConfig(cwd);
   const root = planningRoot(cwd, milestoneScope);
-  const phaseInfo = findPhaseInternal(cwd, phase);
+  const phaseInfo = findPhaseInternal(cwd, phase, milestoneScope);
 
-  const roadmapPhase = getRoadmapPhaseInternal(cwd, phase);
+  const roadmapPhase = getRoadmapPhaseInternal(cwd, phase, milestoneScope);
   const reqMatch = roadmapPhase?.section?.match(/^\*\*Requirements\*\*:[^\S\n]*([^\n]*)$/m);
   const reqExtracted = reqMatch
     ? reqMatch[1].replace(/[\[\]]/g, '').split(',').map(s => s.trim()).filter(Boolean).join(', ')
@@ -367,7 +367,7 @@ function cmdInitVerifyWork(cwd, phase, raw, milestoneScope) {
   }
 
   const config = loadConfig(cwd);
-  const phaseInfo = findPhaseInternal(cwd, phase);
+  const phaseInfo = findPhaseInternal(cwd, phase, milestoneScope);
 
   const result = {
     // Models
@@ -400,11 +400,11 @@ function cmdInitVerifyWork(cwd, phase, raw, milestoneScope) {
 function cmdInitPhaseOp(cwd, phase, raw, milestoneScope) {
   const config = loadConfig(cwd);
   const root = planningRoot(cwd, milestoneScope);
-  let phaseInfo = findPhaseInternal(cwd, phase);
+  let phaseInfo = findPhaseInternal(cwd, phase, milestoneScope);
 
   // Fallback to ROADMAP.md if no directory exists (e.g., Plans: TBD)
   if (!phaseInfo) {
-    const roadmapPhase = getRoadmapPhaseInternal(cwd, phase);
+    const roadmapPhase = getRoadmapPhaseInternal(cwd, phase, milestoneScope);
     if (roadmapPhase?.found) {
       const phaseName = roadmapPhase.phase_name;
       phaseInfo = {

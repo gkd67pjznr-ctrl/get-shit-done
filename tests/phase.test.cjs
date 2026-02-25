@@ -688,21 +688,21 @@ describe('phase remove command', () => {
     );
 
     fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '06-main'), { recursive: true });
-    fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '06.1-fix-a'), { recursive: true });
-    fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '06.2-fix-b'), { recursive: true });
-    fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '06.3-fix-c'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '6.1-fix-a'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '6.2-fix-b'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '6.3-fix-c'), { recursive: true });
 
     const result = runGsdTools('phase remove 6.2', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
-    // 06.3 should become 06.2
+    // 6.3 should become 6.2
     assert.ok(
-      fs.existsSync(path.join(tmpDir, '.planning', 'phases', '06.2-fix-c')),
-      '06.3 should be renumbered to 06.2'
+      fs.existsSync(path.join(tmpDir, '.planning', 'phases', '6.2-fix-c')),
+      '6.3 should be renumbered to 6.2'
     );
     assert.ok(
-      !fs.existsSync(path.join(tmpDir, '.planning', 'phases', '06.3-fix-c')),
-      'old 06.3 should not exist'
+      !fs.existsSync(path.join(tmpDir, '.planning', 'phases', '6.3-fix-c')),
+      'old 6.3 should not exist'
     );
   });
 
@@ -1256,8 +1256,8 @@ describe('normalizePhaseName', () => {
     assert.strictEqual(normalizePhaseName('12'), '12');
   });
 
-  test('handles decimal phases', () => {
-    assert.strictEqual(normalizePhaseName('3.1'), '03.1');
+  test('handles decimal phases (no padding when decimals present)', () => {
+    assert.strictEqual(normalizePhaseName('3.1'), '3.1');
     assert.strictEqual(normalizePhaseName('12.2'), '12.2');
   });
 
@@ -1266,8 +1266,8 @@ describe('normalizePhaseName', () => {
     assert.strictEqual(normalizePhaseName('12B'), '12B');
   });
 
-  test('handles hybrid phases', () => {
-    assert.strictEqual(normalizePhaseName('3A.1'), '03A.1');
+  test('handles hybrid phases (no padding when decimals present)', () => {
+    assert.strictEqual(normalizePhaseName('3A.1'), '3A.1');
     assert.strictEqual(normalizePhaseName('12A.2'), '12A.2');
   });
 
@@ -1276,8 +1276,8 @@ describe('normalizePhaseName', () => {
     assert.strictEqual(normalizePhaseName('12b.1'), '12B.1');
   });
 
-  test('handles multi-level decimal phases', () => {
-    assert.strictEqual(normalizePhaseName('3.2.1'), '03.2.1');
+  test('handles multi-level decimal phases (no padding)', () => {
+    assert.strictEqual(normalizePhaseName('3.2.1'), '3.2.1');
     assert.strictEqual(normalizePhaseName('12.3.4'), '12.3.4');
   });
 
