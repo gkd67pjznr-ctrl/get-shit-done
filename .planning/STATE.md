@@ -28,7 +28,13 @@ Each milestone has its own workspace under `.planning/milestones/<version>/` con
 For milestone-specific state, see the workspace directly:
 - v3.0: `.planning/milestones/v3.0/STATE.md`
 
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Status | Directory |
+|---|-------------|------|--------|--------|-----------|
+| 2 | Execute post-activation handoff tasks (milestone-scoped tests + fix test failures) | 2026-02-25 | a512d78 | Verified | [2-execute-post-activation-handoff-tasks-fr](./quick/2-execute-post-activation-handoff-tasks-fr/) |
+
 ## Session Continuity
 
-Last session: 2026-02-25
+Last activity: 2026-02-25 - Completed quick task 2: Execute post-activation handoff tasks
 Next step: Continue v3.0 — Phase 3.3 planning (migration tool)
