@@ -79,11 +79,14 @@ Plans:
 **Requirements:** [TEST-01, TEST-02, TEST-03, TEST-04, TEST-05, TEST-06]
 
 ### Phase 14: Integration Wiring Fix
-**Goal:** Fix 2 cross-phase integration gaps and 1 broken E2E flow found by milestone audit — add `milestone_version` to init command results so STATUS.md checkpoint writes succeed, and wire `cmdMilestoneUpdateManifest` into the execute-phase workflow so conflict detection has populated `files_touched` arrays.
+**Goal:** Fix 2 cross-phase integration gaps and 1 broken E2E flow found by milestone audit — add `MILESTONE_VERSION` extraction to workflow MILESTONE_FLAG blocks so STATUS.md checkpoint writes succeed, and wire `cmdMilestoneUpdateManifest` into the execute-phase workflow so conflict detection has populated `files_touched` arrays.
 **Depends on:** Phase 12 (full routing complete)
 **Requirements:** Gap closure — fixes integration issues affecting [DASH-01, DASH-02, DASH-03, CNFL-01, CNFL-02]
 **Gap Closure:** Closes INTEGRATION-1 (high), INTEGRATION-2 (low), and STATUS.md checkpoint flow gap from v2.0 audit
 **Recommended execution order:** Execute Phase 14 BEFORE Phase 13
+**Plans:** 1 plan
+Plans:
+- [ ] 14-01-PLAN.md — Fix MILESTONE_VERSION extraction and wire update-manifest into execute-phase wave loop
 
 ## Progress
 
