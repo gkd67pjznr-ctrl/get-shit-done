@@ -14,10 +14,10 @@ Requirements for v3.0 Tech Debt System. Each maps to roadmap phases.
 
 ### Debt Tracking
 
-- [ ] **DEBT-01**: DEBT.md hub exists with structured entry format (TD-NNN IDs, 10 fields: id, type, severity, component, description, date_logged, logged_by, status, source_phase, source_plan)
-- [ ] **DEBT-02**: `gsd-tools debt log` command appends a new debt entry atomically (concurrent-safe via append-only writes)
-- [ ] **DEBT-03**: `gsd-tools debt list` command returns debt entries filtered by status, severity, or type (JSON output)
-- [ ] **DEBT-04**: `gsd-tools debt resolve` command transitions a debt entry's status (open → in-progress → resolved/deferred)
+- [x] **DEBT-01**: DEBT.md hub exists with structured entry format (TD-NNN IDs, 10 fields: id, type, severity, component, description, date_logged, logged_by, status, source_phase, source_plan)
+- [x] **DEBT-02**: `gsd-tools debt log` command appends a new debt entry atomically (concurrent-safe via append-only writes)
+- [x] **DEBT-03**: `gsd-tools debt list` command returns debt entries filtered by status, severity, or type (JSON output)
+- [x] **DEBT-04**: `gsd-tools debt resolve` command transitions a debt entry's status (open → in-progress → resolved/deferred)
 
 ### Agent Wiring
 
@@ -73,10 +73,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | INTG-01 | Phase 15 | Complete |
 | INTG-02 | Phase 15 | Complete |
-| DEBT-01 | Phase 16 | Pending |
-| DEBT-02 | Phase 16 | Pending |
-| DEBT-03 | Phase 16 | Pending |
-| DEBT-04 | Phase 16 | Pending |
+| DEBT-01 | Phase 16 | Complete |
+| DEBT-02 | Phase 16 | Complete |
+| DEBT-03 | Phase 16 | Complete |
+| DEBT-04 | Phase 16 | Complete |
 | MIGR-01 | Phase 17 | Pending |
 | MIGR-02 | Phase 17 | Pending |
 | MIGR-03 | Phase 17 | Pending |

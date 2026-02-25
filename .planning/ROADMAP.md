@@ -46,7 +46,7 @@
 **Milestone Goal:** Build infrastructure for systematic tech debt tracking and resolution, plus a project migration tool for existing `.planning/` folders.
 
 - [x] **Phase 15: Integration Fixes** - Fix milestone-scoped path resolution bugs in `cmdInitPlanPhase` and roadmap commands (completed 2026-02-25)
-- [ ] **Phase 16: Core Debt Module** - DEBT.md schema, `debt.cjs` CLI commands, concurrent-safe writes
+- [x] **Phase 16: Core Debt Module** - DEBT.md schema, `debt.cjs` CLI commands, concurrent-safe writes (completed 2026-02-25)
 - [ ] **Phase 17: Migration Tool** - `migrate.cjs` with dry-run default, additive-only apply, and undo manifest
 - [ ] **Phase 18: Agent Wiring** - Executor, verifier, and debugger auto-log discovered debt with quality-level gating
 - [ ] **Phase 19: /gsd:fix-debt Skill** - On-demand orchestrator skill routing debt entries through diagnosis and fix execution
@@ -78,7 +78,7 @@ Plans:
 - `gsd-tools debt list` command with filtering (JSON output)
 - `gsd-tools debt resolve` command for status transitions
 
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 - [ ] 16-01-PLAN.md — Create debt.cjs module (all three commands) + test suite + router wiring (TDD)
@@ -135,7 +135,7 @@ Plans:
 | 13. Test Coverage | v2.0 | 2/2 | Complete | 2026-02-25 |
 | 14. Integration Wiring Fix | v2.0 | 1/1 | Complete | 2026-02-25 |
 | 15. Integration Fixes | 1/1 | Complete    | 2026-02-25 | - |
-| 16. Core Debt Module | v3.0 | 0/1 | Not started | - |
+| 16. Core Debt Module | 1/1 | Complete   | 2026-02-25 | - |
 | 17. Migration Tool | v3.0 | 0/? | Not started | - |
 | 18. Agent Wiring | v3.0 | 0/? | Not started | - |
 | 19. /gsd:fix-debt Skill | v3.0 | 0/? | Not started | - |
