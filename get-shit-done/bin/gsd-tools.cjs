@@ -433,9 +433,9 @@ async function main() {
     case 'roadmap': {
       const subcommand = args[1];
       if (subcommand === 'get-phase') {
-        roadmap.cmdRoadmapGetPhase(cwd, args[2], raw);
+        roadmap.cmdRoadmapGetPhase(cwd, args[2], raw, milestoneScope);
       } else if (subcommand === 'analyze') {
-        roadmap.cmdRoadmapAnalyze(cwd, raw);
+        roadmap.cmdRoadmapAnalyze(cwd, raw, milestoneScope);
       } else if (subcommand === 'update-plan-progress') {
         roadmap.cmdRoadmapUpdatePlanProgress(cwd, args[2], raw);
       } else {
