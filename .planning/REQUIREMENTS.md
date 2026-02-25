@@ -71,27 +71,27 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INTG-01 | — | Pending |
-| INTG-02 | — | Pending |
-| DEBT-01 | — | Pending |
-| DEBT-02 | — | Pending |
-| DEBT-03 | — | Pending |
-| DEBT-04 | — | Pending |
-| WIRE-01 | — | Pending |
-| WIRE-02 | — | Pending |
-| WIRE-03 | — | Pending |
-| WIRE-04 | — | Pending |
-| FIXD-01 | — | Pending |
-| FIXD-02 | — | Pending |
-| MIGR-01 | — | Pending |
-| MIGR-02 | — | Pending |
-| MIGR-03 | — | Pending |
+| INTG-01 | Phase 15 | Pending |
+| INTG-02 | Phase 15 | Pending |
+| DEBT-01 | Phase 16 | Pending |
+| DEBT-02 | Phase 16 | Pending |
+| DEBT-03 | Phase 16 | Pending |
+| DEBT-04 | Phase 16 | Pending |
+| MIGR-01 | Phase 17 | Pending |
+| MIGR-02 | Phase 17 | Pending |
+| MIGR-03 | Phase 17 | Pending |
+| WIRE-01 | Phase 18 | Pending |
+| WIRE-02 | Phase 18 | Pending |
+| WIRE-03 | Phase 18 | Pending |
+| WIRE-04 | Phase 18 | Pending |
+| FIXD-01 | Phase 19 | Pending |
+| FIXD-02 | Phase 19 | Pending |
 
 **Coverage:**
 - v3.0 requirements: 15 total
-- Mapped to phases: 0
-- Unmapped: 15 ⚠️
+- Mapped to phases: 15
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-02-25*
-*Last updated: 2026-02-25 after initial definition*
+*Last updated: 2026-02-25 after roadmap creation*
