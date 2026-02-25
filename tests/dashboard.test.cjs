@@ -330,4 +330,40 @@ describe('cmdProgressRenderMulti', () => {
     const parsed = JSON.parse(result.output);
     assert.ok(parsed.rendered.includes('Multi-Milestone Progress'), 'rendered should contain Multi-Milestone Progress header');
   });
+
+  it('returns empty milestones when no STATUS.md exists in workspace', () => {
+    const freshDir = createConcurrentProject('v2.0');
+    try {
+      // createConcurrentProject creates STATE.md and ROADMAP.md but NOT STATUS.md
+      const result = runGsdToolsFull(['progress', 'json', '--raw'], freshDir);
+      assert.ok(result.success, `expected success\nstderr: ${result.stderr}\nstdout: ${result.output}`);
+      const parsed = JSON.parse(result.output);
+      assert.strictEqual(parsed.layout_style, 'milestone-scoped', 'layout_style should be milestone-scoped');
+      assert.ok(Array.isArray(parsed.milestones), 'milestones should be an array');
+      // Without STATUS.md, cmdProgressRenderMulti returns empty milestones array
+      assert.strictEqual(parsed.milestones.length, 0, 'milestones array should be empty when no STATUS.md exists');
+    } finally {
+      cleanup(freshDir);
+    }
+  });
+
+  it('returns empty milestones when milestones directory does not exist', () => {
+    const noMilestonesDir = createTempProject();
+    try {
+      // Write config.json with concurrent: true but do NOT create milestones directory
+      fs.writeFileSync(
+        path.join(noMilestonesDir, '.planning', 'config.json'),
+        JSON.stringify({ concurrent: true }),
+        'utf-8'
+      );
+      const result = runGsdToolsFull(['progress', 'json', '--raw'], noMilestonesDir);
+      assert.ok(result.success, `expected success\nstderr: ${result.stderr}\nstdout: ${result.output}`);
+      const parsed = JSON.parse(result.output);
+      assert.strictEqual(parsed.layout_style, 'milestone-scoped', 'layout_style should be milestone-scoped');
+      assert.ok(Array.isArray(parsed.milestones), 'milestones should be an array');
+      assert.strictEqual(parsed.milestones.length, 0, 'milestones array should be empty when milestones dir does not exist');
+    } finally {
+      cleanup(noMilestonesDir);
+    }
+  });
 });
