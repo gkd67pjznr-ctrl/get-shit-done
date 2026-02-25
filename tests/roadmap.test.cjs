@@ -325,6 +325,136 @@ describe('milestone-scoped roadmap commands (INTG-02)', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// plan-level checkbox update (FLOW-01)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('plan-level checkbox update (cmdRoadmapUpdatePlanProgress)', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('flips plan-level checkboxes to [x] when phase is complete', () => {
+    // Create ROADMAP.md with an unchecked plan-level checkbox
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      `# Roadmap
+
+### Phase 5: Config Foundation
+**Goal:** Configure everything
+**Plans:** 1/1 plans complete
+Plans:
+- [ ] 05-01-PLAN.md — Some description
+`
+    );
+
+    // Create phase directory with 1 PLAN and 1 SUMMARY (isComplete = true)
+    const phaseDir = path.join(tmpDir, '.planning', 'phases', '05-config-foundation');
+    fs.mkdirSync(phaseDir, { recursive: true });
+    fs.writeFileSync(path.join(phaseDir, '05-01-PLAN.md'), '# Plan');
+    fs.writeFileSync(path.join(phaseDir, '05-01-SUMMARY.md'), '# Summary');
+
+    const result = runGsdTools('roadmap update-plan-progress 5 --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const roadmapContent = fs.readFileSync(path.join(tmpDir, '.planning', 'ROADMAP.md'), 'utf-8');
+    assert.ok(roadmapContent.includes('- [x] 05-01-PLAN.md'), `Expected [x] checkbox, got:\n${roadmapContent}`);
+  });
+
+  test('flips multiple plan checkboxes when phase has multiple plans', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      `# Roadmap
+
+### Phase 11: Multi-plan
+**Goal:** Multi plan test
+**Plans:** 3/3 plans complete
+Plans:
+- [ ] 11-01-PLAN.md — Plan A
+- [ ] 11-02-PLAN.md — Plan B
+- [ ] 11-03-PLAN.md — Plan C
+`
+    );
+
+    const phaseDir = path.join(tmpDir, '.planning', 'phases', '11-multi-plan');
+    fs.mkdirSync(phaseDir, { recursive: true });
+    fs.writeFileSync(path.join(phaseDir, '11-01-PLAN.md'), '# Plan A');
+    fs.writeFileSync(path.join(phaseDir, '11-01-SUMMARY.md'), '# Summary A');
+    fs.writeFileSync(path.join(phaseDir, '11-02-PLAN.md'), '# Plan B');
+    fs.writeFileSync(path.join(phaseDir, '11-02-SUMMARY.md'), '# Summary B');
+    fs.writeFileSync(path.join(phaseDir, '11-03-PLAN.md'), '# Plan C');
+    fs.writeFileSync(path.join(phaseDir, '11-03-SUMMARY.md'), '# Summary C');
+
+    const result = runGsdTools('roadmap update-plan-progress 11 --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const roadmapContent = fs.readFileSync(path.join(tmpDir, '.planning', 'ROADMAP.md'), 'utf-8');
+    assert.ok(roadmapContent.includes('- [x] 11-01-PLAN.md'), `Expected [x] for 11-01, got:\n${roadmapContent}`);
+    assert.ok(roadmapContent.includes('- [x] 11-02-PLAN.md'), `Expected [x] for 11-02, got:\n${roadmapContent}`);
+    assert.ok(roadmapContent.includes('- [x] 11-03-PLAN.md'), `Expected [x] for 11-03, got:\n${roadmapContent}`);
+  });
+
+  test('handles decimal phase numbers (e.g., 16.1)', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      `# Roadmap
+
+### Phase 16.1: Planning Cleanup
+**Goal:** Cleanup
+**Plans:** 1/1 plans complete
+Plans:
+- [ ] 16.1-01-PLAN.md — Cleanup
+`
+    );
+
+    const phaseDir = path.join(tmpDir, '.planning', 'phases', '16.1-planning-cleanup');
+    fs.mkdirSync(phaseDir, { recursive: true });
+    fs.writeFileSync(path.join(phaseDir, '16.1-01-PLAN.md'), '# Plan');
+    fs.writeFileSync(path.join(phaseDir, '16.1-01-SUMMARY.md'), '# Summary');
+
+    const result = runGsdTools('roadmap update-plan-progress 16.1 --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const roadmapContent = fs.readFileSync(path.join(tmpDir, '.planning', 'ROADMAP.md'), 'utf-8');
+    assert.ok(roadmapContent.includes('- [x] 16.1-01-PLAN.md'), `Expected [x] for decimal phase, got:\n${roadmapContent}`);
+  });
+
+  test('does not flip plan checkboxes when phase is incomplete', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      `# Roadmap
+
+### Phase 7: Incomplete
+**Goal:** Not done yet
+**Plans:** 1/2 plans executed
+Plans:
+- [ ] 07-01-PLAN.md — Plan A
+- [ ] 07-02-PLAN.md — Plan B
+`
+    );
+
+    const phaseDir = path.join(tmpDir, '.planning', 'phases', '07-incomplete');
+    fs.mkdirSync(phaseDir, { recursive: true });
+    fs.writeFileSync(path.join(phaseDir, '07-01-PLAN.md'), '# Plan A');
+    fs.writeFileSync(path.join(phaseDir, '07-01-SUMMARY.md'), '# Summary A');
+    fs.writeFileSync(path.join(phaseDir, '07-02-PLAN.md'), '# Plan B');
+    // No SUMMARY for 07-02 — incomplete
+
+    const result = runGsdTools('roadmap update-plan-progress 7 --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const roadmapContent = fs.readFileSync(path.join(tmpDir, '.planning', 'ROADMAP.md'), 'utf-8');
+    assert.ok(roadmapContent.includes('- [ ] 07-01-PLAN.md'), `Expected unchecked for incomplete phase, got:\n${roadmapContent}`);
+    assert.ok(roadmapContent.includes('- [ ] 07-02-PLAN.md'), `Expected unchecked for incomplete phase, got:\n${roadmapContent}`);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // phase add command
 // ─────────────────────────────────────────────────────────────────────────────
 
