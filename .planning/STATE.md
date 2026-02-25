@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 
 ## Current Position
 
-Phase: 12 — Full Routing Update (complete)
+Phase: 13 — Test Coverage (complete)
 Plan: 02 (complete)
-Status: Phase 12 complete — MILESTONE_FLAG threaded through all 7 workflow files; Agent Teams research documented (TEAM-01); all ROUTE-* and TEAM-01 requirements satisfied
-Last activity: 2026-02-24 — 12-02 complete: full workflow routing layer for milestone-scoped concurrent execution
+Status: Phase 13 complete — E2E lifecycle tests for both legacy and milestone-scoped modes; cmdInitExecutePhase bug fixed for milestone state_path; TEST-06 satisfied
+Last activity: 2026-02-25 — 13-02 complete: E2E test coverage plan→execute→verify in both layout modes
 
-**Progress:** [█████████░] 92%
+**Progress:** [██████████] 100%
 
 ## Performance Metrics
 
@@ -43,6 +43,7 @@ Last activity: 2026-02-24 — 12-02 complete: full workflow routing layer for mi
 | Phase 12 P02 | 3min | 2 tasks | 8 files |
 | Phase 14-integration-wiring-fix P01 | 1 | 2 tasks | 2 files |
 | Phase 13-test-coverage P01 | 5 | 2 tasks | 2 files |
+| Phase 13-test-coverage P02 | 10min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -82,6 +83,7 @@ Full v1.0 + v1.1 decision logs archived with milestones.
 - [Phase 14-integration-wiring-fix]: MILESTONE_VERSION uses alias (MILESTONE_VERSION=$MILESTONE_SCOPE) not a separate jq call — avoids redundant subshell and ensures same source as MILESTONE_FLAG
 - [Phase 14-integration-wiring-fix]: update-manifest placed as step 4b in wave loop, collecting all plans' files_modified — safe because cmdMilestoneUpdateManifest deduplicates with Set
 - [Phase 13-test-coverage]: cmdProgressRenderMulti returns empty milestones array when no STATUS.md exists — test assertions match actual CLI behavior
+- [Phase 13-02]: cmdInitExecutePhase state_path and roadmap_path now use planningRoot-relative paths when milestoneScope provided — same pattern as cmdInitPhaseOp (path.relative from planningRoot)
 
 ### Pending Todos
 
@@ -93,6 +95,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-24
-Stopped at: Completed 12-02-PLAN.md — Phase 12 full-routing-update complete
-Resume file: .planning/phases/12-full-routing-update/12-02-SUMMARY.md
+Last session: 2026-02-25
+Stopped at: Completed 13-02-PLAN.md — Phase 13 test-coverage complete
+Resume file: .planning/phases/13-test-coverage/13-02-SUMMARY.md
