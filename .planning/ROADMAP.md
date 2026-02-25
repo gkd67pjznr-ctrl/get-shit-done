@@ -77,6 +77,10 @@ Plans:
 **Goal:** Comprehensive test coverage for all v2.0 concurrent milestone functionality — new test helpers, branch coverage on new functions, and end-to-end verification across both layout modes.
 **Depends on:** Phase 14 (integration wiring fix — E2E tests must validate working code)
 **Requirements:** [TEST-01, TEST-02, TEST-03, TEST-04, TEST-05, TEST-06]
+**Plans:** 2 plans
+Plans:
+- [ ] 13-01-PLAN.md — Close branch coverage gaps in planningRoot, detectLayoutStyle, and cmdProgressRenderMulti (TEST-01 through TEST-05)
+- [ ] 13-02-PLAN.md — Create E2E test for plan-execute-verify lifecycle in both layout modes (TEST-06)
 
 ### Phase 14: Integration Wiring Fix
 **Goal:** Fix 2 cross-phase integration gaps and 1 broken E2E flow found by milestone audit — add `MILESTONE_VERSION` extraction to workflow MILESTONE_FLAG blocks so STATUS.md checkpoint writes succeed, and wire `cmdMilestoneUpdateManifest` into the execute-phase workflow so conflict detection has populated `files_touched` arrays.
@@ -104,5 +108,5 @@ Plans:
 | 10. Compatibility Layer | 1/1 | Complete    | 2026-02-24 | - |
 | 11. Dashboard and Conflict Detection | 3/3 | Complete    | 2026-02-24 | - |
 | 12. Full Routing Update | 2/2 | Complete    | 2026-02-24 | - |
-| 13. Test Coverage | v2.0 | 0/? | Not started | - |
+| 13. Test Coverage | v2.0 | 0/2 | Planned | - |
 | 14. Integration Wiring Fix | 1/1 | Complete    | 2026-02-25 | - |
