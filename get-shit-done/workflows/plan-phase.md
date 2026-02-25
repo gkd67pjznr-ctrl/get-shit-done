@@ -29,6 +29,7 @@ Parse JSON for: `researcher_model`, `planner_model`, `checker_model`, `research_
 MILESTONE_FLAG=""
 LAYOUT=$(echo "$INIT" | jq -r '.layout_style // "legacy"')
 MILESTONE_SCOPE=$(echo "$INIT" | jq -r '.milestone_scope // empty')
+MILESTONE_VERSION="$MILESTONE_SCOPE"
 if [ "$LAYOUT" = "milestone-scoped" ] && [ -n "$MILESTONE_SCOPE" ]; then
   MILESTONE_FLAG="--milestone ${MILESTONE_SCOPE}"
 fi
@@ -343,10 +344,10 @@ Task(
 
   **Write STATUS.md (plan-start checkpoint):**
 
-  If `layout_style` from init is `"milestone-scoped"` and `milestone_version` is not null:
+  If `layout_style` from init is `"milestone-scoped"` and `MILESTONE_VERSION` is not null:
 
   ```bash
-  node ~/.claude/get-shit-done/bin/gsd-tools.cjs milestone write-status "${milestone_version}" \
+  node ~/.claude/get-shit-done/bin/gsd-tools.cjs milestone write-status "${MILESTONE_VERSION}" \
     --phase "${phase_number}" --plan "0" \
     --checkpoint plan-start \
     --progress "0/${plan_count} plans (0%)" \

@@ -32,6 +32,7 @@ When `parallelization` is false, plans within a wave execute sequentially.
 MILESTONE_FLAG=""
 LAYOUT=$(echo "$INIT" | jq -r '.layout_style // "legacy"')
 MILESTONE_SCOPE=$(echo "$INIT" | jq -r '.milestone_scope // empty')
+MILESTONE_VERSION="$MILESTONE_SCOPE"
 if [ "$LAYOUT" = "milestone-scoped" ] && [ -n "$MILESTONE_SCOPE" ]; then
   MILESTONE_FLAG="--milestone ${MILESTONE_SCOPE}"
 fi
@@ -159,7 +160,7 @@ Execute each wave in sequence. Within a wave: parallel if `PARALLELIZATION=true`
 
    **4a. Update milestone STATUS.md (plan-complete checkpoint):**
 
-   If `layout_style` from init is `"milestone-scoped"` and `milestone_version` is not null:
+   If `layout_style` from init is `"milestone-scoped"` and `MILESTONE_VERSION` is not null:
 
    For each completed plan in this wave, compute progress and write status:
    ```bash
@@ -167,7 +168,7 @@ Execute each wave in sequence. Within a wave: parallel if `PARALLELIZATION=true`
    COMPLETED=$(ls "${PHASE_DIR}"/*-SUMMARY.md 2>/dev/null | wc -l | tr -d ' ')
    TOTAL="${plan_count}"
    PCT=$(( COMPLETED * 100 / TOTAL ))
-   node ~/.claude/get-shit-done/bin/gsd-tools.cjs milestone write-status "${milestone_version}" \
+   node ~/.claude/get-shit-done/bin/gsd-tools.cjs milestone write-status "${MILESTONE_VERSION}" \
      --phase "${PHASE_NUMBER}" --plan "${PLAN_ID}" \
      --checkpoint plan-complete \
      --progress "${COMPLETED}/${TOTAL} plans (${PCT}%)" \
@@ -401,10 +402,10 @@ Extract from result: `next_phase`, `next_phase_name`, `is_last_phase`.
 
 **Write final STATUS.md (phase-complete checkpoint):**
 
-If `layout_style` from init is `"milestone-scoped"` and `milestone_version` is not null:
+If `layout_style` from init is `"milestone-scoped"` and `MILESTONE_VERSION` is not null:
 
 ```bash
-node ~/.claude/get-shit-done/bin/gsd-tools.cjs milestone write-status "${milestone_version}" \
+node ~/.claude/get-shit-done/bin/gsd-tools.cjs milestone write-status "${MILESTONE_VERSION}" \
   --phase "${PHASE_NUMBER}" --plan "${plan_count}" \
   --checkpoint phase-complete \
   --progress "${plan_count}/${plan_count} plans (100%)" \
