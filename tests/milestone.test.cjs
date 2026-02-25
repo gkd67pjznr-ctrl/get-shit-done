@@ -419,13 +419,13 @@ Plans:
     const result = runGsdToolsFull(['milestone', 'complete', 'v2.0', '--raw'], tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
-    // The archived ROADMAP at milestones/v2.0-ROADMAP.md should have [x] plan checkboxes
-    const archivedRoadmap = fs.readFileSync(
-      path.join(tmpDir, '.planning', 'milestones', 'v2.0-ROADMAP.md'), 'utf-8'
+    // The workspace ROADMAP should have [x] plan checkboxes after finalization
+    const workspaceRoadmap = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'milestones', 'v2.0', 'ROADMAP.md'), 'utf-8'
     );
     assert.ok(
-      archivedRoadmap.includes('- [x] 08-01-PLAN.md'),
-      `Expected [x] plan checkbox in archived ROADMAP, got:\n${archivedRoadmap}`
+      workspaceRoadmap.includes('- [x] 08-01-PLAN.md'),
+      `Expected [x] plan checkbox in workspace ROADMAP, got:\n${workspaceRoadmap}`
     );
   });
 
@@ -472,12 +472,12 @@ Plans:
     const result = runGsdToolsFull(['milestone', 'complete', 'v2.0', '--raw'], tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
-    const archivedRoadmap = fs.readFileSync(
-      path.join(tmpDir, '.planning', 'milestones', 'v2.0-ROADMAP.md'), 'utf-8'
+    const workspaceRoadmap = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'milestones', 'v2.0', 'ROADMAP.md'), 'utf-8'
     );
     assert.ok(
-      archivedRoadmap.includes('[x]') && archivedRoadmap.includes('Phase 8'),
-      `Expected [x] phase checkbox in archived ROADMAP, got:\n${archivedRoadmap}`
+      workspaceRoadmap.includes('[x]') && workspaceRoadmap.includes('Phase 8'),
+      `Expected [x] phase checkbox in workspace ROADMAP, got:\n${workspaceRoadmap}`
     );
   });
 

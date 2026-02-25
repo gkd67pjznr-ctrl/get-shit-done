@@ -4,7 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { output, error } = require('./core.cjs');
+const { output, error, escapeRegex } = require('./core.cjs');
 const { extractFrontmatter } = require('./frontmatter.cjs');
 
 function cmdRequirementsMarkComplete(cwd, reqIdsRaw, raw) {
@@ -123,6 +123,66 @@ function cmdMilestoneComplete(cwd, version, options, raw) {
       }
     }
   } catch {}
+
+  // Finalize milestone workspace ROADMAP before archiving (FLOW-02)
+  const workspaceDir = path.join(archiveDir, version);
+  const workspaceRoadmap = path.join(workspaceDir, 'ROADMAP.md');
+  if (fs.existsSync(workspaceRoadmap)) {
+    let wsContent = fs.readFileSync(workspaceRoadmap, 'utf-8');
+
+    // Gather phase completion data from phases directory and update workspace ROADMAP
+    try {
+      const entries = fs.readdirSync(phasesDir, { withFileTypes: true });
+      const dirs = entries.filter(e => e.isDirectory()).map(e => e.name).sort();
+
+      for (const dir of dirs) {
+        const dm = dir.match(/^(\d+[A-Z]?(?:\.\d+)*)-?(.*)/i);
+        if (!dm) continue;
+
+        const pNum = dm[1];
+        const phaseFiles = fs.readdirSync(path.join(phasesDir, dir));
+        const plans = phaseFiles.filter(f => f.endsWith('-PLAN.md') || f === 'PLAN.md');
+        const summaries = phaseFiles.filter(f => f.endsWith('-SUMMARY.md') || f === 'SUMMARY.md');
+
+        if (summaries.length >= plans.length && plans.length > 0) {
+          const pEscaped = escapeRegex(pNum);
+
+          // Flip phase-level checkbox
+          const phaseCheckbox = new RegExp(
+            `(-\\s*\\[)[ ](\\]\\s*.*Phase\\s+${pEscaped}[:\\s][^\\n]*)`, 'i'
+          );
+          wsContent = wsContent.replace(phaseCheckbox, `$1x$2`);
+
+          // Flip plan-level checkboxes
+          for (const planFile of plans) {
+            const planPattern = new RegExp(
+              `(-\\s*\\[)[ ](\\]\\s*${escapeRegex(planFile)})`, 'gi'
+            );
+            wsContent = wsContent.replace(planPattern, '$1x$2');
+          }
+
+          // Update progress table row
+          const tablePattern = new RegExp(
+            `(\\|\\s*${pEscaped}\\.?\\s[^|]*\\|)[^|]*(\\|)\\s*[^|]*(\\|)\\s*[^|]*(\\|)`, 'i'
+          );
+          wsContent = wsContent.replace(
+            tablePattern,
+            `$1 ${summaries.length}/${plans.length} $2 Complete    $3 ${today} $4`
+          );
+
+          // Update plan count text
+          const planCountPat = new RegExp(
+            `(#{2,4}\\s*Phase\\s+${pEscaped}[\\s\\S]*?\\*\\*Plans:\\*\\*\\s*)[^\\n]+`, 'i'
+          );
+          wsContent = wsContent.replace(planCountPat, `$1${summaries.length}/${plans.length} plans complete`);
+        }
+      }
+    } catch (e) {
+      // If phases dir doesn't exist or is unreadable, skip finalization silently
+    }
+
+    fs.writeFileSync(workspaceRoadmap, wsContent, 'utf-8');
+  }
 
   // Archive ROADMAP.md
   if (fs.existsSync(roadmapPath)) {
