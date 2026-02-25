@@ -14,7 +14,7 @@ Plan: 02 (complete)
 Status: Phase 12 complete — MILESTONE_FLAG threaded through all 7 workflow files; Agent Teams research documented (TEAM-01); all ROUTE-* and TEAM-01 requirements satisfied
 Last activity: 2026-02-24 — 12-02 complete: full workflow routing layer for milestone-scoped concurrent execution
 
-**Progress:** [██████████] 100%
+**Progress:** [█████████░] 92%
 
 ## Performance Metrics
 
@@ -42,6 +42,7 @@ Last activity: 2026-02-24 — 12-02 complete: full workflow routing layer for mi
 | Phase 12-full-routing-update P01 | 12min | 2 tasks | 5 files |
 | Phase 12 P02 | 3min | 2 tasks | 8 files |
 | Phase 14-integration-wiring-fix P01 | 1 | 2 tasks | 2 files |
+| Phase 13-test-coverage P01 | 5 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,7 @@ Full v1.0 + v1.1 decision logs archived with milestones.
 - [Phase 12]: standalone workflows extract --milestone from $ARGUMENTS via sed — users can invoke verify-work, progress, resume-project with --milestone flag
 - [Phase 14-integration-wiring-fix]: MILESTONE_VERSION uses alias (MILESTONE_VERSION=$MILESTONE_SCOPE) not a separate jq call — avoids redundant subshell and ensures same source as MILESTONE_FLAG
 - [Phase 14-integration-wiring-fix]: update-manifest placed as step 4b in wave loop, collecting all plans' files_modified — safe because cmdMilestoneUpdateManifest deduplicates with Set
+- [Phase 13-test-coverage]: cmdProgressRenderMulti returns empty milestones array when no STATUS.md exists — test assertions match actual CLI behavior
 
 ### Pending Todos
 
