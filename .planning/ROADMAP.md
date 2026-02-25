@@ -78,6 +78,11 @@ Plans:
 - `gsd-tools debt list` command with filtering (JSON output)
 - `gsd-tools debt resolve` command for status transitions
 
+**Plans:** 1 plan
+
+Plans:
+- [ ] 16-01-PLAN.md — Create debt.cjs module (all three commands) + test suite + router wiring (TDD)
+
 ### Phase 17: Migration Tool
 
 **Goal:** Build `migrate.cjs` that inspects and upgrades existing `.planning/` folders with dry-run default, additive-only apply, and undo manifest.
@@ -130,7 +135,7 @@ Plans:
 | 13. Test Coverage | v2.0 | 2/2 | Complete | 2026-02-25 |
 | 14. Integration Wiring Fix | v2.0 | 1/1 | Complete | 2026-02-25 |
 | 15. Integration Fixes | 1/1 | Complete    | 2026-02-25 | - |
-| 16. Core Debt Module | v3.0 | 0/? | Not started | - |
+| 16. Core Debt Module | v3.0 | 0/1 | Not started | - |
 | 17. Migration Tool | v3.0 | 0/? | Not started | - |
 | 18. Agent Wiring | v3.0 | 0/? | Not started | - |
 | 19. /gsd:fix-debt Skill | v3.0 | 0/? | Not started | - |
