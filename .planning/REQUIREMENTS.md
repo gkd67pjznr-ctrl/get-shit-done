@@ -57,12 +57,12 @@ Requirements for concurrent milestone execution. Each maps to roadmap phases.
 
 ### Test Coverage
 
-- [ ] **TEST-01**: `createConcurrentProject()` test helper created alongside existing `createTempProject()`
-- [ ] **TEST-02**: Tests for milestone-scoped path resolution in both old-style and new-style layouts
-- [ ] **TEST-03**: Tests for compatibility detection across all three states (new project, old-with-archives, new-style concurrent)
-- [ ] **TEST-04**: Tests for conflict manifest overlap detection
-- [ ] **TEST-05**: 90%+ branch coverage on new functions in core.cjs and commands.cjs
-- [ ] **TEST-06**: End-to-end test executing plan→execute→verify in both layout modes
+- [x] **TEST-01**: `createConcurrentProject()` test helper created alongside existing `createTempProject()`
+- [x] **TEST-02**: Tests for milestone-scoped path resolution in both old-style and new-style layouts
+- [x] **TEST-03**: Tests for compatibility detection across all three states (new project, old-with-archives, new-style concurrent)
+- [x] **TEST-04**: Tests for conflict manifest overlap detection
+- [x] **TEST-05**: 90%+ branch coverage on new functions in core.cjs and commands.cjs
+- [x] **TEST-06**: End-to-end test executing plan→execute→verify in both layout modes
 
 ### Agent Teams Documentation
 
@@ -138,12 +138,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ROUTE-03 | Phase 12 | Complete |
 | ROUTE-04 | Phase 12 | Complete |
 | ROUTE-05 | Phase 12 | Complete |
-| TEST-01 | Phase 13 | Pending |
-| TEST-02 | Phase 13 | Pending |
-| TEST-03 | Phase 13 | Pending |
-| TEST-04 | Phase 13 | Pending |
-| TEST-05 | Phase 13 | Pending |
-| TEST-06 | Phase 13 | Pending |
+| TEST-01 | Phase 13 | Complete |
+| TEST-02 | Phase 13 | Complete |
+| TEST-03 | Phase 13 | Complete |
+| TEST-04 | Phase 13 | Complete |
+| TEST-05 | Phase 13 | Complete |
+| TEST-06 | Phase 13 | Complete |
 | TEAM-01 | Phase 12 | Complete |
 
 **Coverage:**
