@@ -36,9 +36,9 @@
 
 ## Migration Tool
 
-- [ ] **MIGR-01**: `gsd-tools migrate --dry-run` inspects `.planning/` layout against current spec and reports what would change
-- [ ] **MIGR-02**: `gsd-tools migrate --apply` performs additive-only structural changes with undo manifest (never destructive)
-- [ ] **MIGR-03**: Migration is idempotent — running `--apply` multiple times produces the same result
+- [x] **MIGR-01**: `gsd-tools migrate --dry-run` inspects `.planning/` layout against current spec and reports what would change
+- [x] **MIGR-02**: `gsd-tools migrate --apply` performs additive-only structural changes with undo manifest (never destructive)
+- [x] **MIGR-03**: Migration is idempotent — running `--apply` multiple times produces the same result
 
 ## Traceability
 
@@ -54,9 +54,9 @@
 | CLEAN-02 | Phase 3.2.1 | Complete |
 | FLOW-01 | Phase 3.2.1 | Complete |
 | FLOW-02 | Phase 3.2.1 | Complete |
-| MIGR-01 | Phase 3.3 | Pending |
-| MIGR-02 | Phase 3.3 | Pending |
-| MIGR-03 | Phase 3.3 | Pending |
+| MIGR-01 | Phase 3.3 | Complete |
+| MIGR-02 | Phase 3.3 | Complete |
+| MIGR-03 | Phase 3.3 | Complete |
 | WIRE-01 | Phase 3.4 | Pending |
 | WIRE-02 | Phase 3.4 | Pending |
 | WIRE-03 | Phase 3.4 | Pending |
@@ -65,4 +65,4 @@
 | FIXD-02 | Phase 3.5 | Pending |
 
 ---
-*Last updated: 2026-02-25*
+*Last updated: 2026-02-26*

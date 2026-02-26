@@ -7,7 +7,7 @@
 - [x] **Phase 3.1: Integration Fixes** - Fix milestone-scoped path resolution bugs in `cmdInitPlanPhase` and roadmap commands (completed 2026-02-25)
 - [x] **Phase 3.2: Core Debt Module** - DEBT.md schema, `debt.cjs` CLI commands, concurrent-safe writes (completed 2026-02-25)
 - [x] **Phase 3.2.1: Planning Directory Cleanup and GSD Flow Fixes** - Normalize orphaned/misplaced planning files, fix plan-level checkbox updates and milestone workspace finalization (completed 2026-02-25)
-- [ ] **Phase 3.3: Migration Tool** - `migrate.cjs` with dry-run default, additive-only apply, and undo manifest
+- [x] **Phase 3.3: Migration Tool** - `migrate.cjs` with dry-run default, additive-only apply, and undo manifest (completed 2026-02-26)
 - [ ] **Phase 3.4: Agent Wiring** - Executor, verifier, and debugger auto-log discovered debt with quality-level gating
 - [ ] **Phase 3.5: /gsd:fix-debt Skill** - On-demand orchestrator skill routing debt entries through diagnosis and fix execution
 
@@ -65,10 +65,10 @@ Plans:
 - `gsd-tools migrate --apply` performs additive-only structural changes with undo manifest
 - Idempotent — running `--apply` multiple times produces same result
 
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
-- [ ] 3.3-01-PLAN.md — TDD: migrate.cjs module (inspectLayout + dry-run + apply) with test suite and router wiring
+- [x] 3.3-01-PLAN.md — TDD: migrate.cjs module (inspectLayout + dry-run + apply) with test suite and router wiring
 
 ### Phase 3.4: Agent Wiring
 
@@ -99,7 +99,7 @@ Plans:
 | 3.1. Integration Fixes | 1/1 | Complete | 2026-02-25 |
 | 3.2. Core Debt Module | 1/1 | Complete | 2026-02-25 |
 | 3.2.1. Planning Directory Cleanup | 2/2 | Complete | 2026-02-25 |
-| 3.3. Migration Tool | 0/1 | In Progress | - |
+| 3.3. Migration Tool | 1/1 | Complete   | 2026-02-26 |
 | 3.4. Agent Wiring | 0/? | Not started | - |
 | 3.5. /gsd:fix-debt Skill | 0/? | Not started | - |
 
