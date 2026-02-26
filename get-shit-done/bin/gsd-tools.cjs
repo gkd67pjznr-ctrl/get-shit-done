@@ -156,6 +156,7 @@ const commands = require('./lib/commands.cjs');
 const init = require('./lib/init.cjs');
 const frontmatter = require('./lib/frontmatter.cjs');
 const debt = require('./lib/debt.cjs');
+const migrate = require('./lib/migrate.cjs');
 
 // ─── CLI Router ───────────────────────────────────────────────────────────────
 
@@ -509,6 +510,17 @@ async function main() {
         }, raw);
       } else {
         error('Unknown debt subcommand. Available: log, list, resolve');
+      }
+      break;
+    }
+
+    case 'migrate': {
+      if (args.includes('--dry-run')) {
+        migrate.cmdMigrateDryRun(cwd, {}, raw);
+      } else if (args.includes('--apply')) {
+        migrate.cmdMigrateApply(cwd, {}, raw);
+      } else {
+        error('Usage: migrate --dry-run | migrate --apply');
       }
       break;
     }
