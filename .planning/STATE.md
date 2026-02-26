@@ -2,9 +2,7 @@
 
 ## Active Milestones
 
-| Milestone | Workspace | Status |
-|-----------|-----------|--------|
-| v3.0 Tech Debt System | `.planning/milestones/v3.0/` | In Progress |
+(None — next milestone to be defined with `/gsd:new-milestone`)
 
 ## Completed Milestones
 
@@ -13,6 +11,7 @@
 | v1.0 MVP | 2026-02-24 | 1-4 |
 | v1.1 Quality UX | 2026-02-24 | 5-7 |
 | v2.0 Concurrent Milestones | 2026-02-25 | 8-14 |
+| v3.0 Tech Debt System | 2026-02-26 | 3.1-3.5 |
 
 ## Layout
 
@@ -25,8 +24,12 @@ Each milestone has its own workspace under `.planning/milestones/<version>/` con
 - `phases/` — phase directories
 - `research/` — research files
 
-For milestone-specific state, see the workspace directly:
-- v3.0: `.planning/milestones/v3.0/STATE.md`
+## Project Reference
+
+See: .planning/PROJECT.md (updated 2026-02-26)
+
+**Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
+**Current focus:** Planning next milestone
 
 ### Quick Tasks Completed
 
@@ -36,5 +39,5 @@ For milestone-specific state, see the workspace directly:
 
 ## Session Continuity
 
-Last activity: 2026-02-25 - Completed quick task 2: Execute post-activation handoff tasks
-Next step: Continue v3.0 — Phase 3.3 planning (migration tool)
+Last activity: 2026-02-26 - Completed v3.0 Tech Debt System milestone
+Next step: `/gsd:new-milestone` to define next milestone

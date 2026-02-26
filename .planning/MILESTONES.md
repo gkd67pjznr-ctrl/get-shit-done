@@ -74,21 +74,31 @@
 ---
 
 
-## v3.0 Tech Debt System (In Progress)
+## v3.0 Tech Debt System (Shipped: 2026-02-26)
 
-**Goal:** Build infrastructure for systematic tech debt tracking and resolution, plus a project migration tool for existing `.planning/` folders.
+**Delivered:** Systematic tech debt tracking and resolution infrastructure — structured DEBT.md schema, CLI commands for debt lifecycle management, executor/verifier auto-logging with quality-level gating, migration tool for existing projects, and `/gsd:fix-debt` on-demand resolution skill.
 
-**Workspace:** `.planning/milestones/v3.0/`
-**Phases:** 6 (3.1-3.5 + 3.2.1)
-**Status:** In progress — Phases 3.1, 3.2, 3.2.1 complete. Next: Phase 3.3
+**Phases:** 6 phases, 8 plans, 14 tasks
+**Code:** 118 files changed (+13,227 / -1,211)
+**Timeline:** ~21 hours (2026-02-25 → 2026-02-26)
+**Git range:** docs: start milestone v3.0 → docs(phase-3.5)
+**Requirements:** 19/19 satisfied
+**Tests:** 266 passing (34 new v3.0 tests)
 
-**Phase Mapping (legacy → scoped):**
-- Phase 15 → Phase 3.1 (Integration Fixes)
-- Phase 16 → Phase 3.2 (Core Debt Module)
-- Phase 16.1 → Phase 3.2.1 (Planning Directory Cleanup and GSD Flow Fixes)
-- Phase 17 → Phase 3.3 (Migration Tool)
-- Phase 18 → Phase 3.4 (Agent Wiring)
-- Phase 19 → Phase 3.5 (/gsd:fix-debt Skill)
+**Key accomplishments:**
+1. Fixed milestone-scoped path resolution in cmdInitPlanPhase and roadmap commands via planningRoot() threading (v2.0 INTEGRATION-3/4 debt resolved)
+2. TDD-built tech debt tracking module — DEBT.md schema with TD-NNN IDs, `debt log/list/resolve` CLI commands, 19-test suite
+3. Normalized .planning/milestones/ structure and fixed plan-level checkbox flip + milestone workspace finalization
+4. `migrate.cjs` with dry-run inspection and additive-only apply for upgrading existing .planning/ layouts
+5. Executor and verifier agents auto-log discovered debt with quality-level gating (fast=off, standard=critical/high, strict=all) and provenance fields
+6. `/gsd:fix-debt` slash command: 8-step orchestrator routing debt entries through debugger diagnosis and executor fix execution
+
+**Known Gaps (accepted as tech debt):**
+- FLOW-02: cmdMilestoneComplete phasesDir hardcoded to .planning/phases/ — broken for milestone-scoped layouts
+- FLOW-01: execute-plan.md doesn't pass --milestone flag to roadmap update-plan-progress
+- CLI help text incomplete (missing migrate, debt, milestone commands)
+- Agent files (gsd-executor.md, gsd-verifier.md) live outside git repo
+- Dual-file maintenance for fix-debt.md (repo vs installed copies)
 
 ---
 

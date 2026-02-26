@@ -93,6 +93,55 @@
 
 ---
 
+## Milestone: v3.0 — Tech Debt System
+
+**Shipped:** 2026-02-26
+**Phases:** 6 | **Plans:** 8 | **Sessions:** ~3
+
+### What Was Built
+- DEBT.md hub with 10-field structured entry format (TD-NNN IDs) and `debt log/list/resolve` CLI commands
+- Plan-level checkbox flip in `cmdRoadmapUpdatePlanProgress` and milestone workspace finalization in `cmdMilestoneComplete`
+- `migrate.cjs` with dry-run inspection, additive-only apply, undo manifest, and idempotency guarantees
+- Executor auto-logging at two hook points (FIX ATTEMPT LIMIT, blocked gate) with quality-level gating
+- Verifier auto-logging via Step 7c after quality dimension findings with provenance fields
+- `/gsd:fix-debt` slash command: 8-step orchestrator routing debt entries through debugger diagnosis and executor fix execution
+- Resolved v2.0 INTEGRATION-3 and INTEGRATION-4 gaps as foundation work (Phase 3.1)
+- Normalized .planning/milestones/ directory structure (Phase 3.2.1)
+
+### What Worked
+- Opening with integration fixes (Phase 3.1) unblocked all subsequent phases that needed milestone-scoped paths
+- Inserted Phase 3.2.1 to normalize the planning directory before building more features on it — prevented cascading issues
+- TDD continued to catch real bugs: migrate.cjs existence guards were initially missing for REQUIREMENTS.md, caught by test suite
+- Agent wiring (Phase 3.4) was purely additive — zero modifications to existing sentinel/verifier gate logic, only new subsections added
+- Milestone audit (run before completion) correctly identified the phasesDir regression as a real bug
+- Rich-description skip path for fix-debt in yolo mode — auto-logged debt entries from Phase 3.4 already contain enough context to skip diagnosis
+
+### What Was Inefficient
+- cmdMilestoneComplete phasesDir fix in Phase 3.2.1 (FLOW-02) addressed one code path, but the CLI's `milestone complete` command has a different code path that still uses hardcoded `.planning/phases/` — the regression wasn't caught because Phase 3.2.1 tests verified the fixed function but not the CLI wrapper
+- execute-plan.md doesn't pass --milestone flag to `roadmap update-plan-progress` — this was documented in Phase 3.2.1 research but the fix was scoped only to the CJS module, not the workflow Markdown
+- Agent files (gsd-executor.md, gsd-verifier.md) modified in Phase 3.4 live outside the git repo — changes can't be tracked or rolled back
+- Dual-file maintenance created for fix-debt.md — repo copy uses tilde paths, installed copy uses absolute paths
+
+### Patterns Established
+- Debt entry schema: 10 fields (id, type, severity, component, description, date_logged, logged_by, status, source_phase, source_plan)
+- Quality-level gating pattern for agent behavior: fast=off, standard=critical/high, strict=all
+- Inline mini-plan pattern for fix-debt: executor spawned directly on `.planning/debug/debt-ID-fix/01-PLAN.md`, bypasses ROADMAP lookup
+- `inspectLayout()` shared function pattern: same analysis used by both dry-run reporting and apply execution
+- Error recovery table pattern for skills: map failure modes to safe status transitions (never leave entries in-progress)
+
+### Key Lessons
+1. When fixing a function (cmdMilestoneComplete), verify ALL callers use the fixed code path — the CLI wrapper had its own hardcoded path that bypassed the fix
+2. Workflow Markdown files and CJS modules are separate layers — fixing the CJS module doesn't automatically fix workflow files that construct CLI calls
+3. Agent files outside the git repo create a maintenance gap — consider a deployment/sync mechanism for future milestones
+4. Inserted phases (3.2.1) are valuable when you discover structural issues that would cascade — the cost of inserting is low compared to building on a broken foundation
+
+### Cost Observations
+- Model mix: ~65% sonnet (executor), ~25% haiku (plan-checker, researchers), ~10% opus (orchestration)
+- Sessions: ~3
+- Notable: 8 plans in ~21 hours; Phase 3.4 agent wiring was fastest (3 min for 2 plans) because agent files are Markdown, not code
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -102,6 +151,7 @@
 | v1.0 MVP | ~3 | 4 | Established quality sentinel, TDD pattern |
 | v1.1 Quality UX | ~2 | 3 | Added user-facing config/observability layer |
 | v2.0 Concurrent Milestones | ~5 | 7 | Workspace isolation, milestone-scoped routing, audit-before-complete cycle |
+| v3.0 Tech Debt System | ~3 | 6 | Structured debt tracking, agent auto-logging, migration tool, fix-debt skill |
 
 ### Cumulative Quality
 
@@ -110,10 +160,12 @@
 | v1.0 | 102 | N/A | 8 (agents, config, tests) |
 | v1.1 | 129+ | N/A | 13 (commands, workflows, templates) |
 | v2.0 | 232 | 90%+ branch on new functions | 87 new tests (core, compat, milestone, dashboard, routing, e2e) |
+| v3.0 | 266 | 90%+ on debt/migrate modules | 34 new tests (debt, migrate, milestone-scoped) |
 
 ### Top Lessons (Verified Across Milestones)
 
-1. TDD catches real integration bugs that reading code alone would miss — verified in v1.0 (test baseline), v1.1 (spawnSync, loadConfig), and v2.0 (cmdInitExecutePhase state_path bug)
-2. Config-driven behavior gating (fast/standard/strict) keeps changes additive — verified across all milestones with zero behavioral change in fast mode
-3. When updating one function in a family of similar functions, update ALL of them — verified in v2.0 (cmdInitPlanPhase missed while cmdInitExecutePhase was fixed)
-4. Milestone audits before completion catch integration gaps that phase-level verification misses — verified in v2.0 (2 audit rounds, 4 integration fixes total)
+1. TDD catches real integration bugs that reading code alone would miss — verified in v1.0 (test baseline), v1.1 (spawnSync, loadConfig), v2.0 (cmdInitExecutePhase state_path bug), and v3.0 (migrate existence guards)
+2. Config-driven behavior gating (fast/standard/strict) keeps changes additive — verified across all milestones with zero behavioral change in fast mode; extended in v3.0 to debt logging gating
+3. When updating one function in a family of similar functions, update ALL of them — verified in v2.0 (cmdInitPlanPhase missed) and v3.0 (cmdMilestoneComplete CLI wrapper bypassed CJS fix)
+4. Milestone audits before completion catch integration gaps that phase-level verification misses — verified in v2.0 (4 fixes) and v3.0 (phasesDir regression, execute-plan scope threading)
+5. Inserted phases are worth the coordination cost when they fix structural issues — verified in v3.0 (Phase 3.2.1 normalized planning directory before building migration tool)

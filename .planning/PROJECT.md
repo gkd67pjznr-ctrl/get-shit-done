@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A forked, upgraded version of the GSD (Get Shit Done) framework for Claude Code that adds quality enforcement and concurrent milestone execution. Quality layers eliminate "slop" via a Quality Sentinel, Context7 library lookup, mandatory testing, and quality dimensions — completing a full Plan→Execute→Verify quality enforcement loop. Concurrent milestone support enables multiple milestones to execute in parallel across separate Claude Code sessions with isolated workspaces, lock-free dashboards, advisory conflict detection, and full backward compatibility with legacy projects.
+A forked, upgraded version of the GSD (Get Shit Done) framework for Claude Code that adds quality enforcement, concurrent milestone execution, and systematic tech debt management. Quality layers eliminate "slop" via a Quality Sentinel, Context7 library lookup, mandatory testing, and quality dimensions — completing a full Plan→Execute→Verify quality enforcement loop. Concurrent milestone support enables multiple milestones to execute in parallel with isolated workspaces. Tech debt infrastructure provides structured tracking (DEBT.md), agent auto-logging with quality-level gating, a migration tool for existing projects, and an on-demand `/gsd:fix-debt` resolution skill.
 
 ## Core Value
 
@@ -44,19 +44,20 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 - ✓ E2E test coverage for both layout modes (legacy + milestone-scoped lifecycle tests) — v2.0
 - ✓ Agent Teams research documented (recommended for intra-milestone parallelism, deferred to v2.1) — v2.0
 
+- ✓ `cmdInitPlanPhase` returns milestone-aware paths via `planningRoot()` (INTEGRATION-3 resolved) — v3.0
+- ✓ `cmdRoadmapGetPhase` and `cmdRoadmapAnalyze` respect `--milestone` flag (INTEGRATION-4 resolved) — v3.0
+- ✓ DEBT.md hub with structured entry format (TD-NNN IDs, 10-field schema) — v3.0
+- ✓ `debt log/list/resolve` CLI commands for structured debt lifecycle management — v3.0
+- ✓ Plan-level checkbox flip in `cmdRoadmapUpdatePlanProgress` — v3.0
+- ✓ Milestone workspace finalization in `cmdMilestoneComplete` — v3.0
+- ✓ `migrate.cjs` with dry-run inspection and additive-only apply for .planning/ upgrades — v3.0
+- ✓ Executor auto-logs debt at Quality Sentinel hook points with quality-level gating — v3.0
+- ✓ Verifier auto-logs unresolved quality dimension findings with provenance — v3.0
+- ✓ `/gsd:fix-debt` on-demand skill routing debt through debugger diagnosis and executor fix execution — v3.0
+
 ### Active
 
-#### Current Milestone: v3.0 Tech Debt System
-
-**Goal:** Build infrastructure for systematic tech debt tracking and resolution, plus a project migration tool for existing `.planning/` folders.
-
-**Target features:**
-- Central DEBT.md hub with structured entries
-- CLI command for agents to log debt during execution
-- Executor/verifier wiring to auto-log discovered debt
-- `/gsd:fix-debt` on-demand skill for debugger-driven debt resolution
-- Project migration tool to reorganize `.planning/` to current specs
-- Fix INTEGRATION-3 and INTEGRATION-4 known gaps
+(No active milestone — next milestone to be defined with `/gsd:new-milestone`)
 
 ### Out of Scope
 
@@ -76,15 +77,17 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 
 ## Context
 
-Shipped v2.0 with 11,371 LOC across CJS source + test files, plus workflow/agent Markdown specifications.
+Shipped v3.0 with 13,134 LOC across CJS source + test files, plus workflow/agent Markdown specifications.
 Tech stack: Node.js, CJS modules, Markdown agent specifications, Context7 MCP.
-232 tests passing (235 total, 3 pre-existing config defaults failures) across 8 test suites.
+266 tests passing across 9 test suites (debt.test.cjs added in v3.0).
 
 **Quality enforcement** (v1.0-v1.1): Full Plan→Execute→Verify loop with Quality Sentinel, Context7 library lookup, mandatory testing, quality dimensions, config-gated enforcement levels (fast/standard/strict), and observability.
 
 **Concurrent milestones** (v2.0): Workspace isolation via `planningRoot()`, three-state layout detection, `--milestone` flag threading, lock-free dashboards, advisory conflict detection, and permanent legacy compatibility.
 
-**Known tech debt:** 2 integration gaps in milestone-scoped plan-phase and roadmap commands (tracked in `.planning/TO-DOS.md`).
+**Tech debt system** (v3.0): DEBT.md with 10-field schema, `debt log/list/resolve` CLI commands, executor/verifier auto-logging gated by quality level, `migrate.cjs` for .planning/ upgrades, `/gsd:fix-debt` skill for on-demand resolution. Resolved v2.0 INTEGRATION-3/4 gaps.
+
+**Known tech debt:** cmdMilestoneComplete phasesDir regression for milestone-scoped layouts, execute-plan.md missing --milestone flag pass-through, CLI help text incomplete, agent files outside git repo. See `.planning/DEBT.md` and MILESTONES.md v3.0 entry.
 
 ## Constraints
 
@@ -118,6 +121,13 @@ Tech stack: Node.js, CJS modules, Markdown agent specifications, Context7 MCP.
 | Advisory-only conflict detection | Semantic correctness of concurrent changes can't be automated; surface overlaps, let humans decide | ✓ Good — warnings visible without blocking execution |
 | Agent Teams deferred to v2.1 | Wrong for inter-milestone concurrency; right for intra-milestone phase parallelism | ✓ Good — research documented, clean v2.1 path |
 | Permanent legacy compatibility | Old-style projects never forced to migrate; detection is additive | ✓ Good — zero migration burden, existing projects unaffected |
+| Shared inspectLayout() for dry-run and apply | Prevents output divergence between reporting and execution | ✓ Good — single source of truth for migration actions |
+| Debt logging additive-only in agents | Don't modify existing sentinel/verifier gate logic | ✓ Good — zero regression risk in quality gate behavior |
+| Trigger B (blocked gate) strict-mode only | Standard mode warned outcomes are informational, not debt | ✓ Good — prevents noise in standard mode |
+| Orphaned exports logged in strict mode only | Medium severity below standard threshold (critical/high) | ✓ Good — respects quality level semantics |
+| Inline mini-plan for fix-debt | Executor spawned directly, bypasses ROADMAP lookup | ✓ Good — fast path for debt fixes without full phase overhead |
+| Rich-description skip path in yolo | Auto-logged debt entries already actionable, skip diagnosis | ✓ Good — reduces friction for well-described debt |
+| No --milestone on migrate | Operates on project-level .planning/, not milestone workspaces | ✓ Good — migration is project-scoped, not milestone-scoped |
 
 ---
-*Last updated: 2026-02-25 after v3.0 milestone started*
+*Last updated: 2026-02-26 after v3.0 milestone*

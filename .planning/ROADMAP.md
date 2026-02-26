@@ -2,19 +2,21 @@
 
 This project uses **milestone-scoped layout**. Each milestone has its own ROADMAP.md.
 
-## Active Milestones
+## Milestones
 
-| Milestone | Roadmap | Status |
-|-----------|---------|--------|
-| v3.0 Tech Debt System | `.planning/milestones/v3.0/ROADMAP.md` | In Progress |
+- ✅ **v1.0 MVP** — Phases 1-4 (shipped 2026-02-24)
+- ✅ **v1.1 Quality UX** — Phases 5-7 (shipped 2026-02-24)
+- ✅ **v2.0 Concurrent Milestones** — Phases 8-14 (shipped 2026-02-25)
+- ✅ **v3.0 Tech Debt System** — Phases 3.1-3.5 (shipped 2026-02-26)
 
 ## Completed Milestones
 
-| Milestone | Shipped | Phases |
-|-----------|---------|--------|
-| v1.0 MVP | 2026-02-24 | 4 phases, 8 plans |
-| v1.1 Quality UX | 2026-02-24 | 3 phases, 5 plans |
-| v2.0 Concurrent Milestones | 2026-02-25 | 7 phases, 13 plans |
+| Milestone | Shipped | Phases | Plans | Archive |
+|-----------|---------|--------|-------|---------|
+| v1.0 MVP | 2026-02-24 | 4 phases | 8 plans | `milestones/v1.0-ROADMAP.md` |
+| v1.1 Quality UX | 2026-02-24 | 3 phases | 5 plans | `milestones/v1.1-ROADMAP.md` |
+| v2.0 Concurrent Milestones | 2026-02-25 | 7 phases | 13 plans | `milestones/v2.0-ROADMAP.md` |
+| v3.0 Tech Debt System | 2026-02-26 | 6 phases | 8 plans | `milestones/v3.0-ROADMAP.md` |
 
 See `.planning/MILESTONES.md` for detailed milestone history.
 
