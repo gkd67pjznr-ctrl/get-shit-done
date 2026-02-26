@@ -8,7 +8,7 @@
 - [x] **Phase 3.2: Core Debt Module** - DEBT.md schema, `debt.cjs` CLI commands, concurrent-safe writes (completed 2026-02-25)
 - [x] **Phase 3.2.1: Planning Directory Cleanup and GSD Flow Fixes** - Normalize orphaned/misplaced planning files, fix plan-level checkbox updates and milestone workspace finalization (completed 2026-02-25)
 - [x] **Phase 3.3: Migration Tool** - `migrate.cjs` with dry-run default, additive-only apply, and undo manifest (completed 2026-02-26)
-- [ ] **Phase 3.4: Agent Wiring** - Executor, verifier, and debugger auto-log discovered debt with quality-level gating
+- [x] **Phase 3.4: Agent Wiring** - Executor, verifier, and debugger auto-log discovered debt with quality-level gating (completed 2026-02-26)
 - [ ] **Phase 3.5: /gsd:fix-debt Skill** - On-demand orchestrator skill routing debt entries through diagnosis and fix execution
 
 ### Phase 3.1: Integration Fixes
@@ -82,11 +82,11 @@ Plans:
 - Debt logging gated on quality level (fast=off, standard=critical/high, strict=all)
 - Entries include source phase and plan provenance
 
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 3.4-01-PLAN.md — Wire executor debt auto-logging at FIX ATTEMPT LIMIT and blocked gate hook points
-- [ ] 3.4-02-PLAN.md — Wire verifier debt auto-logging after Step 7b quality dimension findings
+- [x] 3.4-01-PLAN.md — Wire executor debt auto-logging at FIX ATTEMPT LIMIT and blocked gate hook points
+- [x] 3.4-02-PLAN.md — Wire verifier debt auto-logging after Step 7b quality dimension findings
 
 ### Phase 3.5: /gsd:fix-debt Skill
 
@@ -106,7 +106,7 @@ Plans:
 | 3.2. Core Debt Module | 1/1 | Complete | 2026-02-25 |
 | 3.2.1. Planning Directory Cleanup | 2/2 | Complete | 2026-02-25 |
 | 3.3. Migration Tool | 1/1 | Complete    | 2026-02-26 |
-| 3.4. Agent Wiring | 0/2 | Planned | - |
+| 3.4. Agent Wiring | 2/2 | Complete   | 2026-02-26 |
 | 3.5. /gsd:fix-debt Skill | 0/? | Not started | - |
 
 ---
