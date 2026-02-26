@@ -99,7 +99,7 @@ Plans:
 | 3.1. Integration Fixes | 1/1 | Complete | 2026-02-25 |
 | 3.2. Core Debt Module | 1/1 | Complete | 2026-02-25 |
 | 3.2.1. Planning Directory Cleanup | 2/2 | Complete | 2026-02-25 |
-| 3.3. Migration Tool | 1/1 | Complete   | 2026-02-26 |
+| 3.3. Migration Tool | 1/1 | Complete    | 2026-02-26 |
 | 3.4. Agent Wiring | 0/? | Not started | - |
 | 3.5. /gsd:fix-debt Skill | 0/? | Not started | - |
 
