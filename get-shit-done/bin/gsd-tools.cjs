@@ -515,12 +515,28 @@ async function main() {
     }
 
     case 'migrate': {
-      if (args.includes('--dry-run')) {
-        migrate.cmdMigrateDryRun(cwd, {}, raw);
+      // Parse --version flag (same pattern as --milestone)
+      let migrateVersion = null;
+      const versionEqArg = args.find(arg => arg.startsWith('--version='));
+      const versionIdx = args.indexOf('--version');
+      if (versionEqArg) {
+        migrateVersion = versionEqArg.slice('--version='.length).trim();
+        if (!migrateVersion) error('Missing value for --version');
+      } else if (versionIdx !== -1) {
+        const vVal = args[versionIdx + 1];
+        if (!vVal || vVal.startsWith('--')) error('Missing value for --version');
+        migrateVersion = vVal;
+      }
+
+      if (args.includes('--cleanup')) {
+        const cleanupDryRun = args.includes('--dry-run');
+        migrate.cmdMigrateCleanup(cwd, { dryRun: cleanupDryRun }, raw);
+      } else if (args.includes('--dry-run')) {
+        migrate.cmdMigrateDryRun(cwd, { version: migrateVersion }, raw);
       } else if (args.includes('--apply')) {
-        migrate.cmdMigrateApply(cwd, {}, raw);
+        migrate.cmdMigrateApply(cwd, { version: migrateVersion }, raw);
       } else {
-        error('Usage: migrate --dry-run | migrate --apply');
+        error('Usage: migrate --dry-run [--version <label>] | migrate --apply [--version <label>] | migrate --cleanup [--dry-run]');
       }
       break;
     }
