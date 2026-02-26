@@ -37,8 +37,9 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 |---|-------------|------|--------|--------|-----------|
 | 2 | Execute post-activation handoff tasks (milestone-scoped tests + fix test failures) | 2026-02-25 | a512d78 | Verified | [2-execute-post-activation-handoff-tasks-fr](./quick/2-execute-post-activation-handoff-tasks-fr/) |
 | 3 | Test GSD migration tool on gymrats project (MIGR-01/02/03 validation) | 2026-02-26 | 7437cee | Verified | [3-test-gsd-migration-tool-on-gymrats-proje](./quick/3-test-gsd-migration-tool-on-gymrats-proje/) |
+| 4 | Migrate gymrats2 to milestone-scoped layout (71 phases → 9 milestones) | 2026-02-26 | b14662b | Verified | [4-migrate-gymrats2-to-milestone-scoped-lay](./quick/4-migrate-gymrats2-to-milestone-scoped-lay/) |
 
 ## Session Continuity
 
-Last activity: 2026-02-26 - Completed quick task 3 (migration tool validation on gymrats)
+Last activity: 2026-02-26 - Completed quick task 4 (gymrats2 migration to milestone-scoped layout)
 Next step: `/gsd:new-milestone` to define next milestone
