@@ -25,9 +25,9 @@
 ## Agent Wiring
 
 - [ ] **WIRE-01**: Executor agent auto-logs discovered debt via `debt log` when Quality Sentinel finds issues that can't be fixed in the current plan
-- [ ] **WIRE-02**: Verifier agent auto-logs unresolved quality dimension findings via `debt log`
-- [ ] **WIRE-03**: Debt logging is gated on quality level (fast=off, standard=critical/high only, strict=all severities)
-- [ ] **WIRE-04**: Debt entries include source phase and source plan provenance fields
+- [x] **WIRE-02**: Verifier agent auto-logs unresolved quality dimension findings via `debt log`
+- [x] **WIRE-03**: Debt logging is gated on quality level (fast=off, standard=critical/high only, strict=all severities)
+- [x] **WIRE-04**: Debt entries include source phase and source plan provenance fields
 
 ## Debt Resolution
 
@@ -58,9 +58,9 @@
 | MIGR-02 | Phase 3.3 | Complete |
 | MIGR-03 | Phase 3.3 | Complete |
 | WIRE-01 | Phase 3.4 | Pending |
-| WIRE-02 | Phase 3.4 | Pending |
-| WIRE-03 | Phase 3.4 | Pending |
-| WIRE-04 | Phase 3.4 | Pending |
+| WIRE-02 | Phase 3.4 | Complete |
+| WIRE-03 | Phase 3.4 | Complete |
+| WIRE-04 | Phase 3.4 | Complete |
 | FIXD-01 | Phase 3.5 | Pending |
 | FIXD-02 | Phase 3.5 | Pending |
 
