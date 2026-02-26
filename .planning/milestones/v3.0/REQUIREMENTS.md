@@ -31,8 +31,8 @@
 
 ## Debt Resolution
 
-- [ ] **FIXD-01**: `/gsd:fix-debt` skill reads DEBT.md, selects an entry (by ID or priority), and routes through debugger agent for diagnosis
-- [ ] **FIXD-02**: `/gsd:fix-debt` applies fix via plan execution, verifies result, and marks entry resolved
+- [x] **FIXD-01**: `/gsd:fix-debt` skill reads DEBT.md, selects an entry (by ID or priority), and routes through debugger agent for diagnosis
+- [x] **FIXD-02**: `/gsd:fix-debt` applies fix via plan execution, verifies result, and marks entry resolved
 
 ## Migration Tool
 
@@ -61,8 +61,8 @@
 | WIRE-02 | Phase 3.4 | Complete |
 | WIRE-03 | Phase 3.4 | Complete |
 | WIRE-04 | Phase 3.4 | Complete |
-| FIXD-01 | Phase 3.5 | Pending |
-| FIXD-02 | Phase 3.5 | Pending |
+| FIXD-01 | Phase 3.5 | Complete |
+| FIXD-02 | Phase 3.5 | Complete |
 
 ---
 *Last updated: 2026-02-26*
