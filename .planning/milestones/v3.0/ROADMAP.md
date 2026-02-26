@@ -98,6 +98,11 @@ Plans:
 - Skill reads DEBT.md, selects entry by ID or priority, routes through debugger
 - Applies fix via plan execution, verifies result, marks entry resolved
 
+**Plans:** 1 plan
+
+Plans:
+- [ ] 3.5-01-PLAN.md — Author /gsd:fix-debt orchestrator skill (entry selection, debugger diagnosis, inline fix plan, executor spawn, status resolution)
+
 ## Progress
 
 | Phase | Plans Complete | Status | Completed |
@@ -107,6 +112,6 @@ Plans:
 | 3.2.1. Planning Directory Cleanup | 2/2 | Complete | 2026-02-25 |
 | 3.3. Migration Tool | 1/1 | Complete    | 2026-02-26 |
 | 3.4. Agent Wiring | 2/2 | Complete    | 2026-02-26 |
-| 3.5. /gsd:fix-debt Skill | 0/? | Not started | - |
+| 3.5. /gsd:fix-debt Skill | 0/1 | Planned | - |
 
 ---
