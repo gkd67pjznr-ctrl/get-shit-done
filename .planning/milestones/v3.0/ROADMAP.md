@@ -82,6 +82,12 @@ Plans:
 - Debt logging gated on quality level (fast=off, standard=critical/high, strict=all)
 - Entries include source phase and plan provenance
 
+**Plans:** 2 plans
+
+Plans:
+- [ ] 3.4-01-PLAN.md — Wire executor debt auto-logging at FIX ATTEMPT LIMIT and blocked gate hook points
+- [ ] 3.4-02-PLAN.md — Wire verifier debt auto-logging after Step 7b quality dimension findings
+
 ### Phase 3.5: /gsd:fix-debt Skill
 
 **Goal:** Create on-demand orchestrator skill that routes debt entries through diagnosis and fix execution.
@@ -100,7 +106,7 @@ Plans:
 | 3.2. Core Debt Module | 1/1 | Complete | 2026-02-25 |
 | 3.2.1. Planning Directory Cleanup | 2/2 | Complete | 2026-02-25 |
 | 3.3. Migration Tool | 1/1 | Complete    | 2026-02-26 |
-| 3.4. Agent Wiring | 0/? | Not started | - |
+| 3.4. Agent Wiring | 0/2 | Planned | - |
 | 3.5. /gsd:fix-debt Skill | 0/? | Not started | - |
 
 ---
