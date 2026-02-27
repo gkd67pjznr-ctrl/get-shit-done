@@ -6,6 +6,32 @@ const fs = require('fs');
 const path = require('path');
 const { output, error } = require('./core.cjs');
 
+/**
+ * Ensure DEBT.md exists at the given planningDir (FIX-03).
+ * Creates with standard header if absent. Idempotent — never overwrites existing content.
+ *
+ * @param {string} planningDir - Absolute path to .planning/ directory
+ */
+function ensureDebtFile(planningDir) {
+  const debtPath = path.join(planningDir, 'DEBT.md');
+  if (!fs.existsSync(debtPath)) {
+    const debtHeader = [
+      '# DEBT.md \u2014 Tech Debt Register',
+      '',
+      'Project-level tracker for structured tech debt. Entries logged by `gsd-tools debt log`.',
+      '',
+      '| id | type | severity | component | description | date_logged | logged_by | status | source_phase | source_plan |',
+      '|----|------|----------|-----------|-------------|-------------|-----------|--------|--------------|-------------|',
+      '',
+    ].join('\n');
+    try {
+      fs.writeFileSync(debtPath, debtHeader, 'utf-8');
+    } catch (err) {
+      // Non-fatal: silently skip if we cannot write DEBT.md
+    }
+  }
+}
+
 function cmdConfigEnsureSection(cwd, raw) {
   const configPath = path.join(cwd, '.planning', 'config.json');
   const planningDir = path.join(cwd, '.planning');
@@ -89,11 +115,13 @@ function cmdConfigEnsureSection(cwd, raw) {
         error('Failed to write config.json: ' + err.message);
       }
       bootstrapGlobalDefaults();
+      ensureDebtFile(planningDir);
       const result = { created: false, migrated: true, reason };
       output(result, raw, 'migrated');
       return;
     }
 
+    ensureDebtFile(planningDir);
     const result = { created: false, reason: 'already_exists' };
     output(result, raw, 'exists');
     return;
@@ -127,6 +155,7 @@ function cmdConfigEnsureSection(cwd, raw) {
   try {
     fs.writeFileSync(configPath, JSON.stringify(defaults, null, 2), 'utf-8');
     bootstrapGlobalDefaults();
+    ensureDebtFile(planningDir);
     const result = { created: true, path: '.planning/config.json' };
     output(result, raw, 'created');
   } catch (err) {

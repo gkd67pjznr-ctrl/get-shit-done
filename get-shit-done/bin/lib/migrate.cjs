@@ -164,6 +164,35 @@ function inspectLayout(cwd) {
     }
   }
 
+  // FIX-04: Check for missing DEBT.md — create automatically during migrate --apply
+  const debtPath = path.join(planningDir, 'DEBT.md');
+  if (!fs.existsSync(debtPath)) {
+    changes.push({
+      type: 'create_file',
+      path: debtPath,
+      content: [
+        '# DEBT.md \u2014 Tech Debt Register',
+        '',
+        'Project-level tracker for structured tech debt. Entries logged by `gsd-tools debt log`.',
+        '',
+        '| id | type | severity | component | description | date_logged | logged_by | status | source_phase | source_plan |',
+        '|----|------|----------|-----------|-------------|-------------|-----------|--------|--------------|-------------|',
+        '',
+      ].join('\n'),
+      reason: 'DEBT.md missing \u2014 required for tech debt tracking',
+    });
+  }
+
+  // FIX-05: Flag stale TO-DOS.md at .planning/ root — never consumed by any workflow
+  const staleTodosPath = path.join(planningDir, 'TO-DOS.md');
+  if (fs.existsSync(staleTodosPath)) {
+    changes.push({
+      type: 'remove_stale',
+      path: staleTodosPath,
+      reason: 'Stale TO-DOS.md at .planning/ root \u2014 proper todo path is .planning/todos/pending/; this file was never consumed by any workflow',
+    });
+  }
+
   const manualActions = changes.filter(c => c.type === 'manual_action');
   return {
     layout, changes,
@@ -416,6 +445,11 @@ function applyBasic(cwd, raw) {
       if (!fs.existsSync(change.path)) {
         fs.writeFileSync(change.path, change.content, 'utf-8');
         actions.push({ type: 'created_file', path: change.path });
+      }
+    } else if (change.type === 'remove_stale') {
+      if (fs.existsSync(change.path)) {
+        fs.unlinkSync(change.path);
+        actions.push({ type: 'removed_stale', path: change.path });
       }
     } else if (change.type === 'manual_action') {
       skippedManual.push(change);
