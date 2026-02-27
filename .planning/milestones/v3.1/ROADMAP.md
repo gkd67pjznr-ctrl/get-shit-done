@@ -60,6 +60,6 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 4. Bug Fixes | 0/3 | Not started | - |
+| 4. Bug Fixes | 1/3 | In Progress|  |
 | 5. Housekeeping | 0/1 | Not started | - |
 | 6. Documentation | 0/1 | Not started | - |

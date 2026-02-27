@@ -17,7 +17,7 @@ Requirements for tech debt cleanup and documentation. Each maps to roadmap phase
 
 ### CLI
 
-- [ ] **CLI-01**: CLI `--help` output lists all commands including `migrate`, `debt`, and `milestone`
+- [x] **CLI-01**: CLI `--help` output lists all commands including `migrate`, `debt`, and `milestone`
 
 ### Maintenance
 
@@ -49,7 +49,7 @@ None — this is a cleanup milestone.
 | FIX-03 | Phase 4 | Pending |
 | FIX-04 | Phase 4 | Pending |
 | FIX-05 | Phase 4 | Pending |
-| CLI-01 | Phase 4 | Pending |
+| CLI-01 | Phase 4 | Complete |
 | MAINT-01 | Phase 5 | Pending |
 | MAINT-02 | Phase 5 | Pending |
 | DOC-01 | Phase 6 | Pending |
