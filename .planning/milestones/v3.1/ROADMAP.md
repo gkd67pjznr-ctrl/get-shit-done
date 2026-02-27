@@ -22,12 +22,12 @@ Tech debt cleanup and documentation for the v3.0 tech debt system. Three phases:
   3. `gsd init` creates DEBT.md in the project root; `migrate --apply` creates DEBT.md for projects that lack it
   4. TO-DOS.md files created by the system land in the correct todos directory, not the .planning/ root
   5. `gsd --help` lists `migrate`, `debt`, and `milestone` commands alongside existing commands
-**Plans**: TBD
+**Plans**: 3 plans (wave 1 — all parallel)
 
 Plans:
-- [ ] 04-01: Fix cmdMilestoneComplete phasesDir and execute-plan.md --milestone pass-through (FIX-01, FIX-02)
-- [ ] 04-02: Fix DEBT.md initialization paths and TO-DOS.md placement (FIX-03, FIX-04, FIX-05)
-- [ ] 04-03: Complete CLI --help text for all commands (CLI-01)
+- [ ] 04-01-PLAN.md — Fix cmdMilestoneComplete phasesDir and execute-plan.md --milestone pass-through (FIX-01, FIX-02)
+- [ ] 04-02-PLAN.md — Fix DEBT.md initialization paths and TO-DOS.md placement (FIX-03, FIX-04, FIX-05)
+- [ ] 04-03-PLAN.md — Complete CLI --help text for all commands (CLI-01)
 
 ### Phase 5: Housekeeping
 **Goal**: Agent files are tracked in git and fix-debt.md has a single authoritative source
