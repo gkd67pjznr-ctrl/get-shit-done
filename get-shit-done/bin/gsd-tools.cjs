@@ -205,7 +205,7 @@ async function main() {
   const command = args[0];
 
   if (!command) {
-    error('Usage: gsd-tools <command> [args] [--raw] [--cwd <path>]\nCommands: state, resolve-model, find-phase, commit, verify-summary, verify, frontmatter, template, generate-slug, current-timestamp, list-todos, verify-path-exists, config-ensure-section, init');
+    error('Usage: gsd-tools <command> [args] [--raw] [--cwd <path>] [--milestone <version>]\n\nCommands:\n  State:       state, state-snapshot\n  Phase:       phase, phases, find-phase, phase-plan-index\n  Roadmap:     roadmap, requirements\n  Milestone:   milestone, migrate\n  Debt:        debt\n  Verify:      verify, verify-summary, validate, frontmatter\n  Template:    template, scaffold\n  Config:      config-ensure-section, config-set, config-get, set-quality\n  Progress:    progress, history-digest\n  Todos:       todo, list-todos\n  Git:         commit, check-patches\n  Init:        init\n  Utility:     resolve-model, generate-slug, current-timestamp, verify-path-exists, summary-extract, websearch');
   }
 
   switch (command) {
@@ -721,7 +721,7 @@ async function main() {
     }
 
     default:
-      error(`Unknown command: ${command}`);
+      error(`Unknown command: ${command}\nRun gsd-tools without arguments to see all available commands.`);
   }
 }
 
