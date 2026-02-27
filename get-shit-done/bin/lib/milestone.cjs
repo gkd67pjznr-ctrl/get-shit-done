@@ -4,7 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { output, error, escapeRegex } = require('./core.cjs');
+const { output, error, escapeRegex, planningRoot } = require('./core.cjs');
 const { extractFrontmatter } = require('./frontmatter.cjs');
 
 function cmdRequirementsMarkComplete(cwd, reqIdsRaw, raw) {
@@ -74,17 +74,18 @@ function cmdRequirementsMarkComplete(cwd, reqIdsRaw, raw) {
   }, raw, `${updated.length}/${reqIds.length} requirements marked complete`);
 }
 
-function cmdMilestoneComplete(cwd, version, options, raw) {
+function cmdMilestoneComplete(cwd, version, options, raw, milestoneScope) {
   if (!version) {
     error('version required for milestone complete (e.g., v1.0)');
   }
 
-  const roadmapPath = path.join(cwd, '.planning', 'ROADMAP.md');
-  const reqPath = path.join(cwd, '.planning', 'REQUIREMENTS.md');
-  const statePath = path.join(cwd, '.planning', 'STATE.md');
+  const root = planningRoot(cwd, milestoneScope);
+  const roadmapPath = path.join(root, 'ROADMAP.md');
+  const reqPath = path.join(root, 'REQUIREMENTS.md');
+  const statePath = path.join(root, 'STATE.md');
   const milestonesPath = path.join(cwd, '.planning', 'MILESTONES.md');
   const archiveDir = path.join(cwd, '.planning', 'milestones');
-  const phasesDir = path.join(cwd, '.planning', 'phases');
+  const phasesDir = path.join(root, 'phases');
   const today = new Date().toISOString().split('T')[0];
   const milestoneName = options.name || version;
 

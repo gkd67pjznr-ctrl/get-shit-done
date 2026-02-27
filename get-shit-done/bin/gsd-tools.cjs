@@ -575,7 +575,7 @@ async function main() {
           }
           milestoneName = nameArgs.join(' ') || null;
         }
-        milestone.cmdMilestoneComplete(cwd, args[2], { name: milestoneName, archivePhases }, raw);
+        milestone.cmdMilestoneComplete(cwd, args[2], { name: milestoneName, archivePhases }, raw, milestoneScope);
       } else if (subcommand === 'new-workspace') {
         milestone.cmdMilestoneNewWorkspace(cwd, args[2], {}, raw);
       } else if (subcommand === 'update-manifest') {
