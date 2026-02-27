@@ -57,7 +57,17 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 
 ### Active
 
-(No active milestone — next milestone to be defined with `/gsd:new-milestone`)
+## Current Milestone: v3.1 Tech Debt Cleanup & README
+
+**Goal:** Fix all known tech debt from v3.0 and create a project README summarizing the fork's upgrades.
+
+**Target features:**
+- Fix FLOW-02: cmdMilestoneComplete phasesDir for milestone-scoped layouts
+- Fix FLOW-01: execute-plan.md --milestone flag pass-through
+- Fix CLI-01: Complete CLI help text for migrate, debt, milestone commands
+- Fix ARCH-01: Agent files outside git repo
+- Fix MAINT-01: Dual-file maintenance for fix-debt.md
+- Create README.md summarizing UPGRADES.md
 
 ### Out of Scope
 
@@ -130,4 +140,4 @@ Tech stack: Node.js, CJS modules, Markdown agent specifications, Context7 MCP.
 | No --milestone on migrate | Operates on project-level .planning/, not milestone workspaces | ✓ Good — migration is project-scoped, not milestone-scoped |
 
 ---
-*Last updated: 2026-02-26 after v3.0 milestone*
+*Last updated: 2026-02-27 after v3.1 milestone start*

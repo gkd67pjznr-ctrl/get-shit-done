@@ -2,7 +2,9 @@
 
 ## Active Milestones
 
-(None — next milestone to be defined with `/gsd:new-milestone`)
+| Milestone | Status | Workspace |
+|-----------|--------|-----------|
+| v3.1 Tech Debt Cleanup & README | Defining requirements | `.planning/milestones/v3.1/` |
 
 ## Completed Milestones
 
@@ -26,10 +28,10 @@ Each milestone has its own workspace under `.planning/milestones/<version>/` con
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-26)
+See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Planning next milestone
+**Current focus:** Milestone v3.1 — Tech Debt Cleanup & README
 
 ### Quick Tasks Completed
 
@@ -42,5 +44,5 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Session Continuity
 
-Last activity: 2026-02-27 - Completed quick task 5 (UPGRADES.md fork documentation)
-Next step: `/gsd:new-milestone` to define next milestone
+Last activity: 2026-02-27 — Milestone v3.1 started
+Next step: Define requirements for v3.1
