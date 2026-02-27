@@ -9,11 +9,11 @@ Requirements for tech debt cleanup and documentation. Each maps to roadmap phase
 
 ### Bug Fixes
 
-- [ ] **FIX-01**: `cmdMilestoneComplete` uses `planningRoot()` for phasesDir instead of hardcoded `.planning/phases/`
-- [ ] **FIX-02**: `execute-plan.md` passes `--milestone` flag to `roadmap update-plan-progress`
-- [ ] **FIX-03**: DEBT.md auto-created during project initialization (not just on first `debt log`)
-- [ ] **FIX-04**: `migrate --apply` creates DEBT.md for existing projects that lack it
-- [ ] **FIX-05**: TO-DOS.md in `.planning/` root doesn't capture todos meant for the todos folder
+- [x] **FIX-01**: `cmdMilestoneComplete` uses `planningRoot()` for phasesDir instead of hardcoded `.planning/phases/`
+- [x] **FIX-02**: `execute-plan.md` passes `--milestone` flag to `roadmap update-plan-progress`
+- [x] **FIX-03**: DEBT.md auto-created during project initialization (not just on first `debt log`)
+- [x] **FIX-04**: `migrate --apply` creates DEBT.md for existing projects that lack it
+- [x] **FIX-05**: TO-DOS.md in `.planning/` root doesn't capture todos meant for the todos folder
 
 ### CLI
 
@@ -44,8 +44,8 @@ None — this is a cleanup milestone.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FIX-01 | Phase 4 | Pending |
-| FIX-02 | Phase 4 | Pending |
+| FIX-01 | Phase 4 | Complete |
+| FIX-02 | Phase 4 | Complete |
 | FIX-03 | Phase 4 | Pending |
 | FIX-04 | Phase 4 | Pending |
 | FIX-05 | Phase 4 | Pending |

@@ -6,7 +6,7 @@ Tech debt cleanup and documentation for the v3.0 tech debt system. Three phases:
 
 ## Phases
 
-- [ ] **Phase 4: Bug Fixes** - Fix all behavioral bugs and CLI help gaps from v3.0
+- [x] **Phase 4: Bug Fixes** - Fix all behavioral bugs and CLI help gaps from v3.0
 - [ ] **Phase 5: Housekeeping** - Resolve file structure and git tracking issues
 - [ ] **Phase 6: Documentation** - Create README.md summarizing the fork
 
@@ -25,9 +25,9 @@ Tech debt cleanup and documentation for the v3.0 tech debt system. Three phases:
 **Plans**: 3 plans (wave 1 — all parallel)
 
 Plans:
-- [ ] 04-01-PLAN.md — Fix cmdMilestoneComplete phasesDir and execute-plan.md --milestone pass-through (FIX-01, FIX-02)
-- [ ] 04-02-PLAN.md — Fix DEBT.md initialization paths and TO-DOS.md placement (FIX-03, FIX-04, FIX-05)
-- [ ] 04-03-PLAN.md — Complete CLI --help text for all commands (CLI-01)
+- [x] 04-01-PLAN.md — Fix cmdMilestoneComplete phasesDir and execute-plan.md --milestone pass-through (FIX-01, FIX-02)
+- [x] 04-02-PLAN.md — Fix DEBT.md initialization paths and TO-DOS.md placement (FIX-03, FIX-04, FIX-05)
+- [x] 04-03-PLAN.md — Complete CLI --help text for all commands (CLI-01)
 
 ### Phase 5: Housekeeping
 **Goal**: Agent files are tracked in git and fix-debt.md has a single authoritative source
@@ -60,6 +60,6 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 4. Bug Fixes | 1/3 | In Progress|  |
+| 4. Bug Fixes | 3/3 | Complete | 2026-02-27 |
 | 5. Housekeeping | 0/1 | Not started | - |
 | 6. Documentation | 0/1 | Not started | - |
