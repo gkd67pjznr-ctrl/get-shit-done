@@ -31,6 +31,7 @@ Parse current values (default to `true` if not present):
 - `workflow.nyquist_validation` — validation architecture research during plan-phase
 - `model_profile` — which model each agent uses (default: `balanced`)
 - `git.branching_strategy` — branching approach (default: `"none"`)
+- `quality.level` — execution gate enforcement (default: `standard`)
 </step>
 
 <step name="present_settings">
@@ -102,6 +103,16 @@ AskUserQuestion([
       { label: "Per Phase", description: "Create branch for each phase (gsd/phase-{N}-{name})" },
       { label: "Per Milestone", description: "Create branch for entire milestone (gsd/{version}-{name})" }
     ]
+  },
+  {
+    question: "Quality enforcement level for execution gates?",
+    header: "Quality",
+    multiSelect: false,
+    options: [
+      { label: "Standard (Recommended)", description: "Run quality gates, warn on issues" },
+      { label: "Fast", description: "Skip all quality gates (fastest execution)" },
+      { label: "Strict", description: "Run quality gates, block on issues" }
+    ]
   }
 ])
 ```
@@ -114,6 +125,9 @@ Merge new settings into existing config.json:
 {
   ...existing_config,
   "model_profile": "quality" | "balanced" | "budget",
+  "quality": {
+    "level": "fast" | "standard" | "strict"
+  },
   "workflow": {
     "research": true/false,
     "plan_check": true/false,
@@ -162,6 +176,9 @@ Write `~/.gsd/defaults.json` with:
   "commit_docs": <current>,
   "parallelization": <current>,
   "branching_strategy": <current>,
+  "quality": {
+    "level": <current>
+  },
   "workflow": {
     "research": <current>,
     "plan_check": <current>,
@@ -190,6 +207,7 @@ Display:
 | Auto-Advance         | {On/Off} |
 | Nyquist Validation   | {On/Off} |
 | Git Branching        | {None/Per Phase/Per Milestone} |
+| Quality Level        | {fast/standard/strict} |
 | Saved as Defaults    | {Yes/No} |
 
 These settings apply to future /gsd:plan-phase and /gsd:execute-phase runs.
@@ -206,7 +224,7 @@ Quick commands:
 
 <success_criteria>
 - [ ] Current config read
-- [ ] User presented with 7 settings (profile + 5 workflow toggles + git branching)
+- [ ] User presented with 8 settings (profile + 5 workflow toggles + git branching + quality level)
 - [ ] Config updated with model_profile, workflow, and git sections
 - [ ] User offered to save as global defaults (~/.gsd/defaults.json)
 - [ ] Changes confirmed to user
