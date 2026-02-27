@@ -36,10 +36,10 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. `git ls-files` shows `gsd-executor.md` and `gsd-verifier.md` tracked in the repository
   2. There is exactly one copy of `fix-debt.md`; no divergence between installed and repo copies
-**Plans**: TBD
+**Plans**: 1 plan (wave 1)
 
 Plans:
-- [ ] 05-01: Track agent files in git and consolidate fix-debt.md (MAINT-01, MAINT-02)
+- [ ] 05-01-PLAN.md — Merge Debt Auto-Log sections into repo agent files and verify fix-debt.md single-copy status (MAINT-01, MAINT-02)
 
 ### Phase 6: Documentation
 **Goal**: README.md exists at repo root and gives a clear picture of what this fork is and what it delivers
