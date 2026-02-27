@@ -46,9 +46,9 @@ None — this is a cleanup milestone.
 |-------------|-------|--------|
 | FIX-01 | Phase 4 | Complete |
 | FIX-02 | Phase 4 | Complete |
-| FIX-03 | Phase 4 | Pending |
-| FIX-04 | Phase 4 | Pending |
-| FIX-05 | Phase 4 | Pending |
+| FIX-03 | Phase 4 | Complete |
+| FIX-04 | Phase 4 | Complete |
+| FIX-05 | Phase 4 | Complete |
 | CLI-01 | Phase 4 | Complete |
 | MAINT-01 | Phase 5 | Pending |
 | MAINT-02 | Phase 5 | Pending |
