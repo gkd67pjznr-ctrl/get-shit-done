@@ -15,10 +15,21 @@ Read config.json for planning behavior settings.
 Load execution context (paths only to minimize orchestrator context):
 
 ```bash
-INIT=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs init execute-phase "${PHASE}")
+# MILESTONE_FLAG is set by orchestrator when --milestone is active (e.g., "--milestone v3.1")
+INIT=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs init execute-phase "${PHASE}" ${MILESTONE_FLAG})
 ```
 
-Extract from init JSON: `executor_model`, `commit_docs`, `phase_dir`, `phase_number`, `plans`, `summaries`, `incomplete_plans`, `state_path`, `config_path`.
+Extract from init JSON: `executor_model`, `commit_docs`, `phase_dir`, `phase_number`, `plans`, `summaries`, `incomplete_plans`, `state_path`, `config_path`, `milestone_scope`.
+
+```bash
+# Set MILESTONE_FLAG from init context (for subsequent commands)
+MILESTONE_SCOPE=$(echo "$INIT" | node -e "process.stdin.resume();let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const p=JSON.parse(d);process.stdout.write(p.milestone_scope||'')}catch{}})")
+if [ -n "${MILESTONE_SCOPE}" ]; then
+  MILESTONE_FLAG="--milestone ${MILESTONE_SCOPE}"
+else
+  MILESTONE_FLAG=""
+fi
+```
 
 If `.planning/` missing: error.
 </step>
@@ -380,9 +391,9 @@ If SUMMARY "Issues Encountered" ≠ "None": yolo → log and continue. Interacti
 
 <step name="update_roadmap">
 ```bash
-node ~/.claude/get-shit-done/bin/gsd-tools.cjs roadmap update-plan-progress "${PHASE}"
+node ~/.claude/get-shit-done/bin/gsd-tools.cjs roadmap update-plan-progress "${PHASE}" ${MILESTONE_FLAG}
 ```
-Counts PLAN vs SUMMARY files on disk. Updates progress table row with correct count and status (`In Progress` or `Complete` with date).
+Counts PLAN vs SUMMARY files on disk. Updates progress table row with correct count and status (`In Progress` or `Complete` with date). Passes `--milestone` flag when running in a milestone-scoped layout so the correct ROADMAP.md is updated.
 </step>
 
 <step name="update_requirements">
