@@ -260,6 +260,71 @@ Record outcome:
 | Test gate (new logic) | Skip | New `.cjs/.js/.ts` with exports | Always |
 | Post-task diff review | Skip | Run | Run |
 
+---
+
+## Debt Auto-Log Protocol
+
+**Purpose:** When unfixable issues are discovered during execution, auto-log them to DEBT.md for future resolution via `/gsd:fix-debt`. This creates a machine-readable record beyond the SUMMARY.md narrative.
+
+**Entry guard:** Uses `QUALITY_LEVEL` already read at sentinel entry. If `fast`, skip all debt logging.
+
+**Severity gating (WIRE-03):**
+- `fast`: No debt logging at all
+- `standard`: Log only `critical` and `high` severity entries
+- `strict`: Log all severity levels (`critical`, `high`, `medium`, `low`)
+
+**Severity assessment for executor-deferred issues:**
+- Security vulnerabilities, data corruption risks → `critical`
+- Broken tests, missing error handling, correctness failures → `high`
+- Code quality issues, missing validation, incomplete coverage → `medium`
+- Style issues, naming conventions, minor cleanup → `low`
+
+**Provenance (WIRE-04):** Always pass `--source-phase "${PHASE}"` and `--source-plan "${PHASE}-${PLAN}"` using the variables already in scope from plan frontmatter parsing.
+
+### Trigger A: FIX ATTEMPT LIMIT Reached
+
+After documenting deferred issues in SUMMARY.md (per deviation_rules FIX ATTEMPT LIMIT), also log each deferred issue to DEBT.md:
+
+```bash
+if [ "$QUALITY_LEVEL" != "fast" ]; then
+  # Assess severity of each deferred issue contextually
+  ISSUE_SEVERITY="high"  # Adjust per issue: critical/high/medium/low
+  SHOULD_LOG=false
+  if [ "$QUALITY_LEVEL" = "strict" ]; then SHOULD_LOG=true; fi
+  if [ "$QUALITY_LEVEL" = "standard" ] && { [ "$ISSUE_SEVERITY" = "critical" ] || [ "$ISSUE_SEVERITY" = "high" ]; }; then SHOULD_LOG=true; fi
+  if [ "$SHOULD_LOG" = "true" ]; then
+    node ~/.claude/get-shit-done/bin/gsd-tools.cjs debt log \
+      --type code \
+      --severity "$ISSUE_SEVERITY" \
+      --component "${TASK_FILES}" \
+      --description "Executor deferred: ${DEFERRED_ISSUE_DESCRIPTION}" \
+      --logged-by executor \
+      --source-phase "${PHASE}" \
+      --source-plan "${PHASE}-${PLAN}"
+  fi
+fi
+```
+
+### Trigger B: Blocked Gate Outcome (strict mode)
+
+When a gate outcome is `blocked` (strict mode only — standard mode does not produce `blocked` outcomes), log the blocking issue to DEBT.md:
+
+```bash
+# After recording GATE_OUTCOMES+=("${TASK_NUM}|${GATE_NAME}|blocked|${DETAIL}")
+if [ "$QUALITY_LEVEL" = "strict" ]; then
+  node ~/.claude/get-shit-done/bin/gsd-tools.cjs debt log \
+    --type test \
+    --severity high \
+    --component "${TASK_FILES}" \
+    --description "Strict gate blocked: ${GATE_NAME} — ${DETAIL}" \
+    --logged-by executor \
+    --source-phase "${PHASE}" \
+    --source-plan "${PHASE}-${PLAN}"
+fi
+```
+
+**Important:** Trigger B fires only for `blocked` outcomes, which only occur in strict mode. Standard mode produces `warned` outcomes which do not trigger debt logging (warnings are informational, captured in SUMMARY.md Quality Gates section only).
+
 </quality_sentinel>
 
 <deviation_rules>
@@ -333,6 +398,7 @@ Track auto-fix attempts per task. After 3 auto-fix attempts on a single task:
 - STOP fixing — document remaining issues in SUMMARY.md under "Deferred Issues"
 - Continue to the next task (or return checkpoint if blocked)
 - Do NOT restart the build to find more issues
+- **Debt auto-log:** If quality level is not `fast`, log each deferred issue to DEBT.md via Debt Auto-Log Protocol (Trigger A) in `<quality_sentinel>`
 </deviation_rules>
 
 <authentication_gates>

@@ -494,6 +494,95 @@ In strict mode, after writing all findings to VERIFICATION.md:
 
 **This feeds into Step 9 status determination** — Step 7b's strict-mode FAILs propagate to `status: gaps_found`. Standard mode WARNs are informational only.
 
+## Step 7c: Debt Auto-Log
+
+**Purpose:** Auto-log Step 7b quality findings to DEBT.md for future resolution via `/gsd:fix-debt`. This creates machine-readable debt entries beyond the VERIFICATION.md narrative.
+
+**Entry guard:** Uses `QUALITY_LEVEL` already read at Step 7b entry. If `fast`, skip entirely (Step 7b was already skipped, so there are no findings to log).
+
+**Scope:** ONLY log findings from Step 7b (duplication, orphaned exports, missing tests). Do NOT log goal-achievement gaps from Steps 3-5 — those go through the planner for re-execution, not the debt tracker.
+
+**Severity gating (WIRE-03):**
+- `fast`: No debt logging (no findings exist — Step 7b was skipped)
+- `standard`: Log only WARN findings that map to `critical` or `high` severity
+- `strict`: Log all FAIL findings regardless of severity
+
+**Severity mapping from Step 7b to DEBT.md:**
+- Duplication findings (WARN/FAIL) → severity `high`, type `code`
+- Orphaned exports (WARN/FAIL) → severity `medium`, type `code`
+- Missing tests (WARN/FAIL) → severity `high`, type `test`
+- INFO findings → never logged to DEBT.md (informational only)
+
+**Provenance (WIRE-04):** Pass `--source-phase "${PHASE_NUM}"` and `--source-plan "phase-verification"`. The verifier runs at phase level, not plan level, so `"phase-verification"` is the fixed source_plan value for all verifier-originated entries.
+
+**Implementation:**
+
+After writing the Step 7b section to VERIFICATION.md, iterate over the findings arrays and log qualifying entries:
+
+```bash
+if [ "$QUALITY_LEVEL" != "fast" ]; then
+  # Log duplication findings
+  for finding in "${FINDINGS_DUPLICATION[@]}"; do
+    FINDING_SEVERITY="high"
+    SHOULD_LOG=false
+    if [ "$QUALITY_LEVEL" = "strict" ]; then SHOULD_LOG=true; fi
+    if [ "$QUALITY_LEVEL" = "standard" ] && { [ "$FINDING_SEVERITY" = "critical" ] || [ "$FINDING_SEVERITY" = "high" ]; }; then SHOULD_LOG=true; fi
+    if [ "$SHOULD_LOG" = "true" ]; then
+      node ~/.claude/get-shit-done/bin/gsd-tools.cjs debt log \
+        --type code \
+        --severity "$FINDING_SEVERITY" \
+        --component "${FINDING_FILE}" \
+        --description "Verifier: duplication — ${finding}" \
+        --logged-by verifier \
+        --source-phase "${PHASE_NUM}" \
+        --source-plan "phase-verification"
+    fi
+  done
+
+  # Log orphaned export findings (medium severity — only logged in strict mode)
+  for finding in "${FINDINGS_ORPHANED[@]}"; do
+    FINDING_SEVERITY="medium"
+    SHOULD_LOG=false
+    if [ "$QUALITY_LEVEL" = "strict" ]; then SHOULD_LOG=true; fi
+    # standard mode: medium severity does NOT qualify (standard logs critical+high only)
+    if [ "$SHOULD_LOG" = "true" ]; then
+      node ~/.claude/get-shit-done/bin/gsd-tools.cjs debt log \
+        --type code \
+        --severity "$FINDING_SEVERITY" \
+        --component "${FINDING_FILE}" \
+        --description "Verifier: orphaned export — ${finding}" \
+        --logged-by verifier \
+        --source-phase "${PHASE_NUM}" \
+        --source-plan "phase-verification"
+    fi
+  done
+
+  # Log missing test findings
+  for finding in "${FINDINGS_MISSING_TESTS[@]}"; do
+    FINDING_SEVERITY="high"
+    SHOULD_LOG=false
+    if [ "$QUALITY_LEVEL" = "strict" ]; then SHOULD_LOG=true; fi
+    if [ "$QUALITY_LEVEL" = "standard" ] && { [ "$FINDING_SEVERITY" = "critical" ] || [ "$FINDING_SEVERITY" = "high" ]; }; then SHOULD_LOG=true; fi
+    if [ "$SHOULD_LOG" = "true" ]; then
+      node ~/.claude/get-shit-done/bin/gsd-tools.cjs debt log \
+        --type test \
+        --severity "$FINDING_SEVERITY" \
+        --component "${FINDING_FILE}" \
+        --description "Verifier: missing tests — ${finding}" \
+        --logged-by verifier \
+        --source-phase "${PHASE_NUM}" \
+        --source-plan "phase-verification"
+    fi
+  done
+fi
+```
+
+**Important distinctions:**
+- `FINDINGS_ORPHANED` entries have severity `medium` → only logged in `strict` mode (standard requires critical/high)
+- `FINDINGS_DUPLICATION` and `FINDINGS_MISSING_TESTS` have severity `high` → logged in both `standard` and `strict` modes
+- INFO findings (e.g., CLI entry point exports) are NEVER logged to DEBT.md — they are informational annotations in VERIFICATION.md only
+- Goal-achievement gaps (Steps 3-5 truths marked FAILED) are NEVER logged here — they feed the planner via `gaps:` frontmatter in VERIFICATION.md
+
 ## Step 8: Identify Human Verification Needs
 
 **Always needs human:** Visual appearance, user flow completion, real-time behavior, external service integration, performance feel, error message clarity.
