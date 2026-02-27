@@ -21,8 +21,8 @@ Requirements for tech debt cleanup and documentation. Each maps to roadmap phase
 
 ### Maintenance
 
-- [ ] **MAINT-01**: Agent files (`gsd-executor.md`, `gsd-verifier.md`) tracked in git repo
-- [ ] **MAINT-02**: `fix-debt.md` has single authoritative copy (eliminate dual-file divergence)
+- [x] **MAINT-01**: Agent files (`gsd-executor.md`, `gsd-verifier.md`) tracked in git repo
+- [x] **MAINT-02**: `fix-debt.md` has single authoritative copy (eliminate dual-file divergence)
 
 ### Documentation
 
@@ -50,8 +50,8 @@ None — this is a cleanup milestone.
 | FIX-04 | Phase 4 | Complete |
 | FIX-05 | Phase 4 | Complete |
 | CLI-01 | Phase 4 | Complete |
-| MAINT-01 | Phase 5 | Pending |
-| MAINT-02 | Phase 5 | Pending |
+| MAINT-01 | Phase 5 | Complete |
+| MAINT-02 | Phase 5 | Complete |
 | DOC-01 | Phase 6 | Pending |
 
 **Coverage:**

@@ -7,7 +7,7 @@ Tech debt cleanup and documentation for the v3.0 tech debt system. Three phases:
 ## Phases
 
 - [x] **Phase 4: Bug Fixes** - Fix all behavioral bugs and CLI help gaps from v3.0
-- [ ] **Phase 5: Housekeeping** - Resolve file structure and git tracking issues
+- [x] **Phase 5: Housekeeping** - Resolve file structure and git tracking issues (completed 2026-02-27)
 - [ ] **Phase 6: Documentation** - Create README.md summarizing the fork
 
 ## Phase Details
@@ -39,7 +39,7 @@ Plans:
 **Plans**: 1 plan (wave 1)
 
 Plans:
-- [ ] 05-01-PLAN.md — Merge Debt Auto-Log sections into repo agent files and verify fix-debt.md single-copy status (MAINT-01, MAINT-02)
+- [x] 05-01-PLAN.md — Merge Debt Auto-Log sections into repo agent files and verify fix-debt.md single-copy status (MAINT-01, MAINT-02)
 
 ### Phase 6: Documentation
 **Goal**: README.md exists at repo root and gives a clear picture of what this fork is and what it delivers
@@ -61,5 +61,5 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 4. Bug Fixes | 3/3 | Complete | 2026-02-27 |
-| 5. Housekeeping | 0/1 | Not started | - |
+| 5. Housekeeping | 1/1 | Complete   | 2026-02-27 |
 | 6. Documentation | 0/1 | Not started | - |
