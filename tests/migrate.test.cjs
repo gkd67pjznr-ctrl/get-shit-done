@@ -66,12 +66,13 @@ describe('migrate commands', () => {
     test('dry-run on fully-configured legacy project reports 0 changes (up-to-date)', () => {
       // createLegacyProject adds config.json but no ROADMAP/STATE/PROJECT
       // We need a fully-configured project for truly 0 changes:
-      // .planning/, .planning/phases/, config.json, ROADMAP.md, STATE.md, PROJECT.md
+      // .planning/, .planning/phases/, config.json, ROADMAP.md, STATE.md, PROJECT.md, DEBT.md
       const planningDir = path.join(tmpDir, '.planning');
       fs.writeFileSync(path.join(planningDir, 'config.json'), JSON.stringify({ model_profile: 'balanced', commit_docs: true }, null, 2), 'utf-8');
       fs.writeFileSync(path.join(planningDir, 'ROADMAP.md'), '# Roadmap\n', 'utf-8');
       fs.writeFileSync(path.join(planningDir, 'STATE.md'), '# State\n', 'utf-8');
       fs.writeFileSync(path.join(planningDir, 'PROJECT.md'), '# Project\n', 'utf-8');
+      fs.writeFileSync(path.join(planningDir, 'DEBT.md'), '# DEBT.md\n', 'utf-8');
 
       const result = runGsdTools('migrate --dry-run', tmpDir);
       assert.ok(result.success, `Command failed: ${result.error}`);
@@ -86,6 +87,7 @@ describe('migrate commands', () => {
       fs.writeFileSync(path.join(planningDir, 'ROADMAP.md'), '# Roadmap\n', 'utf-8');
       fs.writeFileSync(path.join(planningDir, 'STATE.md'), '# State\n', 'utf-8');
       fs.writeFileSync(path.join(planningDir, 'PROJECT.md'), '# Project\n', 'utf-8');
+      fs.writeFileSync(path.join(planningDir, 'DEBT.md'), '# DEBT.md\n', 'utf-8');
 
       const result = runGsdTools('migrate --dry-run --raw', tmpDir);
       assert.ok(result.success, `Command failed: ${result.error}`);
@@ -94,13 +96,14 @@ describe('migrate commands', () => {
 
     test('dry-run on fully-configured concurrent project reports 0 changes', () => {
       // createConcurrentProject adds config.json with concurrent:true + milestone workspace
-      // We still need the top-level ROADMAP/STATE/PROJECT
+      // We still need the top-level ROADMAP/STATE/PROJECT/DEBT.md
       const concurrentDir = createConcurrentProject('v3.0');
       try {
         const planningDir = path.join(concurrentDir, '.planning');
         fs.writeFileSync(path.join(planningDir, 'ROADMAP.md'), '# Roadmap\n', 'utf-8');
         fs.writeFileSync(path.join(planningDir, 'STATE.md'), '# State\n', 'utf-8');
         fs.writeFileSync(path.join(planningDir, 'PROJECT.md'), '# Project\n', 'utf-8');
+        fs.writeFileSync(path.join(planningDir, 'DEBT.md'), '# DEBT.md\n', 'utf-8');
 
         const result = runGsdTools('migrate --dry-run', concurrentDir);
         assert.ok(result.success, `Command failed: ${result.error}`);
