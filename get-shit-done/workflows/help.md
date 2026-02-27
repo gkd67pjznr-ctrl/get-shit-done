@@ -353,6 +353,26 @@ Set quality enforcement level (fast/standard/strict).
 Usage: `/gsd:set-quality strict`
 Usage: `/gsd:set-quality --global standard`
 
+### Tech Debt Management
+
+**`/gsd:debt`** *(via gsd-tools CLI)*
+Track and manage technical debt entries.
+
+- Log new debt: `gsd-tools debt log --type code --severity medium --component auth --description "Hardcoded timeout"`
+- List debt: `gsd-tools debt list [--status open] [--severity high]`
+- Resolve debt: `gsd-tools debt resolve --id TD-001 --status resolved`
+- Debt tracked in `.planning/DEBT.md` (project-level, not milestone-scoped)
+
+### Migration
+
+**`/gsd:migrate`** *(via gsd-tools CLI)*
+Migrate project structure between GSD versions.
+
+- Dry run: `gsd-tools migrate --dry-run` (inspect what would change)
+- Apply: `gsd-tools migrate --apply` (create missing dirs/files)
+- Full conversion: `gsd-tools migrate --apply --version v2.0` (legacy to milestone-scoped)
+- Cleanup: `gsd-tools migrate --cleanup` (remove stale flat archives)
+
 ### Utility Commands
 
 **`/gsd:cleanup`**
@@ -396,6 +416,7 @@ Usage: `/gsd:join-discord`
 ├── STATE.md              # Project memory & context
 ├── RETROSPECTIVE.md      # Living retrospective (updated per milestone)
 ├── config.json           # Workflow mode & gates
+├── DEBT.md               # Tech debt register
 ├── todos/                # Captured ideas and tasks
 │   ├── pending/          # Todos waiting to be worked on
 │   └── done/             # Completed todos
