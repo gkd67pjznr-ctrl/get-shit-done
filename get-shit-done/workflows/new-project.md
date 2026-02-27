@@ -85,7 +85,7 @@ Exit command.
 
 YOLO mode is implicit (auto = YOLO). Ask remaining config questions:
 
-**Round 1 — Core settings (3 questions, no Mode question):**
+**Round 1 — Core settings (4 questions, no Mode question):**
 
 ```
 AskUserQuestion([
@@ -115,6 +115,16 @@ AskUserQuestion([
     options: [
       { label: "Yes (Recommended)", description: "Planning docs tracked in version control" },
       { label: "No", description: "Keep .planning/ local-only (add to .gitignore)" }
+    ]
+  },
+  {
+    header: "Quality",
+    question: "Quality enforcement level for execution gates?",
+    multiSelect: false,
+    options: [
+      { label: "Fast (Recommended)", description: "Skip all quality gates (fastest execution)" },
+      { label: "Standard", description: "Run quality gates, warn on issues" },
+      { label: "Strict", description: "Run quality gates, block on issues" }
     ]
   }
 ])
@@ -173,6 +183,9 @@ Create `.planning/config.json` with mode set to "yolo":
   "parallelization": true|false,
   "commit_docs": true|false,
   "model_profile": "quality|balanced|budget",
+  "quality": {
+    "level": "fast|standard|strict"
+  },
   "workflow": {
     "research": true|false,
     "plan_check": true|false,
@@ -365,7 +378,7 @@ If "Yes": read `~/.gsd/defaults.json`, use those values for config.json, and ski
 
 If "No" or `~/.gsd/defaults.json` doesn't exist: proceed with the questions below.
 
-**Round 1 — Core workflow settings (4 questions):**
+**Round 1 — Core workflow settings (5 questions):**
 
 ```
 questions: [
@@ -404,6 +417,16 @@ questions: [
     options: [
       { label: "Yes (Recommended)", description: "Planning docs tracked in version control" },
       { label: "No", description: "Keep .planning/ local-only (add to .gitignore)" }
+    ]
+  },
+  {
+    header: "Quality",
+    question: "Quality enforcement level for execution gates?",
+    multiSelect: false,
+    options: [
+      { label: "Standard (Recommended)", description: "Run quality gates, warn on issues" },
+      { label: "Fast", description: "Skip all quality gates (fastest execution)" },
+      { label: "Strict", description: "Run quality gates, block on issues" }
     ]
   }
 ]
@@ -472,6 +495,9 @@ Create `.planning/config.json` with all settings:
   "parallelization": true|false,
   "commit_docs": true|false,
   "model_profile": "quality|balanced|budget",
+  "quality": {
+    "level": "fast|standard|strict"
+  },
   "workflow": {
     "research": true|false,
     "plan_check": true|false,
