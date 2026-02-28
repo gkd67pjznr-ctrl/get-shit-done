@@ -7,6 +7,51 @@ const path = require('path');
 const { execSync } = require('child_process');
 const { loadConfig, resolveModelInternal, findPhaseInternal, getRoadmapPhaseInternal, pathExistsInternal, generateSlugInternal, getMilestoneInfo, normalizePhaseName, comparePhaseNum, planningRoot, detectLayoutStyle, output, error } = require('./core.cjs');
 
+/**
+ * Auto-create phase directory from ROADMAP when it exists in ROADMAP but not on disk.
+ * Mirrors findPhaseInternal's auto-detection: explicit scope → milestone-scoped search → legacy.
+ */
+function autoCreatePhaseFromRoadmap(cwd, phase, milestoneScope) {
+  const scopesToSearch = [];
+
+  if (milestoneScope) {
+    scopesToSearch.push(milestoneScope);
+  } else {
+    const layout = detectLayoutStyle(cwd);
+    if (layout === 'milestone-scoped') {
+      const milestonesDir = path.join(cwd, '.planning', 'milestones');
+      try {
+        const msDirs = fs.readdirSync(milestonesDir, { withFileTypes: true })
+          .filter(e => e.isDirectory()).map(e => e.name).sort().reverse();
+        scopesToSearch.push(...msDirs);
+      } catch {}
+    } else {
+      scopesToSearch.push(null);
+    }
+  }
+
+  for (const scope of scopesToSearch) {
+    const roadmapPhase = getRoadmapPhaseInternal(cwd, phase, scope);
+    if (roadmapPhase?.found) {
+      const slug = generateSlugInternal(roadmapPhase.phase_name);
+      const normalized = normalizePhaseName(roadmapPhase.phase_number);
+      const dirName = `${normalized}-${slug}`;
+      const dirPath = path.join(planningRoot(cwd, scope), 'phases', dirName);
+      fs.mkdirSync(dirPath, { recursive: true });
+      fs.writeFileSync(path.join(dirPath, '.gitkeep'), '');
+      const phaseInfo = findPhaseInternal(cwd, phase, scope);
+      if (phaseInfo) {
+        if (scope && !milestoneScope) {
+          phaseInfo.milestone_scope = scope;
+        }
+        return phaseInfo;
+      }
+    }
+  }
+
+  return null;
+}
+
 function cmdInitExecutePhase(cwd, phase, raw, milestoneScope) {
   if (!phase) {
     error('phase required for init execute-phase');
@@ -15,18 +60,9 @@ function cmdInitExecutePhase(cwd, phase, raw, milestoneScope) {
   const config = loadConfig(cwd);
   let phaseInfo = findPhaseInternal(cwd, phase, milestoneScope);
 
-  // ROADMAP fallback with auto-create: when phase exists in ROADMAP but has no directory on disk
+  // ROADMAP fallback: auto-create directory when phase exists in ROADMAP but not on disk
   if (!phaseInfo) {
-    const roadmapPhase = getRoadmapPhaseInternal(cwd, phase, milestoneScope);
-    if (roadmapPhase?.found) {
-      const slug = generateSlugInternal(roadmapPhase.phase_name);
-      const normalized = normalizePhaseName(roadmapPhase.phase_number);
-      const dirName = `${normalized}-${slug}`;
-      const dirPath = path.join(planningRoot(cwd, milestoneScope), 'phases', dirName);
-      fs.mkdirSync(dirPath, { recursive: true });
-      fs.writeFileSync(path.join(dirPath, '.gitkeep'), '');
-      phaseInfo = findPhaseInternal(cwd, phase, milestoneScope);
-    }
+    phaseInfo = autoCreatePhaseFromRoadmap(cwd, phase, milestoneScope);
   }
 
   // Auto-detected milestone scope from findPhaseInternal
@@ -113,18 +149,9 @@ function cmdInitPlanPhase(cwd, phase, raw, milestoneScope) {
   const config = loadConfig(cwd);
   let phaseInfo = findPhaseInternal(cwd, phase, milestoneScope);
 
-  // ROADMAP fallback with auto-create: when phase exists in ROADMAP but has no directory on disk
+  // ROADMAP fallback: auto-create directory when phase exists in ROADMAP but not on disk
   if (!phaseInfo) {
-    const roadmapPhase = getRoadmapPhaseInternal(cwd, phase, milestoneScope);
-    if (roadmapPhase?.found) {
-      const slug = generateSlugInternal(roadmapPhase.phase_name);
-      const normalized = normalizePhaseName(roadmapPhase.phase_number);
-      const dirName = `${normalized}-${slug}`;
-      const dirPath = path.join(planningRoot(cwd, milestoneScope), 'phases', dirName);
-      fs.mkdirSync(dirPath, { recursive: true });
-      fs.writeFileSync(path.join(dirPath, '.gitkeep'), '');
-      phaseInfo = findPhaseInternal(cwd, phase, milestoneScope);
-    }
+    phaseInfo = autoCreatePhaseFromRoadmap(cwd, phase, milestoneScope);
   }
 
   // Auto-detected milestone scope from findPhaseInternal

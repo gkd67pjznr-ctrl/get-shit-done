@@ -630,6 +630,46 @@ describe('BUG-01: cmdInitExecutePhase auto-creates phase directory from ROADMAP'
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Group 10b: BUG-01 — auto-detection without --milestone flag
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('BUG-01: auto-creates phase directory WITHOUT --milestone flag (auto-detect)', () => {
+  let tmpDir;
+
+  before(() => {
+    tmpDir = createConcurrentProject('v12.0');
+    // Write ROADMAP with Phase 77 in the v12.0 milestone workspace
+    const roadmapPath = path.join(tmpDir, '.planning', 'milestones', 'v12.0', 'ROADMAP.md');
+    fs.writeFileSync(roadmapPath, `# Roadmap v12.0\n\n### Phase 77: Deploy Infrastructure\n\n**Goal:** Deploy the infra\n`);
+    // Do NOT create the 77-deploy-infrastructure directory
+  });
+
+  after(() => {
+    cleanup(tmpDir);
+  });
+
+  test('cmdInitPlanPhase finds phase 77 without --milestone flag', () => {
+    // No --milestone flag — should auto-detect v12.0
+    const result = runGsdToolsFull(['init', 'plan-phase', '77', '--raw'], tmpDir);
+    assert.ok(result.success, `Command failed: ${result.stderr}`);
+    const out = JSON.parse(result.output);
+    assert.strictEqual(out.phase_found, true, 'Expected phase_found to be true (auto-detected)');
+    assert.ok(out.phase_dir, 'Expected phase_dir to be non-null');
+    assert.ok(out.phase_dir.includes('v12.0'), `Expected phase_dir to include v12.0, got: ${out.phase_dir}`);
+    assert.strictEqual(out.milestone_scope, 'v12.0', 'Expected auto-detected milestone_scope to be v12.0');
+  });
+
+  test('cmdInitExecutePhase finds phase 77 without --milestone flag', () => {
+    const result = runGsdToolsFull(['init', 'execute-phase', '77', '--raw'], tmpDir);
+    assert.ok(result.success, `Command failed: ${result.stderr}`);
+    const out = JSON.parse(result.output);
+    assert.strictEqual(out.phase_found, true, 'Expected phase_found to be true (auto-detected)');
+    assert.ok(out.phase_dir, 'Expected phase_dir to be non-null');
+    assert.strictEqual(out.milestone_scope, 'v12.0', 'Expected auto-detected milestone_scope to be v12.0');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Group 11: BUG-02 — cmdInitProgress sorts phases numerically
 // ─────────────────────────────────────────────────────────────────────────────
 
