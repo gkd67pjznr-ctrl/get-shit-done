@@ -5,7 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
-const { loadConfig, resolveModelInternal, findPhaseInternal, getRoadmapPhaseInternal, pathExistsInternal, generateSlugInternal, getMilestoneInfo, normalizePhaseName, planningRoot, detectLayoutStyle, output, error } = require('./core.cjs');
+const { loadConfig, resolveModelInternal, findPhaseInternal, getRoadmapPhaseInternal, pathExistsInternal, generateSlugInternal, getMilestoneInfo, normalizePhaseName, comparePhaseNum, planningRoot, detectLayoutStyle, output, error } = require('./core.cjs');
 
 function cmdInitExecutePhase(cwd, phase, raw, milestoneScope) {
   if (!phase) {
@@ -13,11 +13,28 @@ function cmdInitExecutePhase(cwd, phase, raw, milestoneScope) {
   }
 
   const config = loadConfig(cwd);
-  const root = planningRoot(cwd, milestoneScope);
-  const phaseInfo = findPhaseInternal(cwd, phase, milestoneScope);
-  const milestone = getMilestoneInfo(cwd, milestoneScope);
+  let phaseInfo = findPhaseInternal(cwd, phase, milestoneScope);
 
-  const roadmapPhase = getRoadmapPhaseInternal(cwd, phase, milestoneScope);
+  // ROADMAP fallback with auto-create: when phase exists in ROADMAP but has no directory on disk
+  if (!phaseInfo) {
+    const roadmapPhase = getRoadmapPhaseInternal(cwd, phase, milestoneScope);
+    if (roadmapPhase?.found) {
+      const slug = generateSlugInternal(roadmapPhase.phase_name);
+      const normalized = normalizePhaseName(roadmapPhase.phase_number);
+      const dirName = `${normalized}-${slug}`;
+      const dirPath = path.join(planningRoot(cwd, milestoneScope), 'phases', dirName);
+      fs.mkdirSync(dirPath, { recursive: true });
+      fs.writeFileSync(path.join(dirPath, '.gitkeep'), '');
+      phaseInfo = findPhaseInternal(cwd, phase, milestoneScope);
+    }
+  }
+
+  // Auto-detected milestone scope from findPhaseInternal
+  const effectiveScope = milestoneScope || phaseInfo?.milestone_scope || null;
+  const root = planningRoot(cwd, effectiveScope);
+  const milestone = getMilestoneInfo(cwd, effectiveScope);
+
+  const roadmapPhase = getRoadmapPhaseInternal(cwd, phase, effectiveScope);
   const reqMatch = roadmapPhase?.section?.match(/^\*\*Requirements\*\*:[^\S\n]*([^\n]*)$/m);
   const reqExtracted = reqMatch
     ? reqMatch[1].replace(/[\[\]]/g, '').split(',').map(s => s.trim()).filter(Boolean).join(', ')
@@ -68,17 +85,17 @@ function cmdInitExecutePhase(cwd, phase, raw, milestoneScope) {
     milestone_name: milestone.name,
     milestone_slug: generateSlugInternal(milestone.name),
 
-    // File existence
-    state_exists: pathExistsInternal(cwd, '.planning/STATE.md'),
-    roadmap_exists: pathExistsInternal(cwd, '.planning/ROADMAP.md'),
+    // File existence (milestone-scoped when effectiveScope is set)
+    state_exists: pathExistsInternal(cwd, path.relative(cwd, path.join(root, 'STATE.md'))),
+    roadmap_exists: pathExistsInternal(cwd, path.relative(cwd, path.join(root, 'ROADMAP.md'))),
     config_exists: pathExistsInternal(cwd, '.planning/config.json'),
-    // File paths (milestone-scoped when milestoneScope provided)
+    // File paths (milestone-scoped when effectiveScope is set)
     state_path: path.relative(cwd, path.join(root, 'STATE.md')),
     roadmap_path: path.relative(cwd, path.join(root, 'ROADMAP.md')),
     config_path: '.planning/config.json',
 
-    // Milestone scope (v2.0 concurrent execution)
-    milestone_scope: milestoneScope || null,
+    // Milestone scope (v2.0 concurrent execution — auto-detected if not explicit)
+    milestone_scope: effectiveScope,
     planning_root: root,
 
     // Layout detection (v2.0 compatibility)
@@ -94,10 +111,27 @@ function cmdInitPlanPhase(cwd, phase, raw, milestoneScope) {
   }
 
   const config = loadConfig(cwd);
-  const root = planningRoot(cwd, milestoneScope);
-  const phaseInfo = findPhaseInternal(cwd, phase, milestoneScope);
+  let phaseInfo = findPhaseInternal(cwd, phase, milestoneScope);
 
-  const roadmapPhase = getRoadmapPhaseInternal(cwd, phase, milestoneScope);
+  // ROADMAP fallback with auto-create: when phase exists in ROADMAP but has no directory on disk
+  if (!phaseInfo) {
+    const roadmapPhase = getRoadmapPhaseInternal(cwd, phase, milestoneScope);
+    if (roadmapPhase?.found) {
+      const slug = generateSlugInternal(roadmapPhase.phase_name);
+      const normalized = normalizePhaseName(roadmapPhase.phase_number);
+      const dirName = `${normalized}-${slug}`;
+      const dirPath = path.join(planningRoot(cwd, milestoneScope), 'phases', dirName);
+      fs.mkdirSync(dirPath, { recursive: true });
+      fs.writeFileSync(path.join(dirPath, '.gitkeep'), '');
+      phaseInfo = findPhaseInternal(cwd, phase, milestoneScope);
+    }
+  }
+
+  // Auto-detected milestone scope from findPhaseInternal
+  const effectiveScope = milestoneScope || phaseInfo?.milestone_scope || null;
+  const root = planningRoot(cwd, effectiveScope);
+
+  const roadmapPhase = getRoadmapPhaseInternal(cwd, phase, effectiveScope);
   const reqMatch = roadmapPhase?.section?.match(/^\*\*Requirements\*\*:[^\S\n]*([^\n]*)$/m);
   const reqExtracted = reqMatch
     ? reqMatch[1].replace(/[\[\]]/g, '').split(',').map(s => s.trim()).filter(Boolean).join(', ')
@@ -133,15 +167,15 @@ function cmdInitPlanPhase(cwd, phase, raw, milestoneScope) {
 
     // Environment
     planning_exists: pathExistsInternal(cwd, '.planning'),
-    roadmap_exists: pathExistsInternal(cwd, '.planning/ROADMAP.md'),
+    roadmap_exists: pathExistsInternal(cwd, path.relative(cwd, path.join(root, 'ROADMAP.md'))),
 
-    // File paths (milestone-scoped when milestoneScope provided)
+    // File paths (milestone-scoped when effectiveScope is set)
     state_path: path.relative(cwd, path.join(root, 'STATE.md')),
     roadmap_path: path.relative(cwd, path.join(root, 'ROADMAP.md')),
     requirements_path: path.relative(cwd, path.join(root, 'REQUIREMENTS.md')),
 
-    // Milestone scope (v2.0 concurrent execution)
-    milestone_scope: milestoneScope || null,
+    // Milestone scope (v2.0 concurrent execution — auto-detected if not explicit)
+    milestone_scope: effectiveScope,
     planning_root: root,
 
     // Layout detection (v2.0 compatibility)
@@ -369,6 +403,9 @@ function cmdInitVerifyWork(cwd, phase, raw, milestoneScope) {
   const config = loadConfig(cwd);
   const phaseInfo = findPhaseInternal(cwd, phase, milestoneScope);
 
+  // Auto-detected milestone scope from findPhaseInternal
+  const effectiveScope = milestoneScope || phaseInfo?.milestone_scope || null;
+
   const result = {
     // Models
     planner_model: resolveModelInternal(cwd, 'gsd-planner'),
@@ -386,9 +423,9 @@ function cmdInitVerifyWork(cwd, phase, raw, milestoneScope) {
     // Existing artifacts
     has_verification: phaseInfo?.has_verification || false,
 
-    // Milestone scope (v2.0 concurrent execution)
-    milestone_scope: milestoneScope || null,
-    planning_root: planningRoot(cwd, milestoneScope),
+    // Milestone scope (v2.0 concurrent execution — auto-detected if not explicit)
+    milestone_scope: effectiveScope,
+    planning_root: planningRoot(cwd, effectiveScope),
 
     // Layout detection (v2.0 compatibility)
     layout_style: detectLayoutStyle(cwd),
@@ -399,12 +436,15 @@ function cmdInitVerifyWork(cwd, phase, raw, milestoneScope) {
 
 function cmdInitPhaseOp(cwd, phase, raw, milestoneScope) {
   const config = loadConfig(cwd);
-  const root = planningRoot(cwd, milestoneScope);
   let phaseInfo = findPhaseInternal(cwd, phase, milestoneScope);
+
+  // Auto-detected milestone scope from findPhaseInternal
+  const effectiveScope = milestoneScope || phaseInfo?.milestone_scope || null;
+  const root = planningRoot(cwd, effectiveScope);
 
   // Fallback to ROADMAP.md if no directory exists (e.g., Plans: TBD)
   if (!phaseInfo) {
-    const roadmapPhase = getRoadmapPhaseInternal(cwd, phase, milestoneScope);
+    const roadmapPhase = getRoadmapPhaseInternal(cwd, phase, effectiveScope);
     if (roadmapPhase?.found) {
       const phaseName = roadmapPhase.phase_name;
       phaseInfo = {
@@ -452,8 +492,8 @@ function cmdInitPhaseOp(cwd, phase, raw, milestoneScope) {
     roadmap_path: path.relative(cwd, path.join(root, 'ROADMAP.md')),
     requirements_path: path.relative(cwd, path.join(root, 'REQUIREMENTS.md')),
 
-    // Milestone scope (v2.0 concurrent execution)
-    milestone_scope: milestoneScope || null,
+    // Milestone scope (v2.0 concurrent execution — auto-detected if not explicit)
+    milestone_scope: effectiveScope,
     planning_root: root,
 
     // Layout detection (v2.0 compatibility)
@@ -661,7 +701,7 @@ function cmdInitProgress(cwd, raw, milestoneScope) {
 
   try {
     const entries = fs.readdirSync(phasesDir, { withFileTypes: true });
-    const dirs = entries.filter(e => e.isDirectory()).map(e => e.name).sort();
+    const dirs = entries.filter(e => e.isDirectory()).map(e => e.name).sort((a, b) => comparePhaseNum(a, b));
 
     for (const dir of dirs) {
       const match = dir.match(/^(\d+(?:\.\d+)*)-?(.*)/);
@@ -682,7 +722,7 @@ function cmdInitProgress(cwd, raw, milestoneScope) {
       const phaseInfo = {
         number: phaseNumber,
         name: phaseName,
-        directory: path.join('.planning', 'phases', dir),
+        directory: path.relative(cwd, path.join(phasesDir, dir)),
         status,
         plan_count: plans.length,
         summary_count: summaries.length,
