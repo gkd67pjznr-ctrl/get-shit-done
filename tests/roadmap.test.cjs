@@ -309,18 +309,14 @@ describe('milestone-scoped roadmap commands (INTG-02)', () => {
     assert.strictEqual(phase1.name, 'Foundation');
   });
 
-  test('roadmap analyze without --milestone reads root ROADMAP.md', () => {
-    // Write a different ROADMAP at root level to prove it reads the right one
-    fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
-      '# Root Roadmap\n\n### Phase 1: Root Phase\n**Goal:** Root goal\n'
-    );
+  test('roadmap analyze without --milestone auto-detects active milestone', () => {
+    // In milestone-scoped layout, omitting --milestone auto-resolves to the active milestone
     const result = runGsdTools('roadmap analyze --raw', tmpDir);
     assert.ok(result.success, `Command should succeed: ${result.error || ''}`);
     const parsed = JSON.parse(result.output);
     const phase1 = parsed.phases.find(p => p.number === '1');
     assert.ok(phase1, 'Phase 1 should exist');
-    assert.strictEqual(phase1.name, 'Root Phase', 'Should read from root ROADMAP, not milestone');
+    assert.strictEqual(phase1.name, 'Foundation', 'Should auto-detect milestone and read milestone ROADMAP');
   });
 });
 

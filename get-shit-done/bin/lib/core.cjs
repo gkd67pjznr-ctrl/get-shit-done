@@ -256,12 +256,37 @@ function findPhaseInternal(cwd, phase, milestoneScope) {
     return searchPhaseInDir(phasesDir, relBase, normalized);
   }
 
-  // Search current phases first
+  // Milestone-scoped layout: auto-detect milestone by searching all milestone phase dirs
+  const layout = detectLayoutStyle(cwd);
+  if (layout === 'milestone-scoped') {
+    const milestonesDir = path.join(cwd, '.planning', 'milestones');
+    try {
+      const msDirs = fs.readdirSync(milestonesDir, { withFileTypes: true })
+        .filter(e => e.isDirectory())
+        .map(e => e.name)
+        .sort()
+        .reverse(); // newest first
+
+      for (const ms of msDirs) {
+        const phasesDir = path.join(milestonesDir, ms, 'phases');
+        if (!fs.existsSync(phasesDir)) continue;
+        const relBase = path.join('.planning', 'milestones', ms, 'phases');
+        const result = searchPhaseInDir(phasesDir, relBase, normalized);
+        if (result) {
+          result.milestone_scope = ms;
+          return result;
+        }
+      }
+    } catch {}
+    return null;
+  }
+
+  // Legacy layout: search current phases first
   const phasesDir = path.join(cwd, '.planning', 'phases');
   const current = searchPhaseInDir(phasesDir, path.join('.planning', 'phases'), normalized);
   if (current) return current;
 
-  // Search archived milestone phases (newest first)
+  // Search archived milestone phases (flat pattern: v*-phases/)
   const milestonesDir = path.join(cwd, '.planning', 'milestones');
   if (!fs.existsSync(milestonesDir)) return null;
 
@@ -429,6 +454,39 @@ function detectLayoutStyle(cwd) {
   }
 }
 
+function resolveActiveMilestone(cwd) {
+  const milestonesDir = path.join(cwd, '.planning', 'milestones');
+  try {
+    const dirs = fs.readdirSync(milestonesDir, { withFileTypes: true })
+      .filter(e => e.isDirectory() && /^v\d/.test(e.name));
+    if (!dirs.length) return null;
+
+    // Strategy 1: conflict.json with status === 'active'
+    const active = [];
+    for (const d of dirs) {
+      try {
+        const manifest = JSON.parse(fs.readFileSync(
+          path.join(milestonesDir, d.name, 'conflict.json'), 'utf-8'));
+        if (manifest.status === 'active') active.push(d.name);
+      } catch { /* no conflict.json */ }
+    }
+    if (active.length >= 1) {
+      active.sort();
+      return active[active.length - 1];
+    }
+
+    // Strategy 2: newest dir with STATE.md
+    const withState = dirs.map(d => d.name)
+      .filter(n => fs.existsSync(path.join(milestonesDir, n, 'STATE.md')))
+      .sort();
+    if (withState.length) return withState[withState.length - 1];
+
+    // Strategy 3: newest dir
+    const all = dirs.map(d => d.name).sort();
+    return all[all.length - 1];
+  } catch { return null; }
+}
+
 module.exports = {
   MODEL_PROFILES,
   output,
@@ -450,4 +508,5 @@ module.exports = {
   getMilestoneInfo,
   planningRoot,
   detectLayoutStyle,
+  resolveActiveMilestone,
 };

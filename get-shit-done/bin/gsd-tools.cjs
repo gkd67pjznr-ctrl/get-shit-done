@@ -144,7 +144,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { error } = require('./lib/core.cjs');
+const { error, detectLayoutStyle, resolveActiveMilestone } = require('./lib/core.cjs');
 const state = require('./lib/state.cjs');
 const phase = require('./lib/phase.cjs');
 const roadmap = require('./lib/roadmap.cjs');
@@ -200,6 +200,11 @@ async function main() {
     if (!value || value.startsWith('--')) error('Missing value for --milestone');
     args.splice(milestoneIdx, 2);
     milestoneScope = value;
+  }
+
+  // Auto-detect milestone scope when not explicitly provided
+  if (!milestoneScope && detectLayoutStyle(cwd) === 'milestone-scoped') {
+    milestoneScope = resolveActiveMilestone(cwd);
   }
 
   const command = args[0];
