@@ -1422,6 +1422,78 @@ describe('is_last_phase roadmap fallback', () => {
 // milestone-scoped phase operations
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────────────────────
+// cross-milestone find-phase fallback (BUG-ROADMAP-01)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('cross-milestone find-phase fallback', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    // Active milestone is v3.1; phase 3.1 lives in v3.0; phase 4 lives in v3.1
+    tmpDir = createConcurrentProject('v3.1');
+
+    // v3.0 milestone: has phase 3.1 with a PLAN.md
+    const v30Dir = path.join(tmpDir, '.planning', 'milestones', 'v3.0');
+    const v30PhaseDir = path.join(v30Dir, 'phases', '3.1-integration-fixes');
+    fs.mkdirSync(v30PhaseDir, { recursive: true });
+    fs.writeFileSync(path.join(v30PhaseDir, '3.1-01-PLAN.md'), '# Plan');
+    fs.writeFileSync(
+      path.join(v30Dir, 'ROADMAP.md'),
+      `# Roadmap v3.0\n\n### Phase 3.1: Integration Fixes\n**Goal:** Fix integration issues\n`
+    );
+    fs.writeFileSync(path.join(v30Dir, 'STATE.md'), '# State\n', 'utf-8');
+
+    // v3.1 milestone (active): has phase 4 with a PLAN.md
+    const v31Dir = path.join(tmpDir, '.planning', 'milestones', 'v3.1');
+    const v31PhaseDir = path.join(v31Dir, 'phases', '04-bug-fixes');
+    fs.mkdirSync(v31PhaseDir, { recursive: true });
+    fs.writeFileSync(path.join(v31PhaseDir, '04-01-PLAN.md'), '# Plan');
+    fs.writeFileSync(
+      path.join(v31Dir, 'ROADMAP.md'),
+      `# Roadmap v3.1\n\n### Phase 4: Bug Fixes\n**Goal:** Fix all bugs\n`
+    );
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('find-phase finds phase in non-active milestone when no --milestone flag given', () => {
+    // phase 3.1 is in v3.0 but active milestone is v3.1
+    const result = runGsdTools('find-phase 3.1', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.found, true, 'phase 3.1 should be found via cross-milestone fallback');
+    assert.ok(
+      output.directory.includes('v3.0'),
+      `directory should point to v3.0 milestone, got: ${output.directory}`
+    );
+  });
+
+  test('find-phase finds phase in active milestone (no regression)', () => {
+    // phase 4 is in v3.1 (the active milestone)
+    const result = runGsdTools('find-phase 4', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.found, true, 'phase 4 should be found in active milestone');
+    assert.ok(
+      output.directory.includes('v3.1'),
+      `directory should point to v3.1 milestone, got: ${output.directory}`
+    );
+  });
+
+  test('find-phase returns found=false for truly missing phase', () => {
+    const result = runGsdTools('find-phase 99', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.found, false, 'non-existent phase should return found=false');
+  });
+});
+
 describe('milestone-scoped phase operations', () => {
   let tmpDir;
 
