@@ -4,28 +4,58 @@
 
 const fs = require('fs');
 const path = require('path');
-const { escapeRegex, normalizePhaseName, output, error, findPhaseInternal, planningRoot } = require('./core.cjs');
+const { escapeRegex, normalizePhaseName, output, error, findPhaseInternal, planningRoot, detectLayoutStyle } = require('./core.cjs');
+
+/**
+ * Parse a phase section from ROADMAP content. Returns null if not found.
+ */
+function extractPhaseFromContent(content, phaseNum) {
+  const escapedPhase = escapeRegex(phaseNum);
+  const phasePattern = new RegExp(`#{2,4}\\s*Phase\\s+${escapedPhase}:\\s*([^\\n]+)`, 'i');
+  const headerMatch = content.match(phasePattern);
+  if (!headerMatch) return null;
+
+  const phaseName = headerMatch[1].trim();
+  const headerIndex = headerMatch.index;
+  const restOfContent = content.slice(headerIndex);
+  const nextHeaderMatch = restOfContent.match(/\n#{2,4}\s+Phase\s+\d/i);
+  const sectionEnd = nextHeaderMatch ? headerIndex + nextHeaderMatch.index : content.length;
+  const section = content.slice(headerIndex, sectionEnd).trim();
+
+  const goalMatch = section.match(/\*\*Goal:\*\*\s*([^\n]+)/i);
+  const goal = goalMatch ? goalMatch[1].trim() : null;
+
+  const criteriaMatch = section.match(/\*\*Success Criteria\*\*[^\n]*:\s*\n((?:\s*\d+\.\s*[^\n]+\n?)+)/i);
+  const success_criteria = criteriaMatch
+    ? criteriaMatch[1].trim().split('\n').map(line => line.replace(/^\s*\d+\.\s*/, '').trim()).filter(Boolean)
+    : [];
+
+  return { phase_number: phaseNum, phase_name: phaseName, goal, success_criteria, section };
+}
 
 function cmdRoadmapGetPhase(cwd, phaseNum, raw, milestoneScope) {
   const roadmapPath = path.join(planningRoot(cwd, milestoneScope), 'ROADMAP.md');
 
   if (!fs.existsSync(roadmapPath)) {
+    // In milestone-scoped layout, skip directly to cross-milestone fallback
+    if (milestoneScope && detectLayoutStyle(cwd) === 'milestone-scoped') {
+      const fallback = _roadmapGetPhaseCrossMilestone(cwd, phaseNum, milestoneScope);
+      if (fallback) {
+        output({ found: true, ...fallback }, raw, fallback.section);
+        return;
+      }
+    }
     output({ found: false, error: 'ROADMAP.md not found' }, raw, '');
     return;
   }
 
   try {
     const content = fs.readFileSync(roadmapPath, 'utf-8');
-
-    // Escape special regex chars in phase number, handle decimal
     const escapedPhase = escapeRegex(phaseNum);
 
-    // Match "## Phase X:", "### Phase X:", or "#### Phase X:" with optional name
-    const phasePattern = new RegExp(
-      `#{2,4}\\s*Phase\\s+${escapedPhase}:\\s*([^\\n]+)`,
-      'i'
+    const headerMatch = content.match(
+      new RegExp(`#{2,4}\\s*Phase\\s+${escapedPhase}:\\s*([^\\n]+)`, 'i')
     );
-    const headerMatch = content.match(phasePattern);
 
     if (!headerMatch) {
       // Fallback: check if phase exists in summary list but missing detail section
@@ -47,47 +77,58 @@ function cmdRoadmapGetPhase(cwd, phaseNum, raw, milestoneScope) {
         return;
       }
 
+      // Cross-milestone fallback: if milestoneScope is set and layout is milestone-scoped,
+      // search other milestone ROADMAPs
+      if (milestoneScope && detectLayoutStyle(cwd) === 'milestone-scoped') {
+        const fallback = _roadmapGetPhaseCrossMilestone(cwd, phaseNum, milestoneScope);
+        if (fallback) {
+          output({ found: true, ...fallback }, raw, fallback.section);
+          return;
+        }
+      }
+
       output({ found: false, phase_number: phaseNum }, raw, '');
       return;
     }
 
-    const phaseName = headerMatch[1].trim();
-    const headerIndex = headerMatch.index;
+    const parsed = extractPhaseFromContent(content, phaseNum);
+    if (!parsed) {
+      output({ found: false, phase_number: phaseNum }, raw, '');
+      return;
+    }
 
-    // Find the end of this section (next ## or ### phase header, or end of file)
-    const restOfContent = content.slice(headerIndex);
-    const nextHeaderMatch = restOfContent.match(/\n#{2,4}\s+Phase\s+\d/i);
-    const sectionEnd = nextHeaderMatch
-      ? headerIndex + nextHeaderMatch.index
-      : content.length;
-
-    const section = content.slice(headerIndex, sectionEnd).trim();
-
-    // Extract goal if present
-    const goalMatch = section.match(/\*\*Goal:\*\*\s*([^\n]+)/i);
-    const goal = goalMatch ? goalMatch[1].trim() : null;
-
-    // Extract success criteria as structured array
-    const criteriaMatch = section.match(/\*\*Success Criteria\*\*[^\n]*:\s*\n((?:\s*\d+\.\s*[^\n]+\n?)+)/i);
-    const success_criteria = criteriaMatch
-      ? criteriaMatch[1].trim().split('\n').map(line => line.replace(/^\s*\d+\.\s*/, '').trim()).filter(Boolean)
-      : [];
-
-    output(
-      {
-        found: true,
-        phase_number: phaseNum,
-        phase_name: phaseName,
-        goal,
-        success_criteria,
-        section,
-      },
-      raw,
-      section
-    );
+    output({ found: true, ...parsed }, raw, parsed.section);
   } catch (e) {
     error('Failed to read ROADMAP.md: ' + e.message);
   }
+}
+
+/**
+ * Search all milestone ROADMAPs (except the current milestoneScope) for phaseNum.
+ * Returns parsed phase data or null.
+ */
+function _roadmapGetPhaseCrossMilestone(cwd, phaseNum, currentMilestoneScope) {
+  const milestonesDir = path.join(cwd, '.planning', 'milestones');
+  try {
+    const msDirs = fs.readdirSync(milestonesDir, { withFileTypes: true })
+      .filter(e => e.isDirectory() && e.name !== currentMilestoneScope)
+      .map(e => e.name)
+      .sort()
+      .reverse(); // newest first
+
+    for (const ms of msDirs) {
+      const msRoadmapPath = path.join(milestonesDir, ms, 'ROADMAP.md');
+      if (!fs.existsSync(msRoadmapPath)) continue;
+      try {
+        const msContent = fs.readFileSync(msRoadmapPath, 'utf-8');
+        const parsed = extractPhaseFromContent(msContent, phaseNum);
+        if (parsed) {
+          return { ...parsed, milestone_scope: ms };
+        }
+      } catch { /* continue */ }
+    }
+  } catch {}
+  return null;
 }
 
 function cmdRoadmapAnalyze(cwd, raw, milestoneScope) {

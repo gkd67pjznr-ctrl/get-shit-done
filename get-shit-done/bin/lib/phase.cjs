@@ -158,41 +158,53 @@ function cmdFindPhase(cwd, phase, raw, milestoneScope) {
 
   const notFound = { found: false, directory: null, phase_number: null, phase_name: null, plans: [], summaries: [] };
 
+  let foundInScope = false;
   try {
     const entries = fs.readdirSync(phasesDir, { withFileTypes: true });
     const dirs = entries.filter(e => e.isDirectory()).map(e => e.name).sort((a, b) => comparePhaseNum(a, b));
 
     const match = dirs.find(d => d.startsWith(normalized));
-    if (!match) {
-      output(notFound, raw, '');
+    if (match) {
+      foundInScope = true;
+      const dirMatch = match.match(/^(\d+[A-Z]?(?:\.\d+)*)-?(.*)/i);
+      const phaseNumber = dirMatch ? dirMatch[1] : normalized;
+      const phaseName = dirMatch && dirMatch[2] ? dirMatch[2] : null;
+
+      const phaseDir = path.join(phasesDir, match);
+      const phaseFiles = fs.readdirSync(phaseDir);
+      const plans = phaseFiles.filter(f => f.endsWith('-PLAN.md') || f === 'PLAN.md').sort();
+      const summaries = phaseFiles.filter(f => f.endsWith('-SUMMARY.md') || f === 'SUMMARY.md').sort();
+
+      const relBase = milestoneScope
+        ? path.join('.planning', 'milestones', milestoneScope, 'phases')
+        : path.join('.planning', 'phases');
+      const result = {
+        found: true,
+        directory: path.join(relBase, match),
+        phase_number: phaseNumber,
+        phase_name: phaseName,
+        plans,
+        summaries,
+      };
+
+      output(result, raw, result.directory);
       return;
     }
-
-    const dirMatch = match.match(/^(\d+[A-Z]?(?:\.\d+)*)-?(.*)/i);
-    const phaseNumber = dirMatch ? dirMatch[1] : normalized;
-    const phaseName = dirMatch && dirMatch[2] ? dirMatch[2] : null;
-
-    const phaseDir = path.join(phasesDir, match);
-    const phaseFiles = fs.readdirSync(phaseDir);
-    const plans = phaseFiles.filter(f => f.endsWith('-PLAN.md') || f === 'PLAN.md').sort();
-    const summaries = phaseFiles.filter(f => f.endsWith('-SUMMARY.md') || f === 'SUMMARY.md').sort();
-
-    const relBase = milestoneScope
-      ? path.join('.planning', 'milestones', milestoneScope, 'phases')
-      : path.join('.planning', 'phases');
-    const result = {
-      found: true,
-      directory: path.join(relBase, match),
-      phase_number: phaseNumber,
-      phase_name: phaseName,
-      plans,
-      summaries,
-    };
-
-    output(result, raw, result.directory);
   } catch {
-    output(notFound, raw, '');
+    // fall through to cross-milestone fallback
   }
+
+  // Cross-milestone fallback: when phase not found in the scoped milestone (or phases dir
+  // doesn't exist), delegate to findPhaseInternal which already searches all milestones
+  if (!foundInScope && milestoneScope && detectLayoutStyle(cwd) === 'milestone-scoped') {
+    const fallback = findPhaseInternal(cwd, phase);
+    if (fallback && fallback.found) {
+      output(fallback, raw, fallback.directory);
+      return;
+    }
+  }
+
+  output(notFound, raw, '');
 }
 
 function cmdPhasePlanIndex(cwd, phase, raw, milestoneScope) {
