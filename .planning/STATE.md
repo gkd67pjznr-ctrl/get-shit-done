@@ -43,9 +43,9 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 | 5 | Create UPGRADES.md documenting all fork accomplishments (v1.0-v3.0) | 2026-02-27 | df1c94a | Verified | [5-create-upgrades-readme-documenting-all-a](./quick/5-create-upgrades-readme-documenting-all-a/) |
 | 6 | Add quality question to GSD onboarding and settings workflows | 2026-02-27 | dae0e06 | Verified | [6-we-need-the-quality-question-in-the-gsd-](./quick/6-we-need-the-quality-question-in-the-gsd-/) |
 | 7 | Fix phase detection path mismatch (BUG-01 auto-create, BUG-02 numeric sort) | 2026-02-28 | d58a9e2 | Verified | [7-fix-next-phase-detection-path-mismatch-i](./quick/7-fix-next-phase-detection-path-mismatch-i/) |
-| 8 | Fix roadmap get-phase to find phases in non-active milestones (BUG-ROADMAP-01) | 2026-02-28 | 0c2c558 | Complete | [8-fix-roadmap-get-phase-to-correctly-find-](./quick/8-fix-roadmap-get-phase-to-correctly-find-/) |
+| 8 | Fix roadmap get-phase to find phases in non-active milestones (BUG-ROADMAP-01) | 2026-03-01 | 0c2c558 | Verified | [8-fix-roadmap-get-phase-to-correctly-find-](./quick/8-fix-roadmap-get-phase-to-correctly-find-/) |
 
 ## Session Continuity
 
-Last activity: 2026-02-28 — Completed quick task 8 (fix cross-milestone phase lookup)
+Last activity: 2026-03-01 - Completed quick task 8: Fix roadmap get-phase to correctly find phases in milestone-scoped roadmaps
 Next step: Define requirements for v3.1
