@@ -429,6 +429,50 @@ describe('resolveActiveMilestone', () => {
     cleanup(tmpDir);
     tmpDir = null;
   });
+
+  test('numeric sort strategy 1: returns v14.0 over v2.0 when both conflict.json have status:active', () => {
+    tmpDir = createConcurrentProject('v2.0');
+    // v2.0 conflict.json with status:active
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'milestones', 'v2.0', 'conflict.json'),
+      JSON.stringify({ status: 'active' }),
+      'utf-8'
+    );
+    // v14.0 dir with conflict.json status:active
+    const v14Dir = path.join(tmpDir, '.planning', 'milestones', 'v14.0');
+    fs.mkdirSync(path.join(v14Dir, 'phases'), { recursive: true });
+    fs.writeFileSync(path.join(v14Dir, 'STATE.md'), '# State\n', 'utf-8');
+    fs.writeFileSync(
+      path.join(v14Dir, 'conflict.json'),
+      JSON.stringify({ status: 'active' }),
+      'utf-8'
+    );
+    assert.strictEqual(resolveActiveMilestone(tmpDir), 'v14.0', 'should return v14.0 not v2.0 (numeric sort, not lexicographic)');
+    cleanup(tmpDir);
+    tmpDir = null;
+  });
+
+  test('numeric sort strategy 2: returns v10.0 over v2.0 when both have STATE.md but no conflict.json', () => {
+    tmpDir = createConcurrentProject('v2.0');
+    // v2.0 already has STATE.md from createConcurrentProject, no conflict.json
+    const v10Dir = path.join(tmpDir, '.planning', 'milestones', 'v10.0');
+    fs.mkdirSync(path.join(v10Dir, 'phases'), { recursive: true });
+    fs.writeFileSync(path.join(v10Dir, 'STATE.md'), '# State\n', 'utf-8');
+    assert.strictEqual(resolveActiveMilestone(tmpDir), 'v10.0', 'should return v10.0 not v2.0 (numeric sort on STATE.md strategy)');
+    cleanup(tmpDir);
+    tmpDir = null;
+  });
+
+  test('numeric sort strategy 3: returns v9.0 over v1.0 when both are bare dirs with no STATE.md or conflict.json', () => {
+    tmpDir = createTempProject();
+    const milestonesDir = path.join(tmpDir, '.planning', 'milestones');
+    // Create bare dirs — no STATE.md, no conflict.json
+    fs.mkdirSync(path.join(milestonesDir, 'v1.0'), { recursive: true });
+    fs.mkdirSync(path.join(milestonesDir, 'v9.0'), { recursive: true });
+    assert.strictEqual(resolveActiveMilestone(tmpDir), 'v9.0', 'should return v9.0 not v1.0 (numeric sort on all dirs strategy)');
+    cleanup(tmpDir);
+    tmpDir = null;
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
