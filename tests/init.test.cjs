@@ -594,3 +594,95 @@ describe('missing-section warnings (QOBS-03)', () => {
   });
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// init commands with milestone directory detection (BUG-INIT-01)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('init commands with milestone directory detection (BUG-INIT-01)', () => {
+  let tmpDir;
+
+  afterEach(() => {
+    if (tmpDir) {
+      cleanup(tmpDir);
+      tmpDir = null;
+    }
+  });
+
+  test('init plan-phase finds phase when milestones dir exists but concurrent flag is absent', () => {
+    tmpDir = createTempProject();
+    // Write config WITHOUT concurrent:true
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'config.json'),
+      JSON.stringify({ mode: 'yolo' }),
+      'utf-8'
+    );
+    // Create milestone workspace with STATE.md and ROADMAP.md
+    const v2Dir = path.join(tmpDir, '.planning', 'milestones', 'v2.0');
+    fs.mkdirSync(path.join(v2Dir, 'phases', '01-test'), { recursive: true });
+    fs.writeFileSync(path.join(v2Dir, 'STATE.md'), '# State\n', 'utf-8');
+    fs.writeFileSync(path.join(v2Dir, 'ROADMAP.md'), '# Roadmap\n', 'utf-8');
+
+    const result = runGsdToolsFull(['init', 'plan-phase', '1', '--raw'], tmpDir);
+    assert.ok(result.success, `Command failed: ${result.stderr}`);
+    const output = JSON.parse(result.output);
+
+    assert.strictEqual(output.phase_found, true, `Expected phase_found: true, got: ${output.phase_found}`);
+    assert.strictEqual(output.layout_style, 'milestone-scoped', `Expected layout_style: milestone-scoped, got: ${output.layout_style}`);
+    assert.strictEqual(output.milestone_scope, 'v2.0', `Expected milestone_scope: v2.0, got: ${output.milestone_scope}`);
+    assert.ok(
+      output.planning_root.endsWith(path.join('.planning', 'milestones', 'v2.0')),
+      `planning_root should end with .planning/milestones/v2.0, got: ${output.planning_root}`
+    );
+  });
+
+  test('init execute-phase finds phase when milestones dir exists but concurrent flag is absent', () => {
+    tmpDir = createTempProject();
+    // Write config WITHOUT concurrent:true
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'config.json'),
+      JSON.stringify({ mode: 'yolo' }),
+      'utf-8'
+    );
+    // Create milestone workspace with STATE.md, ROADMAP.md and a PLAN.md in a phase dir
+    const v2Dir = path.join(tmpDir, '.planning', 'milestones', 'v2.0');
+    const phaseDir = path.join(v2Dir, 'phases', '01-test');
+    fs.mkdirSync(phaseDir, { recursive: true });
+    fs.writeFileSync(path.join(v2Dir, 'STATE.md'), '# State\n', 'utf-8');
+    fs.writeFileSync(path.join(v2Dir, 'ROADMAP.md'), '# Roadmap\n', 'utf-8');
+    fs.writeFileSync(path.join(phaseDir, '01-01-PLAN.md'), '# Plan\n', 'utf-8');
+
+    const result = runGsdToolsFull(['init', 'execute-phase', '1', '--raw'], tmpDir);
+    assert.ok(result.success, `Command failed: ${result.stderr}`);
+    const output = JSON.parse(result.output);
+
+    assert.strictEqual(output.phase_found, true, `Expected phase_found: true, got: ${output.phase_found}`);
+    assert.strictEqual(output.layout_style, 'milestone-scoped', `Expected layout_style: milestone-scoped, got: ${output.layout_style}`);
+  });
+
+  test('init plan-phase selects correct milestone with double-digit versions', () => {
+    tmpDir = createTempProject();
+    // Write config WITHOUT concurrent:true
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'config.json'),
+      JSON.stringify({ mode: 'yolo' }),
+      'utf-8'
+    );
+    // Create v2.0 milestone with STATE.md
+    const v2Dir = path.join(tmpDir, '.planning', 'milestones', 'v2.0');
+    fs.mkdirSync(path.join(v2Dir, 'phases'), { recursive: true });
+    fs.writeFileSync(path.join(v2Dir, 'STATE.md'), '# State\n', 'utf-8');
+    fs.writeFileSync(path.join(v2Dir, 'ROADMAP.md'), '# Roadmap\n', 'utf-8');
+    // Create v14.0 milestone with STATE.md and a phase dir
+    const v14Dir = path.join(tmpDir, '.planning', 'milestones', 'v14.0');
+    fs.mkdirSync(path.join(v14Dir, 'phases', '01-test'), { recursive: true });
+    fs.writeFileSync(path.join(v14Dir, 'STATE.md'), '# State\n', 'utf-8');
+    fs.writeFileSync(path.join(v14Dir, 'ROADMAP.md'), '# Roadmap\n', 'utf-8');
+
+    const result = runGsdToolsFull(['init', 'plan-phase', '1', '--raw'], tmpDir);
+    assert.ok(result.success, `Command failed: ${result.stderr}`);
+    const output = JSON.parse(result.output);
+
+    assert.strictEqual(output.milestone_scope, 'v14.0', `Expected milestone_scope: v14.0 (numeric sort), got: ${output.milestone_scope}`);
+    assert.strictEqual(output.phase_found, true, `Expected phase_found: true, got: ${output.phase_found}`);
+  });
+});
