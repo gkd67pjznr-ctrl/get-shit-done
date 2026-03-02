@@ -474,16 +474,44 @@ function planningRoot(cwd, milestoneScope) {
 
 function detectLayoutStyle(cwd) {
   const configPath = path.join(cwd, '.planning', 'config.json');
+  let hasValidConfig = false;
   try {
     const raw = fs.readFileSync(configPath, 'utf-8');
     const parsed = JSON.parse(raw);
+    hasValidConfig = true;
     if (parsed.concurrent === true) {
       return 'milestone-scoped';
     }
-    return 'legacy';
   } catch {
-    return 'uninitialized';
+    // config.json missing or invalid — fall through to directory-based detection
   }
+  // Directory-based fallback: detect milestones even without concurrent flag
+  // This handles the new-milestone workflow which creates milestone dirs without
+  // setting concurrent:true in config.json
+  try {
+    const milestonesDir = path.join(cwd, '.planning', 'milestones');
+    const dirs = fs.readdirSync(milestonesDir, { withFileTypes: true })
+      .filter(e => e.isDirectory() && /^v\d/.test(e.name));
+    const hasWorkspace = dirs.some(d =>
+      fs.existsSync(path.join(milestonesDir, d.name, 'STATE.md'))
+    );
+    if (hasWorkspace) return 'milestone-scoped';
+  } catch {
+    // No milestones directory
+  }
+  return hasValidConfig ? 'legacy' : 'uninitialized';
+}
+
+// Compare version strings like 'v2.0', 'v14.1' numerically instead of lexicographically
+function compareVersions(a, b) {
+  const partsA = a.replace(/^v/, '').split('.').map(Number);
+  const partsB = b.replace(/^v/, '').split('.').map(Number);
+  for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
+    const numA = partsA[i] || 0;
+    const numB = partsB[i] || 0;
+    if (numA !== numB) return numA - numB;
+  }
+  return 0;
 }
 
 function resolveActiveMilestone(cwd) {
@@ -503,18 +531,18 @@ function resolveActiveMilestone(cwd) {
       } catch { /* no conflict.json */ }
     }
     if (active.length >= 1) {
-      active.sort();
+      active.sort(compareVersions);
       return active[active.length - 1];
     }
 
     // Strategy 2: newest dir with STATE.md
     const withState = dirs.map(d => d.name)
       .filter(n => fs.existsSync(path.join(milestonesDir, n, 'STATE.md')))
-      .sort();
+      .sort(compareVersions);
     if (withState.length) return withState[withState.length - 1];
 
     // Strategy 3: newest dir
-    const all = dirs.map(d => d.name).sort();
+    const all = dirs.map(d => d.name).sort(compareVersions);
     return all[all.length - 1];
   } catch { return null; }
 }
@@ -540,5 +568,6 @@ module.exports = {
   getMilestoneInfo,
   planningRoot,
   detectLayoutStyle,
+  compareVersions,
   resolveActiveMilestone,
 };
