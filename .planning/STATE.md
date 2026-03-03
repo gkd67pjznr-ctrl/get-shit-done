@@ -46,7 +46,7 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 | 8 | Fix roadmap get-phase to find phases in non-active milestones (BUG-ROADMAP-01) | 2026-03-01 | 0c2c558 | Verified | [8-fix-roadmap-get-phase-to-correctly-find-](./quick/8-fix-roadmap-get-phase-to-correctly-find-/) |
 | 9 | Fix gsd-tools.cjs init to support milestone-scoped layout without concurrent flag | 2026-03-02 | e0d31a0 | Verified | [9-fix-gsd-tools-cjs-init-to-support-milest](./quick/9-fix-gsd-tools-cjs-init-to-support-milest/) |
 | 10 | Fix CLI init phase commands to auto-resolve milestone scope (BUG-INIT-CROSSMS-01) | 2026-03-02 | 2f09c76 | Verified | [10-fix-cli-phase-op-init-to-auto-resolve-mi](./quick/10-fix-cli-phase-op-init-to-auto-resolve-mi/) |
-| 11 | Enable full GSD quality settings in Gymrats2, Pyxelate, and global defaults | 2026-03-03 | (see summary) | Verified | [11-enable-full-gsd-quality-settings-in-gymr](./quick/11-enable-full-gsd-quality-settings-in-gymr/) |
+| 11 | Enable full GSD quality settings in Gymrats2, Pyxelate, and global defaults | 2026-03-03 | d0ee944 | Verified | [11-enable-full-gsd-quality-settings-in-gymr](./quick/11-enable-full-gsd-quality-settings-in-gymr/) |
 
 ## Session Continuity
 
