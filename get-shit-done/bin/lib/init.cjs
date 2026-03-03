@@ -33,20 +33,33 @@ function autoCreatePhaseFromRoadmap(cwd, phase, milestoneScope) {
   for (const scope of scopesToSearch) {
     const roadmapPhase = getRoadmapPhaseInternal(cwd, phase, scope);
     if (roadmapPhase?.found) {
+      // Use the actual milestone scope where the phase was found (may differ from scope arg
+      // when getRoadmapPhaseInternal performed its own cross-milestone search)
+      const foundScope = roadmapPhase.milestone_scope || scope;
       const slug = generateSlugInternal(roadmapPhase.phase_name);
       const normalized = normalizePhaseName(roadmapPhase.phase_number);
       const dirName = `${normalized}-${slug}`;
-      const dirPath = path.join(planningRoot(cwd, scope), 'phases', dirName);
+      const dirPath = path.join(planningRoot(cwd, foundScope), 'phases', dirName);
       fs.mkdirSync(dirPath, { recursive: true });
       fs.writeFileSync(path.join(dirPath, '.gitkeep'), '');
-      const phaseInfo = findPhaseInternal(cwd, phase, scope);
+      const phaseInfo = findPhaseInternal(cwd, phase, foundScope);
       if (phaseInfo) {
-        if (scope && !milestoneScope) {
-          phaseInfo.milestone_scope = scope;
+        if (foundScope && !milestoneScope) {
+          phaseInfo.milestone_scope = foundScope;
+        } else if (foundScope && foundScope !== milestoneScope) {
+          // Phase was found in a different milestone than requested — tag it
+          phaseInfo.milestone_scope = foundScope;
         }
         return phaseInfo;
       }
     }
+  }
+
+  // Cross-milestone retry: when called with explicit scope that found nothing,
+  // retry with null to trigger the full cross-milestone search path above.
+  // Guard: only retry once (milestoneScope non-null triggers the retry).
+  if (milestoneScope) {
+    return autoCreatePhaseFromRoadmap(cwd, phase, null);
   }
 
   return null;
@@ -60,13 +73,18 @@ function cmdInitExecutePhase(cwd, phase, raw, milestoneScope) {
   const config = loadConfig(cwd);
   let phaseInfo = findPhaseInternal(cwd, phase, milestoneScope);
 
+  // Cross-milestone retry: if phase not found in active milestone, search all milestones
+  if (!phaseInfo && milestoneScope) {
+    phaseInfo = findPhaseInternal(cwd, phase, null);
+  }
+
   // ROADMAP fallback: auto-create directory when phase exists in ROADMAP but not on disk
   if (!phaseInfo) {
     phaseInfo = autoCreatePhaseFromRoadmap(cwd, phase, milestoneScope);
   }
 
-  // Auto-detected milestone scope from findPhaseInternal
-  const effectiveScope = milestoneScope || phaseInfo?.milestone_scope || null;
+  // Auto-detected milestone scope: prefer detected scope over auto-resolved scope
+  const effectiveScope = phaseInfo?.milestone_scope || milestoneScope || null;
   const root = planningRoot(cwd, effectiveScope);
   const milestone = getMilestoneInfo(cwd, effectiveScope);
 
@@ -149,13 +167,18 @@ function cmdInitPlanPhase(cwd, phase, raw, milestoneScope) {
   const config = loadConfig(cwd);
   let phaseInfo = findPhaseInternal(cwd, phase, milestoneScope);
 
+  // Cross-milestone retry: if phase not found in active milestone, search all milestones
+  if (!phaseInfo && milestoneScope) {
+    phaseInfo = findPhaseInternal(cwd, phase, null);
+  }
+
   // ROADMAP fallback: auto-create directory when phase exists in ROADMAP but not on disk
   if (!phaseInfo) {
     phaseInfo = autoCreatePhaseFromRoadmap(cwd, phase, milestoneScope);
   }
 
-  // Auto-detected milestone scope from findPhaseInternal
-  const effectiveScope = milestoneScope || phaseInfo?.milestone_scope || null;
+  // Auto-detected milestone scope: prefer detected scope over auto-resolved scope
+  const effectiveScope = phaseInfo?.milestone_scope || milestoneScope || null;
   const root = planningRoot(cwd, effectiveScope);
 
   const roadmapPhase = getRoadmapPhaseInternal(cwd, phase, effectiveScope);
@@ -428,10 +451,15 @@ function cmdInitVerifyWork(cwd, phase, raw, milestoneScope) {
   }
 
   const config = loadConfig(cwd);
-  const phaseInfo = findPhaseInternal(cwd, phase, milestoneScope);
+  let phaseInfo = findPhaseInternal(cwd, phase, milestoneScope);
 
-  // Auto-detected milestone scope from findPhaseInternal
-  const effectiveScope = milestoneScope || phaseInfo?.milestone_scope || null;
+  // Cross-milestone retry: if phase not found in active milestone, search all milestones
+  if (!phaseInfo && milestoneScope) {
+    phaseInfo = findPhaseInternal(cwd, phase, null);
+  }
+
+  // Auto-detected milestone scope: prefer detected scope over auto-resolved scope
+  const effectiveScope = phaseInfo?.milestone_scope || milestoneScope || null;
 
   const result = {
     // Models
@@ -465,13 +493,22 @@ function cmdInitPhaseOp(cwd, phase, raw, milestoneScope) {
   const config = loadConfig(cwd);
   let phaseInfo = findPhaseInternal(cwd, phase, milestoneScope);
 
-  // Auto-detected milestone scope from findPhaseInternal
-  const effectiveScope = milestoneScope || phaseInfo?.milestone_scope || null;
-  const root = planningRoot(cwd, effectiveScope);
+  // Cross-milestone retry: if phase not found in active milestone, search all milestones
+  if (!phaseInfo && milestoneScope) {
+    phaseInfo = findPhaseInternal(cwd, phase, null);
+  }
+
+  // Auto-detected milestone scope: prefer detected scope over auto-resolved scope
+  let effectiveScope = phaseInfo?.milestone_scope || milestoneScope || null;
+  let root = planningRoot(cwd, effectiveScope);
 
   // Fallback to ROADMAP.md if no directory exists (e.g., Plans: TBD)
   if (!phaseInfo) {
-    const roadmapPhase = getRoadmapPhaseInternal(cwd, phase, effectiveScope);
+    let roadmapPhase = getRoadmapPhaseInternal(cwd, phase, effectiveScope);
+    // Cross-milestone ROADMAP retry when explicit scope found nothing
+    if (!roadmapPhase?.found && effectiveScope) {
+      roadmapPhase = getRoadmapPhaseInternal(cwd, phase, null);
+    }
     if (roadmapPhase?.found) {
       const phaseName = roadmapPhase.phase_name;
       phaseInfo = {
@@ -487,6 +524,11 @@ function cmdInitPhaseOp(cwd, phase, raw, milestoneScope) {
         has_context: false,
         has_verification: false,
       };
+      // Update effective scope to reflect where the phase was found in ROADMAP
+      if (roadmapPhase.milestone_scope) {
+        effectiveScope = roadmapPhase.milestone_scope;
+        root = planningRoot(cwd, effectiveScope);
+      }
     }
   }
 

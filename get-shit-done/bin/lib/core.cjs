@@ -390,6 +390,28 @@ function getRoadmapPhaseInternal(cwd, phaseNum, milestoneScope) {
     } catch {}
   }
 
+  // Cross-milestone fallback when milestoneScope is null and layout is milestone-scoped:
+  // search all milestone ROADMAPs (mirrors findPhaseInternal's cross-milestone search)
+  if (!milestoneScope && detectLayoutStyle(cwd) === 'milestone-scoped') {
+    const milestonesDir = path.join(cwd, '.planning', 'milestones');
+    try {
+      const msDirs = fs.readdirSync(milestonesDir, { withFileTypes: true })
+        .filter(e => e.isDirectory())
+        .map(e => e.name)
+        .sort()
+        .reverse(); // newest first
+      for (const ms of msDirs) {
+        const msRoadmapPath = path.join(milestonesDir, ms, 'ROADMAP.md');
+        if (!fs.existsSync(msRoadmapPath)) continue;
+        try {
+          const msContent = fs.readFileSync(msRoadmapPath, 'utf-8');
+          const result = parseFromContent(msContent, ms);
+          if (result) return result;
+        } catch {}
+      }
+    } catch {}
+  }
+
   // Cross-milestone fallback: if milestoneScope is set and layout is milestone-scoped,
   // search other milestone ROADMAPs (mirrors findPhaseInternal's cross-milestone search)
   if (milestoneScope && detectLayoutStyle(cwd) === 'milestone-scoped') {
