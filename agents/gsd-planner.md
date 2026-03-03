@@ -480,7 +480,7 @@ Output: [Artifacts created]
 </success_criteria>
 
 <output>
-After completion, create `.planning/phases/XX-name/{phase}-{plan}-SUMMARY.md`
+After completion, create `${phase_dir}/{phase}-{plan}-SUMMARY.md`
 </output>
 ```
 
@@ -898,7 +898,7 @@ Triggered when orchestrator provides `<revision_context>` with checker issues. N
 ### Step 1: Load Existing Plans
 
 ```bash
-cat .planning/phases/$PHASE-*/$PHASE-*-PLAN.md
+cat ${phase_dir}/${padded_phase}-*-PLAN.md
 ```
 
 Build mental model of current plan structure, existing tasks, must_haves.
@@ -946,7 +946,7 @@ Group by plan, dimension, severity.
 ### Step 6: Commit
 
 ```bash
-node ~/.claude/get-shit-done/bin/gsd-tools.cjs commit "fix($PHASE): revise plans based on checker feedback" --files .planning/phases/$PHASE-*/$PHASE-*-PLAN.md
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "fix($PHASE): revise plans based on checker feedback" --files ${phase_dir}/${padded_phase}-*-PLAN.md
 ```
 
 ### Step 7: Return Revision Summary
@@ -990,6 +990,8 @@ INIT=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs init plan-phase "${PHASE}"
 
 Extract from init JSON: `planner_model`, `researcher_model`, `checker_model`, `commit_docs`, `research_enabled`, `phase_dir`, `phase_number`, `has_research`, `has_context`.
 
+Also extract `phase_dir`, `planning_root`, and `padded_phase` from the `<planning_context>` provided by the orchestrator. These are the authoritative paths for where to read/write phase files. When spawned by plan-phase, these values come from init JSON passed through the orchestrator prompt. When running standalone, extract from your own init JSON call.
+
 Also read STATE.md for position, decisions, blockers:
 ```bash
 cat .planning/STATE.md 2>/dev/null
@@ -1021,9 +1023,11 @@ If exists, load relevant documents by phase type:
 
 <step name="identify_phase">
 ```bash
-cat .planning/ROADMAP.md
-ls .planning/phases/
+cat ${planning_root}/ROADMAP.md    # Use planning_root from planning_context
+ls ${phase_dir}/                    # Use phase_dir from planning_context
 ```
+
+Use `planning_root` from `<planning_context>` for ROADMAP.md path. Use `phase_dir` for phase directory listing. Fall back to `.planning/ROADMAP.md` and `.planning/phases/` only when running standalone without a `<planning_context>`.
 
 If multiple phases available, ask which to plan. If obvious (first incomplete), proceed.
 
@@ -1056,7 +1060,7 @@ Select top 2-4 phases. Skip phases with no relevance signal.
 
 **Step 3 — Read full SUMMARYs for selected phases:**
 ```bash
-cat .planning/phases/{selected-phase}/*-SUMMARY.md
+cat ${planning_root}/phases/{selected-phase}/*-SUMMARY.md
 ```
 
 From full SUMMARYs extract:
@@ -1086,7 +1090,7 @@ Read the most recent milestone retrospective and cross-milestone trends. Extract
 </step>
 
 <step name="gather_phase_context">
-Use `phase_dir` from init context (already loaded in load_project_state).
+Use `phase_dir` from `<planning_context>` when spawned by plan-phase orchestrator, or from init JSON when running standalone (already loaded in load_project_state).
 
 ```bash
 cat "$phase_dir"/*-CONTEXT.md 2>/dev/null   # From /gsd:discuss-phase
@@ -1160,7 +1164,9 @@ Use template structure for each PLAN.md.
 
 **ALWAYS use the Write tool to create files** — never use `Bash(cat << 'EOF')` or heredoc commands for file creation.
 
-Write to `.planning/phases/XX-name/{phase}-{NN}-PLAN.md`
+Write to `${phase_dir}/{padded_phase}-{NN}-PLAN.md`
+
+Use `phase_dir` and `padded_phase` from `<planning_context>`. These are the authoritative paths — do NOT construct paths manually from `.planning/phases/`.
 
 Include all frontmatter fields.
 </step>
@@ -1196,7 +1202,7 @@ Returns JSON: `{ valid, errors, warnings, task_count, tasks }`
 <step name="update_roadmap">
 Update ROADMAP.md to finalize phase placeholders:
 
-1. Read `.planning/ROADMAP.md`
+1. Read `${planning_root}/ROADMAP.md` (use `planning_root` from `<planning_context>`)
 2. Find phase entry (`### Phase {N}:`)
 3. Update placeholders:
 
@@ -1219,7 +1225,7 @@ Plans:
 
 <step name="git_commit">
 ```bash
-node ~/.claude/get-shit-done/bin/gsd-tools.cjs commit "docs($PHASE): create phase plan" --files .planning/phases/$PHASE-*/$PHASE-*-PLAN.md .planning/ROADMAP.md
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs($PHASE): create phase plan" --files ${phase_dir}/${padded_phase}-*-PLAN.md ${planning_root}/ROADMAP.md
 ```
 </step>
 

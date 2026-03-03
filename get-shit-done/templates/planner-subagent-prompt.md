@@ -11,25 +11,28 @@ Template for spawning gsd-planner agent. The agent contains all planning experti
 
 **Phase:** {phase_number}
 **Mode:** {standard | gap_closure}
+**Phase directory:** {phase_dir}
+**Planning root:** {planning_root}
+**Padded phase:** {padded_phase}
 
 **Project State:**
-@.planning/STATE.md
+@{planning_root}/STATE.md
 
 **Roadmap:**
-@.planning/ROADMAP.md
+@{planning_root}/ROADMAP.md
 
 **Requirements (if exists):**
-@.planning/REQUIREMENTS.md
+@{planning_root}/REQUIREMENTS.md
 
 **Phase Context (if exists):**
-@.planning/phases/{phase_dir}/{phase_num}-CONTEXT.md
+@{phase_dir}/{phase_num}-CONTEXT.md
 
 **Research (if exists):**
-@.planning/phases/{phase_dir}/{phase_num}-RESEARCH.md
+@{phase_dir}/{phase_num}-RESEARCH.md
 
 **Gap Closure (if --gaps mode):**
-@.planning/phases/{phase_dir}/{phase_num}-VERIFICATION.md
-@.planning/phases/{phase_dir}/{phase_num}-UAT.md
+@{phase_dir}/{phase_num}-VERIFICATION.md
+@{phase_dir}/{phase_num}-UAT.md
 
 </planning_context>
 
@@ -60,8 +63,10 @@ Before returning PLANNING COMPLETE:
 | Placeholder | Source | Example |
 |-------------|--------|---------|
 | `{phase_number}` | From roadmap/arguments | `5` or `2.1` |
-| `{phase_dir}` | Phase directory name | `05-user-profiles` |
-| `{phase}` | Phase prefix | `05` |
+| `{phase_dir}` | Full phase directory path from init JSON | `.planning/milestones/v3.1/phases/3.1-integration-fixes` |
+| `{planning_root}` | Planning root from init JSON | `.planning/milestones/v3.1` |
+| `{padded_phase}` | Padded phase prefix from init JSON | `3.1` or `05` |
+| `{phase}` | Phase prefix (unpadded) | `05` |
 | `{standard \| gap_closure}` | Mode flag | `standard` |
 
 ---
@@ -98,8 +103,8 @@ Continue planning for Phase {phase_number}: {phase_name}
 </objective>
 
 <prior_state>
-Phase directory: @.planning/phases/{phase_dir}/
-Existing plans: @.planning/phases/{phase_dir}/*-PLAN.md
+Phase directory: @{phase_dir}/
+Existing plans: @{phase_dir}/*-PLAN.md
 </prior_state>
 
 <checkpoint_response>
