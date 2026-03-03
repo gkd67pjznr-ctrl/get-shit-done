@@ -6,6 +6,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.22.4] - 2026-03-03
+
+### Added
+- `--discuss` flag for `/gsd:quick` — lightweight pre-planning discussion to gather context before quick tasks
+
+### Fixed
+- Windows: `@file:` protocol resolution for large init payloads (>50KB) — all 32 workflow/agent files now resolve temp file paths instead of letting agents hallucinate `/tmp` paths (#841)
+- Missing `skills` frontmatter on gsd-nyquist-auditor agent
+
 ## [1.22.3] - 2026-03-03
 
 ### Added
@@ -1442,7 +1451,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - YOLO mode for autonomous execution
 - Interactive mode with checkpoints
 
-[Unreleased]: https://github.com/glittercowboy/get-shit-done/compare/v1.22.3...HEAD
+[Unreleased]: https://github.com/glittercowboy/get-shit-done/compare/v1.22.4...HEAD
+[1.22.4]: https://github.com/glittercowboy/get-shit-done/releases/tag/v1.22.4
 [1.22.3]: https://github.com/glittercowboy/get-shit-done/releases/tag/v1.22.3
 [1.22.2]: https://github.com/glittercowboy/get-shit-done/releases/tag/v1.22.2
 [1.22.1]: https://github.com/glittercowboy/get-shit-done/releases/tag/v1.22.1
