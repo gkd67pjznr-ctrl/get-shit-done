@@ -156,7 +156,6 @@ const commands = require('./lib/commands.cjs');
 const init = require('./lib/init.cjs');
 const frontmatter = require('./lib/frontmatter.cjs');
 const debt = require('./lib/debt.cjs');
-const migrate = require('./lib/migrate.cjs');
 
 // ─── CLI Router ───────────────────────────────────────────────────────────────
 
@@ -210,7 +209,7 @@ async function main() {
   const command = args[0];
 
   if (!command) {
-    error('Usage: gsd-tools <command> [args] [--raw] [--cwd <path>] [--milestone <version>]\n\nCommands:\n  State:       state, state-snapshot\n  Phase:       phase, phases, find-phase, phase-plan-index\n  Roadmap:     roadmap, requirements\n  Milestone:   milestone, migrate\n  Debt:        debt\n  Verify:      verify, verify-summary, validate, frontmatter\n  Template:    template, scaffold\n  Config:      config-ensure-section, config-set, config-get, set-quality\n  Progress:    progress, history-digest\n  Todos:       todo, list-todos\n  Git:         commit, check-patches\n  Init:        init\n  Utility:     resolve-model, generate-slug, current-timestamp, verify-path-exists, summary-extract, websearch');
+    error('Usage: gsd-tools <command> [args] [--raw] [--cwd <path>] [--milestone <version>]\n\nCommands:\n  State:       state, state-snapshot\n  Phase:       phase, phases, find-phase, phase-plan-index\n  Roadmap:     roadmap, requirements\n  Milestone:   milestone\n  Debt:        debt\n  Verify:      verify, verify-summary, validate, frontmatter\n  Template:    template, scaffold\n  Config:      config-ensure-section, config-set, config-get, set-quality\n  Progress:    progress, history-digest\n  Todos:       todo, list-todos\n  Git:         commit, check-patches\n  Init:        init\n  Utility:     resolve-model, generate-slug, current-timestamp, verify-path-exists, summary-extract, websearch');
   }
 
   switch (command) {
@@ -515,33 +514,6 @@ async function main() {
         }, raw);
       } else {
         error('Unknown debt subcommand. Available: log, list, resolve');
-      }
-      break;
-    }
-
-    case 'migrate': {
-      // Parse --version flag (same pattern as --milestone)
-      let migrateVersion = null;
-      const versionEqArg = args.find(arg => arg.startsWith('--version='));
-      const versionIdx = args.indexOf('--version');
-      if (versionEqArg) {
-        migrateVersion = versionEqArg.slice('--version='.length).trim();
-        if (!migrateVersion) error('Missing value for --version');
-      } else if (versionIdx !== -1) {
-        const vVal = args[versionIdx + 1];
-        if (!vVal || vVal.startsWith('--')) error('Missing value for --version');
-        migrateVersion = vVal;
-      }
-
-      if (args.includes('--cleanup')) {
-        const cleanupDryRun = args.includes('--dry-run');
-        migrate.cmdMigrateCleanup(cwd, { dryRun: cleanupDryRun }, raw);
-      } else if (args.includes('--dry-run')) {
-        migrate.cmdMigrateDryRun(cwd, { version: migrateVersion }, raw);
-      } else if (args.includes('--apply')) {
-        migrate.cmdMigrateApply(cwd, { version: migrateVersion }, raw);
-      } else {
-        error('Usage: migrate --dry-run [--version <label>] | migrate --apply [--version <label>] | migrate --cleanup [--dry-run]');
       }
       break;
     }
