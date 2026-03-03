@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 ## Current Position
 
 Phase: 7 of 10 (Delete Legacy Files)
-Plan: Not started
-Status: Phases 4-5 complete, Phases 7-10 pending (legacy strip + documentation)
-Last activity: 2026-03-03 — Added legacy strip phases (7-9) and documentation phase (10) to roadmap
+Plan: 1 of 1 complete
+Status: Phase 7 complete; Phases 8-10 pending (legacy strip continuation + documentation)
+Last activity: 2026-03-03 — Completed Phase 7 Plan 01: deleted migrate.cjs, test files, CLI command
 
-Progress: [███░░░░░░░] 33%
+Progress: [████░░░░░░] 40%
 
 ## Performance Metrics
 
@@ -29,10 +29,11 @@ Progress: [███░░░░░░░] 33%
 |-------|-------|-------|----------|
 | 04-bug-fixes | 3 | 6 min | 2 min |
 | 05-housekeeping | 1 | 2 min | 2 min |
+| 07-delete-legacy-files | 1 | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-01, 04-02, 04-03, 05-01
-- Trend: Fast execution (doc/sync fixes)
+- Last 5 plans: 04-01, 04-02, 04-03, 05-01, 07-01
+- Trend: Fast execution (doc/sync fixes, legacy strip)
 
 *Updated after each plan completion*
 
@@ -52,6 +53,9 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - 04-01: execute-plan.md extracts MILESTONE_SCOPE from init JSON and sets MILESTONE_FLAG shell variable for subsequent commands
 - 05-01: Repo agent files use portable ~/.claude/ paths; installed copies have absolute paths from path expansion at install time
 - 05-01: fix-debt.md has exactly one copy in repo (commands/gsd/fix-debt.md); MAINT-02 satisfied with no file changes needed
+- 07-01: migrate.cjs deleted entirely — milestone-scoped layout is the only supported layout; migrate CLI command removed
+- 07-01: Test count dropped 349 -> 309 (40 tests deleted: 23 migrate + 12 compat + 5 debt-init migrate groups)
+- 07-01: Test baseline updated: 309 passing after legacy strip Phase 7
 
 ### Pending Todos
 
@@ -71,5 +75,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-03
-Stopped at: Formalized legacy strip roadmap (Phases 7-9) and renumbered Documentation to Phase 10
+Stopped at: Completed Phase 7 Plan 01 (07-01-delete-legacy-files)
 Resume file: None

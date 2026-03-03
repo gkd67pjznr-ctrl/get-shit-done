@@ -8,7 +8,7 @@ Tech debt cleanup, legacy layout strip, and documentation for the GSD enhanced f
 
 - [x] **Phase 4: Bug Fixes** - Fix all behavioral bugs and CLI help gaps from v3.0
 - [x] **Phase 5: Housekeeping** - Resolve file structure and git tracking issues (completed 2026-02-27)
-- [ ] **Phase 7: Delete Legacy Files** - Delete migrate.cjs, legacy test files, and migrate CLI command
+- [x] **Phase 7: Delete Legacy Files** - Delete migrate.cjs, legacy test files, and migrate CLI command
 - [ ] **Phase 8: Strip Core Legacy** - Remove detectLayoutStyle and all dual-layout branching from source
 - [ ] **Phase 9: Workflow & Test Cleanup** - Remove layout conditionals from workflows, clean up remaining tests
 - [ ] **Phase 10: Documentation** - Create README.md summarizing the fork (reflects simplified codebase)
@@ -54,10 +54,10 @@ Plans:
   3. `tests/migrate.test.cjs` does not exist
   4. `migrate` case block removed from `gsd-tools.cjs` CLI router
   5. All remaining tests pass
-**Plans**: TBD
+**Plans**: 1 plan — COMPLETE (2026-03-03)
 
 Plans:
-- [ ] 07-01: Delete migrate.cjs, legacy test files, remove migrate CLI command (STRIP-01)
+- [x] 07-01: Delete migrate.cjs, legacy test files, remove migrate CLI command (STRIP-01)
 
 ### Phase 8: Strip Core Legacy
 **Goal**: No code checks or branches on layout style — milestone-scoped is the only path
@@ -115,7 +115,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 4. Bug Fixes | 3/3 | Complete | 2026-02-27 |
 | 5. Housekeeping | 1/1 | Complete | 2026-02-27 |
-| 7. Delete Legacy Files | 0/1 | Not started | - |
+| 7. Delete Legacy Files | 1/1 | Complete | 2026-03-03 |
 | 8. Strip Core Legacy | 0/2 | Not started | - |
 | 9. Workflow & Test Cleanup | 0/2 | Not started | - |
 | 10. Documentation | 0/1 | Not started | - |

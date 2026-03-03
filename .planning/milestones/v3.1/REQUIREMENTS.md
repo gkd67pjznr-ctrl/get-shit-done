@@ -30,7 +30,7 @@ Requirements for tech debt cleanup and documentation. Each maps to roadmap phase
 
 ### Legacy Strip
 
-- [ ] **STRIP-01**: `migrate.cjs` deleted entirely, `migrate` CLI command removed from `gsd-tools.cjs`
+- [x] **STRIP-01**: `migrate.cjs` deleted entirely, `migrate` CLI command removed from `gsd-tools.cjs`
 - [ ] **STRIP-02**: `detectLayoutStyle()` deleted from `core.cjs`, no code anywhere checks or branches on layout style
 - [ ] **STRIP-03**: `planningRoot()` always resolves to milestone path — no legacy fallback branch in `findPhaseInternal`
 - [ ] **STRIP-04**: Zero occurrences of `layout_style` / `LAYOUT` variable in workflow `.md` files
@@ -61,7 +61,7 @@ None — this is a cleanup milestone.
 | CLI-01 | Phase 4 | Complete |
 | MAINT-01 | Phase 5 | Complete |
 | MAINT-02 | Phase 5 | Complete |
-| STRIP-01 | Phase 7 | Pending |
+| STRIP-01 | Phase 7 | Complete |
 | STRIP-02 | Phase 8 | Pending |
 | STRIP-03 | Phase 8 | Pending |
 | STRIP-04 | Phase 9 | Pending |
@@ -75,4 +75,4 @@ None — this is a cleanup milestone.
 
 ---
 *Requirements defined: 2026-02-27*
-*Last updated: 2026-03-03 — added STRIP-01 through STRIP-05, renumbered DOC-01 to Phase 10*
+*Last updated: 2026-03-03 — STRIP-01 marked complete (07-01 executed)*
