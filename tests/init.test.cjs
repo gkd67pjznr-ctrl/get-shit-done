@@ -686,3 +686,138 @@ describe('init commands with milestone directory detection (BUG-INIT-01)', () =>
     assert.strictEqual(output.phase_found, true, `Expected phase_found: true, got: ${output.phase_found}`);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// cross-milestone phase lookup in init commands (BUG-INIT-CROSSMS-01)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('cross-milestone phase lookup in init commands (BUG-INIT-CROSSMS-01)', () => {
+  let tmpDir;
+
+  // Helper: set up concurrent project with v2.0 as active and v1.0 with legacy phases
+  function setupCrossMillestoneProject(opts = {}) {
+    // Start with concurrent project (v2.0 is the active/newest milestone)
+    const dir = createConcurrentProject('v2.0');
+
+    // Create v1.0 workspace with a legacy phase
+    const v1Dir = path.join(dir, '.planning', 'milestones', 'v1.0');
+    const phaseNum = opts.phaseNum || '95';
+    const phaseName = opts.phaseName || 'legacy-feature';
+    fs.mkdirSync(path.join(v1Dir, 'phases', `${phaseNum}-${phaseName}`), { recursive: true });
+    fs.writeFileSync(path.join(v1Dir, 'STATE.md'), '# State\n', 'utf-8');
+
+    // Write v1.0 ROADMAP with the phase documented
+    fs.writeFileSync(
+      path.join(v1Dir, 'ROADMAP.md'),
+      `# Roadmap v1.0\n\n## Phases\n\n### Phase ${phaseNum}: ${phaseName.replace(/-/g, ' ')}\n**Goal:** Legacy goal\n\n`,
+      'utf-8'
+    );
+
+    // Add optional plan file
+    if (opts.withPlan) {
+      fs.writeFileSync(
+        path.join(v1Dir, 'phases', `${phaseNum}-${phaseName}`, `${phaseNum}-01-PLAN.md`),
+        '# Plan\n',
+        'utf-8'
+      );
+    }
+
+    return dir;
+  }
+
+  afterEach(() => {
+    if (tmpDir) {
+      cleanup(tmpDir);
+      tmpDir = null;
+    }
+  });
+
+  test('init phase-op finds phase in non-active milestone without --milestone flag', () => {
+    tmpDir = setupCrossMillestoneProject({ phaseNum: '95', phaseName: 'legacy-feature' });
+
+    const result = runGsdToolsFull(['init', 'phase-op', '95', '--raw'], tmpDir);
+    assert.ok(result.success, `Command failed: ${result.stderr}`);
+    const output = JSON.parse(result.output);
+
+    assert.strictEqual(output.phase_found, true, `phase_found should be true, got: ${output.phase_found}`);
+    assert.strictEqual(output.milestone_scope, 'v1.0', `milestone_scope should be v1.0 (found), got: ${output.milestone_scope}`);
+    assert.ok(
+      output.planning_root.endsWith(path.join('.planning', 'milestones', 'v1.0')),
+      `planning_root should point to v1.0, got: ${output.planning_root}`
+    );
+  });
+
+  test('init execute-phase finds phase in non-active milestone without --milestone flag', () => {
+    tmpDir = setupCrossMillestoneProject({ phaseNum: '95', phaseName: 'legacy-feature', withPlan: true });
+
+    const result = runGsdToolsFull(['init', 'execute-phase', '95', '--raw'], tmpDir);
+    assert.ok(result.success, `Command failed: ${result.stderr}`);
+    const output = JSON.parse(result.output);
+
+    assert.strictEqual(output.phase_found, true, `phase_found should be true, got: ${output.phase_found}`);
+    assert.strictEqual(output.milestone_scope, 'v1.0', `milestone_scope should be v1.0 (found), got: ${output.milestone_scope}`);
+  });
+
+  test('init plan-phase finds phase in non-active milestone without --milestone flag', () => {
+    tmpDir = setupCrossMillestoneProject({ phaseNum: '95', phaseName: 'legacy-feature' });
+
+    const result = runGsdToolsFull(['init', 'plan-phase', '95', '--raw'], tmpDir);
+    assert.ok(result.success, `Command failed: ${result.stderr}`);
+    const output = JSON.parse(result.output);
+
+    assert.strictEqual(output.phase_found, true, `phase_found should be true, got: ${output.phase_found}`);
+    assert.strictEqual(output.milestone_scope, 'v1.0', `milestone_scope should be v1.0 (found), got: ${output.milestone_scope}`);
+  });
+
+  test('init verify-work finds phase in non-active milestone without --milestone flag', () => {
+    tmpDir = setupCrossMillestoneProject({ phaseNum: '95', phaseName: 'legacy-feature' });
+
+    const result = runGsdToolsFull(['init', 'verify-work', '95', '--raw'], tmpDir);
+    assert.ok(result.success, `Command failed: ${result.stderr}`);
+    const output = JSON.parse(result.output);
+
+    assert.strictEqual(output.phase_found, true, `phase_found should be true, got: ${output.phase_found}`);
+    assert.strictEqual(output.milestone_scope, 'v1.0', `milestone_scope should be v1.0 (found), got: ${output.milestone_scope}`);
+  });
+
+  test('effectiveScope reflects found milestone, not active milestone', () => {
+    tmpDir = setupCrossMillestoneProject({ phaseNum: '95', phaseName: 'legacy-feature' });
+
+    // Run phase-op which sets milestone_scope from effectiveScope
+    const result = runGsdToolsFull(['init', 'phase-op', '95', '--raw'], tmpDir);
+    assert.ok(result.success, `Command failed: ${result.stderr}`);
+    const output = JSON.parse(result.output);
+
+    // Active milestone is v2.0, but phase is found in v1.0
+    assert.strictEqual(output.milestone_scope, 'v1.0',
+      `effectiveScope should be v1.0 (where phase was found), not v2.0 (active). Got: ${output.milestone_scope}`);
+    assert.ok(
+      output.planning_root.includes('v1.0'),
+      `planning_root should reflect v1.0, got: ${output.planning_root}`
+    );
+  });
+
+  test('init phase-op falls back to ROADMAP cross-milestone search (phase dir absent)', () => {
+    // v2.0 is active, v1.0 has phase 42 in ROADMAP only (no directory)
+    tmpDir = createConcurrentProject('v2.0');
+
+    const v1Dir = path.join(tmpDir, '.planning', 'milestones', 'v1.0');
+    fs.mkdirSync(path.join(v1Dir, 'phases'), { recursive: true });
+    fs.writeFileSync(path.join(v1Dir, 'STATE.md'), '# State\n', 'utf-8');
+    fs.writeFileSync(
+      path.join(v1Dir, 'ROADMAP.md'),
+      '# Roadmap v1.0\n\n## Phases\n\n### Phase 42: Roadmap Only Phase\n**Goal:** Only in roadmap\n\n',
+      'utf-8'
+    );
+
+    const result = runGsdToolsFull(['init', 'phase-op', '42', '--raw'], tmpDir);
+    assert.ok(result.success, `Command failed: ${result.stderr}`);
+    const output = JSON.parse(result.output);
+
+    // Phase should be found via ROADMAP cross-search
+    assert.strictEqual(output.phase_found, true,
+      `phase_found should be true via ROADMAP cross-search, got: ${output.phase_found}`);
+    assert.strictEqual(output.phase_number, '42',
+      `phase_number should be 42, got: ${output.phase_number}`);
+  });
+});
