@@ -45,8 +45,9 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 | 7 | Fix phase detection path mismatch (BUG-01 auto-create, BUG-02 numeric sort) | 2026-02-28 | d58a9e2 | Verified | [7-fix-next-phase-detection-path-mismatch-i](./quick/7-fix-next-phase-detection-path-mismatch-i/) |
 | 8 | Fix roadmap get-phase to find phases in non-active milestones (BUG-ROADMAP-01) | 2026-03-01 | 0c2c558 | Verified | [8-fix-roadmap-get-phase-to-correctly-find-](./quick/8-fix-roadmap-get-phase-to-correctly-find-/) |
 | 9 | Fix gsd-tools.cjs init to support milestone-scoped layout without concurrent flag | 2026-03-02 | e0d31a0 | Verified | [9-fix-gsd-tools-cjs-init-to-support-milest](./quick/9-fix-gsd-tools-cjs-init-to-support-milest/) |
+| 10 | Fix CLI init phase commands to auto-resolve milestone scope (BUG-INIT-CROSSMS-01) | 2026-03-02 | 2f09c76 | Verified | [10-fix-cli-phase-op-init-to-auto-resolve-mi](./quick/10-fix-cli-phase-op-init-to-auto-resolve-mi/) |
 
 ## Session Continuity
 
-Last activity: 2026-03-02 - Completed quick task 9: Fix detectLayoutStyle directory-based fallback and resolveActiveMilestone numeric sort
+Last activity: 2026-03-02 - Completed quick task 10: Fix CLI init commands cross-milestone phase lookup (phase-op, execute-phase, plan-phase, verify-work)
 Next step: Define requirements for v3.1
