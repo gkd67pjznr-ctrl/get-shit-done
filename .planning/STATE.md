@@ -48,8 +48,9 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 | 10 | Fix CLI init phase commands to auto-resolve milestone scope (BUG-INIT-CROSSMS-01) | 2026-03-02 | 2f09c76 | Verified | [10-fix-cli-phase-op-init-to-auto-resolve-mi](./quick/10-fix-cli-phase-op-init-to-auto-resolve-mi/) |
 | 11 | Enable full GSD quality settings in Gymrats2, Pyxelate, and global defaults | 2026-03-03 | d0ee944 | Verified | [11-enable-full-gsd-quality-settings-in-gymr](./quick/11-enable-full-gsd-quality-settings-in-gymr/) |
 | 12 | Fix plan-phase to consistently use milestone-scoped directories (planning_root/phase_dir) | 2026-03-03 | 872199e | Verified | [12-fix-plan-phase-to-consistently-use-miles](./quick/12-fix-plan-phase-to-consistently-use-miles/) |
+| 13 | Feasibility analysis: rebuild GSD with milestone-scoped as the only layout option | 2026-03-03 | 52843ff | Verified | [13-feasibility-analysis-rebuild-gsd-with-mi](./quick/13-feasibility-analysis-rebuild-gsd-with-mi/) |
 
 ## Session Continuity
 
-Last activity: 2026-03-03 - Completed quick task 12: Fix plan-phase.md mkdir fallback and planner context, and gsd-planner.md execution steps to use milestone-scoped paths from init JSON
+Last activity: 2026-03-03 - Completed quick task 13: Feasibility analysis: rebuild GSD with milestone-scoped as the only layout option
 Next step: Define requirements for v3.1
