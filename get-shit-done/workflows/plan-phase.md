@@ -18,7 +18,7 @@ Load all context in one call (paths only to minimize orchestrator context):
 INIT=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs init plan-phase "$PHASE")
 ```
 
-Parse JSON for: `researcher_model`, `planner_model`, `checker_model`, `research_enabled`, `plan_checker_enabled`, `nyquist_validation_enabled`, `commit_docs`, `phase_found`, `phase_dir`, `phase_number`, `phase_name`, `phase_slug`, `padded_phase`, `has_research`, `has_context`, `has_plans`, `plan_count`, `planning_exists`, `roadmap_exists`, `phase_req_ids`.
+Parse JSON for: `researcher_model`, `planner_model`, `checker_model`, `research_enabled`, `plan_checker_enabled`, `nyquist_validation_enabled`, `commit_docs`, `phase_found`, `phase_dir`, `phase_number`, `phase_name`, `phase_slug`, `padded_phase`, `has_research`, `has_context`, `has_plans`, `plan_count`, `planning_exists`, `roadmap_exists`, `phase_req_ids`, `planning_root`.
 
 **File paths (for <files_to_read> blocks):** `state_path`, `roadmap_path`, `requirements_path`, `context_path`, `research_path`, `verification_path`, `uat_path`. These are null if files don't exist.
 
@@ -45,7 +45,7 @@ Extract `--prd <filepath>` from $ARGUMENTS. If present, set PRD_FILE to the file
 
 **If `phase_found` is false:** Validate phase exists in ROADMAP.md. If valid, create the directory using `phase_slug` and `padded_phase` from init:
 ```bash
-mkdir -p ".planning/phases/${padded_phase}-${phase_slug}"
+mkdir -p "${planning_root}/phases/${padded_phase}-${phase_slug}"
 ```
 
 **Existing artifacts from init:** `has_research`, `has_plans`, `plan_count`.
@@ -294,6 +294,9 @@ Planner prompt:
 <planning_context>
 **Phase:** {phase_number}
 **Mode:** {standard | gap_closure}
+**Phase directory:** {phase_dir}
+**Planning root:** {planning_root}
+**Padded phase:** {padded_phase}
 
 <files_to_read>
 - {state_path} (Project State)
@@ -431,7 +434,7 @@ Revision prompt:
 **Mode:** revision
 
 <files_to_read>
-- {PHASE_DIR}/*-PLAN.md (Existing plans)
+- {phase_dir}/*-PLAN.md (Existing plans)
 - {context_path} (USER DECISIONS from /gsd:discuss-phase)
 </files_to_read>
 
@@ -576,7 +579,7 @@ Verification: {Passed | Passed with override | Skipped}
 ───────────────────────────────────────────────────────────────
 
 **Also available:**
-- cat .planning/phases/{phase-dir}/*-PLAN.md — review plans
+- cat {phase_dir}/*-PLAN.md — review plans
 - /gsd:plan-phase {X} --research — re-research first
 
 ───────────────────────────────────────────────────────────────
