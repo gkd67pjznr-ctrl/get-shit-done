@@ -4,7 +4,7 @@
 
 | Milestone | Status | Workspace |
 |-----------|--------|-----------|
-| v3.1 Tech Debt Cleanup & README | Defining requirements | `.planning/milestones/v3.1/` |
+| v3.1 Tech Debt Cleanup, Legacy Strip & README | Phases 4-5 complete, 7-10 pending | `.planning/milestones/v3.1/` |
 
 ## Completed Milestones
 
@@ -31,7 +31,7 @@ Each milestone has its own workspace under `.planning/milestones/<version>/` con
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Milestone v3.1 — Tech Debt Cleanup & README
+**Current focus:** Milestone v3.1 — Legacy Strip (Phase 7 next)
 
 ### Quick Tasks Completed
 

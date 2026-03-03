@@ -28,6 +28,14 @@ Requirements for tech debt cleanup and documentation. Each maps to roadmap phase
 
 - [ ] **DOC-01**: README.md exists at repo root summarizing the fork (condensed from UPGRADES.md)
 
+### Legacy Strip
+
+- [ ] **STRIP-01**: `migrate.cjs` deleted entirely, `migrate` CLI command removed from `gsd-tools.cjs`
+- [ ] **STRIP-02**: `detectLayoutStyle()` deleted from `core.cjs`, no code anywhere checks or branches on layout style
+- [ ] **STRIP-03**: `planningRoot()` always resolves to milestone path — no legacy fallback branch in `findPhaseInternal`
+- [ ] **STRIP-04**: Zero occurrences of `layout_style` / `LAYOUT` variable in workflow `.md` files
+- [ ] **STRIP-05**: All tests pass after strip (~316 from current 349; delta = deleted legacy-only test files)
+
 ## Future Requirements
 
 None — this is a cleanup milestone.
@@ -38,7 +46,8 @@ None — this is a cleanup milestone.
 |---------|--------|
 | Agent Teams (intra-milestone parallelism) | Deferred to v2.1+, different scope |
 | USER-GUIDE.md full command reference | Separate documentation milestone |
-| Rewriting GSD core workflow | This fork is additive upgrades only |
+| Ground-up GSD rebuild (Path B) | Feasibility analysis (quick-13) showed Path A (surgical strip) is sufficient |
+| Upstream GSD PR (Path C) | Upstream acceptance uncertain; strip is fork-local |
 
 ## Traceability
 
@@ -52,13 +61,18 @@ None — this is a cleanup milestone.
 | CLI-01 | Phase 4 | Complete |
 | MAINT-01 | Phase 5 | Complete |
 | MAINT-02 | Phase 5 | Complete |
-| DOC-01 | Phase 6 | Pending |
+| STRIP-01 | Phase 7 | Pending |
+| STRIP-02 | Phase 8 | Pending |
+| STRIP-03 | Phase 8 | Pending |
+| STRIP-04 | Phase 9 | Pending |
+| STRIP-05 | Phase 9 | Pending |
+| DOC-01 | Phase 10 | Pending |
 
 **Coverage:**
-- v3.1 requirements: 9 total
-- Mapped to phases: 9
+- v3.1 requirements: 14 total
+- Mapped to phases: 14
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-27*
-*Last updated: 2026-02-27 — traceability populated after roadmap creation*
+*Last updated: 2026-03-03 — added STRIP-01 through STRIP-05, renumbered DOC-01 to Phase 10*

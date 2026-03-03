@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 5: Housekeeping
+**Current focus:** Phase 7: Delete Legacy Files (Legacy Strip)
 
 ## Current Position
 
-Phase: 5 of 6 (Housekeeping)
-Plan: 1 of 1 in current phase
-Status: Phase 5 Plan 1 Complete
-Last activity: 2026-02-27 — Phase 5 Plan 01 complete (agent file sync — Debt Auto-Log sections merged)
+Phase: 7 of 10 (Delete Legacy Files)
+Plan: Not started
+Status: Phases 4-5 complete, Phases 7-10 pending (legacy strip + documentation)
+Last activity: 2026-03-03 — Added legacy strip phases (7-9) and documentation phase (10) to roadmap
 
-Progress: [███░░░░░░░] 30%
+Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics
 
@@ -61,8 +61,15 @@ None yet.
 
 None yet.
 
+### Key Reference
+
+- Feasibility analysis: `.planning/quick/13-feasibility-analysis-rebuild-gsd-with-mi/FEASIBILITY.md`
+- Legacy surface area: ~1,437 lines across 17 files (19% of codebase)
+- Approach: Path A (Surgical Strip) — deletions, not rewrites
+- Test baseline: 349 passing → expected ~316 after strip (delta = deleted legacy-only tests)
+
 ## Session Continuity
 
-Last session: 2026-02-27
-Stopped at: Completed 05-01-PLAN.md (agent file sync — Debt Auto-Log sections merged)
+Last session: 2026-03-03
+Stopped at: Formalized legacy strip roadmap (Phases 7-9) and renumbered Documentation to Phase 10
 Resume file: None
