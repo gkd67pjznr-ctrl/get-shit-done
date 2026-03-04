@@ -10,7 +10,7 @@ Tech debt cleanup, legacy layout strip, and documentation for the GSD enhanced f
 - [x] **Phase 5: Housekeeping** - Resolve file structure and git tracking issues (completed 2026-02-27)
 - [x] **Phase 7: Delete Legacy Files** - Delete migrate.cjs, legacy test files, and migrate CLI command
 - [x] **Phase 8: Strip Core Legacy** - Remove detectLayoutStyle and all dual-layout branching from source
-- [ ] **Phase 9: Workflow & Test Cleanup** - Remove layout conditionals from workflows, clean up remaining tests
+- [x] **Phase 9: Workflow & Test Cleanup** - Remove layout conditionals from workflows, clean up remaining tests (completed 2026-03-04)
 - [ ] **Phase 10: Documentation** - Create README.md summarizing the fork (reflects simplified codebase)
 
 ## Phase Details
@@ -92,8 +92,8 @@ Plans:
 **Plans**: 2 plans (wave 1 — parallel)
 
 Plans:
-- [ ] 09-01-PLAN.md — Remove LAYOUT variable and layout conditionals from 7 workflow files + path-variables.md (STRIP-04)
-- [ ] 09-02-PLAN.md — Remove layout_style from commands.cjs and dashboard tests, full regression pass (STRIP-05)
+- [x] 09-01-PLAN.md — Remove LAYOUT variable and layout conditionals from 7 workflow files + path-variables.md (STRIP-04)
+- [x] 09-02-PLAN.md — Remove layout_style from commands.cjs and dashboard tests, full regression pass (STRIP-05)
 
 ### Phase 10: Documentation
 **Goal**: README.md exists at repo root and gives a clear picture of what this fork is and what it delivers
@@ -119,5 +119,5 @@ Plans:
 | 5. Housekeeping | 1/1 | Complete | 2026-02-27 |
 | 7. Delete Legacy Files | 1/1 | Complete | 2026-03-03 |
 | 8. Strip Core Legacy | 2/2 | Complete | 2026-03-03 |
-| 9. Workflow & Test Cleanup | 0/2 | Not started | - |
+| 9. Workflow & Test Cleanup | 2/2 | Complete   | 2026-03-04 |
 | 10. Documentation | 0/1 | Not started | - |
