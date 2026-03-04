@@ -4,17 +4,16 @@ Reference for all path-related variables returned by gsd-tools.cjs init commands
 
 ## Variables from init JSON
 
-| Variable | Source | Legacy Value | Milestone-Scoped Value |
-|----------|--------|-------------|------------------------|
-| `planning_root` | init JSON | `.planning/` (absolute) | `.planning/milestones/v2.0/` (absolute) |
-| `layout_style` | init JSON | `"legacy"` | `"milestone-scoped"` |
-| `milestone_scope` | init JSON | `null` | `"v2.0"` |
-| `milestone_version` | init JSON | `"v1.0"` (from ROADMAP) | `"v2.0"` (explicit) |
-| `state_path` | init JSON | `.planning/STATE.md` | `.planning/milestones/v2.0/STATE.md` |
-| `roadmap_path` | init JSON | `.planning/ROADMAP.md` | `.planning/milestones/v2.0/ROADMAP.md` |
-| `requirements_path` | init JSON | `.planning/REQUIREMENTS.md` | `.planning/milestones/v2.0/REQUIREMENTS.md` |
-| `phase_dir` | init JSON | `.planning/phases/01-name` | `.planning/milestones/v2.0/phases/01-name` |
-| `config_path` | init JSON | `.planning/config.json` | `.planning/config.json` (always global) |
+| Variable | Source | Value |
+|----------|--------|-------|
+| `planning_root` | init JSON | `.planning/milestones/v2.0/` (absolute) |
+| `milestone_scope` | init JSON | `"v2.0"` (null when not milestone-scoped) |
+| `milestone_version` | init JSON | `"v2.0"` (explicit) |
+| `state_path` | init JSON | `.planning/milestones/v2.0/STATE.md` |
+| `roadmap_path` | init JSON | `.planning/milestones/v2.0/ROADMAP.md` |
+| `requirements_path` | init JSON | `.planning/milestones/v2.0/REQUIREMENTS.md` |
+| `phase_dir` | init JSON | `.planning/milestones/v2.0/phases/01-name` |
+| `config_path` | init JSON | `.planning/config.json` (always global) |
 
 ## Core Resolver: planningRoot()
 
@@ -37,7 +36,7 @@ Rules:
 
 ## Commands That Return milestone Fields
 
-All of these commands return `milestone_scope`, `planning_root`, and `layout_style` when called with `--milestone`:
+All of these commands return `milestone_scope` and `planning_root` when called with `--milestone`:
 
 | Command | Function | milestoneScope Added |
 |---------|----------|----------------------|
@@ -103,4 +102,4 @@ node gsd-tools.cjs --milestone=v2.0 init phase-op 1 --raw
 
 The parsed value is stored as `milestoneScope` and threaded as the **last parameter** to all
 milestone-aware lib functions. Existing callers that omit the parameter receive `undefined`,
-which `planningRoot()` treats as null and returns the legacy `.planning/` path.
+which `planningRoot()` treats as null and returns the base `.planning/` path.

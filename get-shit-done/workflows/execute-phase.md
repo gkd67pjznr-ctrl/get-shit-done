@@ -29,12 +29,11 @@ Parse JSON for: `executor_model`, `verifier_model`, `commit_docs`, `parallelizat
 When `parallelization` is false, plans within a wave execute sequentially.
 
 ```bash
-# Milestone routing (v2.0)
+# Milestone routing
 MILESTONE_FLAG=""
-LAYOUT=$(echo "$INIT" | jq -r '.layout_style // "legacy"')
 MILESTONE_SCOPE=$(echo "$INIT" | jq -r '.milestone_scope // empty')
 MILESTONE_VERSION="$MILESTONE_SCOPE"
-if [ "$LAYOUT" = "milestone-scoped" ] && [ -n "$MILESTONE_SCOPE" ]; then
+if [ -n "$MILESTONE_SCOPE" ]; then
   MILESTONE_FLAG="--milestone ${MILESTONE_SCOPE}"
 fi
 ```
@@ -168,7 +167,7 @@ Execute each wave in sequence. Within a wave: parallel if `PARALLELIZATION=true`
 
    **4a. Update milestone STATUS.md (plan-complete checkpoint):**
 
-   If `layout_style` from init is `"milestone-scoped"` and `MILESTONE_VERSION` is not null:
+   If `MILESTONE_VERSION` is not empty:
 
    For each completed plan in this wave, compute progress and write status:
    ```bash
@@ -183,11 +182,11 @@ Execute each wave in sequence. Within a wave: parallel if `PARALLELIZATION=true`
      --status "In Progress" --raw
    ```
 
-   If `layout_style` is not `"milestone-scoped"`, skip this step (legacy projects unaffected).
+   If `MILESTONE_VERSION` is empty, skip this step.
 
    **4b. Update conflict manifest (files touched this wave):**
 
-   If `layout_style` from init is `"milestone-scoped"` and `MILESTONE_VERSION` is not empty:
+   If `MILESTONE_VERSION` is not empty:
 
    ```bash
    # Populate conflict manifest with files touched by this phase's plans (CNFL-01, CNFL-02)
@@ -199,7 +198,7 @@ Execute each wave in sequence. Within a wave: parallel if `PARALLELIZATION=true`
    fi
    ```
 
-   If `layout_style` is not `"milestone-scoped"`, skip this step (legacy projects unaffected).
+   If `MILESTONE_VERSION` is empty, skip this step.
 
    If pass:
    ```
@@ -427,7 +426,7 @@ Extract from result: `next_phase`, `next_phase_name`, `is_last_phase`.
 
 **Write final STATUS.md (phase-complete checkpoint):**
 
-If `layout_style` from init is `"milestone-scoped"` and `MILESTONE_VERSION` is not null:
+If `MILESTONE_VERSION` is not empty:
 
 ```bash
 node ~/.claude/get-shit-done/bin/gsd-tools.cjs milestone write-status "${MILESTONE_VERSION}" \
@@ -437,7 +436,7 @@ node ~/.claude/get-shit-done/bin/gsd-tools.cjs milestone write-status "${MILESTO
   --status "Complete" --raw
 ```
 
-If `layout_style` is not `"milestone-scoped"`, skip this step.
+If `MILESTONE_VERSION` is empty, skip this step.
 
 ```bash
 node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs(phase-{X}): complete phase execution" --files .planning/ROADMAP.md .planning/STATE.md .planning/REQUIREMENTS.md {phase_dir}/*-VERIFICATION.md
