@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 8: Strip Core Legacy (core.cjs cleanup)
+**Current focus:** Phase 9: Workflow & Test Cleanup
 
 ## Current Position
 
-Phase: 8 of 10 (Strip Core Legacy)
-Plan: 2 of 2 complete
-Status: Phase 8 complete — all dependent modules updated, 300/300 tests passing
-Last activity: 2026-03-03 — Completed Phase 8 Plan 02: removed detectLayoutStyle/getArchivedPhaseDirs from all dependent modules; 300/300 tests passing
+Phase: 9 of 10 (Workflow & Test Cleanup)
+Plan: 0 of 2 complete
+Status: Phase 8 complete (deferred: findPhaseInternal fallback removal to Phase 9); Phases 9-10 pending
+Last activity: 2026-03-03 — Completed Phase 8: stripped detectLayoutStyle/getArchivedPhaseDirs from all source files; 300/300 tests passing
 
-Progress: [█████░░░░░] 50%
+Progress: [██████░░░░] 60%
 
 ## Performance Metrics
 

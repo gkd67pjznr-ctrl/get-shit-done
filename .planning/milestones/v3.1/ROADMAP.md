@@ -77,6 +77,8 @@ Plans:
 - [x] 08-01: Delete detectLayoutStyle, legacy findPhaseInternal branch, getArchivedPhaseDirs from core.cjs (STRIP-02, STRIP-03)
 - [x] 08-02: Update imports and simplify conditionals in init.cjs, roadmap.cjs, phase.cjs, commands.cjs (STRIP-02, STRIP-03)
 
+**Note:** Success criterion #4 (findPhaseInternal legacy fallback) deferred to Phase 9. The `detectLayoutStyle` dynamic branching is fully removed, but the unconditional `.planning/phases/` fallback search was restored because `createTempProject()` test helper creates flat-layout projects. Phase 9 will migrate test helpers and remove the fallback.
+
 ### Phase 9: Workflow & Test Cleanup
 **Goal**: Zero legacy layout references in workflows; test suite clean and passing
 **Depends on**: Phase 8
