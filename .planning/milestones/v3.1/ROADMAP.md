@@ -104,10 +104,10 @@ Plans:
   2. README covers what the fork adds (quality enforcement, concurrent milestones, tech debt system) without duplicating UPGRADES.md verbatim
   3. A reader unfamiliar with the project can understand the fork's purpose and key features from README alone
   4. README reflects the simplified milestone-only architecture (no references to legacy layout)
-**Plans**: TBD
+**Plans**: 1 plan (wave 1)
 
 Plans:
-- [ ] 10-01: Write README.md condensed from UPGRADES.md (DOC-01)
+- [ ] 10-01-PLAN.md — Update README.md fork header: fix stale stats, remove deleted feature reference (DOC-01)
 
 ## Progress
 
