@@ -34,10 +34,6 @@ See [FORK-GUIDE.md](FORK-GUIDE.md) for installation and usage instructions.
 - Full milestone documentation: [UPGRADES.md](UPGRADES.md)
 - Enable quality enforcement: `/gsd:set-quality standard`
 
-## What's In Progress
-
-v3.1 milestone: tech debt cleanup and legacy code stripping (removing pre-concurrent-milestone code paths).
-
 ---
 
 <div align="center">
