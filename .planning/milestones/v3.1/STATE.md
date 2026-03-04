@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 7: Delete Legacy Files (Legacy Strip)
+**Current focus:** Phase 8: Strip Core Legacy (core.cjs cleanup)
 
 ## Current Position
 
-Phase: 7 of 10 (Delete Legacy Files)
-Plan: 1 of 1 complete
-Status: Phase 7 complete; Phases 8-10 pending (legacy strip continuation + documentation)
-Last activity: 2026-03-03 — Completed Phase 7 Plan 01: deleted migrate.cjs, test files, CLI command
+Phase: 8 of 10 (Strip Core Legacy)
+Plan: 1 of 2 complete
+Status: Phase 8 Plan 01 complete; Plan 02 pending (update dependent modules)
+Last activity: 2026-03-04 — Completed Phase 8 Plan 01: deleted detectLayoutStyle, getArchivedPhaseDirs from core.cjs
 
-Progress: [████░░░░░░] 40%
+Progress: [████░░░░░░] 45%
 
 ## Performance Metrics
 
@@ -30,9 +30,10 @@ Progress: [████░░░░░░] 40%
 | 04-bug-fixes | 3 | 6 min | 2 min |
 | 05-housekeeping | 1 | 2 min | 2 min |
 | 07-delete-legacy-files | 1 | 3 min | 3 min |
+| 08-strip-core-legacy | 1 | 4 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-01, 04-02, 04-03, 05-01, 07-01
+- Last 5 plans: 04-03, 05-01, 07-01, 08-01
 - Trend: Fast execution (doc/sync fixes, legacy strip)
 
 *Updated after each plan completion*
@@ -56,6 +57,9 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - 07-01: migrate.cjs deleted entirely — milestone-scoped layout is the only supported layout; migrate CLI command removed
 - 07-01: Test count dropped 349 -> 309 (40 tests deleted: 23 migrate + 12 compat + 5 debt-init migrate groups)
 - 07-01: Test baseline updated: 309 passing after legacy strip Phase 7
+- 08-01: detectLayoutStyle deleted — milestone-scoped is now the only layout; no branching on layout style in core.cjs
+- 08-01: getArchivedPhaseDirs deleted — v*-phases flat archive format no longer supported
+- 08-01: After 08-01 changes: 75 pass, 234 fail (cascading import errors — fixed in 08-02)
 
 ### Pending Todos
 
@@ -74,6 +78,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-03
-Stopped at: Completed Phase 7 Plan 01 (07-01-delete-legacy-files)
+Last session: 2026-03-04
+Stopped at: Completed Phase 8 Plan 01 (08-01-PLAN.md) — strip core legacy
 Resume file: None

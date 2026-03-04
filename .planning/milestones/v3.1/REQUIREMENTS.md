@@ -62,8 +62,8 @@ None — this is a cleanup milestone.
 | MAINT-01 | Phase 5 | Complete |
 | MAINT-02 | Phase 5 | Complete |
 | STRIP-01 | Phase 7 | Complete |
-| STRIP-02 | Phase 8 | Pending |
-| STRIP-03 | Phase 8 | Pending |
+| STRIP-02 | Phase 8 | In Progress (core.cjs done; dependents in 08-02) |
+| STRIP-03 | Phase 8 | In Progress (core.cjs done; dependents in 08-02) |
 | STRIP-04 | Phase 9 | Pending |
 | STRIP-05 | Phase 9 | Pending |
 | DOC-01 | Phase 10 | Pending |
@@ -75,4 +75,4 @@ None — this is a cleanup milestone.
 
 ---
 *Requirements defined: 2026-02-27*
-*Last updated: 2026-03-03 — STRIP-01 marked complete (07-01 executed)*
+*Last updated: 2026-03-04 — STRIP-02/03 in progress after 08-01 (core.cjs stripped; dependents in 08-02)*

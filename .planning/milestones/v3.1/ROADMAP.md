@@ -71,10 +71,10 @@ Plans:
   5. `layout_style` field removed from all `init.cjs` command outputs
   6. `roadmap.cjs`, `phase.cjs`, `commands.cjs` conditionals simplified (no `detectLayoutStyle` guards)
   7. All remaining tests pass
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 08-01: Delete detectLayoutStyle, legacy findPhaseInternal branch, getArchivedPhaseDirs from core.cjs (STRIP-02, STRIP-03)
+- [x] 08-01: Delete detectLayoutStyle, legacy findPhaseInternal branch, getArchivedPhaseDirs from core.cjs (STRIP-02, STRIP-03)
 - [ ] 08-02: Update imports and simplify conditionals in init.cjs, roadmap.cjs, phase.cjs, commands.cjs (STRIP-02, STRIP-03)
 
 ### Phase 9: Workflow & Test Cleanup
@@ -116,6 +116,6 @@ Plans:
 | 4. Bug Fixes | 3/3 | Complete | 2026-02-27 |
 | 5. Housekeeping | 1/1 | Complete | 2026-02-27 |
 | 7. Delete Legacy Files | 1/1 | Complete | 2026-03-03 |
-| 8. Strip Core Legacy | 0/2 | Not started | - |
+| 8. Strip Core Legacy | 1/2 | In Progress | - |
 | 9. Workflow & Test Cleanup | 0/2 | Not started | - |
 | 10. Documentation | 0/1 | Not started | - |
