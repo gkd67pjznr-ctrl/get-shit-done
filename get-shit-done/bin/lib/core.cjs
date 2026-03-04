@@ -256,55 +256,22 @@ function findPhaseInternal(cwd, phase, milestoneScope) {
     return searchPhaseInDir(phasesDir, relBase, normalized);
   }
 
-  // Milestone-scoped layout: auto-detect milestone by searching all milestone phase dirs
-  const layout = detectLayoutStyle(cwd);
-  if (layout === 'milestone-scoped') {
-    const milestonesDir = path.join(cwd, '.planning', 'milestones');
-    try {
-      const msDirs = fs.readdirSync(milestonesDir, { withFileTypes: true })
-        .filter(e => e.isDirectory())
-        .map(e => e.name)
-        .sort()
-        .reverse(); // newest first
-
-      for (const ms of msDirs) {
-        const phasesDir = path.join(milestonesDir, ms, 'phases');
-        if (!fs.existsSync(phasesDir)) continue;
-        const relBase = path.join('.planning', 'milestones', ms, 'phases');
-        const result = searchPhaseInDir(phasesDir, relBase, normalized);
-        if (result) {
-          result.milestone_scope = ms;
-          return result;
-        }
-      }
-    } catch {}
-    return null;
-  }
-
-  // Legacy layout: search current phases first
-  const phasesDir = path.join(cwd, '.planning', 'phases');
-  const current = searchPhaseInDir(phasesDir, path.join('.planning', 'phases'), normalized);
-  if (current) return current;
-
-  // Search archived milestone phases (flat pattern: v*-phases/)
+  // Auto-detect milestone by searching all milestone phase dirs (newest first)
   const milestonesDir = path.join(cwd, '.planning', 'milestones');
-  if (!fs.existsSync(milestonesDir)) return null;
-
   try {
-    const milestoneEntries = fs.readdirSync(milestonesDir, { withFileTypes: true });
-    const archiveDirs = milestoneEntries
-      .filter(e => e.isDirectory() && /^v[\d.]+-phases$/.test(e.name))
+    const msDirs = fs.readdirSync(milestonesDir, { withFileTypes: true })
+      .filter(e => e.isDirectory())
       .map(e => e.name)
       .sort()
-      .reverse();
+      .reverse(); // newest first
 
-    for (const archiveName of archiveDirs) {
-      const version = archiveName.match(/^(v[\d.]+)-phases$/)[1];
-      const archivePath = path.join(milestonesDir, archiveName);
-      const relBase = path.join('.planning', 'milestones', archiveName);
-      const result = searchPhaseInDir(archivePath, relBase, normalized);
+    for (const ms of msDirs) {
+      const phasesDir = path.join(milestonesDir, ms, 'phases');
+      if (!fs.existsSync(phasesDir)) continue;
+      const relBase = path.join('.planning', 'milestones', ms, 'phases');
+      const result = searchPhaseInDir(phasesDir, relBase, normalized);
       if (result) {
-        result.archived = version;
+        result.milestone_scope = ms;
         return result;
       }
     }
