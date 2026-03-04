@@ -55,20 +55,18 @@ describe('E2E: legacy mode plan→execute→verify', () => {
     cleanup(tmpDir);
   });
 
-  test('init plan-phase returns legacy layout_style and paths', () => {
+  test('init plan-phase returns flat planning_root and null milestone_scope', () => {
     const result = runGsdToolsFull(['init', 'plan-phase', '1', '--raw'], tmpDir);
     assert.ok(result.success, `Command failed: ${result.stderr}`);
     const out = JSON.parse(result.output);
-    assert.strictEqual(out.layout_style, 'legacy');
     assert.ok(out.planning_root.endsWith('/.planning'), `planning_root should end with /.planning, got: ${out.planning_root}`);
     assert.strictEqual(out.milestone_scope, null);
   });
 
-  test('init execute-phase returns legacy layout_style and state_path', () => {
+  test('init execute-phase returns flat state_path', () => {
     const result = runGsdToolsFull(['init', 'execute-phase', '1', '--raw'], tmpDir);
     assert.ok(result.success, `Command failed: ${result.stderr}`);
     const out = JSON.parse(result.output);
-    assert.strictEqual(out.layout_style, 'legacy');
     assert.strictEqual(out.state_path, '.planning/STATE.md');
   });
 
@@ -130,11 +128,10 @@ describe('E2E: milestone-scoped mode plan→execute→verify', () => {
     cleanup(tmpDir);
   });
 
-  test('init plan-phase with --milestone returns milestone-scoped layout_style', () => {
+  test('init plan-phase with --milestone returns milestone workspace planning_root', () => {
     const result = runGsdToolsFull(['--milestone', 'v2.0', 'init', 'plan-phase', '1', '--raw'], tmpDir);
     assert.ok(result.success, `Command failed: ${result.stderr}`);
     const out = JSON.parse(result.output);
-    assert.strictEqual(out.layout_style, 'milestone-scoped');
     assert.ok(out.planning_root.includes('milestones/v2.0'), `planning_root should contain milestones/v2.0, got: ${out.planning_root}`);
     assert.strictEqual(out.milestone_scope, 'v2.0');
   });
@@ -143,7 +140,6 @@ describe('E2E: milestone-scoped mode plan→execute→verify', () => {
     const result = runGsdToolsFull(['--milestone', 'v2.0', 'init', 'execute-phase', '1', '--raw'], tmpDir);
     assert.ok(result.success, `Command failed: ${result.stderr}`);
     const out = JSON.parse(result.output);
-    assert.strictEqual(out.layout_style, 'milestone-scoped');
     assert.ok(out.state_path.includes('milestones/v2.0'), `state_path should include milestones/v2.0, got: ${out.state_path}`);
   });
 

@@ -62,11 +62,11 @@ describe('ROUTE-02: init phase-op with --milestone', () => {
     );
   });
 
-  test('returns layout_style milestone-scoped when --milestone provided', () => {
+  test('succeeds with --milestone flag provided', () => {
     const result = runGsdToolsFull(['--milestone', 'v2.0', 'init', 'phase-op', '1', '--raw'], tmpDir);
     assert.ok(result.success, `Command failed: ${result.stderr}`);
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.layout_style, 'milestone-scoped');
+    assert.strictEqual(output.milestone_scope, 'v2.0');
   });
 
   test('auto-detects milestone_scope without --milestone in milestone-scoped layout', () => {
@@ -120,11 +120,11 @@ describe('ROUTE-02: init verify-work with --milestone', () => {
     );
   });
 
-  test('returns layout_style milestone-scoped', () => {
+  test('succeeds with --milestone flag', () => {
     const result = runGsdToolsFull(['--milestone', 'v2.0', 'init', 'verify-work', '1', '--raw'], tmpDir);
     assert.ok(result.success, `Command failed: ${result.stderr}`);
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.layout_style, 'milestone-scoped');
+    assert.strictEqual(output.milestone_scope, 'v2.0');
   });
 });
 
@@ -254,11 +254,11 @@ describe('ROUTE-02: init milestone-op with --milestone', () => {
     );
   });
 
-  test('returns layout_style milestone-scoped', () => {
+  test('succeeds with --milestone flag', () => {
     const result = runGsdToolsFull(['--milestone', 'v2.0', 'init', 'milestone-op', '--raw'], tmpDir);
     assert.ok(result.success, `Command failed: ${result.stderr}`);
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.layout_style, 'milestone-scoped');
+    assert.strictEqual(output.milestone_scope, 'v2.0');
   });
 });
 

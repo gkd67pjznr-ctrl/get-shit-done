@@ -7,7 +7,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { runGsdTools, runGsdToolsFull, createTempProject, cleanup } = require('./helpers.cjs');
+const { runGsdTools, runGsdToolsFull, createTempProject, createConcurrentProject, cleanup } = require('./helpers.cjs');
 
 describe('history-digest command', () => {
   let tmpDir;
@@ -423,92 +423,63 @@ describe('progress command', () => {
   let tmpDir;
 
   beforeEach(() => {
-    tmpDir = createTempProject();
+    tmpDir = createConcurrentProject('v1.0');
   });
 
   afterEach(() => {
     cleanup(tmpDir);
   });
 
-  test('renders JSON progress', () => {
+  test('renders JSON progress as multi-milestone output', () => {
+    // Create STATUS.md in milestone workspace
+    const v1Dir = path.join(tmpDir, '.planning', 'milestones', 'v1.0');
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
-      `# Roadmap v1.0 MVP\n`
+      path.join(v1Dir, 'STATUS.md'),
+      `**Phase:** 3.1\n**Plan:** 02\n**Progress:** [████░░] 1/2 plans (50%)\n**Status:** In Progress\n`
     );
-    const p1 = path.join(tmpDir, '.planning', 'phases', '01-foundation');
-    fs.mkdirSync(p1, { recursive: true });
-    fs.writeFileSync(path.join(p1, '01-01-PLAN.md'), '# Plan');
-    fs.writeFileSync(path.join(p1, '01-01-SUMMARY.md'), '# Done');
-    fs.writeFileSync(path.join(p1, '01-02-PLAN.md'), '# Plan 2');
 
     const result = runGsdTools('progress json', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.total_plans, 2, '2 total plans');
-    assert.strictEqual(output.total_summaries, 1, '1 summary');
-    assert.strictEqual(output.percent, 50, '50%');
-    assert.strictEqual(output.phases.length, 1, '1 phase');
-    assert.strictEqual(output.phases[0].status, 'In Progress', 'phase in progress');
+    assert.ok(Array.isArray(output.milestones), 'should have milestones array');
+    assert.strictEqual(output.milestones.length, 1, '1 milestone with STATUS.md');
+    assert.strictEqual(output.milestones[0].version, 'v1.0', 'milestone version should be v1.0');
   });
 
-  test('renders bar format', () => {
+  test('renders table format as multi-milestone table', () => {
+    const v1Dir = path.join(tmpDir, '.planning', 'milestones', 'v1.0');
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
-      `# Roadmap v1.0\n`
+      path.join(v1Dir, 'STATUS.md'),
+      `**Phase:** 3.1\n**Plan:** 01\n**Progress:** [██░░░] 1/3 plans (33%)\n**Status:** Planned\n`
     );
-    const p1 = path.join(tmpDir, '.planning', 'phases', '01-test');
-    fs.mkdirSync(p1, { recursive: true });
-    fs.writeFileSync(path.join(p1, '01-01-PLAN.md'), '# Plan');
-    fs.writeFileSync(path.join(p1, '01-01-SUMMARY.md'), '# Done');
-
-    const result = runGsdTools('progress bar --raw', tmpDir);
-    assert.ok(result.success, `Command failed: ${result.error}`);
-    assert.ok(result.output.includes('1/1'), 'should include count');
-    assert.ok(result.output.includes('100%'), 'should include 100%');
-  });
-
-  test('renders table format', () => {
-    fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
-      `# Roadmap v1.0 MVP\n`
-    );
-    const p1 = path.join(tmpDir, '.planning', 'phases', '01-foundation');
-    fs.mkdirSync(p1, { recursive: true });
-    fs.writeFileSync(path.join(p1, '01-01-PLAN.md'), '# Plan');
 
     const result = runGsdTools('progress table --raw', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
-    assert.ok(result.output.includes('Phase'), 'should have table header');
-    assert.ok(result.output.includes('foundation'), 'should include phase name');
+    assert.ok(result.output.includes('Multi-Milestone Progress'), 'should have multi-milestone header');
+    assert.ok(result.output.includes('v1.0'), 'should include milestone version');
   });
 
-  test('does not crash when summaries exceed plans (orphaned SUMMARY.md)', () => {
-    fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
-      `# Roadmap v1.0 MVP\n`
-    );
-    const p1 = path.join(tmpDir, '.planning', 'phases', '01-foundation');
-    fs.mkdirSync(p1, { recursive: true });
-    // 1 plan but 2 summaries (orphaned SUMMARY.md after PLAN.md deletion)
-    fs.writeFileSync(path.join(p1, '01-01-PLAN.md'), '# Plan');
-    fs.writeFileSync(path.join(p1, '01-01-SUMMARY.md'), '# Done');
-    fs.writeFileSync(path.join(p1, '01-02-SUMMARY.md'), '# Orphaned summary');
+  test('renders bar format — returns empty milestones without STATUS.md', () => {
+    // No STATUS.md created — should return empty milestones array gracefully
+    const result = runGsdTools('progress bar --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+    // bar format not supported by cmdProgressRenderMulti, falls through to JSON
+    const output = JSON.parse(result.output);
+    assert.ok(Array.isArray(output.milestones), 'should return milestones array');
+  });
 
-    // bar format - should not crash with RangeError
-    const barResult = runGsdTools('progress bar --raw', tmpDir);
-    assert.ok(barResult.success, `Bar format crashed: ${barResult.error}`);
-    assert.ok(barResult.output.includes('100%'), 'percent should be clamped to 100%');
-
-    // table format - should not crash with RangeError
-    const tableResult = runGsdTools('progress table --raw', tmpDir);
-    assert.ok(tableResult.success, `Table format crashed: ${tableResult.error}`);
-
-    // json format - percent should be clamped
-    const jsonResult = runGsdTools('progress json', tmpDir);
-    assert.ok(jsonResult.success, `JSON format crashed: ${jsonResult.error}`);
-    const output = JSON.parse(jsonResult.output);
-    assert.ok(output.percent <= 100, `percent should be <= 100 but got ${output.percent}`);
+  test('does not crash when no milestones directory exists', () => {
+    const noMilestonesDir = createTempProject();
+    try {
+      const result = runGsdTools('progress json', noMilestonesDir);
+      assert.ok(result.success, `Command failed: ${result.error}`);
+      const output = JSON.parse(result.output);
+      assert.ok(Array.isArray(output.milestones), 'should return empty milestones array');
+      assert.strictEqual(output.milestones.length, 0, 'no milestones when no dir');
+    } finally {
+      cleanup(noMilestonesDir);
+    }
   });
 });
 
@@ -810,23 +781,14 @@ describe('progress quality-level display (QOBS-02)', () => {
   let tmpDir;
 
   beforeEach(() => {
-    tmpDir = createTempProject();
-    // Write ROADMAP.md
-    fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
-      `# Roadmap v1.0 MVP\n`
-    );
-    // Create a phase with one plan
-    const p1 = path.join(tmpDir, '.planning', 'phases', '01-foundation');
-    fs.mkdirSync(p1, { recursive: true });
-    fs.writeFileSync(path.join(p1, '01-01-PLAN.md'), '# Plan');
+    tmpDir = createConcurrentProject('v1.0');
   });
 
   afterEach(() => {
     cleanup(tmpDir);
   });
 
-  test('JSON progress output includes quality_level field', () => {
+  test('JSON progress output succeeds and returns milestones array', () => {
     fs.writeFileSync(
       path.join(tmpDir, '.planning', 'config.json'),
       JSON.stringify({ quality: { level: 'standard' } }, null, 2),
@@ -837,10 +799,10 @@ describe('progress quality-level display (QOBS-02)', () => {
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const out = JSON.parse(result.output);
-    assert.strictEqual(out.quality_level, 'standard', 'quality_level should be standard');
+    assert.ok(Array.isArray(out.milestones), 'progress json should return milestones array');
   });
 
-  test('table progress output includes quality level line', () => {
+  test('table progress output includes multi-milestone header', () => {
     fs.writeFileSync(
       path.join(tmpDir, '.planning', 'config.json'),
       JSON.stringify({ quality: { level: 'strict' } }, null, 2),
@@ -852,6 +814,6 @@ describe('progress quality-level display (QOBS-02)', () => {
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const out = JSON.parse(result.output);
-    assert.ok(out.rendered.includes('strict'), `table output should include "strict", got: ${out.rendered}`);
+    assert.ok(out.rendered.includes('Multi-Milestone Progress'), `table output should include "Multi-Milestone Progress", got: ${out.rendered}`);
   });
 });

@@ -627,7 +627,6 @@ describe('init commands with milestone directory detection (BUG-INIT-01)', () =>
     const output = JSON.parse(result.output);
 
     assert.strictEqual(output.phase_found, true, `Expected phase_found: true, got: ${output.phase_found}`);
-    assert.strictEqual(output.layout_style, 'milestone-scoped', `Expected layout_style: milestone-scoped, got: ${output.layout_style}`);
     assert.strictEqual(output.milestone_scope, 'v2.0', `Expected milestone_scope: v2.0, got: ${output.milestone_scope}`);
     assert.ok(
       output.planning_root.endsWith(path.join('.planning', 'milestones', 'v2.0')),
@@ -656,7 +655,6 @@ describe('init commands with milestone directory detection (BUG-INIT-01)', () =>
     const output = JSON.parse(result.output);
 
     assert.strictEqual(output.phase_found, true, `Expected phase_found: true, got: ${output.phase_found}`);
-    assert.strictEqual(output.layout_style, 'milestone-scoped', `Expected layout_style: milestone-scoped, got: ${output.layout_style}`);
   });
 
   test('init plan-phase selects correct milestone with double-digit versions', () => {

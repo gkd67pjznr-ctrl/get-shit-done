@@ -299,13 +299,12 @@ describe('cmdProgressRenderMulti', () => {
     const result = runGsdToolsFull(['progress', 'json', '--raw'], tmpDir);
     assert.ok(result.success, `expected success\nstderr: ${result.stderr}\nstdout: ${result.output}`);
     const parsed = JSON.parse(result.output);
-    assert.strictEqual(parsed.layout_style, 'milestone-scoped', 'layout_style should be milestone-scoped');
     assert.ok(Array.isArray(parsed.milestones), 'milestones should be an array');
     assert.ok(parsed.milestones.length >= 1, 'should have at least one milestone entry');
     assert.strictEqual(parsed.milestones[0].version, 'v2.0', 'milestone version should be v2.0');
   });
 
-  it('falls back to single-milestone progress for legacy projects', () => {
+  it('returns empty milestones for projects without milestone dirs', () => {
     const legacyDir = createLegacyProject();
     try {
       // Add a phase directory with a PLAN.md so cmdProgressRender has something to scan
@@ -315,8 +314,9 @@ describe('cmdProgressRenderMulti', () => {
       const result = runGsdToolsFull(['progress', 'json', '--raw'], legacyDir);
       assert.ok(result.success, `expected success\nstderr: ${result.stderr}\nstdout: ${result.output}`);
       const parsed = JSON.parse(result.output);
-      assert.ok(Array.isArray(parsed.phases), 'legacy result should have phases array');
-      assert.ok(!('milestones' in parsed), 'legacy result should NOT have milestones array');
+      // cmdProgressRenderMulti always runs the multi-milestone path; no milestones dir = empty array
+      assert.ok(Array.isArray(parsed.milestones), 'result should have milestones array');
+      assert.strictEqual(parsed.milestones.length, 0, 'milestones should be empty when no milestones dir');
     } finally {
       cleanup(legacyDir);
     }

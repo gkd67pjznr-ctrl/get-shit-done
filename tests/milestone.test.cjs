@@ -337,7 +337,7 @@ describe('milestone new-workspace via CLI routing (Plan 02)', () => {
   });
 });
 
-describe('init new-milestone returns layout_style (Plan 02)', () => {
+describe('init new-milestone returns milestones_dir fields', () => {
   let tmpDir;
 
   beforeEach(() => {
@@ -348,16 +348,11 @@ describe('init new-milestone returns layout_style (Plan 02)', () => {
     cleanup(tmpDir);
   });
 
-  test('init new-milestone returns layout_style, milestones_dir, and milestones_dir_exists', () => {
+  test('init new-milestone returns milestones_dir and milestones_dir_exists', () => {
     const result = runGsdToolsFull(['init', 'new-milestone', '--raw'], tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(typeof output.layout_style, 'string', 'layout_style should be a string');
-    assert.ok(
-      ['legacy', 'milestone-scoped', 'uninitialized'].includes(output.layout_style),
-      `layout_style should be one of legacy/milestone-scoped/uninitialized, got: ${output.layout_style}`
-    );
     assert.strictEqual(output.milestones_dir, '.planning/milestones', 'milestones_dir should be the standard path');
     assert.strictEqual(typeof output.milestones_dir_exists, 'boolean', 'milestones_dir_exists should be a boolean');
   });
@@ -410,11 +405,11 @@ Plans:
       JSON.stringify({ version: 'v2.0', created_at: '2026-02-25', status: 'active', files_touched: [] }, null, 2)
     );
 
-    // Create a phase dir with PLAN + SUMMARY so phase is considered complete
-    const phaseDir = path.join(tmpDir, '.planning', 'phases', '08-feature');
-    fs.mkdirSync(phaseDir, { recursive: true });
-    fs.writeFileSync(path.join(phaseDir, '08-01-PLAN.md'), '# Plan');
-    fs.writeFileSync(path.join(phaseDir, '08-01-SUMMARY.md'), '# Summary');
+    // Create a phase dir in the workspace phases dir (not root) so cmdMilestoneComplete finds it
+    const workspacePhasesDir = path.join(workspaceDir, 'phases', '08-feature');
+    fs.mkdirSync(workspacePhasesDir, { recursive: true });
+    fs.writeFileSync(path.join(workspacePhasesDir, '08-01-PLAN.md'), '# Plan');
+    fs.writeFileSync(path.join(workspacePhasesDir, '08-01-SUMMARY.md'), '# Summary');
 
     const result = runGsdToolsFull(['milestone', 'complete', 'v2.0', '--raw'], tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
@@ -463,11 +458,11 @@ Plans:
       JSON.stringify({ version: 'v2.0', created_at: '2026-02-25', status: 'active', files_touched: [] }, null, 2)
     );
 
-    // Complete phase
-    const phaseDir = path.join(tmpDir, '.planning', 'phases', '08-feature');
-    fs.mkdirSync(phaseDir, { recursive: true });
-    fs.writeFileSync(path.join(phaseDir, '08-01-PLAN.md'), '# Plan');
-    fs.writeFileSync(path.join(phaseDir, '08-01-SUMMARY.md'), '# Summary');
+    // Complete phase — create in workspace phases dir so cmdMilestoneComplete finds it
+    const workspacePhasesDir = path.join(workspaceDir, 'phases', '08-feature');
+    fs.mkdirSync(workspacePhasesDir, { recursive: true });
+    fs.writeFileSync(path.join(workspacePhasesDir, '08-01-PLAN.md'), '# Plan');
+    fs.writeFileSync(path.join(workspacePhasesDir, '08-01-SUMMARY.md'), '# Summary');
 
     const result = runGsdToolsFull(['milestone', 'complete', 'v2.0', '--raw'], tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);

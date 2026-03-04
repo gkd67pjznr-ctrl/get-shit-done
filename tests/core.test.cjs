@@ -1,6 +1,6 @@
 /**
  * GSD Tools Tests - Core utility functions
- * Tests for planningRoot and detectLayoutStyle
+ * Tests for planningRoot and milestone-scoped core functions
  */
 
 const { test, describe, beforeEach, afterEach } = require('node:test');
@@ -8,7 +8,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 const { createTempProject, createConcurrentProject, cleanup } = require('./helpers.cjs');
-const { planningRoot, detectLayoutStyle, findPhaseInternal, getRoadmapPhaseInternal, normalizePhaseName } = require('../get-shit-done/bin/lib/core.cjs');
+const { planningRoot, findPhaseInternal, getRoadmapPhaseInternal, normalizePhaseName } = require('../get-shit-done/bin/lib/core.cjs');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // planningRoot
@@ -60,93 +60,6 @@ describe('planningRoot', () => {
   test('returns legacy path when second arg is empty string', () => {
     const result = planningRoot(tmpDir, '');
     assert.strictEqual(result, path.join(tmpDir, '.planning'));
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// detectLayoutStyle
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('detectLayoutStyle', () => {
-  let tmpDir;
-
-  beforeEach(() => {
-    tmpDir = createTempProject();
-  });
-
-  afterEach(() => {
-    cleanup(tmpDir);
-  });
-
-  test('returns uninitialized when config.json does not exist', () => {
-    const result = detectLayoutStyle(tmpDir);
-    assert.strictEqual(result, 'uninitialized');
-  });
-
-  test('returns legacy when config.json exists with no concurrent key', () => {
-    const configPath = path.join(tmpDir, '.planning', 'config.json');
-    fs.writeFileSync(configPath, JSON.stringify({ mode: 'yolo' }), 'utf-8');
-    const result = detectLayoutStyle(tmpDir);
-    assert.strictEqual(result, 'legacy');
-  });
-
-  test('returns legacy when config.json has concurrent: false', () => {
-    const configPath = path.join(tmpDir, '.planning', 'config.json');
-    fs.writeFileSync(configPath, JSON.stringify({ concurrent: false }), 'utf-8');
-    const result = detectLayoutStyle(tmpDir);
-    assert.strictEqual(result, 'legacy');
-  });
-
-  test('returns milestone-scoped when config.json has concurrent: true', () => {
-    const configPath = path.join(tmpDir, '.planning', 'config.json');
-    fs.writeFileSync(configPath, JSON.stringify({ concurrent: true }), 'utf-8');
-    const result = detectLayoutStyle(tmpDir);
-    assert.strictEqual(result, 'milestone-scoped');
-  });
-
-  test('returns uninitialized when config.json contains invalid JSON', () => {
-    const configPath = path.join(tmpDir, '.planning', 'config.json');
-    fs.writeFileSync(configPath, '{ not valid json }', 'utf-8');
-    const result = detectLayoutStyle(tmpDir);
-    assert.strictEqual(result, 'uninitialized');
-  });
-
-  test('returns legacy when concurrent is non-boolean truthy value', () => {
-    const configPath = path.join(tmpDir, '.planning', 'config.json');
-    fs.writeFileSync(configPath, JSON.stringify({ concurrent: 'yes' }), 'utf-8');
-    const result = detectLayoutStyle(tmpDir);
-    assert.strictEqual(result, 'legacy');
-  });
-
-  test('directory-based detection: returns milestone-scoped when milestones dir exists with STATE.md but concurrent flag absent', () => {
-    // Write config WITHOUT concurrent:true
-    const configPath = path.join(tmpDir, '.planning', 'config.json');
-    fs.writeFileSync(configPath, JSON.stringify({ mode: 'yolo' }), 'utf-8');
-    // Create milestone workspace with STATE.md
-    const v1Dir = path.join(tmpDir, '.planning', 'milestones', 'v1.0');
-    fs.mkdirSync(v1Dir, { recursive: true });
-    fs.writeFileSync(path.join(v1Dir, 'STATE.md'), '# State\n', 'utf-8');
-    const result = detectLayoutStyle(tmpDir);
-    assert.strictEqual(result, 'milestone-scoped', 'should detect milestone-scoped from directory presence even without concurrent flag');
-  });
-
-  test('directory-based detection: no false positive when milestones dir does not exist', () => {
-    // Write config WITHOUT concurrent:true and NO milestones directory
-    const configPath = path.join(tmpDir, '.planning', 'config.json');
-    fs.writeFileSync(configPath, JSON.stringify({ mode: 'yolo' }), 'utf-8');
-    // No milestones directory created
-    const result = detectLayoutStyle(tmpDir);
-    assert.strictEqual(result, 'legacy', 'should return legacy when no milestones directory exists');
-  });
-
-  test('directory-based detection: returns milestone-scoped when config.json absent but milestones dir exists', () => {
-    // Do NOT create config.json at all
-    // But DO create a milestone workspace with STATE.md
-    const v1Dir = path.join(tmpDir, '.planning', 'milestones', 'v1.0');
-    fs.mkdirSync(v1Dir, { recursive: true });
-    fs.writeFileSync(path.join(v1Dir, 'STATE.md'), '# State\n', 'utf-8');
-    const result = detectLayoutStyle(tmpDir);
-    assert.strictEqual(result, 'milestone-scoped', 'should upgrade from uninitialized to milestone-scoped when milestones dir exists');
   });
 });
 
