@@ -280,41 +280,6 @@ function findPhaseInternal(cwd, phase, milestoneScope) {
   return null;
 }
 
-function getArchivedPhaseDirs(cwd) {
-  const milestonesDir = path.join(cwd, '.planning', 'milestones');
-  const results = [];
-
-  if (!fs.existsSync(milestonesDir)) return results;
-
-  try {
-    const milestoneEntries = fs.readdirSync(milestonesDir, { withFileTypes: true });
-    // Find v*-phases directories, sort newest first
-    const phaseDirs = milestoneEntries
-      .filter(e => e.isDirectory() && /^v[\d.]+-phases$/.test(e.name))
-      .map(e => e.name)
-      .sort()
-      .reverse();
-
-    for (const archiveName of phaseDirs) {
-      const version = archiveName.match(/^(v[\d.]+)-phases$/)[1];
-      const archivePath = path.join(milestonesDir, archiveName);
-      const entries = fs.readdirSync(archivePath, { withFileTypes: true });
-      const dirs = entries.filter(e => e.isDirectory()).map(e => e.name).sort((a, b) => comparePhaseNum(a, b));
-
-      for (const dir of dirs) {
-        results.push({
-          name: dir,
-          milestone: version,
-          basePath: path.join('.planning', 'milestones', archiveName),
-          fullPath: path.join(archivePath, dir),
-        });
-      }
-    }
-  } catch {}
-
-  return results;
-}
-
 // ─── Roadmap & model utilities ────────────────────────────────────────────────
 
 function getRoadmapPhaseInternal(cwd, phaseNum, milestoneScope) {
@@ -357,9 +322,8 @@ function getRoadmapPhaseInternal(cwd, phaseNum, milestoneScope) {
     } catch {}
   }
 
-  // Cross-milestone fallback when milestoneScope is null and layout is milestone-scoped:
-  // search all milestone ROADMAPs (mirrors findPhaseInternal's cross-milestone search)
-  if (!milestoneScope && detectLayoutStyle(cwd) === 'milestone-scoped') {
+  // Cross-milestone fallback: search all milestone ROADMAPs when no milestoneScope given
+  if (!milestoneScope) {
     const milestonesDir = path.join(cwd, '.planning', 'milestones');
     try {
       const msDirs = fs.readdirSync(milestonesDir, { withFileTypes: true })
@@ -379,9 +343,8 @@ function getRoadmapPhaseInternal(cwd, phaseNum, milestoneScope) {
     } catch {}
   }
 
-  // Cross-milestone fallback: if milestoneScope is set and layout is milestone-scoped,
-  // search other milestone ROADMAPs (mirrors findPhaseInternal's cross-milestone search)
-  if (milestoneScope && detectLayoutStyle(cwd) === 'milestone-scoped') {
+  // Cross-milestone fallback: search other milestone ROADMAPs when milestoneScope is set
+  if (milestoneScope) {
     const milestonesDir = path.join(cwd, '.planning', 'milestones');
     try {
       const msDirs = fs.readdirSync(milestonesDir, { withFileTypes: true })
@@ -461,36 +424,6 @@ function planningRoot(cwd, milestoneScope) {
   return base;
 }
 
-function detectLayoutStyle(cwd) {
-  const configPath = path.join(cwd, '.planning', 'config.json');
-  let hasValidConfig = false;
-  try {
-    const raw = fs.readFileSync(configPath, 'utf-8');
-    const parsed = JSON.parse(raw);
-    hasValidConfig = true;
-    if (parsed.concurrent === true) {
-      return 'milestone-scoped';
-    }
-  } catch {
-    // config.json missing or invalid — fall through to directory-based detection
-  }
-  // Directory-based fallback: detect milestones even without concurrent flag
-  // This handles the new-milestone workflow which creates milestone dirs without
-  // setting concurrent:true in config.json
-  try {
-    const milestonesDir = path.join(cwd, '.planning', 'milestones');
-    const dirs = fs.readdirSync(milestonesDir, { withFileTypes: true })
-      .filter(e => e.isDirectory() && /^v\d/.test(e.name));
-    const hasWorkspace = dirs.some(d =>
-      fs.existsSync(path.join(milestonesDir, d.name, 'STATE.md'))
-    );
-    if (hasWorkspace) return 'milestone-scoped';
-  } catch {
-    // No milestones directory
-  }
-  return hasValidConfig ? 'legacy' : 'uninitialized';
-}
-
 // Compare version strings like 'v2.0', 'v14.1' numerically instead of lexicographically
 function compareVersions(a, b) {
   const partsA = a.replace(/^v/, '').split('.').map(Number);
@@ -549,14 +482,12 @@ module.exports = {
   comparePhaseNum,
   searchPhaseInDir,
   findPhaseInternal,
-  getArchivedPhaseDirs,
   getRoadmapPhaseInternal,
   resolveModelInternal,
   pathExistsInternal,
   generateSlugInternal,
   getMilestoneInfo,
   planningRoot,
-  detectLayoutStyle,
   compareVersions,
   resolveActiveMilestone,
 };
