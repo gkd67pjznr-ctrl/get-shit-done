@@ -27,7 +27,8 @@ if echo "$ARGUMENTS" | grep -q "\-\-milestone"; then
   MILESTONE_ARG="--milestone ${MILESTONE_ARG}"
 fi
 
-INIT=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs init resume ${MILESTONE_ARG})
+INIT=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" init resume ${MILESTONE_ARG})
+if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 ```
 
 Parse JSON for: `state_exists`, `roadmap_exists`, `project_exists`, `planning_exists`, `has_interrupted_agent`, `interrupted_agent_id`, `commit_docs`.

@@ -2,20 +2,36 @@
  * GSD Tools Test Helpers
  */
 
-const { execSync, spawnSync } = require('child_process');
+const { execSync, execFileSync, spawnSync } = require('child_process');
+
 const fs = require('fs');
 const path = require('path');
 
 const TOOLS_PATH = path.join(__dirname, '..', 'get-shit-done', 'bin', 'gsd-tools.cjs');
 
-// Helper to run gsd-tools command
+/**
+ * Run gsd-tools command.
+ *
+ * @param {string|string[]} args - Command string (shell-interpreted) or array
+ *   of arguments (shell-bypassed via execFileSync, safe for JSON and dollar signs).
+ * @param {string} cwd - Working directory.
+ */
 function runGsdTools(args, cwd = process.cwd()) {
   try {
-    const result = execSync(`node "${TOOLS_PATH}" ${args}`, {
-      cwd,
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
+    let result;
+    if (Array.isArray(args)) {
+      result = execFileSync(process.execPath, [TOOLS_PATH, ...args], {
+        cwd,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+    } else {
+      result = execSync(`node "${TOOLS_PATH}" ${args}`, {
+        cwd,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+    }
     return { success: true, output: result.trim() };
   } catch (err) {
     return {
@@ -47,6 +63,26 @@ function runGsdToolsFull(args, cwd = process.cwd(), envOverrides = {}) {
 function createTempProject() {
   const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'gsd-test-'));
   fs.mkdirSync(path.join(tmpDir, '.planning', 'phases'), { recursive: true });
+  return tmpDir;
+}
+
+// Create temp directory with initialized git repo and at least one commit
+function createTempGitProject() {
+  const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'gsd-test-'));
+  fs.mkdirSync(path.join(tmpDir, '.planning', 'phases'), { recursive: true });
+
+  execSync('git init', { cwd: tmpDir, stdio: 'pipe' });
+  execSync('git config user.email "test@test.com"', { cwd: tmpDir, stdio: 'pipe' });
+  execSync('git config user.name "Test"', { cwd: tmpDir, stdio: 'pipe' });
+
+  fs.writeFileSync(
+    path.join(tmpDir, '.planning', 'PROJECT.md'),
+    '# Project\n\nTest project.\n'
+  );
+
+  execSync('git add -A', { cwd: tmpDir, stdio: 'pipe' });
+  execSync('git commit -m "initial commit"', { cwd: tmpDir, stdio: 'pipe' });
+
   return tmpDir;
 }
 
@@ -82,4 +118,4 @@ function createConcurrentProject(version = 'v2.0') {
   return tmpDir;
 }
 
-module.exports = { runGsdTools, runGsdToolsFull, createTempProject, createLegacyProject, createConcurrentProject, cleanup, TOOLS_PATH };
+module.exports = { runGsdTools, runGsdToolsFull, createTempProject, createTempGitProject, createLegacyProject, createConcurrentProject, cleanup, TOOLS_PATH };

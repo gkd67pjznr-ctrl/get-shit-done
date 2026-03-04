@@ -19,7 +19,8 @@ if echo "$ARGUMENTS" | grep -q "\-\-milestone"; then
   MILESTONE_ARG="--milestone ${MILESTONE_ARG}"
 fi
 
-INIT=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs init progress ${MILESTONE_ARG})
+INIT=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" init progress ${MILESTONE_ARG})
+if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 ```
 
 Extract from init JSON: `project_exists`, `roadmap_exists`, `state_exists`, `phases`, `current_phase`, `next_phase`, `milestone_version`, `completed_count`, `phase_count`, `paused_at`, `state_path`, `roadmap_path`, `project_path`, `config_path`.
@@ -57,8 +58,8 @@ If missing both ROADMAP.md and PROJECT.md: suggest `/gsd:new-project`.
 **Use structured extraction from gsd-tools:**
 
 Instead of reading full files, use targeted tools to get only the data needed for the report:
-- `ROADMAP=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs roadmap analyze ${MILESTONE_FLAG})`
-- `STATE=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs state-snapshot)`
+- `ROADMAP=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" roadmap analyze ${MILESTONE_FLAG})`
+- `STATE=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" state-snapshot)`
 
 This minimizes orchestrator context usage.
 </step>
@@ -67,7 +68,7 @@ This minimizes orchestrator context usage.
 **Get comprehensive roadmap analysis (replaces manual parsing):**
 
 ```bash
-ROADMAP=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs roadmap analyze ${MILESTONE_FLAG})
+ROADMAP=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" roadmap analyze ${MILESTONE_FLAG})
 ```
 
 This returns structured JSON with:
@@ -86,7 +87,7 @@ Use this instead of manually reading/parsing ROADMAP.md.
 - Find the 2-3 most recent SUMMARY.md files
 - Use `summary-extract` for efficient parsing:
   ```bash
-  node ~/.claude/get-shit-done/bin/gsd-tools.cjs summary-extract <path> --fields one_liner
+  node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" summary-extract <path> --fields one_liner
   ```
 - This shows "what we've been working on"
   </step>
@@ -105,10 +106,10 @@ Use this instead of manually reading/parsing ROADMAP.md.
 
 ```bash
 # Get formatted progress bar
-PROGRESS_BAR=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs progress bar --raw)
+PROGRESS_BAR=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" progress bar --raw)
 
 # Get current quality level
-QUALITY_LEVEL=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs config-get quality.level 2>/dev/null || echo 'fast')
+QUALITY_LEVEL=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" config-get quality.level 2>/dev/null || echo 'fast')
 ```
 
 Present:
