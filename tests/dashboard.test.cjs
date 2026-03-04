@@ -338,7 +338,6 @@ describe('cmdProgressRenderMulti', () => {
       const result = runGsdToolsFull(['progress', 'json', '--raw'], freshDir);
       assert.ok(result.success, `expected success\nstderr: ${result.stderr}\nstdout: ${result.output}`);
       const parsed = JSON.parse(result.output);
-      assert.strictEqual(parsed.layout_style, 'milestone-scoped', 'layout_style should be milestone-scoped');
       assert.ok(Array.isArray(parsed.milestones), 'milestones should be an array');
       // Without STATUS.md, cmdProgressRenderMulti returns empty milestones array
       assert.strictEqual(parsed.milestones.length, 0, 'milestones array should be empty when no STATUS.md exists');
@@ -359,7 +358,6 @@ describe('cmdProgressRenderMulti', () => {
       const result = runGsdToolsFull(['progress', 'json', '--raw'], noMilestonesDir);
       assert.ok(result.success, `expected success\nstderr: ${result.stderr}\nstdout: ${result.output}`);
       const parsed = JSON.parse(result.output);
-      assert.strictEqual(parsed.layout_style, 'milestone-scoped', 'layout_style should be milestone-scoped');
       assert.ok(Array.isArray(parsed.milestones), 'milestones should be an array');
       assert.strictEqual(parsed.milestones.length, 0, 'milestones array should be empty when milestones dir does not exist');
     } finally {

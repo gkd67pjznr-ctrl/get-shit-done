@@ -489,7 +489,7 @@ function cmdProgressRenderMulti(cwd, format, raw) {
     }
     output({ rendered: out }, raw, out);
   } else {
-    output({ milestones, layout_style: 'milestone-scoped' }, raw);
+    output({ milestones }, raw);
   }
 }
 
