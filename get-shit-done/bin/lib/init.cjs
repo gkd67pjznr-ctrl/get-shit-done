@@ -5,7 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
-const { loadConfig, resolveModelInternal, findPhaseInternal, getRoadmapPhaseInternal, pathExistsInternal, generateSlugInternal, getMilestoneInfo, normalizePhaseName, comparePhaseNum, planningRoot, detectLayoutStyle, output, error } = require('./core.cjs');
+const { loadConfig, resolveModelInternal, findPhaseInternal, getRoadmapPhaseInternal, pathExistsInternal, generateSlugInternal, getMilestoneInfo, normalizePhaseName, comparePhaseNum, planningRoot, output, error } = require('./core.cjs');
 
 /**
  * Auto-create phase directory from ROADMAP when it exists in ROADMAP but not on disk.
@@ -17,17 +17,12 @@ function autoCreatePhaseFromRoadmap(cwd, phase, milestoneScope) {
   if (milestoneScope) {
     scopesToSearch.push(milestoneScope);
   } else {
-    const layout = detectLayoutStyle(cwd);
-    if (layout === 'milestone-scoped') {
-      const milestonesDir = path.join(cwd, '.planning', 'milestones');
-      try {
-        const msDirs = fs.readdirSync(milestonesDir, { withFileTypes: true })
-          .filter(e => e.isDirectory()).map(e => e.name).sort().reverse();
-        scopesToSearch.push(...msDirs);
-      } catch {}
-    } else {
-      scopesToSearch.push(null);
-    }
+    const milestonesDir = path.join(cwd, '.planning', 'milestones');
+    try {
+      const msDirs = fs.readdirSync(milestonesDir, { withFileTypes: true })
+        .filter(e => e.isDirectory()).map(e => e.name).sort().reverse();
+      scopesToSearch.push(...msDirs);
+    } catch {}
   }
 
   for (const scope of scopesToSearch) {
@@ -151,9 +146,6 @@ function cmdInitExecutePhase(cwd, phase, raw, milestoneScope) {
     // Milestone scope (v2.0 concurrent execution — auto-detected if not explicit)
     milestone_scope: effectiveScope,
     planning_root: root,
-
-    // Layout detection (v2.0 compatibility)
-    layout_style: detectLayoutStyle(cwd),
   };
 
   output(result, raw);
@@ -227,9 +219,6 @@ function cmdInitPlanPhase(cwd, phase, raw, milestoneScope) {
     // Milestone scope (v2.0 concurrent execution — auto-detected if not explicit)
     milestone_scope: effectiveScope,
     planning_root: root,
-
-    // Layout detection (v2.0 compatibility)
-    layout_style: detectLayoutStyle(cwd),
   };
 
   if (phaseInfo?.directory) {
@@ -346,8 +335,6 @@ function cmdInitNewMilestone(cwd, raw) {
     roadmap_path: '.planning/ROADMAP.md',
     state_path: '.planning/STATE.md',
 
-    // Layout detection for workspace branching
-    layout_style: detectLayoutStyle(cwd),
     milestones_dir: '.planning/milestones',
     milestones_dir_exists: pathExistsInternal(cwd, '.planning/milestones'),
   };
@@ -437,9 +424,6 @@ function cmdInitResume(cwd, raw, milestoneScope) {
     // Milestone scope (v2.0 concurrent execution)
     milestone_scope: milestoneScope || null,
     planning_root: root,
-
-    // Layout detection (v2.0 compatibility)
-    layout_style: detectLayoutStyle(cwd),
   };
 
   output(result, raw);
@@ -481,9 +465,6 @@ function cmdInitVerifyWork(cwd, phase, raw, milestoneScope) {
     // Milestone scope (v2.0 concurrent execution — auto-detected if not explicit)
     milestone_scope: effectiveScope,
     planning_root: planningRoot(cwd, effectiveScope),
-
-    // Layout detection (v2.0 compatibility)
-    layout_style: detectLayoutStyle(cwd),
   };
 
   output(result, raw);
@@ -564,9 +545,6 @@ function cmdInitPhaseOp(cwd, phase, raw, milestoneScope) {
     // Milestone scope (v2.0 concurrent execution — auto-detected if not explicit)
     milestone_scope: effectiveScope,
     planning_root: root,
-
-    // Layout detection (v2.0 compatibility)
-    layout_style: detectLayoutStyle(cwd),
   };
 
   if (phaseInfo?.directory) {
@@ -715,9 +693,6 @@ function cmdInitMilestoneOp(cwd, raw, milestoneScope) {
     // Milestone scope (v2.0 concurrent execution)
     milestone_scope: milestoneScope || null,
     planning_root: root,
-
-    // Layout detection (v2.0 compatibility)
-    layout_style: detectLayoutStyle(cwd),
   };
 
   output(result, raw);
@@ -856,9 +831,6 @@ function cmdInitProgress(cwd, raw, milestoneScope) {
     // Milestone scope (v2.0 concurrent execution)
     milestone_scope: milestoneScope || null,
     planning_root: root,
-
-    // Layout detection (v2.0 compatibility)
-    layout_style: detectLayoutStyle(cwd),
   };
 
   output(result, raw);
