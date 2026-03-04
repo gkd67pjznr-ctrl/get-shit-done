@@ -4,7 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { escapeRegex, normalizePhaseName, output, error, findPhaseInternal, planningRoot, detectLayoutStyle } = require('./core.cjs');
+const { escapeRegex, normalizePhaseName, output, error, findPhaseInternal, planningRoot } = require('./core.cjs');
 
 /**
  * Parse a phase section from ROADMAP content. Returns null if not found.
@@ -38,7 +38,7 @@ function cmdRoadmapGetPhase(cwd, phaseNum, raw, milestoneScope) {
 
   if (!fs.existsSync(roadmapPath)) {
     // In milestone-scoped layout, skip directly to cross-milestone fallback
-    if (milestoneScope && detectLayoutStyle(cwd) === 'milestone-scoped') {
+    if (milestoneScope) {
       const fallback = _roadmapGetPhaseCrossMilestone(cwd, phaseNum, milestoneScope);
       if (fallback) {
         output({ found: true, ...fallback }, raw, fallback.section);
@@ -79,7 +79,7 @@ function cmdRoadmapGetPhase(cwd, phaseNum, raw, milestoneScope) {
 
       // Cross-milestone fallback: if milestoneScope is set and layout is milestone-scoped,
       // search other milestone ROADMAPs
-      if (milestoneScope && detectLayoutStyle(cwd) === 'milestone-scoped') {
+      if (milestoneScope) {
         const fallback = _roadmapGetPhaseCrossMilestone(cwd, phaseNum, milestoneScope);
         if (fallback) {
           output({ found: true, ...fallback }, raw, fallback.section);

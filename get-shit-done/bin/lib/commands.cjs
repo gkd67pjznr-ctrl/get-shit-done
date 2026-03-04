@@ -4,7 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
-const { safeReadFile, loadConfig, isGitIgnored, execGit, normalizePhaseName, comparePhaseNum, getArchivedPhaseDirs, generateSlugInternal, getMilestoneInfo, resolveModelInternal, MODEL_PROFILES, output, error, findPhaseInternal, detectLayoutStyle } = require('./core.cjs');
+const { safeReadFile, loadConfig, isGitIgnored, execGit, normalizePhaseName, comparePhaseNum, generateSlugInternal, getMilestoneInfo, resolveModelInternal, MODEL_PROFILES, output, error, findPhaseInternal } = require('./core.cjs');
 const { extractFrontmatter } = require('./frontmatter.cjs');
 
 function cmdGenerateSlug(text, raw) {
@@ -100,14 +100,8 @@ function cmdHistoryDigest(cwd, raw) {
   const phasesDir = path.join(cwd, '.planning', 'phases');
   const digest = { phases: {}, decisions: [], tech_stack: new Set() };
 
-  // Collect all phase directories: archived + current
+  // Collect all phase directories
   const allPhaseDirs = [];
-
-  // Add archived phases first (oldest milestones first)
-  const archived = getArchivedPhaseDirs(cwd);
-  for (const a of archived) {
-    allPhaseDirs.push({ name: a.name, fullPath: a.fullPath, milestone: a.milestone });
-  }
 
   // Add current phases
   if (fs.existsSync(phasesDir)) {
@@ -467,13 +461,6 @@ function cmdProgressRender(cwd, format, raw) {
 }
 
 function cmdProgressRenderMulti(cwd, format, raw) {
-  const layoutStyle = detectLayoutStyle(cwd);
-
-  // DASH-04: Graceful degrade for old-style projects
-  if (layoutStyle !== 'milestone-scoped') {
-    return cmdProgressRender(cwd, format, raw);
-  }
-
   const milestonesDir = path.join(cwd, '.planning', 'milestones');
   const milestones = [];
 

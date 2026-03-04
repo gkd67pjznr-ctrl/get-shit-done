@@ -4,7 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { escapeRegex, normalizePhaseName, comparePhaseNum, findPhaseInternal, searchPhaseInDir, getArchivedPhaseDirs, generateSlugInternal, planningRoot, detectLayoutStyle, output, error } = require('./core.cjs');
+const { escapeRegex, normalizePhaseName, comparePhaseNum, findPhaseInternal, searchPhaseInDir, generateSlugInternal, planningRoot, output, error } = require('./core.cjs');
 const { extractFrontmatter } = require('./frontmatter.cjs');
 
 function cmdPhasesList(cwd, options, raw, milestoneScope) {
@@ -25,14 +25,6 @@ function cmdPhasesList(cwd, options, raw, milestoneScope) {
     // Get all phase directories
     const entries = fs.readdirSync(phasesDir, { withFileTypes: true });
     let dirs = entries.filter(e => e.isDirectory()).map(e => e.name);
-
-    // Include archived phases if requested
-    if (includeArchived) {
-      const archived = getArchivedPhaseDirs(cwd);
-      for (const a of archived) {
-        dirs.push(`${a.name} [${a.milestone}]`);
-      }
-    }
 
     // Sort numerically (handles integers, decimals, letter-suffix, hybrids)
     dirs.sort((a, b) => comparePhaseNum(a, b));
@@ -196,7 +188,7 @@ function cmdFindPhase(cwd, phase, raw, milestoneScope) {
 
   // Cross-milestone fallback: when phase not found in the scoped milestone (or phases dir
   // doesn't exist), delegate to findPhaseInternal which already searches all milestones
-  if (!foundInScope && milestoneScope && detectLayoutStyle(cwd) === 'milestone-scoped') {
+  if (!foundInScope && milestoneScope) {
     const fallback = findPhaseInternal(cwd, phase);
     if (fallback && fallback.found) {
       output(fallback, raw, fallback.directory);
