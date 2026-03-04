@@ -9,7 +9,7 @@ Tech debt cleanup, legacy layout strip, and documentation for the GSD enhanced f
 - [x] **Phase 4: Bug Fixes** - Fix all behavioral bugs and CLI help gaps from v3.0
 - [x] **Phase 5: Housekeeping** - Resolve file structure and git tracking issues (completed 2026-02-27)
 - [x] **Phase 7: Delete Legacy Files** - Delete migrate.cjs, legacy test files, and migrate CLI command
-- [ ] **Phase 8: Strip Core Legacy** - Remove detectLayoutStyle and all dual-layout branching from source
+- [x] **Phase 8: Strip Core Legacy** - Remove detectLayoutStyle and all dual-layout branching from source
 - [ ] **Phase 9: Workflow & Test Cleanup** - Remove layout conditionals from workflows, clean up remaining tests
 - [ ] **Phase 10: Documentation** - Create README.md summarizing the fork (reflects simplified codebase)
 
@@ -75,7 +75,7 @@ Plans:
 
 Plans:
 - [x] 08-01: Delete detectLayoutStyle, legacy findPhaseInternal branch, getArchivedPhaseDirs from core.cjs (STRIP-02, STRIP-03)
-- [ ] 08-02: Update imports and simplify conditionals in init.cjs, roadmap.cjs, phase.cjs, commands.cjs (STRIP-02, STRIP-03)
+- [x] 08-02: Update imports and simplify conditionals in init.cjs, roadmap.cjs, phase.cjs, commands.cjs (STRIP-02, STRIP-03)
 
 ### Phase 9: Workflow & Test Cleanup
 **Goal**: Zero legacy layout references in workflows; test suite clean and passing

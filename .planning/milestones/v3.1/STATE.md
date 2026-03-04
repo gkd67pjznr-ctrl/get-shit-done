@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 ## Current Position
 
 Phase: 8 of 10 (Strip Core Legacy)
-Plan: 1 of 2 complete
-Status: Phase 8 Plan 01 complete; Plan 02 pending (update dependent modules)
-Last activity: 2026-03-04 — Completed Phase 8 Plan 01: deleted detectLayoutStyle, getArchivedPhaseDirs from core.cjs
+Plan: 2 of 2 complete
+Status: Phase 8 complete — all dependent modules updated, 300/300 tests passing
+Last activity: 2026-03-03 — Completed Phase 8 Plan 02: removed detectLayoutStyle/getArchivedPhaseDirs from all dependent modules; 300/300 tests passing
 
-Progress: [████░░░░░░] 45%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: 2 min
-- Total execution time: 0.1 hours
+- Total plans completed: 5
+- Average duration: 6 min
+- Total execution time: 0.5 hours
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: [████░░░░░░] 45%
 | 04-bug-fixes | 3 | 6 min | 2 min |
 | 05-housekeeping | 1 | 2 min | 2 min |
 | 07-delete-legacy-files | 1 | 3 min | 3 min |
-| 08-strip-core-legacy | 1 | 4 min | 4 min |
+| 08-strip-core-legacy | 2 | 29 min | 14 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-03, 05-01, 07-01, 08-01
+- Last 5 plans: 04-03, 05-01, 07-01, 08-01, 08-02
 - Trend: Fast execution (doc/sync fixes, legacy strip)
 
 *Updated after each plan completion*
@@ -60,6 +60,10 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - 08-01: detectLayoutStyle deleted — milestone-scoped is now the only layout; no branching on layout style in core.cjs
 - 08-01: getArchivedPhaseDirs deleted — v*-phases flat archive format no longer supported
 - 08-01: After 08-01 changes: 75 pass, 234 fail (cascading import errors — fixed in 08-02)
+- 08-02: detectLayoutStyle and getArchivedPhaseDirs removed from all dependent modules (init, roadmap, phase, commands, gsd-tools)
+- 08-02: findPhaseInternal legacy .planning/phases/ fallback restored unconditionally (removed in 08-01, broke tests)
+- 08-02: cmdProgressRenderMulti always returns multi-milestone output — no legacy layout fallback
+- 08-02: Test count settled at 300 (9 detectLayoutStyle tests removed from core.test.cjs — function deleted)
 
 ### Pending Todos
 
@@ -78,6 +82,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-04
-Stopped at: Completed Phase 8 Plan 01 (08-01-PLAN.md) — strip core legacy
+Last session: 2026-03-03
+Stopped at: Completed Phase 8 Plan 02 (08-02-PLAN.md) — removed all detectLayoutStyle/getArchivedPhaseDirs references; 300/300 tests passing
 Resume file: None
