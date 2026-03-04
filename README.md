@@ -1,3 +1,45 @@
+# GSD Enhanced Fork
+
+**Quality enforcement + concurrent milestones + tech debt tracking on top of vanilla GSD.**
+
+## What This Fork Is
+
+This is a forked version of [GSD (Get Shit Done)](https://github.com/gsd-build/get-shit-done) that adds three major systems: a quality enforcement framework that makes Claude behave like a senior engineer, concurrent milestone workspaces for running multiple work streams in parallel, and structured tech debt tracking from discovery through resolution.
+
+It is fully compatible with vanilla GSD. The default quality level is `fast`, which produces zero behavioral change from the upstream version. You get all the additions when you opt in.
+
+See [UPGRADES.md](UPGRADES.md) for the full milestone-by-milestone breakdown.
+See [FORK-GUIDE.md](FORK-GUIDE.md) for installation and usage instructions.
+
+## What's Different
+
+| System | Version | What It Adds |
+|--------|---------|--------------|
+| Quality Enforcement | v1.0-v1.1 | Quality Sentinel in executor, Context7 library lookup before coding, mandatory tests for new logic, config-gated levels (fast/standard/strict), `/gsd:set-quality` command |
+| Concurrent Milestones | v2.0 | Isolated workspaces per milestone, lock-free dashboard, advisory conflict detection, `--milestone` flag throughout all 7 workflows |
+| Tech Debt System | v3.0 | DEBT.md with TD-NNN entries, `debt log/list/resolve` CLI commands, executor/verifier auto-logging, `/gsd:fix-debt` skill, planning layout migration tool |
+
+## Quick Stats
+
+| Dimension | Value |
+|-----------|-------|
+| Milestones shipped | 4 (v1.0 through v3.0) |
+| Tests passing | 298 across 14 suites |
+| Source modules | 13 lib modules |
+| Validated requirements | 85+ |
+
+## Getting Started
+
+- Install: see [FORK-GUIDE.md](FORK-GUIDE.md) for the 3-step deploy process
+- Full milestone documentation: [UPGRADES.md](UPGRADES.md)
+- Enable quality enforcement: `/gsd:set-quality standard`
+
+## What's In Progress
+
+v3.1 milestone: tech debt cleanup and legacy code stripping (removing pre-concurrent-milestone code paths).
+
+---
+
 <div align="center">
 
 # GET SHIT DONE
