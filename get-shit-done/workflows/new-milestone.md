@@ -86,7 +86,7 @@ Extract from init JSON: `researcher_model`, `synthesizer_model`, `roadmapper_mod
 
 ## 7.5. Create Workspace and Check Conflicts
 
-If `layout_style === 'milestone-scoped'` from init context:
+Create milestone workspace:
 
 ```bash
 # Create milestone workspace

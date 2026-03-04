@@ -26,11 +26,10 @@ if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 Extract from init JSON: `project_exists`, `roadmap_exists`, `state_exists`, `phases`, `current_phase`, `next_phase`, `milestone_version`, `completed_count`, `phase_count`, `paused_at`, `state_path`, `roadmap_path`, `project_path`, `config_path`.
 
 ```bash
-# Milestone routing (v2.0)
+# Milestone routing
 MILESTONE_FLAG=""
-LAYOUT=$(echo "$INIT" | jq -r '.layout_style // "legacy"')
 MILESTONE_SCOPE=$(echo "$INIT" | jq -r '.milestone_scope // empty')
-if [ "$LAYOUT" = "milestone-scoped" ] && [ -n "$MILESTONE_SCOPE" ]; then
+if [ -n "$MILESTONE_SCOPE" ]; then
   MILESTONE_FLAG="--milestone ${MILESTONE_SCOPE}"
 fi
 ```

@@ -34,11 +34,10 @@ if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 Parse JSON for: `state_exists`, `roadmap_exists`, `project_exists`, `planning_exists`, `has_interrupted_agent`, `interrupted_agent_id`, `commit_docs`.
 
 ```bash
-# Milestone routing (v2.0)
+# Milestone routing
 MILESTONE_FLAG=""
-LAYOUT=$(echo "$INIT" | jq -r '.layout_style // "legacy"')
 MILESTONE_SCOPE=$(echo "$INIT" | jq -r '.milestone_scope // empty')
-if [ "$LAYOUT" = "milestone-scoped" ] && [ -n "$MILESTONE_SCOPE" ]; then
+if [ -n "$MILESTONE_SCOPE" ]; then
   MILESTONE_FLAG="--milestone ${MILESTONE_SCOPE}"
 fi
 ```

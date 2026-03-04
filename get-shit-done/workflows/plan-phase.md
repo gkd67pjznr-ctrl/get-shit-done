@@ -26,12 +26,11 @@ Parse JSON for: `researcher_model`, `planner_model`, `checker_model`, `research_
 **If `planning_exists` is false:** Error — run `/gsd:new-project` first.
 
 ```bash
-# Milestone routing (v2.0)
+# Milestone routing
 MILESTONE_FLAG=""
-LAYOUT=$(echo "$INIT" | jq -r '.layout_style // "legacy"')
 MILESTONE_SCOPE=$(echo "$INIT" | jq -r '.milestone_scope // empty')
 MILESTONE_VERSION="$MILESTONE_SCOPE"
-if [ "$LAYOUT" = "milestone-scoped" ] && [ -n "$MILESTONE_SCOPE" ]; then
+if [ -n "$MILESTONE_SCOPE" ]; then
   MILESTONE_FLAG="--milestone ${MILESTONE_SCOPE}"
 fi
 ```
@@ -359,7 +358,7 @@ Task(
 
   **Write STATUS.md (plan-start checkpoint):**
 
-  If `layout_style` from init is `"milestone-scoped"` and `MILESTONE_VERSION` is not null:
+  If `MILESTONE_VERSION` is not empty:
 
   ```bash
   node ~/.claude/get-shit-done/bin/gsd-tools.cjs milestone write-status "${MILESTONE_VERSION}" \
@@ -371,7 +370,7 @@ Task(
 
   This marks the moment plans exist but execution has not started. Plan is "0" because no plan has been executed yet.
 
-  If `layout_style` is not `"milestone-scoped"`, skip this step.
+  If `MILESTONE_VERSION` is empty, skip this step.
 
   If `--skip-verify` or `plan_checker_enabled` is false (from init): skip to step 13. Otherwise: step 10.
 

@@ -33,13 +33,12 @@ Parse current position to verify we're transitioning the right phase.
 Note accumulated context that may need updating after transition.
 
 ```bash
-# Milestone routing (v2.0)
+# Milestone routing
 # Use current_phase extracted from STATE.md above
 MILESTONE_FLAG=""
 INIT_TRANSITION=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs init execute-phase "${current_phase}" 2>/dev/null || echo '{}')
-LAYOUT=$(echo "$INIT_TRANSITION" | jq -r '.layout_style // "legacy"')
 MILESTONE_SCOPE=$(echo "$INIT_TRANSITION" | jq -r '.milestone_scope // empty')
-if [ "$LAYOUT" = "milestone-scoped" ] && [ -n "$MILESTONE_SCOPE" ]; then
+if [ -n "$MILESTONE_SCOPE" ]; then
   MILESTONE_FLAG="--milestone ${MILESTONE_SCOPE}"
 fi
 ```
