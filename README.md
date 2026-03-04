@@ -17,15 +17,15 @@ See [FORK-GUIDE.md](FORK-GUIDE.md) for installation and usage instructions.
 |--------|---------|--------------|
 | Quality Enforcement | v1.0-v1.1 | Quality Sentinel in executor, Context7 library lookup before coding, mandatory tests for new logic, config-gated levels (fast/standard/strict), `/gsd:set-quality` command |
 | Concurrent Milestones | v2.0 | Isolated workspaces per milestone, lock-free dashboard, advisory conflict detection, `--milestone` flag throughout all 7 workflows |
-| Tech Debt System | v3.0 | DEBT.md with TD-NNN entries, `debt log/list/resolve` CLI commands, executor/verifier auto-logging, `/gsd:fix-debt` skill, planning layout migration tool |
+| Tech Debt System | v3.0 | DEBT.md with TD-NNN entries, `debt log/list/resolve` CLI commands, executor/verifier auto-logging, `/gsd:fix-debt` skill |
 
 ## Quick Stats
 
 | Dimension | Value |
 |-----------|-------|
 | Milestones shipped | 4 (v1.0 through v3.0) |
-| Tests passing | 298 across 14 suites |
-| Source modules | 13 lib modules |
+| Tests passing | 710 across 21 suites |
+| Source modules | 12 lib modules |
 | Validated requirements | 85+ |
 
 ## Getting Started
