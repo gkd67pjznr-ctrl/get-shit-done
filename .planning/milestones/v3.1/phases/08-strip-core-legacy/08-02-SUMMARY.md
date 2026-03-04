@@ -85,7 +85,7 @@ Each task was committed atomically:
 2. **Task 2: Update roadmap.cjs, phase.cjs, commands.cjs** - `5d98f19` (fix)
 3. **Task 3: Fix test suite + deviation fixes** - `c89d639` (fix)
 
-**Plan metadata:** _(pending — final commit)_
+**Plan metadata:** `fffe2e9` (docs: complete strip-core-legacy plan 02)
 
 ## Files Created/Modified
 - `get-shit-done/bin/lib/init.cjs` - Removed detectLayoutStyle import and 8 layout_style output fields; simplified autoCreatePhaseFromRoadmap
@@ -163,3 +163,13 @@ None - no external service configuration required.
 ---
 *Phase: 08-strip-core-legacy*
 *Completed: 2026-03-03*
+
+## Self-Check: PASSED
+
+- FOUND: .planning/milestones/v3.1/phases/08-strip-core-legacy/08-02-SUMMARY.md
+- FOUND: get-shit-done/bin/lib/init.cjs
+- FOUND: get-shit-done/bin/lib/core.cjs
+- FOUND: commit 4f9c8cc (Task 1)
+- FOUND: commit 5d98f19 (Task 2)
+- FOUND: commit c89d639 (Task 3)
+- FOUND: commit fffe2e9 (metadata)
