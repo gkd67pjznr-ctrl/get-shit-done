@@ -671,15 +671,15 @@ describe('findPhaseInternal', () => {
 
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-core-test-'));
-    fs.mkdirSync(path.join(tmpDir, '.planning', 'phases'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases'), { recursive: true });
   });
 
   afterEach(() => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  test('finds phase in current phases directory', () => {
-    fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '01-foundation'));
+  test('finds phase in milestone-scoped phases directory', () => {
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '01-foundation'));
     const result = findPhaseInternal(tmpDir, '1');
     assert.strictEqual(result.found, true);
     assert.strictEqual(result.phase_number, '01');

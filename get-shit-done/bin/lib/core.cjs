@@ -300,12 +300,6 @@ function findPhaseInternal(cwd, phase, milestoneScope) {
     }
   } catch {}
 
-  // Fallback: search flat .planning/phases/ (non-milestone-scoped projects)
-  const legacyPhasesDir = path.join(cwd, '.planning', 'phases');
-  const legacyRelBase = path.join('.planning', 'phases');
-  const legacyResult = searchPhaseInDir(legacyPhasesDir, legacyRelBase, normalized);
-  if (legacyResult) return legacyResult;
-
   return null;
 }
 
