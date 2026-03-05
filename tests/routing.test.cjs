@@ -416,14 +416,17 @@ describe('resolveActiveMilestone', () => {
   });
 
   test('returns null for legacy layout (no milestones dir)', () => {
-    tmpDir = createTempProject();
+    // Use a bare tmpDir with no milestones dir (not createTempProject which creates v1.0)
+    tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'gsd-test-'));
+    fs.mkdirSync(path.join(tmpDir, '.planning'), { recursive: true });
     assert.strictEqual(resolveActiveMilestone(tmpDir), null);
     cleanup(tmpDir);
     tmpDir = null;
   });
 
   test('returns null for empty milestones dir', () => {
-    tmpDir = createTempProject();
+    // Use a bare tmpDir with an empty milestones dir (not createTempProject which creates v1.0)
+    tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'gsd-test-'));
     fs.mkdirSync(path.join(tmpDir, '.planning', 'milestones'), { recursive: true });
     assert.strictEqual(resolveActiveMilestone(tmpDir), null);
     cleanup(tmpDir);
@@ -464,7 +467,8 @@ describe('resolveActiveMilestone', () => {
   });
 
   test('numeric sort strategy 3: returns v9.0 over v1.0 when both are bare dirs with no STATE.md or conflict.json', () => {
-    tmpDir = createTempProject();
+    // Use a bare tmpDir so v1.0 and v9.0 are truly bare (no STATE.md from createTempProject)
+    tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'gsd-test-'));
     const milestonesDir = path.join(tmpDir, '.planning', 'milestones');
     // Create bare dirs — no STATE.md, no conflict.json
     fs.mkdirSync(path.join(milestonesDir, 'v1.0'), { recursive: true });

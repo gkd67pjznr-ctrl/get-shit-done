@@ -20,7 +20,7 @@ describe('init commands', () => {
   });
 
   test('init execute-phase returns file paths', () => {
-    const phaseDir = path.join(tmpDir, '.planning', 'phases', '03-api');
+    const phaseDir = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '03-api');
     fs.mkdirSync(phaseDir, { recursive: true });
     fs.writeFileSync(path.join(phaseDir, '03-01-PLAN.md'), '# Plan');
 
@@ -28,13 +28,13 @@ describe('init commands', () => {
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.state_path, '.planning/STATE.md');
-    assert.strictEqual(output.roadmap_path, '.planning/ROADMAP.md');
+    assert.strictEqual(output.state_path, '.planning/milestones/v1.0/STATE.md');
+    assert.strictEqual(output.roadmap_path, '.planning/milestones/v1.0/ROADMAP.md');
     assert.strictEqual(output.config_path, '.planning/config.json');
   });
 
   test('init plan-phase returns file paths', () => {
-    const phaseDir = path.join(tmpDir, '.planning', 'phases', '03-api');
+    const phaseDir = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '03-api');
     fs.mkdirSync(phaseDir, { recursive: true });
     fs.writeFileSync(path.join(phaseDir, '03-CONTEXT.md'), '# Phase Context');
     fs.writeFileSync(path.join(phaseDir, '03-RESEARCH.md'), '# Research Findings');
@@ -45,13 +45,13 @@ describe('init commands', () => {
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.state_path, '.planning/STATE.md');
-    assert.strictEqual(output.roadmap_path, '.planning/ROADMAP.md');
-    assert.strictEqual(output.requirements_path, '.planning/REQUIREMENTS.md');
-    assert.strictEqual(output.context_path, '.planning/phases/03-api/03-CONTEXT.md');
-    assert.strictEqual(output.research_path, '.planning/phases/03-api/03-RESEARCH.md');
-    assert.strictEqual(output.verification_path, '.planning/phases/03-api/03-VERIFICATION.md');
-    assert.strictEqual(output.uat_path, '.planning/phases/03-api/03-UAT.md');
+    assert.strictEqual(output.state_path, '.planning/milestones/v1.0/STATE.md');
+    assert.strictEqual(output.roadmap_path, '.planning/milestones/v1.0/ROADMAP.md');
+    assert.strictEqual(output.requirements_path, '.planning/milestones/v1.0/REQUIREMENTS.md');
+    assert.strictEqual(output.context_path, '.planning/milestones/v1.0/phases/03-api/03-CONTEXT.md');
+    assert.strictEqual(output.research_path, '.planning/milestones/v1.0/phases/03-api/03-RESEARCH.md');
+    assert.strictEqual(output.verification_path, '.planning/milestones/v1.0/phases/03-api/03-VERIFICATION.md');
+    assert.strictEqual(output.uat_path, '.planning/milestones/v1.0/phases/03-api/03-UAT.md');
   });
 
   test('init progress returns file paths', () => {
@@ -59,14 +59,14 @@ describe('init commands', () => {
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.state_path, '.planning/STATE.md');
-    assert.strictEqual(output.roadmap_path, '.planning/ROADMAP.md');
+    assert.strictEqual(output.state_path, '.planning/milestones/v1.0/STATE.md');
+    assert.strictEqual(output.roadmap_path, '.planning/milestones/v1.0/ROADMAP.md');
     assert.strictEqual(output.project_path, '.planning/PROJECT.md');
     assert.strictEqual(output.config_path, '.planning/config.json');
   });
 
   test('init phase-op returns core and optional phase file paths', () => {
-    const phaseDir = path.join(tmpDir, '.planning', 'phases', '03-api');
+    const phaseDir = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '03-api');
     fs.mkdirSync(phaseDir, { recursive: true });
     fs.writeFileSync(path.join(phaseDir, '03-CONTEXT.md'), '# Phase Context');
     fs.writeFileSync(path.join(phaseDir, '03-RESEARCH.md'), '# Research');
@@ -77,17 +77,17 @@ describe('init commands', () => {
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.state_path, '.planning/STATE.md');
-    assert.strictEqual(output.roadmap_path, '.planning/ROADMAP.md');
-    assert.strictEqual(output.requirements_path, '.planning/REQUIREMENTS.md');
-    assert.strictEqual(output.context_path, '.planning/phases/03-api/03-CONTEXT.md');
-    assert.strictEqual(output.research_path, '.planning/phases/03-api/03-RESEARCH.md');
-    assert.strictEqual(output.verification_path, '.planning/phases/03-api/03-VERIFICATION.md');
-    assert.strictEqual(output.uat_path, '.planning/phases/03-api/03-UAT.md');
+    assert.strictEqual(output.state_path, '.planning/milestones/v1.0/STATE.md');
+    assert.strictEqual(output.roadmap_path, '.planning/milestones/v1.0/ROADMAP.md');
+    assert.strictEqual(output.requirements_path, '.planning/milestones/v1.0/REQUIREMENTS.md');
+    assert.strictEqual(output.context_path, '.planning/milestones/v1.0/phases/03-api/03-CONTEXT.md');
+    assert.strictEqual(output.research_path, '.planning/milestones/v1.0/phases/03-api/03-RESEARCH.md');
+    assert.strictEqual(output.verification_path, '.planning/milestones/v1.0/phases/03-api/03-VERIFICATION.md');
+    assert.strictEqual(output.uat_path, '.planning/milestones/v1.0/phases/03-api/03-UAT.md');
   });
 
   test('init plan-phase omits optional paths if files missing', () => {
-    const phaseDir = path.join(tmpDir, '.planning', 'phases', '03-api');
+    const phaseDir = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '03-api');
     fs.mkdirSync(phaseDir, { recursive: true });
 
     const result = runGsdTools('init plan-phase 03', tmpDir);
@@ -101,9 +101,9 @@ describe('init commands', () => {
   // ── phase_req_ids extraction (fix for #684) ──────────────────────────────
 
   test('init plan-phase extracts phase_req_ids from ROADMAP', () => {
-    fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '03-api'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '03-api'), { recursive: true });
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       `# Roadmap\n\n### Phase 3: API\n**Goal:** Build API\n**Requirements**: CP-01, CP-02, CP-03\n**Plans:** 0 plans\n`
     );
 
@@ -115,9 +115,9 @@ describe('init commands', () => {
   });
 
   test('init plan-phase strips brackets from phase_req_ids', () => {
-    fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '03-api'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '03-api'), { recursive: true });
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       `# Roadmap\n\n### Phase 3: API\n**Goal:** Build API\n**Requirements**: [CP-01, CP-02]\n**Plans:** 0 plans\n`
     );
 
@@ -129,9 +129,9 @@ describe('init commands', () => {
   });
 
   test('init plan-phase returns null phase_req_ids when Requirements line is absent', () => {
-    fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '03-api'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '03-api'), { recursive: true });
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       `# Roadmap\n\n### Phase 3: API\n**Goal:** Build API\n**Plans:** 0 plans\n`
     );
 
@@ -143,7 +143,7 @@ describe('init commands', () => {
   });
 
   test('init plan-phase returns null phase_req_ids when ROADMAP is absent', () => {
-    fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '03-api'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '03-api'), { recursive: true });
 
     const result = runGsdTools('init plan-phase 3', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
@@ -153,11 +153,11 @@ describe('init commands', () => {
   });
 
   test('init execute-phase extracts phase_req_ids from ROADMAP', () => {
-    const phaseDir = path.join(tmpDir, '.planning', 'phases', '03-api');
+    const phaseDir = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '03-api');
     fs.mkdirSync(phaseDir, { recursive: true });
     fs.writeFileSync(path.join(phaseDir, '03-01-PLAN.md'), '# Plan');
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       `# Roadmap\n\n### Phase 3: API\n**Goal:** Build API\n**Requirements**: EX-01, EX-02\n**Plans:** 1 plans\n`
     );
 
@@ -169,9 +169,9 @@ describe('init commands', () => {
   });
 
   test('init plan-phase returns null phase_req_ids when value is TBD', () => {
-    fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '03-api'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '03-api'), { recursive: true });
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       `# Roadmap\n\n### Phase 3: API\n**Goal:** Build API\n**Requirements**: TBD\n**Plans:** 0 plans\n`
     );
 
@@ -183,11 +183,11 @@ describe('init commands', () => {
   });
 
   test('init execute-phase returns null phase_req_ids when Requirements line is absent', () => {
-    const phaseDir = path.join(tmpDir, '.planning', 'phases', '03-api');
+    const phaseDir = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '03-api');
     fs.mkdirSync(phaseDir, { recursive: true });
     fs.writeFileSync(path.join(phaseDir, '03-01-PLAN.md'), '# Plan');
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       `# Roadmap\n\n### Phase 3: API\n**Goal:** Build API\n**Plans:** 1 plans\n`
     );
 
@@ -209,9 +209,9 @@ describe('--milestone flag parsing (PATH-03)', () => {
   beforeEach(() => {
     tmpDir = createTempProject();
     // Create minimal planning files needed for init plan-phase to succeed
-    fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '01-test'), { recursive: true });
-    fs.writeFileSync(path.join(tmpDir, '.planning', 'ROADMAP.md'), '# Roadmap\n## Phases\n### Phase 1: Test\n');
-    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), '# State\n');
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '01-test'), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'), '# Roadmap\n## Phases\n### Phase 1: Test\n');
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'STATE.md'), '# State\n');
   });
 
   afterEach(() => {
@@ -221,19 +221,19 @@ describe('--milestone flag parsing (PATH-03)', () => {
   test('--milestone flag parsed in space form', () => {
     fs.writeFileSync(path.join(tmpDir, '.planning', 'config.json'), JSON.stringify({ concurrent: true }));
 
-    const result = runGsdTools('--milestone v2.0 init plan-phase 1 --raw', tmpDir);
+    const result = runGsdTools('--milestone v1.0 init plan-phase 1 --raw', tmpDir);
     assert.ok(result.success, `Command should succeed: ${result.error || ''}`);
     const parsed = JSON.parse(result.output);
-    assert.strictEqual(parsed.milestone_scope, 'v2.0');
+    assert.strictEqual(parsed.milestone_scope, 'v1.0');
   });
 
   test('--milestone=value equals form parsed', () => {
     fs.writeFileSync(path.join(tmpDir, '.planning', 'config.json'), JSON.stringify({ concurrent: true }));
 
-    const result = runGsdTools('--milestone=v2.0 init plan-phase 1 --raw', tmpDir);
+    const result = runGsdTools('--milestone=v1.0 init plan-phase 1 --raw', tmpDir);
     assert.ok(result.success, `Command should succeed: ${result.error || ''}`);
     const parsed = JSON.parse(result.output);
-    assert.strictEqual(parsed.milestone_scope, 'v2.0');
+    assert.strictEqual(parsed.milestone_scope, 'v1.0');
   });
 
   test('--milestone without value produces error', () => {
@@ -246,40 +246,38 @@ describe('--milestone flag parsing (PATH-03)', () => {
     );
   });
 
-  test('no --milestone flag results in null milestone_scope', () => {
+  test('no --milestone flag auto-detects milestone_scope from layout', () => {
     fs.writeFileSync(path.join(tmpDir, '.planning', 'config.json'), '{}');
 
     const result = runGsdTools('init plan-phase 1 --raw', tmpDir);
     assert.ok(result.success, `Command should succeed: ${result.error || ''}`);
     const parsed = JSON.parse(result.output);
-    assert.strictEqual(parsed.milestone_scope, null);
+    // createTempProject creates milestone-scoped layout (v1.0), so auto-detection returns v1.0
+    assert.strictEqual(parsed.milestone_scope, 'v1.0');
   });
 
   test('planning_root uses milestone-scoped path when --milestone provided', () => {
     fs.writeFileSync(path.join(tmpDir, '.planning', 'config.json'), JSON.stringify({ concurrent: true }));
 
-    const result = runGsdTools('--milestone v2.0 init plan-phase 1 --raw', tmpDir);
+    const result = runGsdTools('--milestone v1.0 init plan-phase 1 --raw', tmpDir);
     assert.ok(result.success, `Command should succeed: ${result.error || ''}`);
     const parsed = JSON.parse(result.output);
     assert.ok(
-      parsed.planning_root.endsWith(path.join('.planning', 'milestones', 'v2.0')),
+      parsed.planning_root.endsWith(path.join('.planning', 'milestones', 'v1.0')),
       `planning_root should end with milestone path: ${parsed.planning_root}`
     );
   });
 
-  test('planning_root uses legacy path when no --milestone provided', () => {
+  test('planning_root uses milestone-scoped path when no --milestone provided (auto-detected)', () => {
     fs.writeFileSync(path.join(tmpDir, '.planning', 'config.json'), '{}');
 
     const result = runGsdTools('init plan-phase 1 --raw', tmpDir);
     assert.ok(result.success, `Command should succeed: ${result.error || ''}`);
     const parsed = JSON.parse(result.output);
+    // createTempProject creates milestone-scoped layout, so auto-detection returns milestones/v1.0
     assert.ok(
-      parsed.planning_root.endsWith('.planning'),
-      `planning_root should end with .planning: ${parsed.planning_root}`
-    );
-    assert.ok(
-      !parsed.planning_root.includes('milestones'),
-      `planning_root should not contain milestones: ${parsed.planning_root}`
+      parsed.planning_root.includes('milestones/v1.0'),
+      `planning_root should contain milestones/v1.0: ${parsed.planning_root}`
     );
   });
 
@@ -465,8 +463,8 @@ describe('cmdInitMilestoneOp', () => {
   });
 
   test('multiple phases with no summaries', () => {
-    const phase1 = path.join(tmpDir, '.planning', 'phases', '01-setup');
-    const phase2 = path.join(tmpDir, '.planning', 'phases', '02-api');
+    const phase1 = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '01-setup');
+    const phase2 = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '02-api');
     fs.mkdirSync(phase1, { recursive: true });
     fs.mkdirSync(phase2, { recursive: true });
     fs.writeFileSync(path.join(phase1, '01-01-PLAN.md'), '# Plan');
@@ -482,8 +480,8 @@ describe('cmdInitMilestoneOp', () => {
   });
 
   test('mix of complete and incomplete phases', () => {
-    const phase1 = path.join(tmpDir, '.planning', 'phases', '01-setup');
-    const phase2 = path.join(tmpDir, '.planning', 'phases', '02-api');
+    const phase1 = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '01-setup');
+    const phase2 = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '02-api');
     fs.mkdirSync(phase1, { recursive: true });
     fs.mkdirSync(phase2, { recursive: true });
     fs.writeFileSync(path.join(phase1, '01-01-PLAN.md'), '# Plan');
@@ -500,7 +498,7 @@ describe('cmdInitMilestoneOp', () => {
   });
 
   test('all phases complete', () => {
-    const phase1 = path.join(tmpDir, '.planning', 'phases', '01-setup');
+    const phase1 = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '01-setup');
     fs.mkdirSync(phase1, { recursive: true });
     fs.writeFileSync(path.join(phase1, '01-01-PLAN.md'), '# Plan');
     fs.writeFileSync(path.join(phase1, '01-01-SUMMARY.md'), '# Summary');
@@ -552,12 +550,12 @@ describe('cmdInitPhaseOp fallback', () => {
   });
 
   test('normal path with existing directory', () => {
-    const phaseDir = path.join(tmpDir, '.planning', 'phases', '03-api');
+    const phaseDir = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '03-api');
     fs.mkdirSync(phaseDir, { recursive: true });
     fs.writeFileSync(path.join(phaseDir, '03-CONTEXT.md'), '# Context');
     fs.writeFileSync(path.join(phaseDir, '03-01-PLAN.md'), '# Plan');
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       '# Roadmap\n\n### Phase 3: API\n**Goal:** Build API\n**Plans:** 1 plans\n'
     );
 
@@ -573,7 +571,7 @@ describe('cmdInitPhaseOp fallback', () => {
 
   test('fallback to ROADMAP when no directory exists', () => {
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       '# Roadmap\n\n### Phase 5: Widget Builder\n**Goal:** Build widgets\n**Plans:** TBD\n'
     );
 
@@ -591,7 +589,7 @@ describe('cmdInitPhaseOp fallback', () => {
 
   test('neither directory nor roadmap entry returns not found', () => {
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       '# Roadmap\n\n### Phase 1: Setup\n**Goal:** Setup project\n**Plans:** TBD\n'
     );
 
@@ -633,18 +631,18 @@ describe('cmdInitProgress', () => {
 
   test('multiple phases with mixed statuses', () => {
     // Phase 01: complete (has plan + summary)
-    const phase1 = path.join(tmpDir, '.planning', 'phases', '01-setup');
+    const phase1 = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '01-setup');
     fs.mkdirSync(phase1, { recursive: true });
     fs.writeFileSync(path.join(phase1, '01-01-PLAN.md'), '# Plan');
     fs.writeFileSync(path.join(phase1, '01-01-SUMMARY.md'), '# Summary');
 
     // Phase 02: in_progress (has plan, no summary)
-    const phase2 = path.join(tmpDir, '.planning', 'phases', '02-api');
+    const phase2 = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '02-api');
     fs.mkdirSync(phase2, { recursive: true });
     fs.writeFileSync(path.join(phase2, '02-01-PLAN.md'), '# Plan');
 
     // Phase 03: pending (no plan, no research)
-    const phase3 = path.join(tmpDir, '.planning', 'phases', '03-ui');
+    const phase3 = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '03-ui');
     fs.mkdirSync(phase3, { recursive: true });
     fs.writeFileSync(path.join(phase3, '03-CONTEXT.md'), '# Context');
 
@@ -671,7 +669,7 @@ describe('cmdInitProgress', () => {
   });
 
   test('researched status detected correctly', () => {
-    const phase1 = path.join(tmpDir, '.planning', 'phases', '01-setup');
+    const phase1 = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '01-setup');
     fs.mkdirSync(phase1, { recursive: true });
     fs.writeFileSync(path.join(phase1, '01-RESEARCH.md'), '# Research');
 
@@ -686,7 +684,7 @@ describe('cmdInitProgress', () => {
   });
 
   test('all phases complete returns no current or next', () => {
-    const phase1 = path.join(tmpDir, '.planning', 'phases', '01-setup');
+    const phase1 = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '01-setup');
     fs.mkdirSync(phase1, { recursive: true });
     fs.writeFileSync(path.join(phase1, '01-01-PLAN.md'), '# Plan');
     fs.writeFileSync(path.join(phase1, '01-01-SUMMARY.md'), '# Summary');
@@ -702,7 +700,7 @@ describe('cmdInitProgress', () => {
 
   test('paused_at detected from STATE.md', () => {
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'STATE.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'STATE.md'),
       '# Project State\n\n**Paused At:** Phase 2, Task 3 — implementing auth\n'
     );
 
@@ -716,7 +714,7 @@ describe('cmdInitProgress', () => {
 
   test('no paused_at when STATE.md has no pause line', () => {
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'STATE.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'STATE.md'),
       '# Project State\n\nSome content without pause.\n'
     );
 
@@ -928,12 +926,14 @@ describe('cmdInitNewMilestone', () => {
     assert.ok('roadmapper_model' in output, 'Should have roadmapper_model');
     assert.ok('commit_docs' in output, 'Should have commit_docs');
     assert.strictEqual(output.project_path, '.planning/PROJECT.md');
+    // new-milestone uses project-root paths (not milestone-scoped) — it reads from the root level
     assert.strictEqual(output.roadmap_path, '.planning/ROADMAP.md');
     assert.strictEqual(output.state_path, '.planning/STATE.md');
   });
 
   test('file existence flags reflect actual state', () => {
-    // Default: no STATE.md, ROADMAP.md, or PROJECT.md
+    // new-milestone checks root-level files (.planning/STATE.md, .planning/ROADMAP.md)
+    // createTempProject creates milestone-scoped layout, NOT root-level files
     const result1 = runGsdTools('init new-milestone', tmpDir);
     assert.ok(result1.success, `Command failed: ${result1.error}`);
 
@@ -942,7 +942,7 @@ describe('cmdInitNewMilestone', () => {
     assert.strictEqual(output1.roadmap_exists, false);
     assert.strictEqual(output1.project_exists, false);
 
-    // Create files and verify flags change
+    // Create root-level files (what new-milestone checks for)
     fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), '# State');
     fs.writeFileSync(path.join(tmpDir, '.planning', 'ROADMAP.md'), '# Roadmap');
     fs.writeFileSync(path.join(tmpDir, '.planning', 'PROJECT.md'), '# Project');

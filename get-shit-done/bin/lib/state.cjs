@@ -4,7 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { escapeRegex, loadConfig, getMilestoneInfo, getMilestonePhaseFilter, output, error } = require('./core.cjs');
+const { escapeRegex, loadConfig, getMilestoneInfo, getMilestonePhaseFilter, planningRoot, resolveActiveMilestone, output, error } = require('./core.cjs');
 const { extractFrontmatter, reconstructFrontmatter } = require('./frontmatter.cjs');
 
 // Shared helper: extract a field value from STATE.md content.
@@ -584,9 +584,11 @@ function buildStateFrontmatter(bodyContent, cwd) {
 
   if (cwd) {
     try {
-      const phasesDir = path.join(cwd, '.planning', 'phases');
+      const milestoneScope = resolveActiveMilestone(cwd);
+      const root = planningRoot(cwd, milestoneScope);
+      const phasesDir = path.join(root, 'phases');
       if (fs.existsSync(phasesDir)) {
-        const isDirInMilestone = getMilestonePhaseFilter(cwd);
+        const isDirInMilestone = getMilestonePhaseFilter(cwd, milestoneScope);
         const phaseDirs = fs.readdirSync(phasesDir, { withFileTypes: true })
           .filter(e => e.isDirectory()).map(e => e.name)
           .filter(isDirInMilestone);

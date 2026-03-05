@@ -1265,9 +1265,9 @@ describe('milestone-scoped phase counting in frontmatter', () => {
   });
 
   test('total_phases counts only current milestone phases', () => {
-    // ROADMAP lists only phases 5-6 (current milestone)
+    // ROADMAP lists only phases 5-6 (current milestone) — write to milestone-scoped path
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       [
         '## Roadmap v2.0: Next Release',
         '',
@@ -1279,17 +1279,18 @@ describe('milestone-scoped phase counting in frontmatter', () => {
       ].join('\n')
     );
 
-    // Disk has dirs 01-06 (01-04 are leftover from previous milestone)
+    // Disk has dirs 01-06 (01-04 are leftover from previous milestone) — write to milestone-scoped phases
     for (let i = 1; i <= 6; i++) {
       const padded = String(i).padStart(2, '0');
-      const phaseDir = path.join(tmpDir, '.planning', 'phases', `${padded}-phase-${i}`);
+      const phaseDir = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', `${padded}-phase-${i}`);
       fs.mkdirSync(phaseDir, { recursive: true });
       // Add a plan to each
       fs.writeFileSync(path.join(phaseDir, `${padded}-01-PLAN.md`), '# Plan');
       fs.writeFileSync(path.join(phaseDir, `${padded}-01-SUMMARY.md`), '# Summary');
     }
 
-    // Write a STATE.md and trigger a write that will sync frontmatter
+    // Write a STATE.md to root (state commands use root .planning/STATE.md)
+    fs.mkdirSync(path.join(tmpDir, '.planning'), { recursive: true });
     fs.writeFileSync(
       path.join(tmpDir, '.planning', 'STATE.md'),
       '# Project State\n\n**Current Phase:** 05\n**Status:** In progress\n'
@@ -1309,8 +1310,9 @@ describe('milestone-scoped phase counting in frontmatter', () => {
 
   test('total_phases includes ROADMAP phases without directories', () => {
     // ROADMAP lists 6 phases (5-10), but only 4 have directories on disk
+    // Write to milestone-scoped ROADMAP (auto-detected as v1.0 by createTempProject)
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       [
         '## Roadmap v3.0',
         '',
@@ -1323,15 +1325,17 @@ describe('milestone-scoped phase counting in frontmatter', () => {
       ].join('\n')
     );
 
-    // Only phases 5-8 have directories (9 and 10 not yet planned)
+    // Only phases 5-8 have directories (9 and 10 not yet planned) — write to milestone-scoped phases
     for (let i = 5; i <= 8; i++) {
       const padded = String(i).padStart(2, '0');
-      const phaseDir = path.join(tmpDir, '.planning', 'phases', `${padded}-phase-${i}`);
+      const phaseDir = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', `${padded}-phase-${i}`);
       fs.mkdirSync(phaseDir, { recursive: true });
       fs.writeFileSync(path.join(phaseDir, `${padded}-01-PLAN.md`), '# Plan');
       fs.writeFileSync(path.join(phaseDir, `${padded}-01-SUMMARY.md`), '# Summary');
     }
 
+    // Write STATE.md to root (state commands use root .planning/STATE.md)
+    fs.mkdirSync(path.join(tmpDir, '.planning'), { recursive: true });
     fs.writeFileSync(
       path.join(tmpDir, '.planning', 'STATE.md'),
       '# Project State\n\n**Current Phase:** 08\n**Status:** In progress\n'
@@ -1349,14 +1353,20 @@ describe('milestone-scoped phase counting in frontmatter', () => {
   });
 
   test('without ROADMAP counts all phases (pass-all filter)', () => {
-    // No ROADMAP.md — all phases should be counted
+    // No ROADMAP.md — delete the one created by createTempProject so pass-all filter activates
+    const roadmapPath = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md');
+    if (fs.existsSync(roadmapPath)) fs.unlinkSync(roadmapPath);
+
+    // Write phases to milestone-scoped phases dir
     for (let i = 1; i <= 4; i++) {
       const padded = String(i).padStart(2, '0');
-      const phaseDir = path.join(tmpDir, '.planning', 'phases', `${padded}-phase-${i}`);
+      const phaseDir = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', `${padded}-phase-${i}`);
       fs.mkdirSync(phaseDir, { recursive: true });
       fs.writeFileSync(path.join(phaseDir, `${padded}-01-PLAN.md`), '# Plan');
     }
 
+    // Write STATE.md to root (state commands use root .planning/STATE.md)
+    fs.mkdirSync(path.join(tmpDir, '.planning'), { recursive: true });
     fs.writeFileSync(
       path.join(tmpDir, '.planning', 'STATE.md'),
       '# Project State\n\n**Current Phase:** 01\n**Status:** Planning\n'

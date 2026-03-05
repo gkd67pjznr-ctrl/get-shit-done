@@ -42,19 +42,20 @@ describe('milestone complete command', () => {
 
   test('archives roadmap, requirements, creates MILESTONES.md', () => {
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       `# Roadmap v1.0 MVP\n\n### Phase 1: Foundation\n**Goal:** Setup\n`
     );
+    // milestone complete with auto-detected v1.0 uses milestone-scoped REQUIREMENTS.md
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'REQUIREMENTS.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'REQUIREMENTS.md'),
       `# Requirements\n\n- [ ] User auth\n- [ ] Dashboard\n`
     );
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'STATE.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'STATE.md'),
       `# State\n\n**Status:** In progress\n**Last Activity:** 2025-01-01\n**Last Activity Description:** Working\n`
     );
 
-    const p1 = path.join(tmpDir, '.planning', 'phases', '01-foundation');
+    const p1 = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '01-foundation');
     fs.mkdirSync(p1, { recursive: true });
     fs.writeFileSync(
       path.join(p1, '01-01-SUMMARY.md'),
@@ -96,11 +97,11 @@ describe('milestone complete command', () => {
       `# Milestones\n\n## v0.9 Alpha (Shipped: 2025-01-01)\n\n---\n\n`
     );
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       `# Roadmap v1.0\n`
     );
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'STATE.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'STATE.md'),
       `# State\n\n**Status:** In progress\n**Last Activity:** 2025-01-01\n**Last Activity Description:** Working\n`
     );
 
@@ -122,11 +123,11 @@ describe('milestone complete command', () => {
       `# Milestones\n\n## v1.0 First (Shipped: 2025-01-01)\n\n---\n\n`
     );
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       `# Roadmap v1.1\n`
     );
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'STATE.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'STATE.md'),
       `# State\n\n**Status:** In progress\n**Last Activity:** 2025-01-01\n**Last Activity Description:** Working\n`
     );
 
@@ -134,7 +135,7 @@ describe('milestone complete command', () => {
     assert.ok(result.success, `v1.1 failed: ${result.error}`);
 
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       `# Roadmap v1.2\n`
     );
 
@@ -158,15 +159,15 @@ describe('milestone complete command', () => {
 
   test('archives phase directories with --archive-phases flag', () => {
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       `# Roadmap v1.0\n`
     );
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'STATE.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'STATE.md'),
       `# State\n\n**Status:** In progress\n**Last Activity:** 2025-01-01\n**Last Activity Description:** Working\n`
     );
 
-    const p1 = path.join(tmpDir, '.planning', 'phases', '01-foundation');
+    const p1 = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '01-foundation');
     fs.mkdirSync(p1, { recursive: true });
     fs.writeFileSync(
       path.join(p1, '01-01-SUMMARY.md'),
@@ -193,16 +194,17 @@ describe('milestone complete command', () => {
   });
 
   test('archived REQUIREMENTS.md contains archive header', () => {
+    // milestone complete with auto-detected v1.0 uses milestone-scoped REQUIREMENTS.md
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'REQUIREMENTS.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'REQUIREMENTS.md'),
       `# Requirements\n\n- [ ] **TEST-01**: core.cjs has tests\n- [ ] **TEST-02**: more tests\n`
     );
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       `# Roadmap v1.0\n`
     );
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'STATE.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'STATE.md'),
       `# State\n\n**Status:** In progress\n**Last Activity:** 2025-01-01\n**Last Activity Description:** Working\n`
     );
 
@@ -222,11 +224,11 @@ describe('milestone complete command', () => {
 
   test('STATE.md gets updated during milestone complete', () => {
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       `# Roadmap v1.0\n`
     );
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'STATE.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'STATE.md'),
       `# State\n\n**Status:** In progress\n**Last Activity:** 2025-01-01\n**Last Activity Description:** Working\n`
     );
 
@@ -236,7 +238,7 @@ describe('milestone complete command', () => {
     const output = JSON.parse(result.output);
     assert.strictEqual(output.state_updated, true, 'state_updated should be true');
 
-    const state = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
+    const state = fs.readFileSync(path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'STATE.md'), 'utf-8');
     assert.ok(state.includes('v1.0 milestone complete'), 'status should be updated to milestone complete');
     assert.ok(
       state.includes('v1.0 milestone completed and archived'),
@@ -246,8 +248,12 @@ describe('milestone complete command', () => {
 
   test('handles missing ROADMAP.md gracefully', () => {
     // Only STATE.md — no ROADMAP.md, no REQUIREMENTS.md
+    // Remove the ROADMAP.md created by createTempProject()
+    const roadmapPath = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md');
+    if (fs.existsSync(roadmapPath)) fs.unlinkSync(roadmapPath);
+
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'STATE.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'STATE.md'),
       `# State\n\n**Status:** In progress\n**Last Activity:** 2025-01-01\n**Last Activity Description:** Working\n`
     );
 
@@ -268,30 +274,30 @@ describe('milestone complete command', () => {
   test('scopes stats to current milestone phases only', () => {
     // Set up ROADMAP.md that only references Phase 3 and Phase 4
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       `# Roadmap v1.1\n\n### Phase 3: New Feature\n**Goal:** Build it\n\n### Phase 4: Polish\n**Goal:** Ship it\n`
     );
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'STATE.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'STATE.md'),
       `# State\n\n**Status:** In progress\n**Last Activity:** 2025-01-01\n**Last Activity Description:** Working\n`
     );
 
     // Create phases from PREVIOUS milestone (should be excluded)
-    const p1 = path.join(tmpDir, '.planning', 'phases', '01-old-setup');
+    const p1 = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '01-old-setup');
     fs.mkdirSync(p1, { recursive: true });
     fs.writeFileSync(path.join(p1, '01-01-PLAN.md'), '# Plan\n');
     fs.writeFileSync(path.join(p1, '01-01-SUMMARY.md'), '---\none-liner: Old setup work\n---\n# Summary\n');
-    const p2 = path.join(tmpDir, '.planning', 'phases', '02-old-core');
+    const p2 = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '02-old-core');
     fs.mkdirSync(p2, { recursive: true });
     fs.writeFileSync(path.join(p2, '02-01-PLAN.md'), '# Plan\n');
     fs.writeFileSync(path.join(p2, '02-01-SUMMARY.md'), '---\none-liner: Old core work\n---\n# Summary\n');
 
     // Create phases for CURRENT milestone (should be included)
-    const p3 = path.join(tmpDir, '.planning', 'phases', '03-new-feature');
+    const p3 = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '03-new-feature');
     fs.mkdirSync(p3, { recursive: true });
     fs.writeFileSync(path.join(p3, '03-01-PLAN.md'), '# Plan\n');
     fs.writeFileSync(path.join(p3, '03-01-SUMMARY.md'), '---\none-liner: Built new feature\n---\n# Summary\n');
-    const p4 = path.join(tmpDir, '.planning', 'phases', '04-polish');
+    const p4 = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '04-polish');
     fs.mkdirSync(p4, { recursive: true });
     fs.writeFileSync(path.join(p4, '04-01-PLAN.md'), '# Plan\n');
     fs.writeFileSync(path.join(p4, '04-02-PLAN.md'), '# Plan 2\n');
@@ -313,21 +319,21 @@ describe('milestone complete command', () => {
 
   test('archive-phases only archives current milestone phases', () => {
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       `# Roadmap v1.1\n\n### Phase 2: Current Work\n**Goal:** Do it\n`
     );
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'STATE.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'STATE.md'),
       `# State\n\n**Status:** In progress\n**Last Activity:** 2025-01-01\n**Last Activity Description:** Working\n`
     );
 
     // Phase from previous milestone
-    const p1 = path.join(tmpDir, '.planning', 'phases', '01-old');
+    const p1 = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '01-old');
     fs.mkdirSync(p1, { recursive: true });
     fs.writeFileSync(path.join(p1, '01-01-PLAN.md'), '# Plan\n');
 
     // Phase from current milestone
-    const p2 = path.join(tmpDir, '.planning', 'phases', '02-current');
+    const p2 = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '02-current');
     fs.mkdirSync(p2, { recursive: true });
     fs.writeFileSync(path.join(p2, '02-01-PLAN.md'), '# Plan\n');
 
@@ -341,22 +347,22 @@ describe('milestone complete command', () => {
     );
     // Phase 1 should still be in place (not archived)
     assert.ok(
-      fs.existsSync(path.join(tmpDir, '.planning', 'phases', '01-old')),
+      fs.existsSync(path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '01-old')),
       'previous milestone phase should NOT be archived'
     );
   });
 
   test('phase 1 in roadmap does NOT match directory 10-something (no prefix collision)', () => {
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       `# Roadmap v1.0\n\n### Phase 1: Foundation\n**Goal:** Setup\n`
     );
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'STATE.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'STATE.md'),
       `# State\n\n**Status:** In progress\n**Last Activity:** 2025-01-01\n**Last Activity Description:** Working\n`
     );
 
-    const p1 = path.join(tmpDir, '.planning', 'phases', '01-foundation');
+    const p1 = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '01-foundation');
     fs.mkdirSync(p1, { recursive: true });
     fs.writeFileSync(path.join(p1, '01-01-PLAN.md'), '# Plan\n');
     fs.writeFileSync(
@@ -364,7 +370,7 @@ describe('milestone complete command', () => {
       '---\none-liner: Foundation work\n---\n'
     );
 
-    const p10 = path.join(tmpDir, '.planning', 'phases', '10-scaling');
+    const p10 = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '10-scaling');
     fs.mkdirSync(p10, { recursive: true });
     fs.writeFileSync(path.join(p10, '10-01-PLAN.md'), '# Plan\n');
     fs.writeFileSync(
@@ -390,20 +396,20 @@ describe('milestone complete command', () => {
 
   test('non-numeric directory is excluded when milestone scoping is active', () => {
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       `# Roadmap v1.0\n\n### Phase 1: Core\n**Goal:** Build core\n`
     );
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'STATE.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'STATE.md'),
       `# State\n\n**Status:** In progress\n**Last Activity:** 2025-01-01\n**Last Activity Description:** Working\n`
     );
 
-    const p1 = path.join(tmpDir, '.planning', 'phases', '01-core');
+    const p1 = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '01-core');
     fs.mkdirSync(p1, { recursive: true });
     fs.writeFileSync(path.join(p1, '01-01-PLAN.md'), '# Plan\n');
 
     // Non-phase directory — should be excluded
-    const misc = path.join(tmpDir, '.planning', 'phases', 'notes');
+    const misc = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', 'notes');
     fs.mkdirSync(misc, { recursive: true });
     fs.writeFileSync(path.join(misc, 'PLAN.md'), '# Not a phase\n');
 
@@ -417,24 +423,24 @@ describe('milestone complete command', () => {
 
   test('large phase numbers (456, 457) scope correctly', () => {
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       `# Roadmap v1.49\n\n### Phase 456: DACP\n**Goal:** Ship DACP\n\n### Phase 457: Integration\n**Goal:** Integrate\n`
     );
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'STATE.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'STATE.md'),
       `# State\n\n**Status:** In progress\n**Last Activity:** 2025-01-01\n**Last Activity Description:** Working\n`
     );
 
-    const p456 = path.join(tmpDir, '.planning', 'phases', '456-dacp');
+    const p456 = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '456-dacp');
     fs.mkdirSync(p456, { recursive: true });
     fs.writeFileSync(path.join(p456, '456-01-PLAN.md'), '# Plan\n');
 
-    const p457 = path.join(tmpDir, '.planning', 'phases', '457-integration');
+    const p457 = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '457-integration');
     fs.mkdirSync(p457, { recursive: true });
     fs.writeFileSync(path.join(p457, '457-01-PLAN.md'), '# Plan\n');
 
     // Phase 45 from prior milestone — should not match
-    const p45 = path.join(tmpDir, '.planning', 'phases', '45-old');
+    const p45 = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases', '45-old');
     fs.mkdirSync(p45, { recursive: true });
     fs.writeFileSync(path.join(p45, 'PLAN.md'), '# Plan\n');
 
@@ -447,11 +453,11 @@ describe('milestone complete command', () => {
 
   test('handles empty phases directory', () => {
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       `# Roadmap v1.0\n`
     );
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'STATE.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'STATE.md'),
       `# State\n\n**Status:** In progress\n**Last Activity:** 2025-01-01\n**Last Activity Description:** Working\n`
     );
     // phases directory exists but is empty (from createTempProject)
@@ -811,11 +817,11 @@ describe('milestone new-workspace via CLI routing (Plan 02)', () => {
 
     // Create minimal ROADMAP.md and STATE.md required by cmdMilestoneComplete
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       '# Roadmap v3.0\n'
     );
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'STATE.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'STATE.md'),
       '# State\n\n**Status:** In progress\n**Last Activity:** 2026-02-24\n**Last Activity Description:** Working\n'
     );
 
@@ -834,11 +840,11 @@ describe('milestone new-workspace via CLI routing (Plan 02)', () => {
   test('milestone complete without workspace succeeds (old-style compat, conflict_marked_complete is false)', () => {
     // No workspace created — old-style project
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       '# Roadmap v1.0\n'
     );
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'STATE.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'STATE.md'),
       '# State\n\n**Status:** In progress\n**Last Activity:** 2026-02-24\n**Last Activity Description:** Working\n'
     );
 
@@ -889,11 +895,11 @@ describe('milestone workspace finalization (cmdMilestoneComplete)', () => {
   test('updates workspace ROADMAP plan checkboxes before archiving', () => {
     // Root ROADMAP.md (required by cmdMilestoneComplete)
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       '# Roadmap v2.0\n\n### Phase 8: Feature\n**Goal:** Build features\n'
     );
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'STATE.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'STATE.md'),
       '# State\n\n**Status:** In progress\n**Last Activity:** 2026-02-25\n**Last Activity Description:** Working\n'
     );
 
@@ -940,11 +946,11 @@ Plans:
   test('updates workspace ROADMAP phase-level checkboxes before archiving', () => {
     // Root ROADMAP.md
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       '# Roadmap v2.0\n\n### Phase 8: Feature\n**Goal:** Build features\n'
     );
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'STATE.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'STATE.md'),
       '# State\n\n**Status:** In progress\n**Last Activity:** 2026-02-25\n**Last Activity Description:** Working\n'
     );
 
@@ -992,11 +998,11 @@ Plans:
   test('skips finalization gracefully when no workspace exists (legacy mode)', () => {
     // NO workspace directory — legacy project
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'),
       '# Roadmap v2.0\n\n### Phase 8: Feature\n**Goal:** Build features\n'
     );
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'STATE.md'),
+      path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'STATE.md'),
       '# State\n\n**Status:** In progress\n**Last Activity:** 2026-02-25\n**Last Activity Description:** Working\n'
     );
 

@@ -503,10 +503,15 @@ function resolveActiveMilestone(cwd) {
  * to the current milestone based on ROADMAP.md phase headings.
  * If no ROADMAP exists or no phases are listed, returns a pass-all filter.
  */
-function getMilestonePhaseFilter(cwd) {
+function getMilestonePhaseFilter(cwd, milestoneScope) {
   const milestonePhaseNums = new Set();
   try {
-    const roadmap = fs.readFileSync(path.join(cwd, '.planning', 'ROADMAP.md'), 'utf-8');
+    // Use milestone-scoped ROADMAP if milestoneScope provided or auto-detected
+    const ms = milestoneScope || resolveActiveMilestone(cwd);
+    const roadmapPath = ms
+      ? path.join(cwd, '.planning', 'milestones', ms, 'ROADMAP.md')
+      : path.join(cwd, '.planning', 'ROADMAP.md');
+    const roadmap = fs.readFileSync(roadmapPath, 'utf-8');
     const phasePattern = /#{2,4}\s*Phase\s+(\d+[A-Z]?(?:\.\d+)*)\s*:/gi;
     let m;
     while ((m = phasePattern.exec(roadmap)) !== null) {
