@@ -115,6 +115,20 @@ None — all verifiable items checked programmatically.
    - Impact: {limited impact because...}
    - Recommendation: {fix now or defer}
 
+## Tech Debt Logged
+
+{If debt entries were logged during verification:}
+
+| ID | Type | Severity | Component | Description |
+|----|------|----------|-----------|-------------|
+| TD-NNN | code | medium | path/to/file | Verifier: Description of issue |
+
+**Total:** N new entries logged to .planning/DEBT.md
+
+{If no debt was logged:}
+
+No non-critical issues found — no tech debt logged.
+
 ## Recommended Fix Plans
 
 {If gaps found, generate fix plan recommendations:}

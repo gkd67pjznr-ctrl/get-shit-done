@@ -179,6 +179,44 @@ Extract files modified in this phase from SUMMARY.md, scan each:
 Categorize: 🛑 Blocker (prevents goal) | ⚠️ Warning (incomplete) | ℹ️ Info (notable).
 </step>
 
+<step name="log_tech_debt">
+Log non-critical gaps as tech debt so they are tracked for future resolution via `/gsd:fix-debt`.
+
+After completing artifact verification, wiring checks, and anti-pattern scanning, review all findings. For each **non-critical** gap (warnings, not blockers), log it as tech debt:
+
+```bash
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" debt log \
+  --type <code|test|docs|config|arch> \
+  --severity <critical|high|medium|low> \
+  --component "<file path>" \
+  --description "Verifier: <concise description of the issue>" \
+  --logged-by verifier \
+  --source-phase "${PHASE_NUM}" \
+  --source-plan "phase-verification"
+```
+
+**What to log as debt:**
+- Duplicated code across files (type: code, severity: medium)
+- Missing tests for non-critical paths (type: test, severity: medium)
+- Orphaned exports not imported anywhere (type: code, severity: low)
+- TODO/FIXME/HACK comments that don't block functionality (type: code, severity: low)
+- Stubs that work but could be more robust (type: code, severity: medium)
+- Missing documentation for public APIs (type: docs, severity: low)
+
+**Do NOT log as debt (these go in Gaps Summary as blockers instead):**
+- Missing artifacts that block the phase goal
+- Stub implementations that prevent core functionality
+- Broken wiring that makes features non-functional
+- Anti-patterns with severity 🛑 Blocker
+
+After logging all debt entries, get the count for the verification report:
+```bash
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" debt list --status open
+```
+
+Include logged debt entries in the verification report's "Tech Debt Logged" section.
+</step>
+
 <step name="identify_human_verification">
 **Always needs human:** Visual appearance, user flow completion, real-time behavior (WebSocket/SSE), external service integration, performance feel, error message clarity.
 
