@@ -307,9 +307,93 @@ function cmdInitNewProject(cwd, raw) {
   output(result, raw);
 }
 
+/**
+ * Scan all milestone phase directories and root ROADMAP.md/STATE.md to find the
+ * highest integer phase number used across all milestones.
+ *
+ * Phase directory names use normalizePhaseName format:
+ *   - Integers are zero-padded:  "01-setup", "14-final"
+ *   - Decimals are NOT padded:   "3.1-hotfix"
+ *
+ * The integer base is extracted via /^(\d+)(?:\.\d+)*-/ so:
+ *   "01-foo"  -> 1,  "14-bar" -> 14,  "3.1-baz" -> 3
+ *
+ * Additional sources:
+ *   - Root .planning/ROADMAP.md: "Phases X-Y" patterns → use Y
+ *   - Root .planning/STATE.md:   Completed milestones table "| v... | date | X-Y |"
+ *
+ * @param {string} cwd - Project root directory
+ * @returns {number} Highest integer phase found, or 0 if none
+ */
+function getHighestPhaseNumber(cwd) {
+  let highest = 0;
+
+  // ── 1. Scan .planning/milestones/*/phases/ directories ──────────────────
+  const milestonesDir = path.join(cwd, '.planning', 'milestones');
+  try {
+    const versionDirs = fs.readdirSync(milestonesDir, { withFileTypes: true })
+      .filter(e => e.isDirectory())
+      .map(e => e.name);
+
+    for (const versionDir of versionDirs) {
+      const phasesDir = path.join(milestonesDir, versionDir, 'phases');
+      try {
+        const phaseDirs = fs.readdirSync(phasesDir, { withFileTypes: true })
+          .filter(e => e.isDirectory())
+          .map(e => e.name);
+
+        for (const dirName of phaseDirs) {
+          // Extract integer base from phase directory name
+          const match = dirName.match(/^(\d+)(?:\.\d+)*-/);
+          if (match) {
+            const base = parseInt(match[1], 10);
+            if (!isNaN(base) && base > highest) {
+              highest = base;
+            }
+          }
+        }
+      } catch {}
+    }
+  } catch {}
+
+  // ── 2. Parse root .planning/ROADMAP.md for "Phases X-Y" ranges ──────────
+  const rootRoadmap = path.join(cwd, '.planning', 'ROADMAP.md');
+  try {
+    const content = fs.readFileSync(rootRoadmap, 'utf-8');
+    const rangeRegex = /Phases\s+(\d+(?:\.\d+)*)-(\d+(?:\.\d+)*)/g;
+    let m;
+    while ((m = rangeRegex.exec(content)) !== null) {
+      // Use the Y (end) value — strip decimal portion, take integer part
+      const endInt = parseInt(m[2], 10);
+      if (!isNaN(endInt) && endInt > highest) {
+        highest = endInt;
+      }
+    }
+  } catch {}
+
+  // ── 3. Parse root .planning/STATE.md completed milestones table ──────────
+  // Table format: | milestone | date | X-Y | or | milestone | date | X.N-X.M |
+  const rootState = path.join(cwd, '.planning', 'STATE.md');
+  try {
+    const content = fs.readFileSync(rootState, 'utf-8');
+    // Match table rows with phase range like "1-4" or "3.1-3.5"
+    const tableRowRegex = /\|\s*[^|]+\|\s*[^|]+\|\s*(\d+(?:\.\d+)*)-(\d+(?:\.\d+)*)\s*\|/g;
+    let m;
+    while ((m = tableRowRegex.exec(content)) !== null) {
+      const endInt = parseInt(m[2], 10);
+      if (!isNaN(endInt) && endInt > highest) {
+        highest = endInt;
+      }
+    }
+  } catch {}
+
+  return highest;
+}
+
 function cmdInitNewMilestone(cwd, raw) {
   const config = loadConfig(cwd);
   const milestone = getMilestoneInfo(cwd);
+  const highestPhase = getHighestPhaseNumber(cwd);
 
   const result = {
     // Models
@@ -337,6 +421,10 @@ function cmdInitNewMilestone(cwd, raw) {
 
     milestones_dir: '.planning/milestones',
     milestones_dir_exists: pathExistsInternal(cwd, '.planning/milestones'),
+
+    // Phase numbering continuity — computed by scanning all milestone phase dirs + root ROADMAP
+    highest_phase: highestPhase,
+    next_starting_phase: highestPhase + 1,
   };
 
   output(result, raw);
@@ -849,4 +937,5 @@ module.exports = {
   cmdInitMilestoneOp,
   cmdInitMapCodebase,
   cmdInitProgress,
+  getHighestPhaseNumber,
 };

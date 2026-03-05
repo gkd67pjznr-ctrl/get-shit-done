@@ -1463,3 +1463,88 @@ describe('cross-milestone phase lookup in init commands (BUG-INIT-CROSSMS-01)', 
       `phase_number should be 42, got: ${output.phase_number}`);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// getHighestPhaseNumber (PHASE-NUM-01)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('getHighestPhaseNumber (PHASE-NUM-01)', () => {
+  const { getHighestPhaseNumber } = require('../get-shit-done/bin/lib/init.cjs');
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('returns 0 when no milestones exist (empty .planning/milestones/)', () => {
+    // createTempProject creates v1.0 with empty phases dir — no phase dirs
+    const result = getHighestPhaseNumber(tmpDir);
+    assert.strictEqual(result, 0);
+  });
+
+  test('returns 4 when single milestone has phases 01-04', () => {
+    const phasesDir = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases');
+    fs.mkdirSync(path.join(phasesDir, '01-setup'), { recursive: true });
+    fs.mkdirSync(path.join(phasesDir, '02-api'), { recursive: true });
+    fs.mkdirSync(path.join(phasesDir, '03-ui'), { recursive: true });
+    fs.mkdirSync(path.join(phasesDir, '04-deploy'), { recursive: true });
+
+    const result = getHighestPhaseNumber(tmpDir);
+    assert.strictEqual(result, 4);
+  });
+
+  test('returns 14 when multiple milestones exist (v1.0 phases 01-04, v2.0 phases 08-14)', () => {
+    // v1.0 phases 01-04
+    const v1Phases = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases');
+    fs.mkdirSync(path.join(v1Phases, '01-setup'), { recursive: true });
+    fs.mkdirSync(path.join(v1Phases, '04-deploy'), { recursive: true });
+
+    // v2.0 with phases 08-14
+    const v2Phases = path.join(tmpDir, '.planning', 'milestones', 'v2.0', 'phases');
+    fs.mkdirSync(path.join(v2Phases, '08-data'), { recursive: true });
+    fs.mkdirSync(path.join(v2Phases, '14-integration'), { recursive: true });
+
+    const result = getHighestPhaseNumber(tmpDir);
+    assert.strictEqual(result, 14);
+  });
+
+  test('handles decimal phases correctly — "3.1-foo" has integer base 3, "14-bar" has integer 14', () => {
+    const phasesDir = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases');
+    fs.mkdirSync(path.join(phasesDir, '3.1-integration-fixes'), { recursive: true });
+    fs.mkdirSync(path.join(phasesDir, '14-final-wiring'), { recursive: true });
+
+    const result = getHighestPhaseNumber(tmpDir);
+    assert.strictEqual(result, 14);
+  });
+
+  test('parses root ROADMAP.md "Phases X-Y" ranges and uses the Y values', () => {
+    // Write root ROADMAP.md with phase range indicating archived work
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      '# Root Roadmap\n\n## Milestones\n\n- v1.0 MVP — Phases 1-4\n- v2.0 Big Release — Phases 5-14\n'
+    );
+
+    const result = getHighestPhaseNumber(tmpDir);
+    assert.strictEqual(result, 14);
+  });
+
+  test('cmdInitNewMilestone returns next_starting_phase field (highest + 1)', () => {
+    // Create v1.0 phases up to 04
+    const phasesDir = path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'phases');
+    fs.mkdirSync(path.join(phasesDir, '01-setup'), { recursive: true });
+    fs.mkdirSync(path.join(phasesDir, '04-deploy'), { recursive: true });
+
+    const result = runGsdTools('init new-milestone', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.ok('next_starting_phase' in output, 'Should have next_starting_phase');
+    assert.ok('highest_phase' in output, 'Should have highest_phase');
+    assert.strictEqual(output.highest_phase, 4);
+    assert.strictEqual(output.next_starting_phase, 5);
+  });
+});
