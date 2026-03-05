@@ -4,7 +4,7 @@
 
 | Milestone | Status | Workspace |
 |-----------|--------|-----------|
-| v3.1 Tech Debt Cleanup, Legacy Strip & README | Phases 4-5 complete, 7-10 pending | `.planning/milestones/v3.1/` |
+| (none) | — | — |
 
 ## Completed Milestones
 
@@ -14,6 +14,7 @@
 | v1.1 Quality UX | 2026-02-24 | 5-7 |
 | v2.0 Concurrent Milestones | 2026-02-25 | 8-14 |
 | v3.0 Tech Debt System | 2026-02-26 | 3.1-3.5 |
+| v3.1 Legacy Strip & README | 2026-03-05 | 4-11 |
 
 ## Layout
 
@@ -28,10 +29,10 @@ Each milestone has its own workspace under `.planning/milestones/<version>/` con
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-27)
+See: .planning/PROJECT.md (updated 2026-03-05)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Milestone v3.1 — Legacy Strip (Phase 7 next)
+**Current focus:** Planning next milestone
 
 ### Quick Tasks Completed
 
@@ -54,5 +55,5 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 
 ## Session Continuity
 
-Last activity: 2026-03-05 - Completed quick task 15: Integrate tech debt logging into GSD workflows
-Next step: Define requirements for v3.1
+Last activity: 2026-03-05 - Completed milestone v3.1 archival
+Next step: `/gsd:new-milestone` to start next milestone
