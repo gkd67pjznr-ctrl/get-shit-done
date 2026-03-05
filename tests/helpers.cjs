@@ -59,17 +59,24 @@ function runGsdToolsFull(args, cwd = process.cwd(), envOverrides = {}) {
   };
 }
 
-// Create temp directory structure
-function createTempProject() {
+// Create temp directory structure with milestone-scoped layout
+function createTempProject(version = 'v1.0') {
   const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'gsd-test-'));
-  fs.mkdirSync(path.join(tmpDir, '.planning', 'phases'), { recursive: true });
+  // Create milestone-scoped layout (the only supported layout)
+  const workspaceDir = path.join(tmpDir, '.planning', 'milestones', version);
+  fs.mkdirSync(path.join(workspaceDir, 'phases'), { recursive: true });
+  fs.writeFileSync(path.join(workspaceDir, 'STATE.md'), '# State\n', 'utf-8');
+  fs.writeFileSync(path.join(workspaceDir, 'ROADMAP.md'), '# Roadmap\n', 'utf-8');
   return tmpDir;
 }
 
 // Create temp directory with initialized git repo and at least one commit
-function createTempGitProject() {
+function createTempGitProject(version = 'v1.0') {
   const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'gsd-test-'));
-  fs.mkdirSync(path.join(tmpDir, '.planning', 'phases'), { recursive: true });
+  const workspaceDir = path.join(tmpDir, '.planning', 'milestones', version);
+  fs.mkdirSync(path.join(workspaceDir, 'phases'), { recursive: true });
+  fs.writeFileSync(path.join(workspaceDir, 'STATE.md'), '# State\n', 'utf-8');
+  fs.writeFileSync(path.join(workspaceDir, 'ROADMAP.md'), '# Roadmap\n', 'utf-8');
 
   execSync('git init', { cwd: tmpDir, stdio: 'pipe' });
   execSync('git config user.email "test@test.com"', { cwd: tmpDir, stdio: 'pipe' });
@@ -91,7 +98,7 @@ function cleanup(tmpDir) {
 }
 
 // Create a legacy-style project (has config.json but NO concurrent:true)
-// Use for COMPAT-01/02/03 compatibility tests. DO NOT modify createTempProject.
+// Note: now creates milestone-scoped layout (legacy flat layout no longer supported)
 function createLegacyProject() {
   const tmpDir = createTempProject();
   fs.writeFileSync(
@@ -105,16 +112,12 @@ function createLegacyProject() {
 // Create a concurrent/milestone-scoped project (config.json with concurrent:true + workspace)
 // Use for milestone-scoped scenario tests. Also needed by Phase 13 (TEST-01).
 function createConcurrentProject(version = 'v2.0') {
-  const tmpDir = createTempProject();
+  const tmpDir = createTempProject(version);
   fs.writeFileSync(
     path.join(tmpDir, '.planning', 'config.json'),
     JSON.stringify({ concurrent: true }),
     'utf-8'
   );
-  const workspaceDir = path.join(tmpDir, '.planning', 'milestones', version);
-  fs.mkdirSync(path.join(workspaceDir, 'phases'), { recursive: true });
-  fs.writeFileSync(path.join(workspaceDir, 'STATE.md'), '# State\n', 'utf-8');
-  fs.writeFileSync(path.join(workspaceDir, 'ROADMAP.md'), '# Roadmap\n', 'utf-8');
   return tmpDir;
 }
 
