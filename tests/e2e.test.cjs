@@ -9,31 +9,33 @@ const path = require('path');
 const { runGsdToolsFull, createLegacyProject, createConcurrentProject, cleanup } = require('./helpers.cjs');
 
 // ─────────────────────────────────────────────────────────────────────────────
-// E2E: legacy mode plan→execute→verify
+// E2E: default milestone mode plan→execute→verify
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('E2E: legacy mode plan→execute→verify', () => {
+describe('E2E: default milestone mode plan→execute→verify', () => {
   let tmpDir;
 
   before(() => {
     tmpDir = createLegacyProject();
 
-    // Write ROADMAP.md
+    const workspaceDir = path.join(tmpDir, '.planning', 'milestones', 'v1.0');
+
+    // Write ROADMAP.md to milestone workspace
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(workspaceDir, 'ROADMAP.md'),
       '# Roadmap\n\n- [ ] Phase 1: E2E Test Phase\n\n### Phase 1: E2E Test Phase\n**Goal:** E2E test\n**Requirements:** [E2E-01]\n**Plans:** 1 plans\n\n| Phase | Status |\n|-------|--------|\n| 1. E2E Test Phase | Planned |\n',
       'utf-8'
     );
 
-    // Write STATE.md
+    // Write STATE.md to milestone workspace
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'STATE.md'),
+      path.join(workspaceDir, 'STATE.md'),
       '# State\n',
       'utf-8'
     );
 
-    // Create phase directory
-    const phaseDir = path.join(tmpDir, '.planning', 'phases', '01-e2e-test-phase');
+    // Create phase directory in milestone workspace
+    const phaseDir = path.join(workspaceDir, 'phases', '01-e2e-test-phase');
     fs.mkdirSync(phaseDir, { recursive: true });
 
     // Write PLAN.md
@@ -55,25 +57,25 @@ describe('E2E: legacy mode plan→execute→verify', () => {
     cleanup(tmpDir);
   });
 
-  test('init plan-phase returns flat planning_root and null milestone_scope', () => {
+  test('init plan-phase returns milestone planning_root and v1.0 milestone_scope', () => {
     const result = runGsdToolsFull(['init', 'plan-phase', '1', '--raw'], tmpDir);
     assert.ok(result.success, `Command failed: ${result.stderr}`);
     const out = JSON.parse(result.output);
-    assert.ok(out.planning_root.endsWith('/.planning'), `planning_root should end with /.planning, got: ${out.planning_root}`);
-    assert.strictEqual(out.milestone_scope, null);
+    assert.ok(out.planning_root.endsWith('/milestones/v1.0'), `planning_root should end with /milestones/v1.0, got: ${out.planning_root}`);
+    assert.strictEqual(out.milestone_scope, 'v1.0');
   });
 
-  test('init execute-phase returns flat state_path', () => {
+  test('init execute-phase returns milestone state_path', () => {
     const result = runGsdToolsFull(['init', 'execute-phase', '1', '--raw'], tmpDir);
     assert.ok(result.success, `Command failed: ${result.stderr}`);
     const out = JSON.parse(result.output);
-    assert.strictEqual(out.state_path, '.planning/STATE.md');
+    assert.strictEqual(out.state_path, '.planning/milestones/v1.0/STATE.md');
   });
 
-  test('phase complete updates legacy ROADMAP.md', () => {
+  test('phase complete updates milestone ROADMAP.md', () => {
     const result = runGsdToolsFull(['phase', 'complete', '1', '--raw'], tmpDir);
     assert.ok(result.success, `Command failed: ${result.stderr}`);
-    const content = fs.readFileSync(path.join(tmpDir, '.planning', 'ROADMAP.md'), 'utf-8');
+    const content = fs.readFileSync(path.join(tmpDir, '.planning', 'milestones', 'v1.0', 'ROADMAP.md'), 'utf-8');
     assert.ok(content.includes('[x]'), 'ROADMAP.md should contain [x] after phase complete');
   });
 });
