@@ -12,6 +12,7 @@ Tech debt cleanup, legacy layout strip, and documentation for the GSD enhanced f
 - [x] **Phase 8: Strip Core Legacy** - Remove detectLayoutStyle and all dual-layout branching from source
 - [x] **Phase 9: Workflow & Test Cleanup** - Remove layout conditionals from workflows, clean up remaining tests (completed 2026-03-04)
 - [x] **Phase 10: Documentation** - Create README.md summarizing the fork (reflects simplified codebase) (completed 2026-03-04)
+- [ ] **Phase 11: Close Audit Gaps** - Remove findPhaseInternal legacy fallback, fix stale help docs
 
 ## Phase Details
 
@@ -109,9 +110,26 @@ Plans:
 Plans:
 - [x] 10-01-PLAN.md — Update README.md fork header: fix stale stats, remove deleted feature reference (DOC-01)
 
+### Phase 11: Close Audit Gaps
+**Goal**: All audit gaps closed — no legacy fallback in findPhaseInternal, no stale help docs
+**Depends on**: Phase 10
+**Requirements**: STRIP-03
+**Gap Closure**: Closes gaps from v3.1 milestone audit
+**Success Criteria** (what must be TRUE):
+  1. `findPhaseInternal` in `core.cjs` has no `.planning/phases/` fallback search
+  2. `createTempProject()` test helper creates milestone-scoped layout (or is replaced by `createConcurrentProject()`)
+  3. All tests pass after fallback removal
+  4. `help.md` has no Migration section referencing deleted `migrate` commands
+  5. No stale references to `migrate` command in any workflow or documentation file
+**Plans**: 2 plans
+
+Plans:
+- [ ] 11-01-PLAN.md — Update test helpers, fix help.md, migrate 7 smaller test files (STRIP-03)
+- [ ] 11-02-PLAN.md — Migrate 9 remaining test files, remove findPhaseInternal fallback (STRIP-03)
+
 ## Progress
 
-**Execution Order:** 4 → 5 → 7 → 8 → 9 → 10
+**Execution Order:** 4 -> 5 -> 7 -> 8 -> 9 -> 10 -> 11
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -121,3 +139,4 @@ Plans:
 | 8. Strip Core Legacy | 2/2 | Complete | 2026-03-03 |
 | 9. Workflow & Test Cleanup | 2/2 | Complete   | 2026-03-04 |
 | 10. Documentation | 1/1 | Complete   | 2026-03-04 |
+| 11. Close Audit Gaps | 0/2 | Not started | - |
