@@ -82,7 +82,7 @@ INIT=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" init new-milestone)
 if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 ```
 
-Extract from init JSON: `researcher_model`, `synthesizer_model`, `roadmapper_model`, `commit_docs`, `research_enabled`, `current_milestone`, `project_exists`, `roadmap_exists`.
+Extract from init JSON: `researcher_model`, `synthesizer_model`, `roadmapper_model`, `commit_docs`, `research_enabled`, `current_milestone`, `project_exists`, `roadmap_exists`, `next_starting_phase`, `highest_phase`.
 
 ## 7.5. Create Workspace and Check Conflicts
 
@@ -292,7 +292,7 @@ node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs: define milest
 ◆ Spawning roadmapper...
 ```
 
-**Starting phase number:** Read MILESTONES.md for last phase number. Continue from there (v1.0 ended at phase 5 → v1.1 starts at phase 6).
+**Starting phase number:** Use `next_starting_phase` from init JSON (computed automatically by scanning all milestone phase directories and root ROADMAP.md ranges).
 
 ```
 Task(prompt="
@@ -308,7 +308,7 @@ Task(prompt="
 
 <instructions>
 Create roadmap for milestone v[X.Y]:
-1. Start phase numbering from [N]
+1. Start phase numbering from ${next_starting_phase}
 2. Derive phases from THIS MILESTONE's requirements only
 3. Map every requirement to exactly one phase
 4. Derive 2-5 success criteria per phase (observable user behaviors)
@@ -354,9 +354,13 @@ Success criteria:
 **If "Adjust":** Get notes, re-spawn roadmapper with revision context, loop until approved.
 **If "Review":** Display raw ROADMAP.md, re-ask.
 
+**Update root ROADMAP.md** with new milestone entry (before commit):
+- Add `- 🔨 **v[X.Y] [Name]** — Phases [next_starting_phase]-TBD` to the Milestones list
+- This ensures future milestone creation can find the phase range via `getHighestPhaseNumber`
+
 **Commit roadmap** (after approval):
 ```bash
-node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs: create milestone v[X.Y] roadmap ([N] phases)" --files .planning/ROADMAP.md .planning/STATE.md .planning/REQUIREMENTS.md
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs: create milestone v[X.Y] roadmap ([N] phases)" --files .planning/ROADMAP.md .planning/STATE.md .planning/REQUIREMENTS.md .planning/milestones/v[X.Y]/ROADMAP.md .planning/milestones/v[X.Y]/STATE.md
 ```
 
 ## 11. Done

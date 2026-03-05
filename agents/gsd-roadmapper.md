@@ -197,8 +197,8 @@ Track coverage as you go.
 - Execute between integers: 1 → 1.1 → 1.2 → 2
 
 **Starting number:**
-- New milestone: Start at 1
-- Continuing milestone: Check existing phases, start at last + 1
+- New milestone: Use starting_phase_number from orchestrator context (computed automatically from all prior milestones via `getHighestPhaseNumber` — passed as `${next_starting_phase}` in instruction step 1)
+- Continuing milestone (insert phase): Check existing phases in current milestone, start at last + 1
 
 ## Granularity Calibration
 
