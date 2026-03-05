@@ -124,7 +124,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 11-01-PLAN.md — Update test helpers, fix help.md, migrate 7 smaller test files (STRIP-03)
+- [x] 11-01-PLAN.md — Update test helpers, fix help.md, migrate 7 smaller test files (STRIP-03)
 - [ ] 11-02-PLAN.md — Migrate 9 remaining test files, remove findPhaseInternal fallback (STRIP-03)
 
 ## Progress
@@ -139,4 +139,4 @@ Plans:
 | 8. Strip Core Legacy | 2/2 | Complete | 2026-03-03 |
 | 9. Workflow & Test Cleanup | 2/2 | Complete   | 2026-03-04 |
 | 10. Documentation | 1/1 | Complete   | 2026-03-04 |
-| 11. Close Audit Gaps | 0/2 | Not started | - |
+| 11. Close Audit Gaps | 1/2 | In Progress | - |

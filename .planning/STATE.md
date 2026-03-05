@@ -50,7 +50,7 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 | 12 | Fix plan-phase to consistently use milestone-scoped directories (planning_root/phase_dir) | 2026-03-03 | 872199e | Verified | [12-fix-plan-phase-to-consistently-use-miles](./quick/12-fix-plan-phase-to-consistently-use-miles/) |
 | 13 | Feasibility analysis: rebuild GSD with milestone-scoped as the only layout option | 2026-03-03 | 52843ff | Verified | [13-feasibility-analysis-rebuild-gsd-with-mi](./quick/13-feasibility-analysis-rebuild-gsd-with-mi/) |
 | 14 | Create GSD fork documentation (README header + FORK-GUIDE.md) and push to GitHub | 2026-03-04 | d426324 | Verified | [14-create-gsd-fork-documentation-and-git-re](./quick/14-create-gsd-fork-documentation-and-git-re/) |
-| 15 | Integrate tech debt logging into GSD execution workflows | 2026-03-05 | ea39e62 | Complete | [15-investigate-why-tech-debt-feature-isn-t-](./quick/15-investigate-why-tech-debt-feature-isn-t-/) |
+| 15 | Integrate tech debt logging into GSD execution workflows | 2026-03-05 | ea39e62 | Verified | [15-investigate-why-tech-debt-feature-isn-t-](./quick/15-investigate-why-tech-debt-feature-isn-t-/) |
 
 ## Session Continuity
 
