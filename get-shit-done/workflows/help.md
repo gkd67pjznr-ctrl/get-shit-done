@@ -363,27 +363,7 @@ Track and manage technical debt entries.
 - Resolve debt: `gsd-tools debt resolve --id TD-001 --status resolved`
 - Debt tracked in `.planning/DEBT.md` (project-level, not milestone-scoped)
 
-### Migration
-
-**`/gsd:migrate`** *(via gsd-tools CLI)*
-Migrate project structure between GSD versions.
-
-- Dry run: `gsd-tools migrate --dry-run` (inspect what would change)
-- Apply: `gsd-tools migrate --apply` (create missing dirs/files)
-- Full conversion: `gsd-tools migrate --apply --version v2.0` (legacy to milestone-scoped)
-- Cleanup: `gsd-tools migrate --cleanup` (remove stale flat archives)
-
 ### Utility Commands
-
-**`/gsd:cleanup`**
-Archive accumulated phase directories from completed milestones.
-
-- Identifies phases from completed milestones still in `.planning/phases/`
-- Shows dry-run summary before moving anything
-- Moves phase dirs to `.planning/milestones/v{X.Y}-phases/`
-- Use after multiple milestones to reduce `.planning/phases/` clutter
-
-Usage: `/gsd:cleanup`
 
 **`/gsd:help`**
 Show this command reference.
