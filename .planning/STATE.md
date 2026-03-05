@@ -52,8 +52,9 @@ See: .planning/PROJECT.md (updated 2026-03-05)
 | 13 | Feasibility analysis: rebuild GSD with milestone-scoped as the only layout option | 2026-03-03 | 52843ff | Verified | [13-feasibility-analysis-rebuild-gsd-with-mi](./quick/13-feasibility-analysis-rebuild-gsd-with-mi/) |
 | 14 | Create GSD fork documentation (README header + FORK-GUIDE.md) and push to GitHub | 2026-03-04 | d426324 | Verified | [14-create-gsd-fork-documentation-and-git-re](./quick/14-create-gsd-fork-documentation-and-git-re/) |
 | 15 | Integrate tech debt logging into GSD execution workflows | 2026-03-05 | ea39e62 | Verified | [15-investigate-why-tech-debt-feature-isn-t-](./quick/15-investigate-why-tech-debt-feature-isn-t-/) |
+| 16 | Fix milestone phase numbering so new milestones compute correct starting phase | 2026-03-05 | 03eaf7d | Verified | [16-fix-milestone-phase-numbering-new-milest](./quick/16-fix-milestone-phase-numbering-new-milest/) |
 
 ## Session Continuity
 
-Last activity: 2026-03-05 - Completed milestone v3.1 archival
+Last activity: 2026-03-05 - Quick task 16: fix milestone phase numbering
 Next step: `/gsd:new-milestone` to start next milestone
