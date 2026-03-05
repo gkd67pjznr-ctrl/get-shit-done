@@ -220,6 +220,23 @@ Per deviation: **[Rule N - Category] Title** — Found during: Task X | Issue | 
 
 End with: **Total deviations:** N auto-fixed (breakdown). **Impact:** assessment.
 
+**Tech debt logging for out-of-scope discoveries:**
+
+When a task encounters an issue that should be fixed but is out of scope for the current plan (discovered code smell, missing test coverage in adjacent code, hardcoded values, pre-existing warnings), log it as tech debt rather than fixing it inline or ignoring it:
+
+```bash
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" debt log \
+  --type <code|test|docs|config|arch> \
+  --severity <medium|low> \
+  --component "<file path>" \
+  --description "<concise description of what needs fixing>" \
+  --logged-by executor \
+  --source-phase "${PHASE}" \
+  --source-plan "${PLAN}"
+```
+
+This ensures out-of-scope issues are captured for future `/gsd:fix-debt` resolution instead of being lost. Only log issues directly observed during the current task — do not scan for unrelated problems.
+
 </deviation_documentation>
 
 <tdd_plan_execution>
@@ -341,6 +358,14 @@ Include: duration, start/end times, task count, file count.
 Next: more plans → "Ready for {next-plan}" | last → "Phase complete, ready for transition".
 
 **Quality Gates:** If `QUALITY_LEVEL` is not `fast`, include a `## Quality Gates` section populated from gate outcomes collected during execution. See gsd-executor.md `<summary_creation>` for format. If `QUALITY_LEVEL` is `fast`, omit the section entirely.
+
+**Tech Debt Reporting:** If any tech debt was logged during execution (via deviation handling or out-of-scope discoveries), check for entries from this phase/plan and include them in the summary:
+
+```bash
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" debt list --status open
+```
+
+If entries exist from this execution, add a line to the summary: "**Tech Debt Logged:** N entries captured in .planning/DEBT.md (run `/gsd:fix-debt` to review)."
 </step>
 
 <step name="update_current_position">
