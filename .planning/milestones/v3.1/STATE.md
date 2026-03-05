@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v3.1
 milestone_name: milestone
-status: in-progress
-stopped_at: Completed Phase 11 Plan 01 (11-01-PLAN.md) — test helpers migrated to milestone-scoped layout, help.md cleaned, 7 test files migrated
-last_updated: "2026-03-05T03:16:00.000Z"
-last_activity: "2026-03-05 — Completed Phase 11 Plan 01: test helpers now create milestone-scoped layout, help.md stale migrate/cleanup docs removed, 7 test files migrated"
+status: completed
+stopped_at: Completed Phase 11 Plan 02 (11-02-PLAN.md) — migrated 9 test files to milestone-scoped paths, removed findPhaseInternal legacy fallback, STRIP-03 satisfied
+last_updated: "2026-03-05T04:00:00.000Z"
+last_activity: "2026-03-05 — Completed Phase 11 Plan 02: 9 test files migrated, findPhaseInternal legacy fallback removed, 716/717 tests passing, STRIP-03 complete"
 progress:
   total_phases: 11
-  completed_phases: 10
-  total_plans: 1
-  completed_plans: 1
-  percent: 9
+  completed_phases: 11
+  total_plans: 2
+  completed_plans: 2
+  percent: 100
 ---
 
 # Project State — Milestone v3.1
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 ## Current Position
 
 Phase: 11 of 11 (Close Audit Gaps)
-Plan: 1 of 2 complete
-Status: Phase 11 Plan 01 complete — test helpers migrated to milestone-scoped layout; Plan 02 ready (migrate remaining test files, remove findPhaseInternal fallback)
-Last activity: 2026-03-05 — Completed Phase 11 Plan 01: test helpers create milestone-scoped layout, help.md stale docs removed, 7 test files migrated
+Plan: 2 of 2 complete
+Status: MILESTONE COMPLETE — All 11 phases complete, STRIP-03 satisfied, findPhaseInternal fallback removed
+Last activity: 2026-03-05 — Completed Phase 11 Plan 02: 9 test files migrated to milestone-scoped paths, findPhaseInternal legacy fallback removed, 716/717 tests passing
 
-Progress: [█░░░░░░░░░] 9%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -49,7 +49,7 @@ Progress: [█░░░░░░░░░] 9%
 | 08-strip-core-legacy | 2 | 29 min | 14 min |
 | 09-workflow-test-cleanup | 2 | 3 min | 1.5 min |
 | 10-documentation | 1 | 5 min | 5 min |
-| 11-close-audit-gaps | 1 | 7 min | 7 min |
+| 11-close-audit-gaps | 2 | 52 min | 26 min |
 
 **Recent Trend:**
 - Last 5 plans: 08-02, 09-02, 10-01, 11-01
@@ -94,6 +94,10 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - 11-01: createLegacyProject() creates milestone-scoped layout with non-concurrent config — legacy flat layout no longer supported
 - 11-01: E2E 'legacy mode' suite converted to 'default milestone mode' — assertions updated for v1.0 milestone scope
 - 11-01: help.md Migration and /gsd:cleanup sections deleted — both commands absent from CLI router
+- 11-02: routing.test.cjs null-milestone tests use bare fs.mkdtempSync — createTempProject now always creates v1.0 workspace
+- 11-02: buildStateFrontmatter in state.cjs updated to use planningRoot/resolveActiveMilestone for phasesDir
+- 11-02: findPhaseInternal legacy .planning/phases/ fallback removed — only milestone-scoped and milestones/* auto-detect paths remain
+- 11-02: STRIP-03 complete — 716/717 tests passing (1 pre-existing config-get failure)
 
 ### Pending Todos
 
@@ -113,5 +117,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-05
-Stopped at: Completed Phase 11 Plan 01 (11-01-PLAN.md) — test helpers migrated to milestone-scoped layout, help.md cleaned, 7 test files migrated
+Stopped at: Completed Phase 11 Plan 02 (11-02-PLAN.md) — 9 test files migrated, findPhaseInternal legacy fallback removed, STRIP-03 satisfied, milestone v3.1 complete
 Resume file: None
