@@ -1,10 +1,17 @@
 # Project State — Coordinator
 
+## Current Position
+
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-07 — Milestone v4.0 started
+
 ## Active Milestones
 
 | Milestone | Status | Workspace |
 |-----------|--------|-----------|
-| (none) | — | — |
+| v4.0 Adaptive Learning Integration | Defining requirements | `.planning/milestones/v4.0/` |
 
 ## Completed Milestones
 
@@ -32,7 +39,7 @@ Each milestone has its own workspace under `.planning/milestones/<version>/` con
 See: .planning/PROJECT.md (updated 2026-03-05)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Planning next milestone
+**Current focus:** v4.0 Adaptive Learning Integration
 
 ### Quick Tasks Completed
 
@@ -52,9 +59,9 @@ See: .planning/PROJECT.md (updated 2026-03-05)
 | 13 | Feasibility analysis: rebuild GSD with milestone-scoped as the only layout option | 2026-03-03 | 52843ff | Verified | [13-feasibility-analysis-rebuild-gsd-with-mi](./quick/13-feasibility-analysis-rebuild-gsd-with-mi/) |
 | 14 | Create GSD fork documentation (README header + FORK-GUIDE.md) and push to GitHub | 2026-03-04 | d426324 | Verified | [14-create-gsd-fork-documentation-and-git-re](./quick/14-create-gsd-fork-documentation-and-git-re/) |
 | 15 | Integrate tech debt logging into GSD execution workflows | 2026-03-05 | ea39e62 | Verified | [15-investigate-why-tech-debt-feature-isn-t-](./quick/15-investigate-why-tech-debt-feature-isn-t-/) |
-| 16 | Fix milestone phase numbering so new milestones compute correct starting phase | 2026-03-05 | 03eaf7d | Verified | [16-fix-milestone-phase-numbering-new-milest](./quick/16-fix-milestone-phase-numbering-new-milest/) |
+| 16 | Fix milestone phase numbering so new milestones compute correct starting phase | 2026-03-05 | 8613919 | Verified | [16-fix-milestone-phase-numbering-new-milest](./quick/16-fix-milestone-phase-numbering-new-milest/) |
 
 ## Session Continuity
 
-Last activity: 2026-03-05 - Quick task 16: fix milestone phase numbering
-Next step: `/gsd:new-milestone` to start next milestone
+Last activity: 2026-03-07 — Milestone v4.0 Adaptive Learning Integration started
+Next step: Define requirements and create roadmap
