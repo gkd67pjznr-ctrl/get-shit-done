@@ -5,13 +5,14 @@
 Phase: Not started (defining requirements)
 Plan: —
 Status: Defining requirements
-Last activity: 2026-03-07 — Milestone v4.0 started
+Last activity: 2026-03-07 — Milestone v5.0 started (parallel to v4.0)
 
 ## Active Milestones
 
 | Milestone | Status | Workspace |
 |-----------|--------|-----------|
 | v4.0 Adaptive Learning Integration | Defining requirements | `.planning/milestones/v4.0/` |
+| v5.0 Device-Wide Dashboard | Defining requirements | `.planning/milestones/v5.0/` |
 
 ## Completed Milestones
 
