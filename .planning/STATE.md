@@ -60,7 +60,7 @@ See: .planning/PROJECT.md (updated 2026-03-05)
 | 14 | Create GSD fork documentation (README header + FORK-GUIDE.md) and push to GitHub | 2026-03-04 | d426324 | Verified | [14-create-gsd-fork-documentation-and-git-re](./quick/14-create-gsd-fork-documentation-and-git-re/) |
 | 15 | Integrate tech debt logging into GSD execution workflows | 2026-03-05 | ea39e62 | Verified | [15-investigate-why-tech-debt-feature-isn-t-](./quick/15-investigate-why-tech-debt-feature-isn-t-/) |
 | 16 | Fix milestone phase numbering so new milestones compute correct starting phase | 2026-03-05 | 8613919 | Verified | [16-fix-milestone-phase-numbering-new-milest](./quick/16-fix-milestone-phase-numbering-new-milest/) |
-| 17 | Catalogue todo system consolidation fix (unified /add-to-todos + /check-todos with GSD folder system) | 2026-03-07 | — | Verified | [17-catalogue-todo-system-consolidation-fix-](./quick/17-catalogue-todo-system-consolidation-fix-/) |
+| 17 | Catalogue todo system consolidation fix (unified /add-to-todos + /check-todos with GSD folder system) | 2026-03-07 | 32730b5 | Verified | [17-catalogue-todo-system-consolidation-fix-](./quick/17-catalogue-todo-system-consolidation-fix-/) |
 
 ## Session Continuity
 
