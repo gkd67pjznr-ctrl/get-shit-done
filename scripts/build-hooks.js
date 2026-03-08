@@ -13,7 +13,17 @@ const DIST_DIR = path.join(HOOKS_DIR, 'dist');
 const HOOKS_TO_COPY = [
   'gsd-check-update.js',
   'gsd-context-monitor.js',
-  'gsd-statusline.js'
+  'gsd-statusline.js',
+  // Session hooks (HOOK-01)
+  'gsd-restore-work-state.js',
+  'gsd-save-work-state.js',
+  'gsd-inject-snapshot.js',
+  'gsd-snapshot-session.js',
+  // Session state shell hook
+  'session-state.sh',
+  // Validation hooks (HOOK-02, HOOK-03)
+  'validate-commit.sh',
+  'phase-boundary-check.sh',
 ];
 
 function build() {
