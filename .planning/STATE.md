@@ -65,5 +65,6 @@ See: .planning/PROJECT.md (updated 2026-03-05)
 
 ## Session Continuity
 
-Last activity: 2026-03-07 — Catalogued todo system consolidation fix (quick task #17)
-Next step: Continue v4.0 milestone — define requirements and create roadmap
+Last activity: 2026-03-08 — Phase 17 context gathered (v5.0 Project Registry)
+Resume file: `.planning/milestones/v5.0/phases/17-project-registry/17-CONTEXT.md`
+Next step: `/gsd:plan-phase 17` — plan the Project Registry phase
