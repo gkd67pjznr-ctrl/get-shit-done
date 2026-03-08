@@ -42,6 +42,53 @@ function cleanup(tmpDir) {
 }
 
 // ---------------------------------------------------------------------------
+// INST-04 helpers -- mirrors mergeClaudeMd logic from bin/install.js
+// ---------------------------------------------------------------------------
+
+const GSD_CLAUDE_BEGIN = '<!-- GSD:BEGIN -->';
+const GSD_CLAUDE_END = '<!-- GSD:END -->';
+
+function buildGsdBlockForTest() {
+  return `${GSD_CLAUDE_BEGIN}
+# GSD Framework
+## Commit Convention
+- Conventional Commits: \`<type>(<scope>): <subject>\`
+- Include \`Co-Authored-By: Claude <noreply@anthropic.com>\`
+## Key Paths
+- \`.planning/\` -- GSD project management
+- \`.claude/skills/\` -- auto-loading skills
+- \`.claude/hooks/\` -- deterministic hooks
+## Commands
+- Build: \`[project-specific]\`
+- Test: \`[project-specific]\`
+- Lint: \`[project-specific]\`
+${GSD_CLAUDE_END}`;
+}
+
+function mergeClaudeMdSimulated(claudeMdPath) {
+  const gsdContent = buildGsdBlockForTest();
+  if (!fs.existsSync(claudeMdPath)) {
+    fs.writeFileSync(claudeMdPath, gsdContent + '\n');
+    return 'created';
+  }
+  const existing = fs.readFileSync(claudeMdPath, 'utf8');
+  const beginIdx = existing.indexOf(GSD_CLAUDE_BEGIN);
+  const endIdx = existing.indexOf(GSD_CLAUDE_END);
+  if (beginIdx !== -1 && endIdx !== -1 && beginIdx < endIdx) {
+    const currentMarkerContent = existing.substring(beginIdx, endIdx + GSD_CLAUDE_END.length);
+    if (currentMarkerContent !== gsdContent) {
+      fs.copyFileSync(claudeMdPath, claudeMdPath + '.gsd-backup');
+    }
+    const before = existing.substring(0, beginIdx);
+    const after = existing.substring(endIdx + GSD_CLAUDE_END.length);
+    fs.writeFileSync(claudeMdPath, before + gsdContent + after);
+    return 'updated';
+  }
+  fs.writeFileSync(claudeMdPath, gsdContent + '\n\n' + existing);
+  return 'prepended';
+}
+
+// ---------------------------------------------------------------------------
 // getDeletedItems logic -- mirrors bin/install.js implementation for testing
 // ---------------------------------------------------------------------------
 
@@ -164,19 +211,68 @@ describe('INST-03: hooks copied and registered in settings.json', () => {
 
 describe('INST-04: CLAUDE.md marker-based merge', () => {
   test('creates CLAUDE.md with GSD block when file does not exist', () => {
-    assert.ok(true, 'TODO: implement');
+    const { tmpDir } = createInstallerTempDir();
+    const claudeMd = path.join(tmpDir, 'CLAUDE.md');
+    const result = mergeClaudeMdSimulated(claudeMd);
+    assert.strictEqual(result, 'created', 'Should return created');
+    assert.ok(fs.existsSync(claudeMd), 'CLAUDE.md should be created');
+    const content = fs.readFileSync(claudeMd, 'utf8');
+    assert.ok(content.includes(GSD_CLAUDE_BEGIN), 'Should contain GSD:BEGIN marker');
+    assert.ok(content.includes(GSD_CLAUDE_END), 'Should contain GSD:END marker');
+    assert.ok(content.includes('# GSD Framework'), 'Should contain GSD content');
+    cleanup(tmpDir);
   });
+
   test('updates content between markers when CLAUDE.md has markers', () => {
-    assert.ok(true, 'TODO: implement');
+    const { tmpDir } = createInstallerTempDir();
+    const claudeMd = path.join(tmpDir, 'CLAUDE.md');
+    // Create CLAUDE.md with markers and outdated content
+    const oldContent = `${GSD_CLAUDE_BEGIN}\n# Old GSD Content\n${GSD_CLAUDE_END}\n`;
+    fs.writeFileSync(claudeMd, oldContent);
+    const result = mergeClaudeMdSimulated(claudeMd);
+    assert.strictEqual(result, 'updated', 'Should return updated');
+    const content = fs.readFileSync(claudeMd, 'utf8');
+    assert.ok(!content.includes('# Old GSD Content'), 'Old content should be replaced');
+    assert.ok(content.includes('# GSD Framework'), 'New content should be present');
+    cleanup(tmpDir);
   });
+
   test('prepends GSD block when CLAUDE.md exists without markers', () => {
-    assert.ok(true, 'TODO: implement');
+    const { tmpDir } = createInstallerTempDir();
+    const claudeMd = path.join(tmpDir, 'CLAUDE.md');
+    const userContent = '# My Project\n\nThis is my CLAUDE.md.\n';
+    fs.writeFileSync(claudeMd, userContent);
+    const result = mergeClaudeMdSimulated(claudeMd);
+    assert.strictEqual(result, 'prepended', 'Should return prepended');
+    const content = fs.readFileSync(claudeMd, 'utf8');
+    assert.ok(content.startsWith(GSD_CLAUDE_BEGIN), 'GSD block should be at top');
+    assert.ok(content.includes('# My Project'), 'User content should be preserved');
+    cleanup(tmpDir);
   });
-  test('preserves user content outside markers', () => {
-    assert.ok(true, 'TODO: implement');
+
+  test('preserves user content outside markers on update', () => {
+    const { tmpDir } = createInstallerTempDir();
+    const claudeMd = path.join(tmpDir, 'CLAUDE.md');
+    const userContentAfter = '\n## My Custom Section\n\nUser content after GSD block.\n';
+    const initialContent = `${GSD_CLAUDE_BEGIN}\n# Old GSD\n${GSD_CLAUDE_END}${userContentAfter}`;
+    fs.writeFileSync(claudeMd, initialContent);
+    mergeClaudeMdSimulated(claudeMd);
+    const content = fs.readFileSync(claudeMd, 'utf8');
+    assert.ok(content.includes('## My Custom Section'), 'User content after markers should be preserved');
+    assert.ok(content.includes('# GSD Framework'), 'GSD content should be updated');
+    cleanup(tmpDir);
   });
+
   test('backs up file when user modified content inside markers', () => {
-    assert.ok(true, 'TODO: implement');
+    const { tmpDir } = createInstallerTempDir();
+    const claudeMd = path.join(tmpDir, 'CLAUDE.md');
+    // Write content with markers but different from what the template would generate
+    const modifiedContent = `${GSD_CLAUDE_BEGIN}\n# MODIFIED by user\n${GSD_CLAUDE_END}\n`;
+    fs.writeFileSync(claudeMd, modifiedContent);
+    mergeClaudeMdSimulated(claudeMd);
+    // Backup should exist because content differs from template
+    assert.ok(fs.existsSync(claudeMd + '.gsd-backup'), 'Backup file should be created when markers are modified');
+    cleanup(tmpDir);
   });
 });
 

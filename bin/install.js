@@ -16,6 +16,10 @@ const reset = '\x1b[0m';
 // Codex config.toml constants
 const GSD_CODEX_MARKER = '# GSD Agent Configuration \u2014 managed by get-shit-done installer';
 
+// CLAUDE.md marker constants
+const GSD_CLAUDE_BEGIN = '<!-- GSD:BEGIN -->';
+const GSD_CLAUDE_END = '<!-- GSD:END -->';
+
 const CODEX_AGENT_SANDBOX = {
   'gsd-executor': 'workspace-write',
   'gsd-planner': 'workspace-write',
@@ -702,6 +706,74 @@ function mergeCodexConfig(configPath, gsdBlock) {
   }
 
   fs.writeFileSync(configPath, content);
+}
+
+/**
+ * Build the GSD block content for CLAUDE.md insertion.
+ * @param {string} runtime - 'claude', 'opencode', 'gemini', or 'codex'
+ * @returns {string} Complete GSD block with begin/end markers
+ */
+function buildClaudeMdContent(runtime) {
+  const attribution = getCommitAttribution(runtime);
+  const coAuthoredLine = attribution
+    ? `- Include \`Co-Authored-By: ${attribution}\``
+    : `- Include \`Co-Authored-By: Claude <noreply@anthropic.com>\``;
+
+  return `${GSD_CLAUDE_BEGIN}
+# GSD Framework
+## Commit Convention
+- Conventional Commits: \`<type>(<scope>): <subject>\`
+${coAuthoredLine}
+## Key Paths
+- \`.planning/\` -- GSD project management
+- \`.claude/skills/\` -- auto-loading skills
+- \`.claude/hooks/\` -- deterministic hooks
+## Commands
+- Build: \`[project-specific]\`
+- Test: \`[project-specific]\`
+- Lint: \`[project-specific]\`
+${GSD_CLAUDE_END}`;
+}
+
+/**
+ * Create or update CLAUDE.md using GSD HTML comment markers.
+ * Three cases: new file, existing with markers, existing without markers.
+ * If user modified content inside markers, backs up the file before overwriting.
+ * @param {string} claudeMdPath - Absolute path to CLAUDE.md in project root
+ * @param {string} runtime - Runtime identifier for commit attribution
+ * @returns {'created'|'updated'|'prepended'} What action was taken
+ */
+function mergeClaudeMd(claudeMdPath, runtime) {
+  const gsdContent = buildClaudeMdContent(runtime);
+
+  // Case 1: No CLAUDE.md -- create fresh
+  if (!fs.existsSync(claudeMdPath)) {
+    fs.writeFileSync(claudeMdPath, gsdContent + '\n');
+    return 'created';
+  }
+
+  const existing = fs.readFileSync(claudeMdPath, 'utf8');
+  const beginIdx = existing.indexOf(GSD_CLAUDE_BEGIN);
+  const endIdx = existing.indexOf(GSD_CLAUDE_END);
+
+  // Case 2: Has both markers -- replace content between them
+  if (beginIdx !== -1 && endIdx !== -1 && beginIdx < endIdx) {
+    const currentMarkerContent = existing.substring(beginIdx, endIdx + GSD_CLAUDE_END.length);
+    // If user modified content inside markers, back up the file
+    if (currentMarkerContent !== gsdContent) {
+      const backupPath = claudeMdPath + '.gsd-backup';
+      fs.copyFileSync(claudeMdPath, backupPath);
+      console.log(`  ${yellow}\u26a0${reset} CLAUDE.md markers modified by user -- backed up to CLAUDE.md.gsd-backup`);
+    }
+    const before = existing.substring(0, beginIdx);
+    const after = existing.substring(endIdx + GSD_CLAUDE_END.length);
+    fs.writeFileSync(claudeMdPath, before + gsdContent + after);
+    return 'updated';
+  }
+
+  // Case 3: No markers (or malformed) -- prepend GSD block at top
+  fs.writeFileSync(claudeMdPath, gsdContent + '\n\n' + existing);
+  return 'prepended';
 }
 
 /**
@@ -2187,6 +2259,15 @@ function install(isGlobal, runtime = 'claude') {
         console.log(`  ${dim}Skipped ${skippedTeams.length} user-removed items: ${skippedTeams.join(', ')}${reset}`);
       }
     }
+  }
+
+  // Merge CLAUDE.md with GSD block (local Claude installs only -- INST-04)
+  // CLAUDE.md is a project file; global installs have no project root to write to
+  if (runtime === 'claude' && !isGlobal) {
+    const claudeMdPath = path.join(process.cwd(), 'CLAUDE.md');
+    const mergeResult = mergeClaudeMd(claudeMdPath, runtime);
+    const resultLabel = mergeResult === 'created' ? 'Created' : mergeResult === 'updated' ? 'Updated' : 'Prepended to';
+    console.log(`  ${green}\u2713${reset} ${resultLabel} CLAUDE.md with GSD framework reference`);
   }
 
   if (failures.length > 0) {
