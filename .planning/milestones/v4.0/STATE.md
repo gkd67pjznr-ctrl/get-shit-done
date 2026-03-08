@@ -80,6 +80,12 @@ Recent decisions affecting current work:
 - [13-01]: writeManifest() extended for Claude skills/ with !isCodex guard; Codex codexSkillsDir block unchanged
 - [13-01]: skills copy wrapped in runtime === 'claude' guard; teams copy follows same pattern with JSON-only filter
 - [13-01]: Test scaffold (25 tests): INST-01/02/05 have real functional tests; others are clean stubs
+- [13-02]: hooks/dist/ is gitignored (npm build artifact) -- source hooks go in hooks/ (git-tracked)
+- [13-02]: GSD_HOOK_REGISTRY constant (9 hooks) replaces individual hasGsdUpdateHook/hasContextMonitorHook checks
+- [13-02]: buildShellHookCommand() added alongside buildHookCommand() for bash hook path construction
+- [13-02]: cleanupOrphanedHooks() extended to remove stale /hooks/gsd-* entries not in current registry
+- [13-02]: scripts/build-hooks.js updated to copy all 10 hooks (was 3) to hooks/dist/
+- [13-02]: INST-03, HOOK-01, HOOK-02, HOOK-03, HOOK-04 all green with real assertions (25 tests total)
 - [13-03]: mergeClaudeMd uses three-case merge: create/update-with-backup/prepend
 - [13-03]: guarded with runtime === 'claude' && !isGlobal in install(); global installs skipped
 - [13-03]: backup written to CLAUDE.md.gsd-backup when user has modified content inside markers
