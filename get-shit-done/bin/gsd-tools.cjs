@@ -63,6 +63,11 @@
  *     --id <TD-NNN>
  *     --status <open|in-progress|resolved|deferred>
  *
+ * Migration:
+ *   migrate --dry-run [--version <v>]  Preview legacy→milestone conversion
+ *   migrate --apply [--version <v>]    Convert legacy layout to milestone-scoped
+ *   migrate --cleanup [--dry-run]      Remove stale flat-pattern duplicates
+ *
  * Milestone Operations:
  *   milestone complete <version>       Archive milestone, create MILESTONES.md
  *     [--name <name>]
@@ -157,6 +162,7 @@ const commands = require('./lib/commands.cjs');
 const init = require('./lib/init.cjs');
 const frontmatter = require('./lib/frontmatter.cjs');
 const debt = require('./lib/debt.cjs');
+const migrate = require('./lib/migrate.cjs');
 
 // ─── CLI Router ───────────────────────────────────────────────────────────────
 
@@ -521,6 +527,33 @@ async function main() {
         }, raw);
       } else {
         error('Unknown debt subcommand. Available: log, list, resolve');
+      }
+      break;
+    }
+
+    case 'migrate': {
+      // Parse --version flag (same pattern as --milestone)
+      let migrateVersion = null;
+      const versionEqArg = args.find(arg => arg.startsWith('--version='));
+      const versionIdx = args.indexOf('--version');
+      if (versionEqArg) {
+        migrateVersion = versionEqArg.slice('--version='.length).trim();
+        if (!migrateVersion) error('Missing value for --version');
+      } else if (versionIdx !== -1) {
+        const vVal = args[versionIdx + 1];
+        if (!vVal || vVal.startsWith('--')) error('Missing value for --version');
+        migrateVersion = vVal;
+      }
+
+      if (args.includes('--cleanup')) {
+        const cleanupDryRun = args.includes('--dry-run');
+        migrate.cmdMigrateCleanup(cwd, { dryRun: cleanupDryRun }, raw);
+      } else if (args.includes('--dry-run')) {
+        migrate.cmdMigrateDryRun(cwd, { version: migrateVersion }, raw);
+      } else if (args.includes('--apply')) {
+        migrate.cmdMigrateApply(cwd, { version: migrateVersion }, raw);
+      } else {
+        error('Usage: migrate --dry-run [--version <label>] | migrate --apply [--version <label>] | migrate --cleanup [--dry-run]');
       }
       break;
     }
