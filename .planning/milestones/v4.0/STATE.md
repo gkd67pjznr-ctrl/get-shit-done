@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-07)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts -- enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 12 - Foundation
+**Current focus:** Phase 13 - Installer and Content Delivery
 
 ## Current Position
 
-Phase: 12 (1 of 5 in v4.0) - Foundation -- COMPLETE
-Plan: 4 of 4 in current phase
-Status: Plan 12-04 complete -- Phase 12 fully done
-Last activity: 2026-03-07 -- Plan 12-04 executed (INST-06, patterns directory)
+Phase: 13 (2 of 5 in v4.0) - Installer and Content Delivery
+Plan: 1 of ? in current phase
+Status: Plan 13-01 complete -- skills/teams delivery implemented
+Last activity: 2026-03-08 -- Plan 13-01 executed (INST-01, INST-02, INST-05 foundation)
 
 Progress: [##########] 20% (Phase 12 of 5 complete)
 
@@ -76,6 +76,10 @@ Recent decisions affecting current work:
 - [12-04]: .planning/patterns/ is gitignored in gsdup; reference files created locally
 - [12-04]: sessions.jsonl already had 2849 bytes from hooks -- INST-06 size check relaxed to >= 0
 - [12-04]: Phase 12 complete -- all 7 requirements green (CFG-01, CFG-02, SKILL-01, SKILL-02, TEAM-01, TEAM-02, INST-06)
+- [13-01]: getDeletedItems() uses manifest-diff pattern; returns skill dirs and team filenames separately
+- [13-01]: writeManifest() extended for Claude skills/ with !isCodex guard; Codex codexSkillsDir block unchanged
+- [13-01]: skills copy wrapped in runtime === 'claude' guard; teams copy follows same pattern with JSON-only filter
+- [13-01]: Test scaffold (25 tests): INST-01/02/05 have real functional tests; others are clean stubs
 
 ### Pending Todos
 
@@ -87,7 +91,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-07
-Stopped at: Plan 12-04 complete -- Phase 12 fully done, all 7 requirements green
-Resume file: .planning/milestones/v4.0/phases/12-foundation/12-04-SUMMARY.md
-Next: Phase 13 -- Installer and Content Delivery (INST-01 through INST-05, HOOK-01 through HOOK-04)
+Last session: 2026-03-08
+Stopped at: Plan 13-01 complete
+Resume file: .planning/milestones/v4.0/phases/13-installer-and-content-delivery/13-01-SUMMARY.md
+Next: Plan 13-02 -- hooks registration in settings.json (INST-03, HOOK-01 through HOOK-04)

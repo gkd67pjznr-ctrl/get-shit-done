@@ -42,7 +42,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Running the installer creates or updates CLAUDE.md using marker-based merge (`<!-- GSD:BEGIN/END -->`) without destroying user content outside the markers
   4. If a user deletes a skill directory, subsequent installs do not re-add it (manifest tracking)
   5. All session hooks (snapshot, work state, session-state) and validation hooks (commit, phase boundary) are installed and functional
-**Plans**: TBD
+**Plans**:
+  - [x] Plan 13-01: Test scaffold + skills/teams delivery (INST-01, INST-02, INST-05 foundation)
+  - [ ] Plan 13-02: Hooks registration in settings.json (INST-03, HOOK-01, HOOK-02, HOOK-03, HOOK-04)
+  - [ ] Plan 13-03: CLAUDE.md marker-based merge (INST-04)
 
 ### Phase 14: Agent Merge and Dashboard
 **Goal**: Agent files contain skill-awareness natively (no extension markers) and the dashboard builds and runs from the gsdup repo
