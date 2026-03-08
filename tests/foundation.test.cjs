@@ -242,6 +242,94 @@ describe('CFG-02: migrateSkillCreatorConfig', () => {
 
 test.todo('SKILL-01: skill loading pipeline resolves and loads relevant skills within token budget');
 test.todo('SKILL-02: skill token budget enforcement defers overflow skills and logs what was skipped');
-test.todo('TEAM-01: agent team composition requires 5+ co-activations over 7+ days');
-test.todo('TEAM-02: agent team execution follows bounded learning guardrails');
+
+// ── TEAM-01: teams/ directory has exactly 4 JSON files, all valid JSON ────────
+
+describe('TEAM-01: teams/ directory has 4 valid JSON team configs', () => {
+  const EXPECTED_TEAMS = [
+    'code-review.json',
+    'doc-generation.json',
+    'gsd-debug.json',
+    'gsd-research.json',
+  ];
+  const teamsDir = path.join(__dirname, '..', 'teams');
+
+  test('teams/ directory exists and is readable', () => {
+    assert.doesNotThrow(
+      () => fs.readdirSync(teamsDir),
+      'teams/ directory should exist and be readable'
+    );
+  });
+
+  test('all 4 expected team files are present', () => {
+    const files = fs.readdirSync(teamsDir);
+    for (const expected of EXPECTED_TEAMS) {
+      assert.ok(files.includes(expected), `teams/${expected} should exist`);
+    }
+  });
+
+  test('each team file parses as valid JSON', () => {
+    for (const filename of EXPECTED_TEAMS) {
+      const filePath = path.join(teamsDir, filename);
+      assert.doesNotThrow(
+        () => JSON.parse(fs.readFileSync(filePath, 'utf-8')),
+        `teams/${filename} should be valid JSON`
+      );
+    }
+  });
+
+  test('exactly 4 JSON files exist in teams/ (excluding non-JSON files)', () => {
+    const files = fs.readdirSync(teamsDir);
+    const jsonFiles = files.filter(f => f.endsWith('.json'));
+    assert.strictEqual(jsonFiles.length, 4, 'teams/ should contain exactly 4 JSON files');
+  });
+});
+
+// ── TEAM-02: AGENT-ID-VERIFICATION.md documents verified agent ID alignment ───
+
+describe('TEAM-02: agent ID verification report documents alignment with canonical agents', () => {
+  const teamsDir = path.join(__dirname, '..', 'teams');
+  const agentsDir = path.join(__dirname, '..', 'agents');
+
+  test('teams/AGENT-ID-VERIFICATION.md exists and references TEAM-02', () => {
+    const verificationPath = path.join(teamsDir, 'AGENT-ID-VERIFICATION.md');
+    assert.ok(
+      fs.existsSync(verificationPath),
+      'teams/AGENT-ID-VERIFICATION.md should exist'
+    );
+    const content = fs.readFileSync(verificationPath, 'utf-8');
+    assert.ok(
+      content.includes('TEAM-02'),
+      'AGENT-ID-VERIFICATION.md should contain "TEAM-02"'
+    );
+  });
+
+  test('gsd-research.json parses as valid JSON', () => {
+    const researchPath = path.join(teamsDir, 'gsd-research.json');
+    assert.doesNotThrow(
+      () => JSON.parse(fs.readFileSync(researchPath, 'utf-8')),
+      'teams/gsd-research.json should be valid JSON'
+    );
+  });
+
+  test('gsd-research.json has a member with agentId "gsd-research-synthesizer" matching agents/gsd-research-synthesizer.md', () => {
+    const agentFiles = fs.readdirSync(agentsDir).map(f => f.replace(/\.md$/, ''));
+    assert.ok(
+      agentFiles.includes('gsd-research-synthesizer'),
+      'agents/gsd-research-synthesizer.md should exist as canonical agent'
+    );
+
+    const research = JSON.parse(
+      fs.readFileSync(path.join(teamsDir, 'gsd-research.json'), 'utf-8')
+    );
+    const synthesizerMember = research.members.find(
+      m => m.agentId === 'gsd-research-synthesizer'
+    );
+    assert.ok(
+      synthesizerMember !== undefined,
+      'gsd-research.json members should contain a member with agentId "gsd-research-synthesizer"'
+    );
+  });
+});
+
 test.todo('INST-06: install script integrates adaptive_learning config during project initialization');
