@@ -238,10 +238,78 @@ describe('CFG-02: migrateSkillCreatorConfig', () => {
   });
 });
 
-// ── Stubs for future phases ───────────────────────────────────────────────────
+// ── SKILL-01 and SKILL-02: skills/ directory structure ────────────────────────
 
-test.todo('SKILL-01: skill loading pipeline resolves and loads relevant skills within token budget');
-test.todo('SKILL-02: skill token budget enforcement defers overflow skills and logs what was skipped');
+const EXPECTED_SKILLS = [
+  'api-design', 'beautiful-commits', 'code-review', 'context-handoff',
+  'decision-framework', 'env-setup', 'file-operation-patterns', 'gsd-onboard',
+  'gsd-preflight', 'gsd-trace', 'gsd-workflow', 'security-hygiene',
+  'session-awareness', 'skill-integration', 'test-generator', 'typescript-patterns'
+];
+
+describe('SKILL-02: skills/ directory structure', () => {
+  const skillsDir = path.join(__dirname, '..', 'skills');
+
+  test('skills/ directory exists and is readable', () => {
+    const entries = fs.readdirSync(skillsDir);
+    assert.ok(Array.isArray(entries), 'skills/ should be a readable directory');
+  });
+
+  test('skills/ contains only directories (no stray files)', () => {
+    const entries = fs.readdirSync(skillsDir);
+    const strayFiles = entries.filter(e => !fs.statSync(path.join(skillsDir, e)).isDirectory());
+    assert.strictEqual(
+      strayFiles.length,
+      0,
+      `skills/ should contain only directories, found stray files: ${strayFiles.join(', ')}`
+    );
+  });
+});
+
+describe('SKILL-01: all 16 skill directories present with SKILL.md', () => {
+  const skillsDir = path.join(__dirname, '..', 'skills');
+
+  test('all 16 expected skill names exist as directories', () => {
+    for (const name of EXPECTED_SKILLS) {
+      const dirPath = path.join(skillsDir, name);
+      assert.ok(
+        fs.existsSync(dirPath) && fs.statSync(dirPath).isDirectory(),
+        `skills/${name}/ directory should exist`
+      );
+    }
+  });
+
+  test('each skill directory contains a SKILL.md file', () => {
+    for (const name of EXPECTED_SKILLS) {
+      const skillMd = path.join(skillsDir, name, 'SKILL.md');
+      assert.ok(
+        fs.existsSync(skillMd),
+        `skills/${name}/SKILL.md should exist`
+      );
+    }
+  });
+
+  test('gsd-workflow/references/ directory exists with 3 files', () => {
+    const refDir = path.join(skillsDir, 'gsd-workflow', 'references');
+    assert.ok(fs.existsSync(refDir), 'skills/gsd-workflow/references/ should exist');
+    const files = fs.readdirSync(refDir);
+    assert.strictEqual(files.length, 3, 'gsd-workflow/references/ should have 3 files');
+  });
+
+  test('skill-integration/references/ directory exists with 3 files', () => {
+    const refDir = path.join(skillsDir, 'skill-integration', 'references');
+    assert.ok(fs.existsSync(refDir), 'skills/skill-integration/references/ should exist');
+    const files = fs.readdirSync(refDir);
+    assert.strictEqual(files.length, 3, 'skill-integration/references/ should have 3 files');
+  });
+
+  test('total skill directory count is exactly 16', () => {
+    const dirs = fs.readdirSync(skillsDir).filter(
+      d => fs.statSync(path.join(skillsDir, d)).isDirectory()
+    );
+    assert.strictEqual(dirs.length, 16, `Expected exactly 16 skill directories, found ${dirs.length}`);
+  });
+});
 
 // ── TEAM-01: teams/ directory has exactly 4 JSON files, all valid JSON ────────
 
