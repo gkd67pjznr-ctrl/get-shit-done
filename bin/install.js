@@ -248,6 +248,14 @@ function buildHookCommand(configDir, hookName) {
 }
 
 /**
+ * Build a bash hook command path using forward slashes for cross-platform compatibility.
+ */
+function buildShellHookCommand(configDir, hookName) {
+  const hooksPath = configDir.replace(/\\/g, '/') + '/hooks/' + hookName;
+  return `bash "${hooksPath}"`;
+}
+
+/**
  * Read and parse settings.json, returning empty object if it doesn't exist
  */
 function readSettings(settingsPath) {
@@ -1300,6 +1308,30 @@ function cleanupOrphanedHooks(settings) {
     }
   }
 
+  // Also remove hooks that have /hooks/gsd- prefix but are not in current registry
+  const currentGsdFiles = GSD_HOOK_REGISTRY.map(h => h.file);
+  if (settings.hooks) {
+    for (const eventType of Object.keys(settings.hooks)) {
+      const hookEntries = settings.hooks[eventType];
+      if (Array.isArray(hookEntries)) {
+        const filtered = hookEntries.filter(entry => {
+          if (entry.hooks && Array.isArray(entry.hooks)) {
+            const isStaleGsdHook = entry.hooks.some(h =>
+              h.command && h.command.includes('/hooks/gsd-') &&
+              !currentGsdFiles.some(f => h.command.includes(f))
+            );
+            if (isStaleGsdHook) {
+              cleanedHooks = true;
+              return false;
+            }
+          }
+          return true;
+        });
+        settings.hooks[eventType] = filtered;
+      }
+    }
+  }
+
   if (cleanedHooks) {
     console.log(`  ${green}✓${reset} Removed orphaned hook registrations`);
   }
@@ -1793,6 +1825,23 @@ function verifyFileInstalled(filePath, description) {
 
 const PATCHES_DIR_NAME = 'gsd-local-patches';
 const MANIFEST_NAME = 'gsd-file-manifest.json';
+
+// Canonical list of all GSD hook commands (used for duplicate detection and orphan cleanup)
+// Keys are hook file names; values describe their registration
+const GSD_HOOK_REGISTRY = [
+  // Existing hooks (already registered in current installer)
+  { event: 'SessionStart', file: 'gsd-check-update.js', type: 'node' },
+  { event: 'PostToolUse', file: 'gsd-context-monitor.js', type: 'node' },
+  // Session hooks (HOOK-01)
+  { event: 'SessionStart', file: 'gsd-restore-work-state.js', type: 'node' },
+  { event: 'SessionStart', file: 'gsd-inject-snapshot.js', type: 'node' },
+  { event: 'SessionStart', file: 'session-state.sh', type: 'bash' },
+  { event: 'SessionEnd', file: 'gsd-save-work-state.js', type: 'node' },
+  { event: 'SessionEnd', file: 'gsd-snapshot-session.js', type: 'node' },
+  // Validation hooks (HOOK-02, HOOK-03)
+  { event: 'PreToolUse', file: 'validate-commit.sh', type: 'bash', matcher: 'Bash' },
+  { event: 'PostToolUse', file: 'phase-boundary-check.sh', type: 'bash', matcher: 'Write' },
+];
 
 /**
  * Compute SHA256 hash of file contents
@@ -2324,19 +2373,11 @@ function install(isGlobal, runtime = 'claude') {
   }
 
   // Configure statusline and hooks in settings.json
-  // Gemini uses AfterTool instead of PostToolUse for post-tool hooks
-  const postToolEvent = runtime === 'gemini' ? 'AfterTool' : 'PostToolUse';
   const settingsPath = path.join(targetDir, 'settings.json');
   const settings = cleanupOrphanedHooks(readSettings(settingsPath));
   const statuslineCommand = isGlobal
     ? buildHookCommand(targetDir, 'gsd-statusline.js')
     : 'node ' + dirName + '/hooks/gsd-statusline.js';
-  const updateCheckCommand = isGlobal
-    ? buildHookCommand(targetDir, 'gsd-check-update.js')
-    : 'node ' + dirName + '/hooks/gsd-check-update.js';
-  const contextMonitorCommand = isGlobal
-    ? buildHookCommand(targetDir, 'gsd-context-monitor.js')
-    : 'node ' + dirName + '/hooks/gsd-context-monitor.js';
 
   // Enable experimental agents for Gemini CLI (required for custom sub-agents)
   if (isGemini) {
@@ -2349,50 +2390,33 @@ function install(isGlobal, runtime = 'claude') {
     }
   }
 
-  // Configure SessionStart hook for update checking (skip for opencode)
+  // Register all GSD hooks from registry (skip for opencode which uses different mechanism)
   if (!isOpencode) {
-    if (!settings.hooks) {
-      settings.hooks = {};
-    }
-    if (!settings.hooks.SessionStart) {
-      settings.hooks.SessionStart = [];
-    }
+    if (!settings.hooks) settings.hooks = {};
 
-    const hasGsdUpdateHook = settings.hooks.SessionStart.some(entry =>
-      entry.hooks && entry.hooks.some(h => h.command && h.command.includes('gsd-check-update'))
-    );
+    for (const hookDef of GSD_HOOK_REGISTRY) {
+      // Determine the event type (Gemini uses AfterTool for PostToolUse)
+      const eventType = (hookDef.event === 'PostToolUse' && isGemini) ? 'AfterTool' : hookDef.event;
 
-    if (!hasGsdUpdateHook) {
-      settings.hooks.SessionStart.push({
-        hooks: [
-          {
-            type: 'command',
-            command: updateCheckCommand
-          }
-        ]
-      });
-      console.log(`  ${green}✓${reset} Configured update check hook`);
-    }
+      if (!settings.hooks[eventType]) settings.hooks[eventType] = [];
 
-    // Configure post-tool hook for context window monitoring
-    if (!settings.hooks[postToolEvent]) {
-      settings.hooks[postToolEvent] = [];
-    }
+      // Build command string based on hook type
+      const command = hookDef.type === 'bash'
+        ? (isGlobal ? buildShellHookCommand(targetDir, hookDef.file) : `bash ${dirName}/hooks/${hookDef.file}`)
+        : (isGlobal ? buildHookCommand(targetDir, hookDef.file) : `node ${dirName}/hooks/${hookDef.file}`);
 
-    const hasContextMonitorHook = settings.hooks[postToolEvent].some(entry =>
-      entry.hooks && entry.hooks.some(h => h.command && h.command.includes('gsd-context-monitor'))
-    );
+      // Duplicate detection: skip if same command already in event array
+      const alreadyRegistered = settings.hooks[eventType].some(entry =>
+        entry.hooks && entry.hooks.some(h => h.command === command)
+      );
 
-    if (!hasContextMonitorHook) {
-      settings.hooks[postToolEvent].push({
-        hooks: [
-          {
-            type: 'command',
-            command: contextMonitorCommand
-          }
-        ]
-      });
-      console.log(`  ${green}✓${reset} Configured context window monitor hook`);
+      if (!alreadyRegistered) {
+        const hookEntry = hookDef.matcher
+          ? { matcher: hookDef.matcher, hooks: [{ type: 'command', command }] }
+          : { hooks: [{ type: 'command', command }] };
+        settings.hooks[eventType].push(hookEntry);
+        console.log(`  ${green}✓${reset} Registered ${hookDef.file} on ${eventType}`);
+      }
     }
   }
 
