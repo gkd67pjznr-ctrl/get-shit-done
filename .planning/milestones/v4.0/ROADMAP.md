@@ -13,7 +13,7 @@ Merge gsd-skill-creator into GSD core in 5 phases: establish source file structu
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 12: Foundation** - Config merge, skills source directory, teams source directory, patterns directory
-- [ ] **Phase 13: Installer and Content Delivery** - Installer copies skills/teams/hooks, CLAUDE.md merge, manifest tracking
+- [x] **Phase 13: Installer and Content Delivery** - Installer copies skills/teams/hooks, CLAUDE.md merge, manifest tracking (completed 2026-03-08)
 - [ ] **Phase 14: Agent Merge and Dashboard** - Agent inline integration, dashboard copy-and-verify
 - [ ] **Phase 15: Native Observation** - Observation capture baked into all 7 GSD workflow commands
 - [ ] **Phase 16: Commands and Deprecation** - New commands, wrapper removal, standalone package deprecation
@@ -89,7 +89,7 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 12. Foundation | 3/4 | Complete    | 2026-03-08 |
-| 13. Installer and Content Delivery | 2/3 | In Progress|  |
+| 13. Installer and Content Delivery | 2/3 | Complete    | 2026-03-08 |
 | 14. Agent Merge and Dashboard | 0/? | Not started | - |
 | 15. Native Observation | 0/? | Not started | - |
 | 16. Commands and Deprecation | 0/? | Not started | - |
