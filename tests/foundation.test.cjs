@@ -1,0 +1,247 @@
+/**
+ * Foundation tests for Phase 12 — v4.0 adaptive_learning config schema and migration
+ *
+ * CFG-01: .planning/config.json has adaptive_learning key with all 4 sub-keys
+ * CFG-02: migrateSkillCreatorConfig merges skill-creator.json into config.json
+ *
+ * SKILL-01, SKILL-02, TEAM-01, TEAM-02, INST-06: stubs (todo)
+ */
+
+'use strict';
+
+const { test, describe } = require('node:test');
+const assert = require('node:assert');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+
+// ── CFG-01: .planning/config.json has adaptive_learning key ──────────────────
+
+describe('CFG-01: config.json contains adaptive_learning schema', () => {
+  test('adaptive_learning key exists with all 4 required sub-keys', () => {
+    const configPath = path.join(__dirname, '..', '.planning', 'config.json');
+    const raw = fs.readFileSync(configPath, 'utf-8');
+    const config = JSON.parse(raw);
+
+    assert.ok(
+      config.adaptive_learning && typeof config.adaptive_learning === 'object',
+      'adaptive_learning should be an object in .planning/config.json'
+    );
+
+    const al = config.adaptive_learning;
+    assert.ok('integration' in al, 'adaptive_learning.integration should exist');
+    assert.ok('token_budget' in al, 'adaptive_learning.token_budget should exist');
+    assert.ok('observation' in al, 'adaptive_learning.observation should exist');
+    assert.ok('suggestions' in al, 'adaptive_learning.suggestions should exist');
+  });
+
+  test('adaptive_learning.integration has all required fields', () => {
+    const configPath = path.join(__dirname, '..', '.planning', 'config.json');
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    const integration = config.adaptive_learning.integration;
+
+    assert.ok('auto_load_skills' in integration, 'integration.auto_load_skills should exist');
+    assert.ok('observe_sessions' in integration, 'integration.observe_sessions should exist');
+    assert.ok('phase_transition_hooks' in integration, 'integration.phase_transition_hooks should exist');
+    assert.ok('suggest_on_session_start' in integration, 'integration.suggest_on_session_start should exist');
+  });
+
+  test('adaptive_learning.token_budget has max_percent and warn_at_percent', () => {
+    const configPath = path.join(__dirname, '..', '.planning', 'config.json');
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    const tb = config.adaptive_learning.token_budget;
+
+    assert.ok('max_percent' in tb, 'token_budget.max_percent should exist');
+    assert.ok('warn_at_percent' in tb, 'token_budget.warn_at_percent should exist');
+  });
+});
+
+// ── CFG-02: migrateSkillCreatorConfig function ────────────────────────────────
+
+describe('CFG-02: migrateSkillCreatorConfig', () => {
+  const { migrateSkillCreatorConfig } = require('../get-shit-done/bin/lib/migrate.cjs');
+
+  // Minimal skill-creator.json schema matching the canonical source
+  const SC_SCHEMA = {
+    integration: {
+      auto_load_skills: true,
+      observe_sessions: true,
+      phase_transition_hooks: true,
+      suggest_on_session_start: true,
+      install_git_hooks: true,
+      wrapper_commands: true,
+    },
+    token_budget: {
+      max_percent: 5,
+      warn_at_percent: 4,
+    },
+    observation: {
+      retention_days: 90,
+      max_entries: 1000,
+      capture_corrections: true,
+    },
+    suggestions: {
+      min_occurrences: 3,
+      cooldown_days: 7,
+      auto_dismiss_after_days: 30,
+    },
+  };
+
+  test('merges skill-creator.json into config.json and removes standalone file', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-cfg02-'));
+    try {
+      // Write minimal config.json and skill-creator.json
+      fs.writeFileSync(
+        path.join(tmpDir, 'config.json'),
+        JSON.stringify({ mode: 'yolo', commit_docs: true }, null, 2) + '\n',
+        'utf-8'
+      );
+      fs.writeFileSync(
+        path.join(tmpDir, 'skill-creator.json'),
+        JSON.stringify(SC_SCHEMA, null, 2) + '\n',
+        'utf-8'
+      );
+
+      migrateSkillCreatorConfig(tmpDir);
+
+      // 1. config.json now has adaptive_learning
+      const config = JSON.parse(fs.readFileSync(path.join(tmpDir, 'config.json'), 'utf-8'));
+      assert.ok(
+        config.adaptive_learning && typeof config.adaptive_learning === 'object',
+        'config.json should have adaptive_learning after migration'
+      );
+      assert.deepStrictEqual(
+        config.adaptive_learning,
+        SC_SCHEMA,
+        'adaptive_learning should match the skill-creator.json content'
+      );
+
+      // 2. Pre-existing keys preserved
+      assert.strictEqual(config.mode, 'yolo', 'Pre-existing config keys should be preserved');
+      assert.strictEqual(config.commit_docs, true, 'Pre-existing config keys should be preserved');
+
+      // 3. skill-creator.json no longer exists
+      assert.ok(
+        !fs.existsSync(path.join(tmpDir, 'skill-creator.json')),
+        'skill-creator.json should be removed after migration'
+      );
+
+      // 4. skill-creator.json.bak exists
+      assert.ok(
+        fs.existsSync(path.join(tmpDir, 'skill-creator.json.bak')),
+        'skill-creator.json.bak should exist after migration'
+      );
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  test('idempotency: calling migration again after .bak present does not change config', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-cfg02-idemp-'));
+    try {
+      fs.writeFileSync(
+        path.join(tmpDir, 'config.json'),
+        JSON.stringify({ mode: 'yolo' }, null, 2) + '\n',
+        'utf-8'
+      );
+      fs.writeFileSync(
+        path.join(tmpDir, 'skill-creator.json'),
+        JSON.stringify(SC_SCHEMA, null, 2) + '\n',
+        'utf-8'
+      );
+
+      // First call
+      migrateSkillCreatorConfig(tmpDir);
+      const afterFirst = fs.readFileSync(path.join(tmpDir, 'config.json'), 'utf-8');
+
+      // Second call (skill-creator.json is gone, .bak exists, adaptive_learning present)
+      assert.doesNotThrow(
+        () => migrateSkillCreatorConfig(tmpDir),
+        'Second migration call should not throw'
+      );
+      const afterSecond = fs.readFileSync(path.join(tmpDir, 'config.json'), 'utf-8');
+
+      assert.strictEqual(
+        afterFirst,
+        afterSecond,
+        'config.json should not change on second migration call'
+      );
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  test('fresh-project: no skill-creator.json means no changes', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-cfg02-fresh-'));
+    try {
+      const configContent = JSON.stringify({ mode: 'yolo' }, null, 2) + '\n';
+      fs.writeFileSync(path.join(tmpDir, 'config.json'), configContent, 'utf-8');
+
+      // No skill-creator.json in tmpDir
+      assert.doesNotThrow(
+        () => migrateSkillCreatorConfig(tmpDir),
+        'Migration on fresh project should not throw'
+      );
+
+      // config.json unchanged
+      const afterContent = fs.readFileSync(path.join(tmpDir, 'config.json'), 'utf-8');
+      assert.strictEqual(afterContent, configContent, 'config.json should be unchanged for fresh project');
+
+      // No .bak created
+      assert.ok(
+        !fs.existsSync(path.join(tmpDir, 'skill-creator.json.bak')),
+        'No .bak should be created for fresh project'
+      );
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  test('idempotency: adaptive_learning already present in config.json skips migration', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-cfg02-skip-'));
+    try {
+      // config.json already has adaptive_learning
+      const existingConfig = {
+        mode: 'yolo',
+        adaptive_learning: { existing: true },
+      };
+      fs.writeFileSync(
+        path.join(tmpDir, 'config.json'),
+        JSON.stringify(existingConfig, null, 2) + '\n',
+        'utf-8'
+      );
+      // skill-creator.json also present
+      fs.writeFileSync(
+        path.join(tmpDir, 'skill-creator.json'),
+        JSON.stringify(SC_SCHEMA, null, 2) + '\n',
+        'utf-8'
+      );
+
+      migrateSkillCreatorConfig(tmpDir);
+
+      // adaptive_learning should remain as { existing: true } (not overwritten)
+      const config = JSON.parse(fs.readFileSync(path.join(tmpDir, 'config.json'), 'utf-8'));
+      assert.deepStrictEqual(
+        config.adaptive_learning,
+        { existing: true },
+        'adaptive_learning should not be overwritten if already present'
+      );
+
+      // skill-creator.json should still exist (migration skipped)
+      assert.ok(
+        fs.existsSync(path.join(tmpDir, 'skill-creator.json')),
+        'skill-creator.json should still exist when migration is skipped'
+      );
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+});
+
+// ── Stubs for future phases ───────────────────────────────────────────────────
+
+test.todo('SKILL-01: skill loading pipeline resolves and loads relevant skills within token budget');
+test.todo('SKILL-02: skill token budget enforcement defers overflow skills and logs what was skipped');
+test.todo('TEAM-01: agent team composition requires 5+ co-activations over 7+ days');
+test.todo('TEAM-02: agent team execution follows bounded learning guardrails');
+test.todo('INST-06: install script integrates adaptive_learning config during project initialization');
