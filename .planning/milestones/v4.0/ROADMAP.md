@@ -89,7 +89,7 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 12. Foundation | 3/4 | Complete    | 2026-03-08 |
-| 13. Installer and Content Delivery | 0/? | Not started | - |
+| 13. Installer and Content Delivery | 2/3 | In Progress|  |
 | 14. Agent Merge and Dashboard | 0/? | Not started | - |
 | 15. Native Observation | 0/? | Not started | - |
 | 16. Commands and Deprecation | 0/? | Not started | - |

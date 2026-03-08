@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Plan 12-04 complete -- Phase 12 fully done, all 7 requirements green
-last_updated: "2026-03-08T00:41:11.455Z"
-last_activity: 2026-03-07 -- Plan 12-04 executed (INST-06, patterns directory)
+stopped_at: Plan 13-03 complete -- CLAUDE.md marker-based merge (INST-04) implemented
+last_updated: "2026-03-08T06:00:00.000Z"
+last_activity: 2026-03-08 -- Plan 13-03 executed (INST-04, mergeClaudeMd, 5 real tests)
 progress:
   total_phases: 0
   completed_phases: 0
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-07)
 ## Current Position
 
 Phase: 13 (2 of 5 in v4.0) - Installer and Content Delivery
-Plan: 1 of ? in current phase
-Status: Plan 13-01 complete -- skills/teams delivery implemented
-Last activity: 2026-03-08 -- Plan 13-01 executed (INST-01, INST-02, INST-05 foundation)
+Plan: 3 of ? in current phase
+Status: Plan 13-03 complete -- INST-04 (CLAUDE.md merge) implemented
+Last activity: 2026-03-08 -- Plan 13-03 executed (INST-04, mergeClaudeMd, 5 real tests)
 
 Progress: [##########] 20% (Phase 12 of 5 complete)
 
@@ -80,6 +80,9 @@ Recent decisions affecting current work:
 - [13-01]: writeManifest() extended for Claude skills/ with !isCodex guard; Codex codexSkillsDir block unchanged
 - [13-01]: skills copy wrapped in runtime === 'claude' guard; teams copy follows same pattern with JSON-only filter
 - [13-01]: Test scaffold (25 tests): INST-01/02/05 have real functional tests; others are clean stubs
+- [13-03]: mergeClaudeMd uses three-case merge: create/update-with-backup/prepend
+- [13-03]: guarded with runtime === 'claude' && !isGlobal in install(); global installs skipped
+- [13-03]: backup written to CLAUDE.md.gsd-backup when user has modified content inside markers
 
 ### Pending Todos
 
@@ -92,6 +95,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-08
-Stopped at: Plan 13-01 complete
-Resume file: .planning/milestones/v4.0/phases/13-installer-and-content-delivery/13-01-SUMMARY.md
-Next: Plan 13-02 -- hooks registration in settings.json (INST-03, HOOK-01 through HOOK-04)
+Stopped at: Plan 13-03 complete
+Resume file: .planning/milestones/v4.0/phases/13-installer-and-content-delivery/13-03-SUMMARY.md
+Next: Plan 13-04 (or phase wrap-up) -- hooks registration in settings.json (INST-03, HOOK-01 through HOOK-04)
