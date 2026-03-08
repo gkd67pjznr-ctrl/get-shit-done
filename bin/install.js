@@ -44,6 +44,7 @@ const hasCodex = args.includes('--codex');
 const hasBoth = args.includes('--both'); // Legacy flag, keeps working
 const hasAll = args.includes('--all');
 const hasUninstall = args.includes('--uninstall') || args.includes('-u');
+const hasResetSkills = args.includes('--reset-skills');
 
 // Runtime selection - can be set by flags or interactive prompt
 let selectedRuntimes = [];
@@ -1750,6 +1751,48 @@ function generateManifest(dir, baseDir) {
 }
 
 /**
+ * Detect skills and teams intentionally deleted by the user.
+ * Compares previous manifest entries against filesystem.
+ * Returns array like ['skills/gsd-workflow', 'teams/code-review.json']
+ * @param {string} configDir - Target config directory (e.g. ~/.claude)
+ * @param {boolean} resetSkills - If true, returns empty (clears deletion tracking)
+ */
+function getDeletedItems(configDir, resetSkills) {
+  if (resetSkills) return [];
+
+  const manifestPath = path.join(configDir, MANIFEST_NAME);
+  if (!fs.existsSync(manifestPath)) return []; // First install -- nothing deleted
+
+  let manifest;
+  try { manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')); } catch { return []; }
+
+  const deleted = new Set();
+
+  for (const relPath of Object.keys(manifest.files || {})) {
+    if (relPath.startsWith('skills/')) {
+      const skillName = relPath.split('/')[1];
+      if (skillName) {
+        const skillDir = path.join(configDir, 'skills', skillName);
+        if (!fs.existsSync(skillDir)) {
+          deleted.add('skills/' + skillName);
+        }
+      }
+    }
+    if (relPath.startsWith('teams/')) {
+      const teamFile = relPath.split('/')[1];
+      if (teamFile) {
+        const teamPath = path.join(configDir, 'teams', teamFile);
+        if (!fs.existsSync(teamPath)) {
+          deleted.add('teams/' + teamFile);
+        }
+      }
+    }
+  }
+
+  return [...deleted];
+}
+
+/**
  * Write file manifest after installation for future modification detection
  */
 function writeManifest(configDir, runtime = 'claude') {
@@ -1792,6 +1835,31 @@ function writeManifest(configDir, runtime = 'claude') {
     for (const file of fs.readdirSync(agentsDir)) {
       if (file.startsWith('gsd-') && file.endsWith('.md')) {
         manifest.files['agents/' + file] = fileHash(path.join(agentsDir, file));
+      }
+    }
+  }
+
+  // Track Claude skills directory (skills/<name>/...)
+  const claudeSkillsDir = path.join(configDir, 'skills');
+  if (!isCodex && fs.existsSync(claudeSkillsDir)) {
+    for (const skillName of fs.readdirSync(claudeSkillsDir)) {
+      const skillRoot = path.join(claudeSkillsDir, skillName);
+      if (fs.statSync(skillRoot).isDirectory()) {
+        const skillHashes = generateManifest(skillRoot);
+        for (const [rel, hash] of Object.entries(skillHashes)) {
+          manifest.files[`skills/${skillName}/${rel}`] = hash;
+        }
+      }
+    }
+  }
+
+  // Track teams directory (teams/*.json)
+  const teamsDir = path.join(configDir, 'teams');
+  if (!isCodex && fs.existsSync(teamsDir)) {
+    for (const teamFile of fs.readdirSync(teamsDir)) {
+      if (teamFile.endsWith('.json')) {
+        const teamPath = path.join(teamsDir, teamFile);
+        manifest.files['teams/' + teamFile] = fileHash(teamPath);
       }
     }
   }
@@ -2060,6 +2128,63 @@ function install(isGlobal, runtime = 'claude') {
         console.log(`  ${green}✓${reset} Installed hooks (bundled)`);
       } else {
         failures.push('hooks');
+      }
+    }
+  }
+
+  // Copy skills to skills/ directory (Claude Code-only)
+  if (runtime === 'claude') {
+    const skillsSrc = path.join(src, 'skills');
+    if (fs.existsSync(skillsSrc)) {
+      const skillsDest = path.join(targetDir, 'skills');
+      fs.mkdirSync(skillsDest, { recursive: true });
+      const deletedItems = getDeletedItems(targetDir, hasResetSkills);
+      const skippedSkills = [];
+
+      for (const skillName of fs.readdirSync(skillsSrc)) {
+        const skillSrcDir = path.join(skillsSrc, skillName);
+        if (!fs.statSync(skillSrcDir).isDirectory()) continue;
+        if (deletedItems.includes('skills/' + skillName)) {
+          skippedSkills.push(skillName);
+          continue;
+        }
+        const skillDestDir = path.join(skillsDest, skillName);
+        fs.mkdirSync(skillDestDir, { recursive: true });
+        fs.cpSync(skillSrcDir, skillDestDir, { recursive: true });
+      }
+
+      const installedCount = fs.readdirSync(skillsDest).length;
+      console.log(`  ${green}✓${reset} Installed ${installedCount} skills to skills/`);
+      if (skippedSkills.length > 0) {
+        console.log(`  ${dim}Skipped ${skippedSkills.length} user-removed items: ${skippedSkills.join(', ')}${reset}`);
+      }
+    }
+  } else {
+    console.log(`  ${dim}Skills are Claude Code features -- skipped for ${runtimeLabel}.${reset}`);
+  }
+
+  // Copy teams to teams/ directory (Claude Code-only)
+  if (runtime === 'claude') {
+    const teamsSrc = path.join(src, 'teams');
+    if (fs.existsSync(teamsSrc)) {
+      const teamsDest = path.join(targetDir, 'teams');
+      fs.mkdirSync(teamsDest, { recursive: true });
+      const deletedItems = getDeletedItems(targetDir, hasResetSkills);
+      const skippedTeams = [];
+
+      for (const teamFile of fs.readdirSync(teamsSrc)) {
+        if (!teamFile.endsWith('.json')) continue; // Skip non-JSON files (e.g. AGENT-ID-VERIFICATION.md)
+        if (deletedItems.includes('teams/' + teamFile)) {
+          skippedTeams.push(teamFile);
+          continue;
+        }
+        fs.copyFileSync(path.join(teamsSrc, teamFile), path.join(teamsDest, teamFile));
+      }
+
+      const installedTeamCount = fs.readdirSync(teamsDest).filter(f => f.endsWith('.json')).length;
+      console.log(`  ${green}✓${reset} Installed ${installedTeamCount} teams to teams/`);
+      if (skippedTeams.length > 0) {
+        console.log(`  ${dim}Skipped ${skippedTeams.length} user-removed items: ${skippedTeams.join(', ')}${reset}`);
       }
     }
   }
