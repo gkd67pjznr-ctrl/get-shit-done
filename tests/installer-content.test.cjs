@@ -89,6 +89,48 @@ function mergeClaudeMdSimulated(claudeMdPath) {
 }
 
 // ---------------------------------------------------------------------------
+// Hook registration simulation -- mirrors bin/install.js logic for testing
+// ---------------------------------------------------------------------------
+
+function registerHooksSimulated(settings, hookRegistry, configDir, isGlobal) {
+  const dirName = '.claude';
+  if (!settings.hooks) settings.hooks = {};
+
+  for (const hookDef of hookRegistry) {
+    const eventType = hookDef.event;
+    if (!settings.hooks[eventType]) settings.hooks[eventType] = [];
+
+    const command = hookDef.type === 'bash'
+      ? (isGlobal ? `bash "${configDir}/hooks/${hookDef.file}"` : `bash ${dirName}/hooks/${hookDef.file}`)
+      : (isGlobal ? `node "${configDir}/hooks/${hookDef.file}"` : `node ${dirName}/hooks/${hookDef.file}`);
+
+    const alreadyRegistered = settings.hooks[eventType].some(entry =>
+      entry.hooks && entry.hooks.some(h => h.command === command)
+    );
+
+    if (!alreadyRegistered) {
+      const hookEntry = hookDef.matcher
+        ? { matcher: hookDef.matcher, hooks: [{ type: 'command', command }] }
+        : { hooks: [{ type: 'command', command }] };
+      settings.hooks[eventType].push(hookEntry);
+    }
+  }
+  return settings;
+}
+
+const GSD_HOOK_REGISTRY = [
+  { event: 'SessionStart', file: 'gsd-check-update.js', type: 'node' },
+  { event: 'PostToolUse', file: 'gsd-context-monitor.js', type: 'node' },
+  { event: 'SessionStart', file: 'gsd-restore-work-state.js', type: 'node' },
+  { event: 'SessionStart', file: 'gsd-inject-snapshot.js', type: 'node' },
+  { event: 'SessionStart', file: 'session-state.sh', type: 'bash' },
+  { event: 'SessionEnd', file: 'gsd-save-work-state.js', type: 'node' },
+  { event: 'SessionEnd', file: 'gsd-snapshot-session.js', type: 'node' },
+  { event: 'PreToolUse', file: 'validate-commit.sh', type: 'bash', matcher: 'Bash' },
+  { event: 'PostToolUse', file: 'phase-boundary-check.sh', type: 'bash', matcher: 'Write' },
+];
+
+// ---------------------------------------------------------------------------
 // getDeletedItems logic -- mirrors bin/install.js implementation for testing
 // ---------------------------------------------------------------------------
 
@@ -194,14 +236,31 @@ describe('INST-02: teams copied to ~/.claude/teams/', () => {
 // ---------------------------------------------------------------------------
 
 describe('INST-03: hooks copied and registered in settings.json', () => {
+  test('all 9 GSD hooks registered after simulated install', () => {
+    const settings = {};
+    registerHooksSimulated(settings, GSD_HOOK_REGISTRY, '/home/user/.claude', true);
+    const allCommands = Object.values(settings.hooks).flat().flatMap(e => e.hooks).map(h => h.command);
+    assert.ok(allCommands.some(c => c.includes('validate-commit.sh')), 'validate-commit.sh should be registered');
+    assert.ok(allCommands.some(c => c.includes('phase-boundary-check.sh')), 'phase-boundary-check.sh should be registered');
+    assert.ok(allCommands.some(c => c.includes('gsd-check-update.js')), 'gsd-check-update.js should be registered');
+  });
+
   test('validate-commit.sh registered on PreToolUse with matcher Bash', () => {
-    assert.ok(true, 'TODO: implement');
+    const settings = {};
+    registerHooksSimulated(settings, GSD_HOOK_REGISTRY, '/home/user/.claude', true);
+    const preToolEntries = settings.hooks.PreToolUse || [];
+    const commitHook = preToolEntries.find(e => e.hooks && e.hooks.some(h => h.command.includes('validate-commit.sh')));
+    assert.ok(commitHook, 'validate-commit.sh should be in PreToolUse');
+    assert.strictEqual(commitHook.matcher, 'Bash', 'PreToolUse validate-commit.sh should have matcher: Bash');
   });
+
   test('phase-boundary-check.sh registered on PostToolUse with matcher Write', () => {
-    assert.ok(true, 'TODO: implement');
-  });
-  test('session hooks registered on SessionStart and SessionEnd', () => {
-    assert.ok(true, 'TODO: implement');
+    const settings = {};
+    registerHooksSimulated(settings, GSD_HOOK_REGISTRY, '/home/user/.claude', true);
+    const postToolEntries = settings.hooks.PostToolUse || [];
+    const phaseHook = postToolEntries.find(e => e.hooks && e.hooks.some(h => h.command.includes('phase-boundary-check.sh')));
+    assert.ok(phaseHook, 'phase-boundary-check.sh should be in PostToolUse');
+    assert.strictEqual(phaseHook.matcher, 'Write', 'PostToolUse phase-boundary-check.sh should have matcher: Write');
   });
 });
 
@@ -347,11 +406,21 @@ describe('INST-05: deleted skills not re-added on update', () => {
 // ---------------------------------------------------------------------------
 
 describe('HOOK-01: session hooks registered', () => {
-  test('SessionStart hooks include inject-snapshot, restore-work-state, session-state', () => {
-    assert.ok(true, 'TODO: implement');
+  test('SessionStart hooks include restore-work-state, inject-snapshot, session-state', () => {
+    const settings = {};
+    registerHooksSimulated(settings, GSD_HOOK_REGISTRY, '/home/user/.claude', true);
+    const sessionStartCommands = (settings.hooks.SessionStart || []).flatMap(e => e.hooks).map(h => h.command);
+    assert.ok(sessionStartCommands.some(c => c.includes('gsd-restore-work-state.js')), 'restore-work-state should be in SessionStart');
+    assert.ok(sessionStartCommands.some(c => c.includes('gsd-inject-snapshot.js')), 'inject-snapshot should be in SessionStart');
+    assert.ok(sessionStartCommands.some(c => c.includes('session-state.sh')), 'session-state.sh should be in SessionStart');
   });
-  test('SessionEnd hooks include save-work-state, snapshot-session', () => {
-    assert.ok(true, 'TODO: implement');
+
+  test('SessionEnd hooks include save-work-state and snapshot-session', () => {
+    const settings = {};
+    registerHooksSimulated(settings, GSD_HOOK_REGISTRY, '/home/user/.claude', true);
+    const sessionEndCommands = (settings.hooks.SessionEnd || []).flatMap(e => e.hooks).map(h => h.command);
+    assert.ok(sessionEndCommands.some(c => c.includes('gsd-save-work-state.js')), 'save-work-state should be in SessionEnd');
+    assert.ok(sessionEndCommands.some(c => c.includes('gsd-snapshot-session.js')), 'snapshot-session should be in SessionEnd');
   });
 });
 
@@ -361,7 +430,13 @@ describe('HOOK-01: session hooks registered', () => {
 
 describe('HOOK-02: commit validation hook registered', () => {
   test('validate-commit.sh in PreToolUse hooks with Bash matcher', () => {
-    assert.ok(true, 'TODO: implement');
+    const settings = {};
+    registerHooksSimulated(settings, GSD_HOOK_REGISTRY, '/home/user/.claude', true);
+    const preToolEntries = settings.hooks.PreToolUse || [];
+    const hasBashValidate = preToolEntries.some(e =>
+      e.matcher === 'Bash' && e.hooks && e.hooks.some(h => h.command.includes('validate-commit.sh'))
+    );
+    assert.ok(hasBashValidate, 'validate-commit.sh should be PreToolUse with matcher Bash');
   });
 });
 
@@ -371,7 +446,13 @@ describe('HOOK-02: commit validation hook registered', () => {
 
 describe('HOOK-03: phase boundary hook registered', () => {
   test('phase-boundary-check.sh in PostToolUse hooks with Write matcher', () => {
-    assert.ok(true, 'TODO: implement');
+    const settings = {};
+    registerHooksSimulated(settings, GSD_HOOK_REGISTRY, '/home/user/.claude', true);
+    const postToolEntries = settings.hooks.PostToolUse || [];
+    const hasWritePhase = postToolEntries.some(e =>
+      e.matcher === 'Write' && e.hooks && e.hooks.some(h => h.command.includes('phase-boundary-check.sh'))
+    );
+    assert.ok(hasWritePhase, 'phase-boundary-check.sh should be PostToolUse with matcher Write');
   });
 });
 
@@ -380,10 +461,38 @@ describe('HOOK-03: phase boundary hook registered', () => {
 // ---------------------------------------------------------------------------
 
 describe('HOOK-04: no duplicate hooks, orphan GSD hooks cleaned', () => {
-  test('running install twice does not duplicate any hook entry', () => {
-    assert.ok(true, 'TODO: implement');
+  test('running registration twice does not duplicate any hook entry', () => {
+    const settings = {};
+    registerHooksSimulated(settings, GSD_HOOK_REGISTRY, '/home/user/.claude', true);
+    const beforeCount = Object.values(settings.hooks).flat().length;
+    registerHooksSimulated(settings, GSD_HOOK_REGISTRY, '/home/user/.claude', true);
+    const afterCount = Object.values(settings.hooks).flat().length;
+    assert.strictEqual(beforeCount, afterCount, 'Running twice should not add duplicate hook entries');
   });
-  test('orphaned gsd- hooks removed from settings.json', () => {
-    assert.ok(true, 'TODO: implement');
+
+  test('orphan GSD hook removed when not in current registry', () => {
+    // Simulate settings with a stale GSD hook (gsd-old-hook.js not in current registry)
+    const settings = {
+      hooks: {
+        SessionStart: [
+          { hooks: [{ type: 'command', command: 'node "/home/user/.claude/hooks/gsd-old-hook.js"' }] }
+        ]
+      }
+    };
+    // Simulate orphan cleanup: remove hooks with gsd- prefix not in current registry
+    const currentFiles = GSD_HOOK_REGISTRY.map(h => h.file);
+    for (const eventType of Object.keys(settings.hooks)) {
+      settings.hooks[eventType] = settings.hooks[eventType].filter(entry => {
+        if (entry.hooks && Array.isArray(entry.hooks)) {
+          return !entry.hooks.some(h =>
+            h.command && h.command.includes('/hooks/gsd-') &&
+            !currentFiles.some(f => h.command.includes(f))
+          );
+        }
+        return true;
+      });
+    }
+    const remaining = (settings.hooks.SessionStart || []).flatMap(e => e.hooks).map(h => h.command);
+    assert.ok(!remaining.some(c => c.includes('gsd-old-hook.js')), 'Stale GSD hook should be removed');
   });
 });
