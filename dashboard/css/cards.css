@@ -280,3 +280,12 @@
   text-align: right;
   white-space: nowrap;
 }
+
+.card-ms-pane-row {
+  opacity: 0.85;
+  padding-left: 4px;
+}
+
+.card-ms-pane-link {
+  font-size: 12px;
+}

@@ -53,6 +53,31 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
     return (Date.now() - p.lastActivity) < 5 * 60 * 1000; // active within 5m
   });
 
+  // Match cc panes to milestones by extracting trailing number from window name
+  // ccgr13 → 13 → v13.x, ccgsdv5 → 5 → v5.x, ccgrdebt → no match
+  const milestonePane = new Map(); // milestone name → [pane, ...]
+  const matchedPaneNames = new Set();
+  if (tmux.panes && milestonesToShow.length > 0) {
+    for (const pane of tmux.panes) {
+      if (!pane.isClaude) continue;
+      const m = (pane.windowName || '').match(/(\d+)$/);
+      if (!m) continue;
+      const num = m[1];
+      // Find milestone whose version starts with this number (v13.0, v13.1, etc.)
+      const ms = milestonesToShow.find(ms => {
+        const vm = ms.name.match(/^v(\d+)/);
+        return vm && vm[1] === num;
+      });
+      if (ms) {
+        if (!milestonePane.has(ms.name)) milestonePane.set(ms.name, []);
+        milestonePane.get(ms.name).push(pane);
+        matchedPaneNames.add(pane.windowName);
+      }
+    }
+  }
+  // Unmatched panes go in the dropdown
+  const dropdownPanes = (tmux.panes || []).filter(p => !matchedPaneNames.has(p.windowName));
+
   function handleTrackingToggle() {
     const newTracking = isPaused ? true : false;
     fetch(`/api/projects/${encodeURIComponent(project.name)}/tracking`, {
@@ -129,6 +154,7 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
             const state = ms.state || {};
             const pct = parseProgress(state.progress);
             const shimClass = ms.active ? computeShimmerClass(project) : '';
+            const msPanes = milestonePane.get(ms.name) || [];
             return html`
               <div class="card-milestone-row" key=${ms.name}>
                 <span class="card-ms-indicator">${ms.active ? '▸' : '·'}</span>
@@ -137,6 +163,29 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
                 <span class="card-ms-bar"><${ProgressBar} value=${pct} shimmerClass=${shimClass} /></span>
                 <span class="card-ms-pct">${pct !== null ? html`${pct}%` : ''}</span>
               </div>
+              ${msPanes.map(pane => {
+                const now = Date.now();
+                const idleSecs = pane.lastActivity ? (now - pane.lastActivity) / 1000 : null;
+                let status = 'idle';
+                let statusColor = 'var(--signal-error)';
+                if (idleSecs !== null) {
+                  if (idleSecs < 10) { status = 'working'; statusColor = 'var(--signal-success)'; }
+                  else if (idleSecs < 300) { status = 'waiting'; statusColor = 'var(--signal-warning)'; }
+                }
+                const termTarget = pane.sessionName + ':' + (pane.windowName || pane.sessionName);
+                return html`
+                  <div class="card-milestone-row card-ms-pane-row" key=${pane.windowName}>
+                    <span class="card-ms-indicator"></span>
+                    <button class="tmux-session-link card-ms-pane-link" onClick=${(e) => {
+                      e.stopPropagation();
+                      onOpenTerminal(termTarget);
+                    }}>${pane.windowName}</button>
+                    <span style="color:${statusColor};font-size:12px">${status}</span>
+                    <span style="color:var(--text-muted);font-size:12px">${fmtIdleDuration(pane.lastActivity)}</span>
+                    <span></span>
+                  </div>
+                `;
+              })}
             `;
           })}
         </div>
@@ -146,8 +195,8 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
         <div class="stale-warning">⚠ Path not found</div>
       ` : null}
 
-      <!-- Session expand panel -->
-      ${sessionExpanded && sessionCount > 0 ? html`
+      <!-- Session expand panel (unmatched panes only) -->
+      ${sessionExpanded && dropdownPanes.length > 0 ? html`
         <div class="session-metadata" onClick=${(e) => e.stopPropagation()}>
           <table>
             <thead>
@@ -158,7 +207,7 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
               </tr>
             </thead>
             <tbody>
-              ${[...tmux.panes].sort((a, b) => b.isClaude - a.isClaude || (a.windowName || '').localeCompare(b.windowName || '')).map((pane, i) => {
+              ${[...dropdownPanes].sort((a, b) => b.isClaude - a.isClaude || (a.windowName || '').localeCompare(b.windowName || '')).map((pane, i) => {
                 const now = Date.now();
                 const idleSecs = pane.lastActivity ? (now - pane.lastActivity) / 1000 : null;
                 let status = 'idle';
