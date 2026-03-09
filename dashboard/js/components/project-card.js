@@ -8,6 +8,9 @@ import {
   healthLabel, healthClass, computeShimmerClass, fmtIdleDuration
 } from '../utils/format.js';
 
+// Reusable pipe separator — dim, non-selectable
+const Sep = () => html`<span style="color:var(--term-dim);user-select:none"> | </span>`;
+
 export function ProjectCard({ project }) {
   const cardRef = useRef(null);
   const prevFlash = useRef(null);
@@ -33,7 +36,6 @@ export function ProjectCard({ project }) {
 
   const quality = fmtQuality(project.config);
   const debtOpen = project.debt ? project.debt.open : 0;
-  const completedMilestones = countCompletedMilestones(project.milestones);
 
   // Milestones to display: all active ones + most recent completed (cap 6)
   const activeMilestones = project.milestones ? project.milestones.filter(m => m.active) : [];
@@ -41,6 +43,10 @@ export function ProjectCard({ project }) {
   const milestonesToShow = project.milestones && project.milestones.length > 0
     ? activeMilestones.concat(completedMilestones_.slice(-1)).slice(0, 6)
     : [];
+
+  // Primary milestone for inline display
+  const primaryMs = milestonesToShow[0] || null;
+  const extraMilestones = milestonesToShow.slice(1);
 
   const [sessionExpanded, setSessionExpanded] = useState(false);
   const tmux = project.tmux || { available: false, sessions: [], panes: [] };
@@ -66,49 +72,101 @@ export function ProjectCard({ project }) {
     }
   }
 
+  // Primary milestone info
+  let primaryMsName = null, primaryPhase = null, primaryPct = null, primaryShimmerClass = '';
+  if (primaryMs) {
+    const state = primaryMs.state || {};
+    primaryMsName = primaryMs.name;
+    primaryPhase = state.current_phase || null;
+    primaryPct = parseProgress(state.progress);
+    primaryShimmerClass = primaryMs.active ? computeShimmerClass(project) : '';
+  }
+
   return html`
     <div
       ref=${cardRef}
       class="project-card ${isStale ? 'stale' : ''} ${isPaused ? 'paused' : ''} ${project._appear ? 'card-appear' : ''}"
       onClick=${handleClick}
     >
+      <!-- Primary row: name | milestone | phase | progress | health | sessions [toggle] -->
       <div class="card-header">
         <span class="card-project-name">${project.display_name || project.name}</span>
-        ${quality ? html`
-          <span class="quality-badge status-not-started">${quality}</span>
+
+        ${primaryMsName ? html`
+          <${Sep} />
+          <span style="color:var(--term-cyan);font-size:11px;flex-shrink:0">${primaryMsName}</span>
         ` : null}
+
+        ${primaryPhase ? html`
+          <${Sep} />
+          <span style="color:var(--text-secondary);font-size:11px;flex-shrink:0">${primaryPhase}</span>
+        ` : null}
+
+        ${primaryPct !== null ? html`
+          <${Sep} />
+          <${ProgressBar} value=${primaryPct} shimmerClass=${primaryShimmerClass} />
+        ` : null}
+
         ${health && !isPaused ? html`
+          <${Sep} />
           <span class="health-label ${healthClass(health)}">${healthLabel(health)}</span>
         ` : null}
-      </div>
 
-      <div class="card-meta">
-        ${debtOpen > 0 ? html`<span class="card-meta-item"><strong>${debtOpen}</strong> open debt</span>` : null}
-        ${completedMilestones > 0 ? html`<span class="card-meta-item"><strong>${completedMilestones}</strong> done</span>` : null}
-      </div>
+        ${debtOpen > 0 ? html`
+          <${Sep} />
+          <span style="color:var(--signal-warning);font-size:11px;flex-shrink:0">${debtOpen} debt</span>
+        ` : null}
 
-      <div class="card-session-row" style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
         ${!isStale ? html`
-          <div
+          <${Sep} />
+          <span
             class="session-badge ${sessionCount === 0 ? 'no-sessions' : ''}"
             onClick=${(e) => { e.stopPropagation(); if (sessionCount > 0) setSessionExpanded(!sessionExpanded); }}
             title=${sessionCount > 0 ? 'Click to show session details' : ''}
           >
             ${sessionCount === 0
-              ? html`<span>No sessions</span>`
+              ? html`<span>no sessions</span>`
               : html`<span>${sessionCount} session${sessionCount !== 1 ? 's' : ''}</span><span style="color:var(--text-muted)">(${activePanes.length} active)</span>`
             }
-          </div>
+          </span>
         ` : null}
+
         ${!isStale ? html`
+          <span style="color:var(--term-dim);user-select:none"> </span>
           <button
             class="tracking-toggle"
             onClick=${(e) => { e.stopPropagation(); handleTrackingToggle(); }}
             title=${isPaused ? 'Resume tracking' : 'Pause tracking'}
-          >${isPaused ? 'Resume' : 'Pause'}</button>
+          >[${isPaused ? 'resume' : 'pause'}]</button>
+        ` : null}
+
+        ${quality ? html`
+          <${Sep} />
+          <span class="quality-badge">${quality}</span>
         ` : null}
       </div>
 
+      <!-- Additional active milestones beyond the first -->
+      ${extraMilestones.filter(ms => ms.active).map(ms => {
+        const state = ms.state || {};
+        const pct = parseProgress(state.progress);
+        const shimClass = computeShimmerClass(project);
+        return html`
+          <div style="padding-left:var(--space-md);font-family:var(--font-data);font-size:11px;color:var(--term-dim);display:flex;align-items:center;gap:6px" key=${ms.name}>
+            <span>▸</span>
+            <span style="color:var(--term-cyan)">${ms.name}</span>
+            ${state.current_phase ? html`<${Sep} /><span style="color:var(--text-secondary)">${state.current_phase}</span>` : null}
+            <${Sep} />
+            <${ProgressBar} value=${pct} shimmerClass=${shimClass} />
+          </div>
+        `;
+      })}
+
+      ${isStale ? html`
+        <div class="stale-warning">⚠ Path not found</div>
+      ` : null}
+
+      <!-- Session expand panel -->
       ${sessionExpanded && sessionCount > 0 ? html`
         <div class="session-metadata" onClick=${(e) => e.stopPropagation()}>
           <table>
@@ -142,45 +200,6 @@ export function ProjectCard({ project }) {
               })}
             </tbody>
           </table>
-        </div>
-      ` : null}
-
-      ${isStale ? html`
-        <div class="stale-warning">⚠ Path not found</div>
-      ` : null}
-
-      ${milestonesToShow.length > 0 ? html`
-        <div class="milestone-rows">
-          ${milestonesToShow.map(ms => {
-            const state = ms.state || {};
-            const pct = parseProgress(state.progress);
-            const workflowStep = inferWorkflowStep(state.status);
-            const roadmap = ms.roadmap || {};
-            const phases = roadmap.phases || [];
-            const completedPhases = phases.filter(p => p.status === 'complete').length;
-
-            return html`
-              <div class="milestone-row" key=${ms.name}>
-                <div class="milestone-row-header">
-                  <span class="milestone-name">${ms.name}</span>
-                  <span class="milestone-status-badge ${ms.active ? 'status-active' : 'status-complete'}">
-                    ${ms.active ? 'active' : 'done'}
-                  </span>
-                  ${workflowStep ? html`<span class="workflow-badge">${workflowStep}</span>` : null}
-                  <span class="milestone-phase-name">${state.current_phase || '—'}</span>
-                  <span class="milestone-progress-text">${fmtPct(pct)}</span>
-                </div>
-                <div style="display:flex; align-items:center; gap:8px;">
-                  <${ProgressBar} value=${pct} shimmerClass=${ms.active ? computeShimmerClass(project) : ''} />
-                  ${phases.length > 0 ? html`
-                    <span style="font-size:11px; color:var(--text-muted); white-space:nowrap; font-family:var(--font-data)">
-                      ${completedPhases}/${phases.length}
-                    </span>
-                  ` : null}
-                </div>
-              </div>
-            `;
-          })}
         </div>
       ` : null}
     </div>

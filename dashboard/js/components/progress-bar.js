@@ -1,25 +1,17 @@
 import { html } from 'htm/preact';
 import { fmtPct } from '../utils/format.js';
 
-export function ProgressBar({ value, shimmer, shimmerClass }) {
-  // value: 0-100 number or null
+export function ProgressBar({ value, shimmer, shimmerClass, width = 10 }) {
   const pct = value !== null && value !== undefined ? Math.min(100, Math.max(0, value)) : 0;
   const show = value !== null && value !== undefined;
+  const filled = show ? Math.round(pct / 100 * width) : 0;
+  const empty = width - filled;
+  const bar = '[' + '█'.repeat(filled) + '░'.repeat(empty) + ']';
 
   return html`
-    <div class="progress-bar ${shimmerClass || (shimmer ? 'shimmer-active' : '')}" style="
-      background: var(--bg-elevated);
-      border-radius: 3px;
-      height: 4px;
-      overflow: hidden;
-      flex: 1;
-    ">
-      <div class="progress-fill" style="
-        height: 100%;
-        width: ${show ? pct : 0}%;
-        background: var(--accent);
-        border-radius: 3px;
-      "></div>
-    </div>
+    <span
+      class=${shimmerClass || (shimmer ? 'shimmer-active' : '')}
+      style="font-family:var(--font-data);font-size:11px;color:var(--term-green);white-space:nowrap;letter-spacing:0"
+    >${bar} ${show ? fmtPct(pct) : '--'}</span>
   `;
 }
