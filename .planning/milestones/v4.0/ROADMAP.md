@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 12: Foundation** - Config merge, skills source directory, teams source directory, patterns directory
 - [x] **Phase 13: Installer and Content Delivery** - Installer copies skills/teams/hooks, CLAUDE.md merge, manifest tracking (completed 2026-03-08)
 - [x] **Phase 14: Agent Merge and Dashboard** - Agent inline integration, dashboard copy-and-verify (completed 2026-03-08)
-- [ ] **Phase 15: Native Observation** - Observation capture baked into all 7 GSD workflow commands
+- [x] **Phase 15: Native Observation** - Observation capture baked into all 7 GSD workflow commands (completed 2026-03-08)
 - [ ] **Phase 16: Commands and Deprecation** - New commands, wrapper removal, standalone package deprecation
 
 ## Phase Details
@@ -69,7 +69,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Observation entries contain structured fields (timestamp, command, phase, outcome type) -- not freeform text
   3. Observation capture degrades gracefully (missing patterns directory or write failure does not block the workflow command from completing)
   4. No `/wrap:*` wrapper commands are needed -- GSD commands are self-contained with observation built in
-**Plans**: TBD
+**Plans**:
+  - [x] Plan 15-01: Native observation in plan-phase, execute-phase, verify-work, discuss-phase (OBS-01, OBS-02, OBS-03, OBS-04)
+  - [x] Plan 15-02: Native observation in quick, diagnose-issues, fix-debt + final verification (OBS-05, OBS-06, OBS-07, OBS-08)
 
 ### Phase 16: Commands and Deprecation
 **Goal**: New analysis commands are available, all standalone wrapper/sc commands are removed, and gsd-skill-creator is marked deprecated
@@ -93,5 +95,5 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16
 | 12. Foundation | 3/4 | Complete    | 2026-03-08 |
 | 13. Installer and Content Delivery | 2/3 | Complete    | 2026-03-08 |
 | 14. Agent Merge and Dashboard | 2/2 | Complete    | 2026-03-09 |
-| 15. Native Observation | 0/? | Not started | - |
+| 15. Native Observation | 2/2 | Complete    | 2026-03-08 |
 | 16. Commands and Deprecation | 0/? | Not started | - |

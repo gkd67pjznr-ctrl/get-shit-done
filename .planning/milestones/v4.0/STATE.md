@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Plan 14-02 complete -- Phase 14 DONE
-last_updated: "2026-03-09T01:21:07.704Z"
-last_activity: 2026-03-08 -- Plan 14-02 executed (dashboard source ~80 files, dist/dashboard.cjs, 18 tests)
+stopped_at: Plan 15-02 complete -- Phase 15 DONE -- OBS-01 through OBS-08 all satisfied
+last_updated: "2026-03-08T00:00:00Z"
+last_activity: 2026-03-08 -- Plan 15-02 executed (native observation in quick, diagnose-issues, fix-debt; all 7 files verified)
 progress:
   total_phases: 5
   completed_phases: 0
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-07)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts -- enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 14 - Agent Merge and Dashboard
+**Current focus:** Phase 16 - Commands and Deprecation
 
 ## Current Position
 
-Phase: 14 (3 of 5 in v4.0) - Agent Merge and Dashboard -- COMPLETE
-Plan: 2 of 2 in current phase -- COMPLETE
-Status: Plan 14-02 complete -- DASH-01/02/03/04 (dashboard copy, build, command update) implemented
-Last activity: 2026-03-08 -- Plan 14-02 executed (dashboard source ~80 files, dist/dashboard.cjs, 18 tests)
+Phase: 15 (4 of 5 in v4.0) - Native Observation -- COMPLETE
+Plan: 2 of 2 in current phase -- COMPLETE (Plan 15-02)
+Status: Plan 15-02 complete -- OBS-05/06/07/08 (observation steps in quick, diagnose-issues, fix-debt; all 7 verified) implemented
+Last activity: 2026-03-08 -- Plan 15-02 executed (native observation in quick, diagnose-issues, fix-debt; all 7 files verified)
 
-Progress: [##############] 60% (Phases 12, 13, 14 of 5 complete; Phase 15 next)
+Progress: [##################] 80% (Phases 12, 13, 14, 15 complete; Phase 16 next)
 
 ## Performance Metrics
 
@@ -97,6 +97,14 @@ Recent decisions affecting current work:
 - [14-02]: gray-matter and zod bundled into dist/dashboard.cjs (not external) so CLI runs standalone
 - [14-02]: esbuild --external:node:* for all Node.js built-ins; third-party deps bundled at 899kb
 - [14-02]: gsd-dashboard.md config reference updated from .planning/skill-creator.json to .planning/config.json
+- [15-01]: JSON fields in workflow observation steps are shell-escaped (\"key\":\"value\") -- correct for echo in bash code blocks
+- [15-01]: duration: null always; skills_loaded: [] always for now (Phase 16 will populate when wrappers removed)
+- [15-01]: has_research:-false and issues:-0 defaults used for safe shell variable expansion
+- [15-01]: Observation failure shows informative error with fix command; never exits non-zero
+- [15-02]: quick uses literal "quick-task" for description (not user-provided text -- JSON safety)
+- [15-02]: diagnose-issues uses literal 0 for gap counts -- fragile in subagent context, safe default
+- [15-02]: fix-debt uses phase:"none", milestone:"none" -- no phase context in debt fix lifecycle
+- [15-02]: ENTRY_ID (TD-[0-9]+) and ENTRY_SEVERITY (enum) are safe to embed directly in JSON
 
 ### Pending Todos
 
@@ -109,6 +117,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-08
-Stopped at: Plan 14-02 complete -- Phase 14 DONE
-Resume file: .planning/milestones/v4.0/phases/14-agent-merge-and-dashboard/14-02-SUMMARY.md
-Next: Phase 15 -- Native Observation (depends on agents + hooks + config from Phase 12-14)
+Stopped at: Plan 15-02 complete -- Phase 15 DONE
+Resume file: .planning/milestones/v4.0/phases/15-native-observation/15-02-SUMMARY.md
+Next: Phase 16 -- Commands and Deprecation (new gsd commands, wrapper removal, standalone package deprecation)
