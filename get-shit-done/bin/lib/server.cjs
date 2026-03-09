@@ -600,7 +600,7 @@ function setupTerminalWebSocket(httpServer) {
     const urlPath = (req.url || '').split('?')[0];
     const sessionName = decodeURIComponent(urlPath.slice('/ws/terminal/'.length));
 
-    if (\!sessionName) {
+    if (!sessionName) {
       ws.close(4000, 'Session name required');
       return;
     }
@@ -656,14 +656,14 @@ function setupTerminalWebSocket(httpServer) {
       } catch { /* not JSON -- fall through to binary forward */ }
 
       // Forward raw keystrokes / data to tmux stdin
-      if (\!proc.stdin.destroyed) {
+      if (!proc.stdin.destroyed) {
         try { proc.stdin.write(data); } catch { /* ignore */ }
       }
     });
 
     const cleanup = () => {
       activeSessions.delete(sessionName);
-      if (\!proc.killed) {
+      if (!proc.killed) {
         proc.stdin.end();
         proc.kill('SIGHUP');
       }
@@ -681,7 +681,7 @@ function setupTerminalWebSocket(httpServer) {
   // Clean up all sessions on server shutdown
   process.on('SIGINT', () => {
     for (const { proc } of activeSessions.values()) {
-      if (\!proc.killed) proc.kill('SIGHUP');
+      if (!proc.killed) proc.kill('SIGHUP');
     }
   });
 

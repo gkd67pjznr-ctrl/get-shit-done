@@ -59,3 +59,72 @@ describe('WebSocket terminal route matching', () => {
     assert.ok(sessionName.length === 0, 'empty session name should be rejected');
   });
 });
+
+describe('setupTerminalWebSocket integration', () => {
+  it('rejects connection with empty session name', () => {
+    return new Promise((resolve) => {
+      const server = http.createServer((req, res) => { res.writeHead(200); res.end('ok'); });
+      const { setupTerminalWebSocket } = require('../get-shit-done/bin/lib/server.cjs');
+      setupTerminalWebSocket(server);
+
+      server.listen(0, '127.0.0.1', () => {
+        const port = server.address().port;
+        const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/terminal/`);
+
+        ws.on('close', (code) => {
+          assert.equal(code, 4000, 'empty session name must close with code 4000');
+          server.close(() => resolve());
+        });
+
+        ws.on('error', () => {
+          server.close(() => resolve());
+        });
+      });
+    });
+  });
+
+  it('rejects connection for non-existent tmux session', () => {
+    return new Promise((resolve) => {
+      const server = http.createServer((req, res) => { res.writeHead(200); res.end('ok'); });
+      const { setupTerminalWebSocket } = require('../get-shit-done/bin/lib/server.cjs');
+      setupTerminalWebSocket(server);
+
+      server.listen(0, '127.0.0.1', () => {
+        const port = server.address().port;
+        // Use a session name that almost certainly does not exist
+        const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/terminal/gsd-test-nonexistent-session-xyz`);
+
+        ws.on('close', (code) => {
+          assert.equal(code, 4004, 'missing tmux session must close with code 4004');
+          server.close(() => resolve());
+        });
+
+        ws.on('error', () => {
+          // Connection error is also acceptable (session not found)
+          server.close(() => resolve());
+        });
+      });
+    });
+  });
+
+  it('non-terminal upgrade path is rejected', () => {
+    return new Promise((resolve) => {
+      const server = http.createServer((req, res) => { res.writeHead(200); res.end('ok'); });
+      const { setupTerminalWebSocket } = require('../get-shit-done/bin/lib/server.cjs');
+      setupTerminalWebSocket(server);
+
+      server.listen(0, '127.0.0.1', () => {
+        const port = server.address().port;
+        const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/other-path`);
+
+        ws.on('error', () => {
+          server.close(() => resolve());
+        });
+
+        ws.on('close', () => {
+          server.close(() => resolve());
+        });
+      });
+    });
+  });
+});

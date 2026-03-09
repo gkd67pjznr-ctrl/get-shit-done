@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-stopped_at: Phase 21 plan 01 complete. ws installed, PAT-01 and TERM-03 test stubs created.
-last_updated: "2026-03-09T15:08:00.000Z"
-last_activity: 2026-03-09 -- Phase 21-01 executed (ws install, patterns.test.cjs, server.test.cjs)
+stopped_at: Phase 21 plan 04a complete. aggregatePatterns implemented in server.cjs, live tests added to patterns.test.cjs.
+last_updated: "2026-03-09T16:00:00.000Z"
+last_activity: 2026-03-09 -- Phase 21-04a executed (aggregatePatterns, /api/patterns endpoint, live tests)
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 14
-  completed_plans: 13
-  percent: 82
+  completed_plans: 14
+  percent: 86
 ---
 
 # Project State -- Milestone v5.0
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-07)
 ## Current Position
 
 Phase: 21 IN PROGRESS (5 of 5 in v5.0) (Embedded Terminals and Pattern System)
-Plan: 1 of N in current phase (21-01 complete -- scaffolding done)
-Status: Phase 21 Plan 01 Complete
-Last activity: 2026-03-09 -- Phase 21-01 executed (ws install, patterns.test.cjs, server.test.cjs)
+Plan: 04a complete -- aggregatePatterns and /api/patterns endpoint
+Status: Phase 21 Plan 04a Complete
+Last activity: 2026-03-09 -- Phase 21-04a executed (aggregatePatterns, /api/patterns endpoint, live tests)
 
-Progress: [████████░░] 78%
+Progress: [████████░░] 86%
 
 ## Performance Metrics
 
@@ -88,6 +88,8 @@ Recent decisions affecting current work:
 - [20-06]: Quality fallback chain: p.quality || milestones[0].quality || null; null defaults to 'standard' bucket
 - [20-06]: healthLabel/healthClass already exported from format.js -- imported into sidebar.js without new code
 - [21-01]: Node.js built-in test runner requires Promise-based async tests -- done() callback causes "asynchronous activity after test ended" error; pattern: return new Promise((resolve) => ...)
+- [21-04a]: aggregatePatterns uses commit_type || event || type || 'unknown' to normalize type field across different JSONL schemas
+- [21-04a]: loadRegistry() in /api/patterns route uses process.env.GSD_HOME (set by startDashboardServer); extra arg is harmless
 
 ### Pending Todos
 
@@ -96,12 +98,12 @@ None.
 ### Blockers/Concerns
 
 - tmux CLI as terminal backend (Phase 21) may need prototype spike -- escape sequence handling unproven
-- ws test stubs use simplified route matching stubs -- Plan 21-02 must implement setupTerminalWebSocket to fully exercise them
+- setupTerminalWebSocket now implemented in server.cjs (21-02 applied concurrently)
 
 ## Session Continuity
 
 Last session: 2026-03-09
-Stopped at: Phase 21 plan 01 complete. ws installed, PAT-01 and TERM-03 test stubs created.
+Stopped at: Phase 21 plan 04a complete. aggregatePatterns implemented in server.cjs, live tests added to patterns.test.cjs.
 Resume file: None
-Next step: Phase 21 Plan 02 -- implement setupTerminalWebSocket and terminal backend.
+Next step: Phase 21 remaining plans (terminal WebSocket, dashboard UI integration).
 
