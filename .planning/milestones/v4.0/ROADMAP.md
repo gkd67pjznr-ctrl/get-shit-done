@@ -56,7 +56,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. `gsd-planner.md` contains capability inheritance instructions inline -- no extension markers
   3. Dashboard TypeScript source exists in the gsdup repo, builds successfully, and `/gsd:dashboard` command works (generate, watch, clean)
   4. No references to the marker/extension injection system remain in any agent or installer file
-**Plans**: TBD
+**Plans**:
+  - [ ] Plan 14-01: Test scaffold and agent content merge (AGNT-01, AGNT-02, AGNT-03)
+  - [ ] Plan 14-02: Dashboard copy, build, and command update (DASH-01, DASH-02, DASH-03, DASH-04)
 
 ### Phase 15: Native Observation
 **Goal**: Every GSD workflow command captures observations natively -- no wrapper commands needed, observations accumulate in structured format for analysis
@@ -90,6 +92,6 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16
 |-------|----------------|--------|-----------|
 | 12. Foundation | 3/4 | Complete    | 2026-03-08 |
 | 13. Installer and Content Delivery | 2/3 | Complete    | 2026-03-08 |
-| 14. Agent Merge and Dashboard | 0/? | Not started | - |
+| 14. Agent Merge and Dashboard | 1/2 | In Progress|  |
 | 15. Native Observation | 0/? | Not started | - |
 | 16. Commands and Deprecation | 0/? | Not started | - |

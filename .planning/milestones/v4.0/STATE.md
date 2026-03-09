@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Plan 13-03 complete
-last_updated: "2026-03-08T08:12:15.434Z"
-last_activity: 2026-03-08 -- Plan 13-03 executed (INST-04, mergeClaudeMd, 5 real tests)
+stopped_at: Plan 14-01 complete
+last_updated: "2026-03-09T01:06:35Z"
+last_activity: 2026-03-09 -- Plan 14-01 executed (AGNT-01/02/03, agent content merge, 16 tests)
 progress:
   total_phases: 5
   completed_phases: 0
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-07)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts -- enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 13 - Installer and Content Delivery
+**Current focus:** Phase 14 - Agent Merge and Dashboard
 
 ## Current Position
 
-Phase: 13 (2 of 5 in v4.0) - Installer and Content Delivery
-Plan: 3 of ? in current phase
-Status: Plan 13-03 complete -- INST-04 (CLAUDE.md merge) implemented
-Last activity: 2026-03-08 -- Plan 13-03 executed (INST-04, mergeClaudeMd, 5 real tests)
+Phase: 14 (3 of 5 in v4.0) - Agent Merge and Dashboard
+Plan: 1 of 2 in current phase
+Status: Plan 14-01 complete -- AGNT-01/02/03 (agent content merge) implemented
+Last activity: 2026-03-09 -- Plan 14-01 executed (agent merge, injected_skills_protocol, capability_inheritance, 16 tests)
 
-Progress: [##########] 20% (Phase 12 of 5 complete)
+Progress: [##########] 40% (Phases 12, 13 of 5 complete; Phase 14 in progress)
 
 ## Performance Metrics
 
@@ -89,6 +89,10 @@ Recent decisions affecting current work:
 - [13-03]: mergeClaudeMd uses three-case merge: create/update-with-backup/prepend
 - [13-03]: guarded with runtime === 'claude' && !isGlobal in install(); global installs skipped
 - [13-03]: backup written to CLAUDE.md.gsd-backup when user has modified content inside markers
+- [14-01]: injected_skills_protocol block inserted inline into gsd-executor.md after </project_context>
+- [14-01]: capability_inheritance block inserted inline into gsd-planner.md after </project_context>
+- [14-01]: outer PROJECT:gsd-skill-creator HTML comment markers excluded from merged content
+- [14-01]: 16 agent-merge tests verify AGNT-01, AGNT-02, AGNT-03 requirements
 
 ### Pending Todos
 
@@ -100,7 +104,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-08
-Stopped at: Plan 13-03 complete
-Resume file: .planning/milestones/v4.0/phases/13-installer-and-content-delivery/13-03-SUMMARY.md
-Next: Plan 13-04 (or phase wrap-up) -- hooks registration in settings.json (INST-03, HOOK-01 through HOOK-04)
+Last session: 2026-03-09
+Stopped at: Plan 14-01 complete
+Resume file: .planning/milestones/v4.0/phases/14-agent-merge-and-dashboard/14-01-SUMMARY.md
+Next: Plan 14-02 -- Dashboard copy-and-verify (DASH-01 through DASH-05)
