@@ -80,6 +80,8 @@ Recent decisions affecting current work:
 - [20-01]: parseProjectData extended with optional tmuxCache param; backward-compatible (tmux.available: false default)
 - [20-02]: tmuxCache threaded as explicit parameter through createHttpServer, watchProject, watchRegistry (not closure -- cleaner)
 - [20-02]: CORS extended to GET, PATCH, OPTIONS; setTracking in dashboard.cjs uses delete for true (omit=true backward compat)
+- [20-03]: computeShimmerClass returns '' when project.tracking is falsy; WORKING_THRESHOLD=10s, WAITING_THRESHOLD=5min defined inline
+- [20-03]: healthClass falls back to status-not-started for unknown level strings; fmtIdleDuration returns 'unknown' for null/NaN
 - [20-04]: ProgressBar shimmerClass string prop takes precedence over boolean shimmer; shimmerClass || (shimmer ? 'shimmer-active' : '') pattern
 - [20-04]: Amber shimmer shares @keyframes shimmer with blue variant -- no keyframe duplication
 
