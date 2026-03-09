@@ -2319,6 +2319,29 @@ function install(isGlobal, runtime = 'claude') {
     console.log(`  ${green}\u2713${reset} ${resultLabel} CLAUDE.md with GSD framework reference`);
   }
 
+  // Create .planning/patterns/ directory for observation pipeline (INST-06)
+  // All 7 workflow commands write observation data here; must exist on fresh installs
+  // Guard: !isGlobal (global installs have no project root)
+  if (!isGlobal) {
+    const planningDir = path.join(process.cwd(), '.planning');
+    const patternsDir = path.join(planningDir, 'patterns');
+    fs.mkdirSync(patternsDir, { recursive: true });
+    console.log(`  ${green}\u2713${reset} Ensured .planning/patterns/ directory`);
+
+    // Migrate legacy skill-creator.json into config.json if present (CFG-02)
+    const scPath = path.join(planningDir, 'skill-creator.json');
+    if (fs.existsSync(scPath)) {
+      try {
+        const { migrateSkillCreatorConfig } = require('../get-shit-done/bin/lib/migrate.cjs');
+        migrateSkillCreatorConfig(planningDir);
+        console.log(`  ${green}\u2713${reset} Migrated skill-creator.json into config.json`);
+      } catch (e) {
+        // Non-fatal: migration is best-effort
+        console.log(`  ${yellow}\u26a0${reset} Config migration skipped: ${e.message}`);
+      }
+    }
+  }
+
   if (failures.length > 0) {
     console.error(`\n  ${yellow}Installation incomplete!${reset} Failed: ${failures.join(', ')}`);
     process.exit(1);
