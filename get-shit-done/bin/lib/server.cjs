@@ -281,17 +281,12 @@ function parseAllMilestones(projectPath) {
       .filter(d => d.isDirectory() && /^v\d/.test(d.name))
       .sort((a, b) => a.name.localeCompare(b.name));
 
-    let activeMilestone = null;
-    try {
-      activeMilestone = resolveActiveMilestone(projectPath);
-    } catch { /* leave null */ }
-
     const result = [];
     for (const dir of milestoneEntries) {
       const milestoneRoot = path.join(milestonesDir, dir.name);
       const entry = {
         name: dir.name,
-        active: dir.name === activeMilestone,
+        active: false,   // will be set after state is parsed
         state: null,
         roadmap: null,
         requirements: null,
@@ -302,6 +297,12 @@ function parseAllMilestones(projectPath) {
         const stateContent = fs.readFileSync(path.join(milestoneRoot, 'STATE.md'), 'utf-8');
         entry.state = parseStateFile(stateContent);
       } catch { /* leave null */ }
+
+      // Determine active from STATE.md status: terminal statuses → inactive
+      const TERMINAL = /^(completed|shipped|done)$/i;
+      entry.active = entry.state
+        ? !(entry.state.status && TERMINAL.test(entry.state.status.trim()))
+        : false;
 
       try {
         const roadmapContent = fs.readFileSync(path.join(milestoneRoot, 'ROADMAP.md'), 'utf-8');
