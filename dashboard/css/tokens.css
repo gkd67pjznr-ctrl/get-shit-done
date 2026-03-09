@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 :root {
   /* Domain colors */
@@ -15,9 +15,11 @@
   --signal-error: #ef4444;
   --signal-neutral: #6b7280;
 
-  /* Typography */
+  /* Typography — monospace only */
   --font-data: 'JetBrains Mono', 'Fira Code', monospace;
-  --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-ui: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-size-base: 12px;
+  --font-size-sm: 11px;
 
   /* GitHub-dark palette */
   --bg-base: #0d1117;
@@ -29,7 +31,14 @@
   --text-secondary: #8b949e;
   --text-muted: #6e7681;
   --accent: #58a6ff;
-  --accent-muted: rgba(88, 166, 255, 0.15);
+  --accent-muted: transparent;
+
+  /* Terminal palette */
+  --term-green: #3fb950;
+  --term-red: #ef4444;
+  --term-cyan: #58a6ff;
+  --term-dim: #484f58;
+  --term-separator: #30363d;
 
   /* Spacing */
   --space-xs: 4px;
@@ -41,9 +50,9 @@
 
   /* Layout */
   --sidebar-width: 220px;
-  --header-height: 52px;
-  --radius: 6px;
-  --radius-sm: 4px;
+  --header-height: 36px;
+  --radius: 0;
+  --radius-sm: 0;
 }
 
 body { font-variant-numeric: tabular-nums; }
