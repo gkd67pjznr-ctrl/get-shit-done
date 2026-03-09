@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Defining requirements
-last_updated: "2026-03-09T14:25:25.495Z"
+last_updated: "2026-03-09T15:39:36.837Z"
 last_activity: 2026-03-09 — Milestone v4.0 archived, v5.0 in progress
 progress:
   total_phases: 5
@@ -76,6 +76,7 @@ See: .planning/PROJECT.md (updated 2026-03-05)
 | 15 | Integrate tech debt logging into GSD execution workflows | 2026-03-05 | ea39e62 | Verified | [15-investigate-why-tech-debt-feature-isn-t-](./quick/15-investigate-why-tech-debt-feature-isn-t-/) |
 | 16 | Fix milestone phase numbering so new milestones compute correct starting phase | 2026-03-05 | 8613919 | Verified | [16-fix-milestone-phase-numbering-new-milest](./quick/16-fix-milestone-phase-numbering-new-milest/) |
 | 17 | Catalogue todo system consolidation fix (unified /add-to-todos + /check-todos with GSD folder system) | 2026-03-07 | 32730b5 | Verified | [17-catalogue-todo-system-consolidation-fix-](./quick/17-catalogue-todo-system-consolidation-fix-/) |
+| 18 | Fix dashboard multi-milestone active state, project-card cap, and accordion header phase/pct badges | 2026-03-09 | b572d3f | Complete | [18-fix-dashboard-multi-milestone-active-sta](./quick/18-fix-dashboard-multi-milestone-active-sta/) |
 
 ## Session Continuity
 
