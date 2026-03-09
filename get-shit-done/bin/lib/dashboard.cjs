@@ -157,6 +157,21 @@ function cmdDashboardList(raw) {
   process.exit(0);
 }
 
+function setTracking(name, tracking) {
+  const projects = loadRegistry();
+  const idx = projects.findIndex(p => p.name === name);
+  if (idx === -1) {
+    throw new Error('Project not found: ' + name);
+  }
+  if (tracking === true) {
+    delete projects[idx].tracking; // omit means true (backward compat)
+  } else {
+    projects[idx].tracking = false;
+  }
+  saveRegistry(projects);
+  return projects[idx];
+}
+
 module.exports = {
   cmdDashboardAdd,
   cmdDashboardRemove,
@@ -165,4 +180,5 @@ module.exports = {
   loadRegistry,
   saveRegistry,
   getDashboardPath,
+  setTracking,
 };

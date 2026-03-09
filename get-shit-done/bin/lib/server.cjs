@@ -504,11 +504,11 @@ function serveStatic(req, res, dashboardDir) {
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, PATCH, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
-function createHttpServer(port, cache, clients, dashboardDir) {
+function createHttpServer(port, cache, clients, dashboardDir, tmuxCache) {
   const server = http.createServer((req, res) => {
     // CORS preflight
     if (req.method === 'OPTIONS') {
@@ -519,7 +519,7 @@ function createHttpServer(port, cache, clients, dashboardDir) {
 
     // Add CORS headers to all responses
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, PATCH, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     let url;
@@ -546,6 +546,55 @@ function createHttpServer(port, cache, clients, dashboardDir) {
       }
     }
 
+    // PATCH /api/projects/:name/tracking
+    if (req.method === 'PATCH' && /^\/api\/projects\/[^/]+\/tracking$/.test(pathname)) {
+      const encodedName = pathname.slice('/api/projects/'.length, pathname.lastIndexOf('/tracking'));
+      const name = decodeURIComponent(encodedName);
+
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const { tracking } = JSON.parse(body);
+          if (typeof tracking !== 'boolean') {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'tracking must be boolean' }));
+            return;
+          }
+
+          // Update registry
+          const { loadRegistry, saveRegistry } = require('./dashboard.cjs');
+          const projects = loadRegistry();
+          const idx = projects.findIndex(p => p.name === name);
+          if (idx === -1) {
+            res.writeHead(404, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Not found' }));
+            return;
+          }
+
+          if (tracking) {
+            delete projects[idx].tracking; // omit means true (backward compat)
+          } else {
+            projects[idx].tracking = false;
+          }
+          saveRegistry(projects);
+
+          // Re-parse and update cache
+          const updatedProject = { ...projects[idx] };
+          const parsed = parseProjectData(updatedProject, tmuxCache);
+          cache.set(name, parsed);
+          broadcast(clients, 'project-update', parsed);
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ name, tracking }));
+        } catch (err) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: err.message }));
+        }
+      });
+      return;
+    }
+
     if (req.method === 'GET' && pathname === '/api/events') {
       handleSSE(req, res, clients);
       return;
@@ -559,7 +608,7 @@ function createHttpServer(port, cache, clients, dashboardDir) {
 
 // ─── File watching ────────────────────────────────────────────────────────────
 
-function watchProject(project, cache, clients, watchers, debounceTimers) {
+function watchProject(project, cache, clients, watchers, debounceTimers, tmuxCache) {
   const planningDir = path.join(project.path, '.planning');
 
   if (!fs.existsSync(planningDir)) {
@@ -581,7 +630,7 @@ function watchProject(project, cache, clients, watchers, debounceTimers) {
     const timer = setTimeout(() => {
       debounceTimers.delete(project.name);
       try {
-        const data = parseProjectData(project);
+        const data = parseProjectData(project, tmuxCache);
         cache.set(project.name, data);
         broadcast(clients, 'project-update', data);
       } catch (err) {
@@ -596,7 +645,7 @@ function watchProject(project, cache, clients, watchers, debounceTimers) {
   return watcher;
 }
 
-function watchRegistry(cache, watchers, clients, debounceTimers, opts = {}) {
+function watchRegistry(cache, watchers, clients, debounceTimers, opts = {}, tmuxCache) {
   // Use gsdHome override if provided
   const registryPath = opts.gsdHome
     ? path.join(opts.gsdHome, 'dashboard.json')
@@ -634,9 +683,9 @@ function watchRegistry(cache, watchers, clients, debounceTimers, opts = {}) {
         for (const p of newProjects) {
           if (!currentNames.has(p.name)) {
             try {
-              const parsed = parseProjectData(p);
+              const parsed = parseProjectData(p, tmuxCache);
               cache.set(p.name, parsed);
-              watchProject(p, cache, clients, watchers, debounceTimers);
+              watchProject(p, cache, clients, watchers, debounceTimers, tmuxCache);
               broadcast(clients, 'project-added', parsed);
             } catch (err) {
               console.warn('[gsd-server] Error adding project ' + p.name + ': ' + err.message);
@@ -763,22 +812,57 @@ function startDashboardServer(port, opts = {}) {
     projects = [];
   }
 
+  // ─── Tmux polling ─────────────────────────────────────────────────────────────
+  const tmuxCache = new Map();
+  const tmuxHashMap = new Map(); // projectName -> previous hash string
+
+  function runTmuxPoll() {
+    try {
+      const panes = pollTmux();
+      const projectTmux = mapPanesToProjects(panes, cache);
+
+      for (const [name] of cache) {
+        const tmuxEntry = projectTmux.get(name) || null;
+        const hash = tmuxStateHash(tmuxEntry);
+        if (hash !== (tmuxHashMap.get(name) || '')) {
+          tmuxHashMap.set(name, hash);
+          tmuxCache.set(name, tmuxEntry);
+          // Update the cached project data with fresh tmux
+          const project = cache.get(name);
+          if (project) {
+            const updated = { ...project, tmux: tmuxEntry
+              ? { available: true, sessions: Array.from(tmuxEntry.sessions), panes: tmuxEntry.panes }
+              : { available: false, sessions: [], panes: [] }
+            };
+            cache.set(name, updated);
+            broadcast(clients, 'tmux-update', { name, tmux: updated.tmux });
+          }
+        }
+      }
+    } catch (err) {
+      // Never crash the poll loop
+      if (process.env.GSD_DEBUG) console.warn('[gsd-server] tmux poll error:', err.message);
+    }
+  }
+
+  const tmuxPollInterval = setInterval(runTmuxPoll, 5000);
+
   // Parse initial data for each project and set up file watchers
   for (const project of projects) {
     try {
-      const data = parseProjectData(project);
+      const data = parseProjectData(project, tmuxCache);
       cache.set(project.name, data);
     } catch (err) {
       console.warn('[gsd-server] Error parsing initial data for ' + project.name + ': ' + err.message);
     }
-    watchProject(project, cache, clients, watchers, debounceTimers);
+    watchProject(project, cache, clients, watchers, debounceTimers, tmuxCache);
   }
 
   // Start registry watcher
-  const registryWatcher = watchRegistry(cache, watchers, clients, debounceTimers, opts);
+  const registryWatcher = watchRegistry(cache, watchers, clients, debounceTimers, opts, tmuxCache);
 
   // Create and start HTTP server
-  const server = createHttpServer(port, cache, clients, opts.dashboardDir || DASHBOARD_DIR);
+  const server = createHttpServer(port, cache, clients, opts.dashboardDir || DASHBOARD_DIR, tmuxCache);
 
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
@@ -797,6 +881,9 @@ function startDashboardServer(port, opts = {}) {
   const sigintHandler = () => {
     const forceExit = setTimeout(() => process.exit(1), 3000);
     forceExit.unref();
+
+    // Stop tmux polling
+    clearInterval(tmuxPollInterval);
 
     // Close all SSE clients
     for (const client of clients) {
@@ -824,6 +911,9 @@ function startDashboardServer(port, opts = {}) {
     return new Promise((resolve) => {
       // Remove SIGINT handler
       process.removeListener('SIGINT', sigintHandler);
+
+      // Stop tmux polling
+      clearInterval(tmuxPollInterval);
 
       // Clear debounce timers
       for (const [, timer] of debounceTimers) {
