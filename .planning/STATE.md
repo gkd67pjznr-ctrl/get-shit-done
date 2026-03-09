@@ -77,9 +77,10 @@ See: .planning/PROJECT.md (updated 2026-03-05)
 | 16 | Fix milestone phase numbering so new milestones compute correct starting phase | 2026-03-05 | 8613919 | Verified | [16-fix-milestone-phase-numbering-new-milest](./quick/16-fix-milestone-phase-numbering-new-milest/) |
 | 17 | Catalogue todo system consolidation fix (unified /add-to-todos + /check-todos with GSD folder system) | 2026-03-07 | 32730b5 | Verified | [17-catalogue-todo-system-consolidation-fix-](./quick/17-catalogue-todo-system-consolidation-fix-/) |
 | 18 | Fix dashboard multi-milestone active state, project-card cap, and accordion header phase/pct badges | 2026-03-09 | b572d3f | Verified | [18-fix-dashboard-multi-milestone-active-sta](./quick/18-fix-dashboard-multi-milestone-active-sta/) |
+| 19 | Restyle dashboard to Claude Code terminal aesthetic (monospace, pipe rows, Unicode block bars) | 2026-03-09 | 04d0888 | Complete | [19-restyle-dashboard-to-match-claude-code-t](./quick/19-restyle-dashboard-to-match-claude-code-t/) |
 
 ## Session Continuity
 
-Last activity: 2026-03-09 -- Phase 20 complete (all 6 plans: tmux polling, health scoring, shimmer CSS, ProjectCard UI, SidebarMetrics)
+Last activity: 2026-03-09 -- Quick task 19: dashboard restyled to terminal aesthetic (monospace, flat rows, block progress bars)
 Resume file: None
 Next step: Phase 21 -- terminal backend (tmux pane integration, escape sequence handling)
