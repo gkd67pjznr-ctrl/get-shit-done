@@ -7,7 +7,7 @@ const os = require('os');
 const chokidar = require('chokidar');
 const { execSync } = require('child_process');
 
-const { resolveActiveMilestone, planningRoot } = require('./core.cjs');
+const { resolveActiveMilestone, planningRoot, compareVersions } = require('./core.cjs');
 const { loadRegistry, getDashboardPath } = require('./dashboard.cjs');
 
 const DASHBOARD_DIR = path.join(__dirname, '..', '..', '..', 'dashboard');
@@ -279,7 +279,7 @@ function parseAllMilestones(projectPath) {
 
     const milestoneEntries = dirs
       .filter(d => d.isDirectory() && /^v\d/.test(d.name))
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a, b) => compareVersions(a.name, b.name));
 
     const result = [];
     for (const dir of milestoneEntries) {
@@ -298,10 +298,21 @@ function parseAllMilestones(projectPath) {
         entry.state = parseStateFile(stateContent);
       } catch { /* leave null */ }
 
-      // Determine active from STATE.md status: terminal statuses → inactive
+      // Determine active from YAML frontmatter status (canonical), falling back to body Status line
       const TERMINAL = /^(completed|shipped|done)$/i;
-      entry.active = entry.state
-        ? !(entry.state.status && TERMINAL.test(entry.state.status.trim()))
+      let canonicalStatus = null;
+      try {
+        const stateContent = fs.readFileSync(path.join(milestoneRoot, 'STATE.md'), 'utf-8');
+        const fmMatch = stateContent.match(/^---\n([\s\S]*?)\n---/);
+        if (fmMatch) {
+          const statusLine = fmMatch[1].match(/^status:\s*(.+)$/m);
+          if (statusLine) canonicalStatus = statusLine[1].trim();
+        }
+      } catch { /* already read above, ignore */ }
+      // Use frontmatter status if available, otherwise fall back to parsed body Status
+      const effectiveStatus = canonicalStatus || (entry.state && entry.state.status);
+      entry.active = effectiveStatus
+        ? !TERMINAL.test(effectiveStatus.trim())
         : false;
 
       try {

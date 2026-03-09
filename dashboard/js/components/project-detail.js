@@ -140,11 +140,16 @@ export function ProjectDetail({ name, milestone: deepLinkMilestone }) {
   }
 
   const milestones = project.milestones || [];
+  // Numeric version comparison (v9.0 < v10.0)
+  const versionNum = (name) => {
+    const parts = name.replace(/^v/, '').split('.').map(Number);
+    return parts[0] * 1000 + (parts[1] || 0);
+  };
   // Active milestones first, then completed, sorted by version desc
   const sorted = [...milestones].sort((a, b) => {
     if (a.active && !b.active) return -1;
     if (!a.active && b.active) return 1;
-    return b.name.localeCompare(a.name);
+    return versionNum(b.name) - versionNum(a.name);
   });
 
   return html`
