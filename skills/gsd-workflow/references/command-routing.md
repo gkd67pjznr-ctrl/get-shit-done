@@ -1,6 +1,6 @@
 # GSD Command Routing -- Full Reference
 
-Complete command routing tables. The condensed version is in SKILL.md. This file contains the full decision framework for all GSD and skill-creator actions.
+Complete command routing tables. The condensed version is in SKILL.md. This file contains the full decision framework for all GSD and adaptive learning actions.
 
 ## Starting Work
 
@@ -44,12 +44,12 @@ Complete command routing tables. The condensed version is in SKILL.md. This file
 | "Remove a planned phase" | `/gsd:remove-phase` | Clean removal with renumbering |
 | "Capture this idea for later" | `/gsd:add-todo` | Park ideas without derailing current work |
 
-## skill-creator Actions
+## Adaptive Learning Actions
 
 | User Intent | Action | Rationale |
 |-------------|--------|-----------|
-| "What patterns have you noticed?" | `skill-creator suggest` | Review pending skill suggestions |
-| "Create a skill from what we just did" | `skill-creator create` | Capture current workflow as reusable skill |
-| "Show me my skills" | `skill-creator status` | Token budget, active skills, pending suggestions |
-| "How are my skills performing?" | `skill-creator test` | Run activation simulation against history |
+| "What patterns have you noticed?" | `/gsd:suggest` | Review pending skill suggestions |
+| "Create a skill from what we just did" | `/gsd:suggest` | Capture current workflow as reusable skill |
+| "Show me my skills" | `/gsd:session-start` | Token budget, active skills, pending suggestions |
+| "Digest recent session data" | `/gsd:digest` | Compact and analyze session observations |
 | Natural language workflow request | GSD Orchestrator routing | Classify intent, map to GSD command |

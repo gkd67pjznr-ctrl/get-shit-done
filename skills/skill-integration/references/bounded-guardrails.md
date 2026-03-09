@@ -21,7 +21,7 @@ These six constraints govern all skill refinement. They exist to prevent a self-
 These guardrails are enforced at TWO levels:
 
 - **Awareness layer** (this skill): Claude knows the rules and follows them in conversation
-- **Code layer** (skill-creator source): Hardcoded in the refinement pipeline. The code enforces even if the skill is not loaded.
+- **Code layer** (GSD adaptive learning system): Hardcoded in the refinement pipeline. The code enforces even if the skill is not loaded.
 
 Both layers must agree. If the skill says "refine" but code says "cooldown active", the code wins.
 

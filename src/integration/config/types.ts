@@ -2,7 +2,7 @@
  * Type definitions for the GSD integration configuration.
  *
  * These interfaces define the contract between all integration components:
- * install script, git hooks, session start, slash commands, wrappers, and
+ * install script, git hooks, session start, slash commands, and
  * passive monitoring. Every downstream consumer reads this config.
  *
  * Five sections:
@@ -38,8 +38,6 @@ export interface IntegrationToggles {
   suggest_on_session_start: boolean;
   /** Install post-commit git hook. */
   install_git_hooks: boolean;
-  /** Enable wrapper command features. */
-  wrapper_commands: boolean;
 }
 
 // ============================================================================

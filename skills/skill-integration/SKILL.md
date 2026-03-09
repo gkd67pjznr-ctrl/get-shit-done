@@ -1,12 +1,12 @@
 ---
 name: skill-integration
 description: >
-  Manages skill-creator integration with GSD workflows including skill
+  Manages adaptive learning integration with GSD workflows including skill
   loading, session observation, bounded learning guardrails, and pattern
   detection. Use this skill whenever: executing any GSD phase (to ensure
   relevant skills are loaded first), starting or resuming a work session
   (to check for pending suggestions), the user asks about skills, patterns,
-  or skill-creator status, performing code changes that might represent
+  or observation status, performing code changes that might represent
   repeating patterns, the user corrects Claude's output (highest-signal
   observation), or when skill refinement, creation, or suggestion review
   is discussed. Critical for maintaining the adaptive learning layer.
@@ -21,13 +21,13 @@ Manages skill loading, observation, and bounded learning for the GSD ecosystem. 
 
 Before executing any GSD phase, load relevant generated skills:
 
-1. Check `.claude/commands/` for project-level skills
-2. Check `~/.claude/commands/` for user-level skills
+1. Check `.claude/skills/` for project-level skills
+2. Check `~/.claude/skills/` for user-level skills
 3. Project-level skills take precedence over user-level on conflict
 4. Load only skills relevant to the current phase and task
 5. Respect the token budget: 2-5% of context window maximum
 
-**Critical:** When forking subagent contexts for GSD phases (`execute-phase`, `verify-work`), include relevant skills in the subagent's context. Clean context means free of stale conversation history -- not free of learned knowledge. A subagent that can't access learned skills is throwing away everything skill-creator has captured.
+**Critical:** When forking subagent contexts for GSD phases (`execute-phase`, `verify-work`), include relevant skills in the subagent's context. Clean context means free of stale conversation history -- not free of learned knowledge.
 
 For full 6-stage pipeline details, see `references/loading-protocol.md`.
 
@@ -50,7 +50,7 @@ During all work sessions, maintain awareness of patterns worth capturing:
 - Corrections the user makes to agent output -- these are the highest-signal observations
 - Phase outcomes: success, failure, partial, and what was different
 
-If `.planning/patterns/` exists, record observations to `sessions.jsonl` in that directory. This data feeds skill-creator's pattern detection pipeline.
+If `.planning/patterns/` exists, record observations to `sessions.jsonl` in that directory. This data feeds the adaptive learning pattern detection pipeline.
 
 For observation taxonomy, signal strength ranking, and JSONL schema, see `references/observation-patterns.md`.
 
@@ -83,15 +83,15 @@ Run matching skills **after** the phase completes, not during -- avoid adding ov
 
 ## Skill Suggestions
 
-At the start of each new session, check skill-creator for pending suggestions. If suggestions exist with high confidence (3+ pattern occurrences), briefly notify the user:
+At the start of each new session, check for pending suggestions. If suggestions exist with high confidence (3+ pattern occurrences), briefly notify the user:
 
-> "skill-creator detected a repeating pattern: [brief description]. Run `skill-creator suggest` to review."
+> "A repeating pattern has been detected: [brief description]. Run `/gsd:suggest` to review."
 
 **Never auto-apply suggestions. Always require explicit user confirmation.** This is a core safety principle of the bounded learning system.
 
-## When to Suggest skill-creator
+## When to Suggest Skill Creation
 
-**Suggest skill-creator when:**
+**Suggest creating a skill when:**
 
 - You notice the same sequence of steps has occurred 3+ times
 - The user corrects the same kind of output repeatedly
@@ -102,7 +102,8 @@ At the start of each new session, check skill-creator for pending suggestions. I
 
 ```
 I've noticed we run the same lint -> test -> fix cycle after every code change.
-Want me to capture this as a skill so it happens automatically?
+Want me to capture this as a skill so it happens automatically? Run `/gsd:suggest`
+to see if it's already been detected, or describe what you'd like to codify.
 ```
 
 ## Anti-Patterns

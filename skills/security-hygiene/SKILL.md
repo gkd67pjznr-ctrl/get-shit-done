@@ -9,7 +9,7 @@ description: >
   community-contributed skills or chipsets, any file path operations
   that could involve user input, or when installing/updating
   project-claude configuration. Also activates for discussions about
-  skill-creator security, trust models, or content hygiene.
+  GSD adaptive learning security, trust models, or content hygiene.
 user-invocable: true
 ---
 

@@ -50,7 +50,7 @@ The top-10 most common routes:
 | "add a phase" | `/gsd:add-phase` |
 | "start new project" | `/gsd:new-project` |
 
-For full routing tables including skill-creator actions, see `references/command-routing.md`.
+For full routing tables including adaptive learning actions, see `references/command-routing.md`.
 
 ## Guidance Heuristics
 
@@ -69,9 +69,9 @@ down into atomic tasks with verification criteria. Want me to run that,
 or would you prefer to dive in directly?
 ```
 
-### When to Suggest skill-creator
+### When to Suggest Skill Creation
 
-**Suggest skill-creator when:**
+**Suggest creating a skill when:**
 - You notice the same sequence of steps has occurred 3+ times
 - The user corrects the same kind of output repeatedly
 - A workflow is complex enough to benefit from codification
@@ -173,8 +173,8 @@ To run a GSD command, read the command file from `.claude/commands/gsd/[command]
 
 Before executing any GSD phase, load relevant generated skills:
 
-1. Check `.claude/commands/` for project-level skills
-2. Check `~/.claude/commands/` for user-level skills
+1. Check `.claude/skills/` for project-level skills
+2. Check `~/.claude/skills/` for user-level skills
 3. Project-level skills take precedence over user-level on conflict
 4. Load only skills relevant to the current phase and task
 5. Respect the token budget: 2-5% of context window maximum

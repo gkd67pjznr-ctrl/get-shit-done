@@ -83,7 +83,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. `/gsd:session-start` provides a briefing with GSD position and recent activity
   4. All 13 standalone commands are available as `/gsd:*` commands
   5. No `/wrap:*` or `/sc:*` commands exist -- help text and docs reflect the integrated system
-**Plans**: TBD
+**Plans**:
+  - [x] Plan 16-01: New commands and standalone command porting (CMD-01, CMD-02, CMD-03, CMD-04)
+  - [ ] Plan 16-02: Deprecation cleanup and doc updates (DEPR-01, DEPR-02, DEPR-03, DEPR-04)
 
 ## Progress
 
@@ -96,4 +98,4 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16
 | 13. Installer and Content Delivery | 2/3 | Complete    | 2026-03-08 |
 | 14. Agent Merge and Dashboard | 2/2 | Complete    | 2026-03-09 |
 | 15. Native Observation | 2/2 | Complete    | 2026-03-09 |
-| 16. Commands and Deprecation | 0/? | Not started | - |
+| 16. Commands and Deprecation | 1/2 | In progress | - |

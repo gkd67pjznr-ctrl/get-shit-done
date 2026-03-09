@@ -42,4 +42,4 @@ GSD output often contains structured next-step instructions:
 
 ## Skill Loading in YOLO Mode
 
-Even in autonomous mode, always check for applicable skills before executing GSD phases. Clean context means free of stale conversation history -- not free of learned knowledge. A subagent that can't access learned skills is throwing away everything skill-creator has captured.
+Even in autonomous mode, always check for applicable skills before executing GSD phases. Clean context means free of stale conversation history -- not free of learned knowledge.

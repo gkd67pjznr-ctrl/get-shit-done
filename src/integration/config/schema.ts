@@ -30,7 +30,6 @@ const IntegrationTogglesSchema = z.object({
   phase_transition_hooks: z.boolean().default(true),
   suggest_on_session_start: z.boolean().default(true),
   install_git_hooks: z.boolean().default(true),
-  wrapper_commands: z.boolean().default(true),
 });
 
 // ============================================================================
@@ -102,7 +101,6 @@ export const IntegrationConfigSchema = z.object({
     phase_transition_hooks: true,
     suggest_on_session_start: true,
     install_git_hooks: true,
-    wrapper_commands: true,
   })),
   token_budget: TokenBudgetSchema.default(() => ({
     max_percent: 5,

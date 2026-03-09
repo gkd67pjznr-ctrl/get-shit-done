@@ -158,36 +158,36 @@ describe('DASH-03: dashboard CLI entry and compiled bundle exist and run', () =>
 // ---------------------------------------------------------------------------
 
 describe('DASH-04: dashboard command file uses local build (no npx skill-creator)', () => {
-  const commandPath = path.join(repoRoot, '.claude/commands/gsd-dashboard.md');
+  const commandPath = path.join(repoRoot, 'commands/gsd/dashboard.md');
 
-  test('.claude/commands/gsd-dashboard.md exists', () => {
+  test('commands/gsd/dashboard.md exists', () => {
     assert.ok(
       fs.existsSync(commandPath),
-      '.claude/commands/gsd-dashboard.md must exist'
+      'commands/gsd/dashboard.md must exist'
     );
   });
 
-  test('gsd-dashboard.md does NOT contain "npx skill-creator dashboard"', () => {
+  test('dashboard.md does NOT contain "npx skill-creator dashboard"', () => {
     const content = fs.readFileSync(commandPath, 'utf8');
     assert.ok(
       !content.includes('npx skill-creator dashboard'),
-      'gsd-dashboard.md must not contain "npx skill-creator dashboard"'
+      'dashboard.md must not contain "npx skill-creator dashboard"'
     );
   });
 
-  test('gsd-dashboard.md does NOT contain "npx skill-creator db"', () => {
+  test('dashboard.md does NOT contain "npx skill-creator db"', () => {
     const content = fs.readFileSync(commandPath, 'utf8');
     assert.ok(
       !content.includes('npx skill-creator db'),
-      'gsd-dashboard.md must not contain "npx skill-creator db"'
+      'dashboard.md must not contain "npx skill-creator db"'
     );
   });
 
-  test('gsd-dashboard.md contains "node dist/dashboard.cjs"', () => {
+  test('dashboard.md contains "node dist/dashboard.cjs"', () => {
     const content = fs.readFileSync(commandPath, 'utf8');
     assert.ok(
       content.includes('node dist/dashboard.cjs'),
-      'gsd-dashboard.md must use "node dist/dashboard.cjs" for local invocation'
+      'dashboard.md must use "node dist/dashboard.cjs" for local invocation'
     );
   });
 });

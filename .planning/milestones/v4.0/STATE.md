@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Plan 15-02 complete -- Phase 15 DONE
-last_updated: "2026-03-09T06:00:24.730Z"
-last_activity: 2026-03-08 -- Plan 15-02 executed (native observation in quick, diagnose-issues, fix-debt; all 7 files verified)
+stopped_at: Plan 16-01 complete -- CMD-01/02/03/04 done (suggest, digest, session-start, 13 standalones ported)
+last_updated: "2026-03-09T07:00:00.000Z"
+last_activity: 2026-03-09 -- Plan 16-01 executed (3 SC commands ported, 13 standalone commands ported to gsd: namespace)
 progress:
   total_phases: 5
   completed_phases: 1
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-07)
 
 ## Current Position
 
-Phase: 15 (4 of 5 in v4.0) - Native Observation -- COMPLETE
-Plan: 2 of 2 in current phase -- COMPLETE (Plan 15-02)
-Status: Plan 15-02 complete -- OBS-05/06/07/08 (observation steps in quick, diagnose-issues, fix-debt; all 7 verified) implemented
-Last activity: 2026-03-08 -- Plan 15-02 executed (native observation in quick, diagnose-issues, fix-debt; all 7 files verified)
+Phase: 16 (5 of 5 in v4.0) - Commands and Deprecation -- IN PROGRESS
+Plan: 1 of 2 in current phase -- COMPLETE (Plan 16-01)
+Status: Plan 16-01 complete -- CMD-01/02/03/04 done (suggest, digest, session-start, 13 standalones ported to gsd: namespace)
+Last activity: 2026-03-09 -- Plan 16-01 executed (3 SC commands ported, 13 standalone commands ported to gsd: namespace)
 
-Progress: [##################] 80% (Phases 12, 13, 14, 15 complete; Phase 16 next)
+Progress: [###################_] 90% (Phases 12, 13, 14, 15 complete; Phase 16 Plan 01 complete)
 
 ## Performance Metrics
 
@@ -105,6 +105,10 @@ Recent decisions affecting current work:
 - [15-02]: diagnose-issues uses literal 0 for gap counts -- fragile in subagent context, safe default
 - [15-02]: fix-debt uses phase:"none", milestone:"none" -- no phase context in debt fix lifecycle
 - [15-02]: ENTRY_ID (TD-[0-9]+) and ENTRY_SEVERITY (enum) are safe to embed directly in JSON
+- [16-01]: config path pattern: .planning/skill-creator.json -> .planning/config.json with adaptive_learning key nesting for all SC ported commands
+- [16-01]: session-start Step 5 uses Glob scan only; npx skill-creator status --json removed entirely (not just as fallback)
+- [16-01]: 13 standalone commands copied unchanged except frontmatter name field updated to gsd: prefix
+- [16-01]: sc/ source files NOT deleted in Plan 16-01 -- deletion is Plan 16-02 scope (DEPR-01, DEPR-02)
 
 ### Pending Todos
 
@@ -116,7 +120,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-08
-Stopped at: Plan 15-02 complete -- Phase 15 DONE
-Resume file: .planning/milestones/v4.0/phases/15-native-observation/15-02-SUMMARY.md
-Next: Phase 16 -- Commands and Deprecation (new gsd commands, wrapper removal, standalone package deprecation)
+Last session: 2026-03-09
+Stopped at: Plan 16-01 complete -- CMD-01/02/03/04 done
+Resume file: .planning/milestones/v4.0/phases/16-commands-and-deprecation/16-01-SUMMARY.md
+Next: Phase 16 Plan 16-02 -- Deprecation cleanup (remove sc/ and wrap/ dirs, update skill files, update schema.ts, add deprecation notice)

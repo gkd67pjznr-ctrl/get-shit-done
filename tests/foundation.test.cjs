@@ -72,7 +72,6 @@ describe('CFG-02: migrateSkillCreatorConfig', () => {
       phase_transition_hooks: true,
       suggest_on_session_start: true,
       install_git_hooks: true,
-      wrapper_commands: true,
     },
     token_budget: {
       max_percent: 5,

@@ -26,14 +26,14 @@ user-invocable: true
 | `.planning/phases/XX-name/XX-YY-PLAN.md` | Detailed task plans | Executing work |
 | `.planning/phases/XX-name/XX-YY-SUMMARY.md` | What was built | Reviewing completed work |
 
-### skill-creator Artifacts
+### Adaptive Learning Artifacts
 
 | File | Purpose | When to Read |
 |---|---|---|
 | `.planning/patterns/sessions.jsonl` | Session observations | Pattern detection input |
-| `.claude/commands/*.md` | Project-level skills | Before GSD phase execution |
+| `.claude/skills/*.md` | Project-level skills | Before GSD phase execution |
 | `.claude/agents/*.md` | Composed agents | Agent selection |
-| `~/.claude/commands/*.md` | User-level skills | Fallback when no project skill matches |
+| `~/.claude/skills/*.md` | User-level skills | Fallback when no project skill matches |
 
 ## Response Pattern: Before Substantial Work
 
