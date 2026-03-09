@@ -42,6 +42,24 @@ export function ProjectCard({ project }) {
       ).slice(0, 3)
     : [];
 
+  const [sessionExpanded, setSessionExpanded] = useState(false);
+  const tmux = project.tmux || { available: false, sessions: [], panes: [] };
+  const sessionCount = tmux.sessions ? tmux.sessions.length : 0;
+  const claudePanes = tmux.panes ? tmux.panes.filter(p => p.isClaude) : [];
+  const activePanes = claudePanes.filter(p => {
+    if (!p.lastActivity) return false;
+    return (Date.now() - p.lastActivity) < 5 * 60 * 1000; // active within 5m
+  });
+
+  function handleTrackingToggle() {
+    const newTracking = isPaused ? true : false;
+    fetch(`/api/projects/${encodeURIComponent(project.name)}/tracking`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tracking: newTracking }),
+    }).catch(() => { /* SSE will update state on success; ignore failure silently */ });
+  }
+
   function handleClick() {
     if (!isStale) {
       navigate('/project/' + encodeURIComponent(project.name));
@@ -68,6 +86,64 @@ export function ProjectCard({ project }) {
         ${debtOpen > 0 ? html`<span class="card-meta-item"><strong>${debtOpen}</strong> open debt</span>` : null}
         ${completedMilestones > 0 ? html`<span class="card-meta-item"><strong>${completedMilestones}</strong> done</span>` : null}
       </div>
+
+      <div class="card-session-row" style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+        ${!isStale ? html`
+          <div
+            class="session-badge ${sessionCount === 0 ? 'no-sessions' : ''}"
+            onClick=${(e) => { e.stopPropagation(); if (sessionCount > 0) setSessionExpanded(!sessionExpanded); }}
+            title=${sessionCount > 0 ? 'Click to show session details' : ''}
+          >
+            ${sessionCount === 0
+              ? html`<span>No sessions</span>`
+              : html`<span>${sessionCount} session${sessionCount !== 1 ? 's' : ''}</span><span style="color:var(--text-muted)">(${activePanes.length} active)</span>`
+            }
+          </div>
+        ` : null}
+        ${!isStale ? html`
+          <button
+            class="tracking-toggle"
+            onClick=${(e) => { e.stopPropagation(); handleTrackingToggle(); }}
+            title=${isPaused ? 'Resume tracking' : 'Pause tracking'}
+          >${isPaused ? 'Resume' : 'Pause'}</button>
+        ` : null}
+      </div>
+
+      ${sessionExpanded && sessionCount > 0 ? html`
+        <div class="session-metadata" onClick=${(e) => e.stopPropagation()}>
+          <table>
+            <thead>
+              <tr>
+                <th>Session</th>
+                <th>Win</th>
+                <th>Panes</th>
+                <th>Status</th>
+                <th>Idle</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tmux.panes.map((pane, i) => {
+                const now = Date.now();
+                const idleSecs = pane.lastActivity ? (now - pane.lastActivity) / 1000 : null;
+                let status = 'idle';
+                if (pane.isClaude && idleSecs !== null) {
+                  if (idleSecs < 10) status = 'working';
+                  else if (idleSecs < 300) status = 'waiting';
+                }
+                return html`
+                  <tr key=${i} class="${pane.isClaude ? 'claude-pane' : ''}">
+                    <td>${pane.sessionName}</td>
+                    <td>${pane.sessionWindows}</td>
+                    <td>${pane.windowPanes}</td>
+                    <td>${status}</td>
+                    <td>${fmtIdleDuration(pane.lastActivity)}</td>
+                  </tr>
+                `;
+              })}
+            </tbody>
+          </table>
+        </div>
+      ` : null}
 
       ${isStale ? html`
         <div class="stale-warning">⚠ Path not found</div>
