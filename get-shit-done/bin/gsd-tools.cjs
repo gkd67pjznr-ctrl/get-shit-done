@@ -750,8 +750,29 @@ async function main() {
         case 'list':
           dashboard.cmdDashboardList(raw);
           break;
+        case 'serve': {
+          // Parse --port flag
+          let port = 3141;
+          const portIdx = args.indexOf('--port');
+          if (portIdx !== -1) {
+            const portVal = args[portIdx + 1];
+            if (!portVal || portVal.startsWith('-')) {
+              error('--port requires a value. Usage: gsd dashboard serve [--port PORT]');
+            }
+            const parsed = parseInt(portVal, 10);
+            if (isNaN(parsed) || parsed < 1 || parsed > 65535) {
+              error('Invalid port number: ' + portVal + '. Must be between 1 and 65535.');
+            }
+            port = parsed;
+          }
+          // Delegate to server module (long-running foreground process)
+          const { startDashboardServer } = require('./lib/server.cjs');
+          startDashboardServer(port);
+          // NOTE: do NOT call process.exit() here -- the server runs until SIGINT
+          break;
+        }
         default:
-          error(`Unknown dashboard subcommand: ${subAction || '(none)'}. Usage: gsd dashboard add|remove|list`);
+          error(`Unknown dashboard subcommand: ${subAction || '(none)'}. Usage: gsd dashboard add|remove|list|serve`);
       }
       break;
     }
