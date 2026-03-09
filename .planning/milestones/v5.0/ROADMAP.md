@@ -12,7 +12,7 @@ Transform GSD from a single-project CLI tool into a device-wide multi-project co
 - Integer phases (17, 18, 19, ...): Planned milestone work
 - Decimal phases (17.1, 17.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 17: Project Registry** - CLI commands and persistent storage for managing registered GSD projects
+- [x] **Phase 17: Project Registry** - CLI commands and persistent storage for managing registered GSD projects
 - [ ] **Phase 18: Data Aggregation and Server** - File watchers, data collectors, HTTP server, and SSE live refresh
 - [ ] **Phase 19: Dashboard UI** - Multi-project overview page and per-project drill-down
 - [ ] **Phase 20: Tmux Monitoring and Cross-Project Metrics** - Session detection, metadata cards, health scoring, and aggregated metrics
@@ -81,7 +81,7 @@ Phases execute in numeric order: 17 -> 17.x -> 18 -> 18.x -> 19 -> 20 -> 21
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 17. Project Registry | 0/? | Not started | - |
+| 17. Project Registry | 2/2 | Complete | 2026-03-09 |
 | 18. Data Aggregation and Server | 0/? | Not started | - |
 | 19. Dashboard UI | 0/? | Not started | - |
 | 20. Tmux Monitoring and Metrics | 0/? | Not started | - |
