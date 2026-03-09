@@ -5,9 +5,8 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const chokidar = require('chokidar');
-const { execSync } = require('child_process');
+const { execSync, spawn } = require('child_process');
 const { WebSocketServer } = require('ws');
-const pty = require('node-pty');
 
 const { resolveActiveMilestone, planningRoot, compareVersions } = require('./core.cjs');
 const { loadRegistry, getDashboardPath } = require('./dashboard.cjs');
@@ -625,7 +624,7 @@ function serveStatic(req, res, dashboardDir) {
  */
 function setupTerminalWebSocket(httpServer) {
   const wss = new WebSocketServer({ noServer: true });
-  const activeSessions = new Map(); // sessionName -> { proc, ws }
+  const activeSessions = new Map(); // sessionName -> { proc, ws, paneId }
 
   httpServer.on('upgrade', (req, socket, head) => {
     const urlPath = (req.url || '').split('?')[0];
@@ -664,48 +663,117 @@ function setupTerminalWebSocket(httpServer) {
       return;
     }
 
-    // Spawn tmux attach-session inside a real PTY via node-pty
-    // (tmux requires a TTY — piped stdio causes immediate exit)
-    const proc = pty.spawn('tmux', ['attach-session', '-t', sessionName], {
-      name: 'xterm-256color',
-      cols: 80,
-      rows: 24,
+    // Get the active pane ID for this session
+    let targetPane;
+    try {
+      targetPane = execSync(
+        `tmux display-message -t "${sessionName}" -p '#{pane_id}'`,
+        { encoding: 'utf-8', stdio: 'pipe', timeout: 2000 }
+      ).trim();
+    } catch {
+      targetPane = null; // will use session name as target
+    }
+    const sendTarget = targetPane || sessionName;
+
+    // Use tmux control mode (-C) which works with piped stdio.
+    // Control mode streams structured events on stdout and accepts
+    // tmux commands on stdin — no PTY allocation needed.
+    const proc = spawn('tmux', ['-C', 'attach-session', '-t', sessionName, '-r'], {
+      stdio: ['pipe', 'pipe', 'pipe'],
       env: { ...process.env, TERM: 'xterm-256color' },
     });
 
-    activeSessions.set(sessionName, { proc, ws });
+    activeSessions.set(sessionName, { proc, ws, paneId: sendTarget });
 
-    // PTY output → WebSocket
-    proc.onData((data) => {
-      if (ws.readyState === 1 /* OPEN */) {
-        try { ws.send(data); } catch { /* ignore -- client may have closed */ }
+    // Send initial screen capture so the terminal isn't blank
+    try {
+      const initialContent = execSync(
+        `tmux capture-pane -t "${sendTarget}" -p -e`,
+        { encoding: 'utf-8', stdio: 'pipe', timeout: 2000 }
+      );
+      if (initialContent && ws.readyState === 1) {
+        // capture-pane outputs \n-separated lines; xterm.js needs \r\n
+        ws.send(initialContent.replace(/\n/g, '\r\n'));
+      }
+    } catch { /* ignore — control mode output will follow */ }
+
+    // Parse tmux control mode output — forward %output events to WebSocket
+    let buffer = '';
+    proc.stdout.on('data', (chunk) => {
+      buffer += chunk.toString();
+      let newlineIdx;
+      while ((newlineIdx = buffer.indexOf('\n')) !== -1) {
+        const line = buffer.slice(0, newlineIdx);
+        buffer = buffer.slice(newlineIdx + 1);
+
+        // %output %<pane_id> <escaped-data>
+        if (line.startsWith('%output ')) {
+          const spaceAfterPane = line.indexOf(' ', 8);
+          if (spaceAfterPane !== -1) {
+            const rawData = line.slice(spaceAfterPane + 1);
+            // Unescape tmux control mode encoding: \033 → ESC, \015 → CR, \012 → LF, \\ → \
+            const unescaped = rawData
+              .replace(/\\033/g, '\x1b')
+              .replace(/\\015/g, '\r')
+              .replace(/\\012/g, '\n')
+              .replace(/\\007/g, '\x07')
+              .replace(/\\010/g, '\b')
+              .replace(/\\011/g, '\t')
+              .replace(/\\177/g, '\x7f')
+              .replace(/\\\\/g, '\\');
+            if (ws.readyState === 1) {
+              try { ws.send(unescaped); } catch { /* ignore */ }
+            }
+          }
+        }
+        // %session-changed, %window-renamed, etc. — ignore for now
       }
     });
 
+    proc.stderr.on('data', () => { /* ignore control mode stderr */ });
+
     ws.on('message', (data) => {
       const str = typeof data === 'string' ? data : data.toString();
+
       // Try to parse as JSON control message (resize)
       try {
         const msg = JSON.parse(str);
         if (msg.type === 'resize' && msg.cols && msg.rows) {
-          proc.resize(msg.cols, msg.rows);
-          return; // control message handled -- do not forward to stdin
+          // In control mode, send resize command via stdin
+          const cols = parseInt(msg.cols, 10);
+          const rows = parseInt(msg.rows, 10);
+          if (cols > 0 && rows > 0 && !proc.stdin.destroyed) {
+            proc.stdin.write(`resize-pane -t ${sendTarget} -x ${cols} -y ${rows}\n`);
+          }
+          return;
         }
-      } catch { /* not JSON -- fall through to keystroke forward */ }
+      } catch { /* not JSON — fall through to keystroke forward */ }
 
-      // Forward raw keystrokes to the PTY
-      try { proc.write(str); } catch { /* ignore */ }
+      // Forward keystrokes via tmux send-keys -H (hex mode).
+      // xterm.js sends raw bytes including escape sequences for special keys
+      // (Enter=\r, arrows=\x1b[A, Ctrl+C=\x03, etc). Hex mode handles all of
+      // them correctly without needing to map key names.
+      if (!proc.stdin.destroyed) {
+        const hexBytes = Buffer.from(str, 'utf-8')
+          .toString('hex')
+          .match(/.{2}/g)
+          .join(' ');
+        proc.stdin.write(`send-keys -t ${sendTarget} -H ${hexBytes}\n`);
+      }
     });
 
     const cleanup = () => {
       activeSessions.delete(sessionName);
-      try { proc.kill(); } catch { /* already dead */ }
+      if (!proc.killed) {
+        try { proc.stdin.end(); } catch { /* ignore */ }
+        proc.kill('SIGHUP');
+      }
     };
 
     ws.on('close', cleanup);
     ws.on('error', cleanup);
 
-    proc.onExit(() => {
+    proc.on('exit', () => {
       activeSessions.delete(sessionName);
       if (ws.readyState === 1) ws.close();
     });
@@ -714,7 +782,7 @@ function setupTerminalWebSocket(httpServer) {
   // Clean up all sessions on server shutdown
   process.on('SIGINT', () => {
     for (const { proc } of activeSessions.values()) {
-      try { proc.kill(); } catch { /* ignore */ }
+      if (!proc.killed) proc.kill('SIGHUP');
     }
   });
 
@@ -817,7 +885,7 @@ function createHttpServer(port, cache, clients, dashboardDir, tmuxCache) {
     }
 
     if (req.method === 'GET' && pathname === '/api/patterns') {
-      const registry = loadRegistry(opts.gsdHome);
+      const registry = loadRegistry();
       const patterns = aggregatePatterns(registry);
       res.writeHead(200, {
         'Content-Type': 'application/json',
@@ -1096,6 +1164,9 @@ function startDashboardServer(port, opts = {}) {
 
   // Create and start HTTP server
   const server = createHttpServer(port, cache, clients, opts.dashboardDir || DASHBOARD_DIR, tmuxCache);
+
+  // Attach WebSocket terminal bridge to the HTTP server
+  setupTerminalWebSocket(server);
 
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
