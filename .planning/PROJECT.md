@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A forked, upgraded version of the GSD (Get Shit Done) framework for Claude Code that adds quality enforcement, concurrent milestone execution, and systematic tech debt management. Quality layers eliminate "slop" via a Quality Sentinel, Context7 library lookup, mandatory testing, and quality dimensions — completing a full Plan→Execute→Verify quality enforcement loop. Concurrent milestone support enables multiple milestones to execute in parallel with isolated workspaces. Tech debt infrastructure provides structured tracking (DEBT.md), agent auto-logging with quality-level gating, a migration tool for existing projects, and an on-demand `/gsd:fix-debt` resolution skill.
+A forked, upgraded version of the GSD (Get Shit Done) framework for Claude Code that adds quality enforcement, concurrent milestone execution, systematic tech debt management, and adaptive learning integration. Quality layers eliminate "slop" via a Quality Sentinel, Context7 library lookup, mandatory testing, and quality dimensions — completing a full Plan→Execute→Verify quality enforcement loop. Concurrent milestone support enables multiple milestones to execute in parallel with isolated workspaces. Tech debt infrastructure provides structured tracking (DEBT.md), agent auto-logging with quality-level gating, and an on-demand `/gsd:fix-debt` resolution skill. Adaptive learning merges gsd-skill-creator into core — one package, one install, native observation in every workflow command, 16 auto-loading skills, and integrated analysis commands.
 
 ## Core Value
 
@@ -64,26 +64,27 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 - ✓ All test infrastructure rewritten for milestone-scoped layouts (716/717 passing) — v3.1
 - ✓ README.md and FORK-GUIDE.md documenting fork purpose and features — v3.1
 
+- ✓ Unified config — skill-creator.json merged into config.json under adaptive_learning key — v4.0
+- ✓ Config migration auto-detects legacy skill-creator.json and merges — v4.0
+- ✓ 16 skills ship as auto-loading SKILL.md files under skills/ directory — v4.0
+- ✓ 4 team configs ship under teams/ directory — v4.0
+- ✓ Single installer delivers skills, teams, 9 hooks, and CLAUDE.md to user projects — v4.0
+- ✓ Manifest tracking prevents re-adding user-deleted skills — v4.0
+- ✓ CLAUDE.md marker-based merge preserves user content — v4.0
+- ✓ Agent skill-awareness and capability inheritance baked inline (no extension markers) — v4.0
+- ✓ Dashboard (15K LOC) builds from gsdup repo with /gsd:dashboard command — v4.0
+- ✓ Native observation capture in all 7 workflow commands (sessions.jsonl) — v4.0
+- ✓ 13 standalone commands ported to /gsd:* namespace — v4.0
+- ✓ /wrap:* and /sc:* commands removed — GSD commands natively skill-aware — v4.0
+- ✓ gsd-skill-creator deprecated as standalone package — v4.0
+
 ### Active
 
 ## Current Milestones
 
-### v4.0 Adaptive Learning Integration
+### v4.0 Adaptive Learning Integration — SHIPPED 2026-03-09
 
-**Goal:** Merge gsd-skill-creator into GSD core — one package, one install, native skill awareness with observation baked into every GSD workflow command.
-
-**Target features:**
-- Native observation capture in all GSD workflow commands (plan, execute, verify, discuss, quick, debug, fix-debt)
-- Kill wrapper commands — GSD commands become natively skill-aware
-- All skills ship with GSD (auto-load via `.claude/skills/`, user-prunable)
-- Agent extensions merged inline into GSD agent files (no fragment injection)
-- Session hooks merged into GSD hooks directory
-- Teams ship as first-class GSD feature
-- Config merged into GSD config.json (no separate skill-creator.json)
-- New `/gsd:suggest` and `/gsd:digest` commands for pattern analysis
-- CLAUDE.md template + merge strategy in installer
-- Single installer handles everything (skills, hooks, teams, agents, commands)
-- Deprecate gsd-skill-creator as standalone package
+**Delivered:** Merged gsd-skill-creator into GSD core — one package, one install, native skill awareness with observation baked into every workflow command. 7 phases, 15 plans, 39/39 requirements satisfied.
 
 ### v5.0 Device-Wide Dashboard
 
@@ -119,9 +120,9 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 
 ## Context
 
-Shipped v3.1 with ~10K LOC across 12 CJS source modules + 23 test suites, plus workflow/agent Markdown specifications.
-Tech stack: Node.js, CJS modules, Markdown agent specifications, Context7 MCP.
-716/717 tests passing across 23 test suites.
+Shipped v4.0 with ~52K LOC across 12 CJS source modules + 23 test suites, plus workflow/agent Markdown specifications, 16 skills, 4 teams, and a TypeScript dashboard.
+Tech stack: Node.js, CJS modules, TypeScript (dashboard), Markdown agent specifications, Context7 MCP.
+Tests passing across 23+ test suites.
 
 **Quality enforcement** (v1.0-v1.1): Full Plan→Execute→Verify loop with Quality Sentinel, Context7 library lookup, mandatory testing, quality dimensions, config-gated enforcement levels (fast/standard/strict), and observability.
 
@@ -131,7 +132,9 @@ Tech stack: Node.js, CJS modules, Markdown agent specifications, Context7 MCP.
 
 **Legacy strip** (v3.1): Milestone-scoped is now the only supported layout. `detectLayoutStyle()`, `migrate.cjs`, and all layout branching removed. All test infrastructure rewritten. Net reduction of ~14K lines.
 
-**Known tech debt:** `cmdStateUpdateProgress` uses flat `.planning/phases/` path (MISS-01, medium). See `.planning/DEBT.md` and MILESTONES.md.
+**Adaptive learning** (v4.0): gsd-skill-creator merged into core. Single installer delivers skills, teams, hooks, and CLAUDE.md. Native observation in all 7 workflow commands. 13 standalone commands ported to /gsd:* namespace. Agent extensions merged inline.
+
+**Known tech debt:** `cmdStateUpdateProgress` uses flat `.planning/phases/` path (MISS-01, medium). Analysis commands (gsd:suggest, gsd:digest) read data files with no writers yet. See `.planning/DEBT.md` and MILESTONES.md.
 
 ## Constraints
 
@@ -174,4 +177,4 @@ Tech stack: Node.js, CJS modules, Markdown agent specifications, Context7 MCP.
 | No --milestone on migrate | Operates on project-level .planning/, not milestone workspaces | ✓ Good — migration is project-scoped, not milestone-scoped |
 
 ---
-*Last updated: 2026-03-07 after v5.0 milestone started*
+*Last updated: 2026-03-09 after v4.0 milestone*
