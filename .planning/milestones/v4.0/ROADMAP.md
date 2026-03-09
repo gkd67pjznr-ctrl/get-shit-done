@@ -95,5 +95,5 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16
 | 12. Foundation | 3/4 | Complete    | 2026-03-08 |
 | 13. Installer and Content Delivery | 2/3 | Complete    | 2026-03-08 |
 | 14. Agent Merge and Dashboard | 2/2 | Complete    | 2026-03-09 |
-| 15. Native Observation | 2/2 | Complete    | 2026-03-08 |
+| 15. Native Observation | 2/2 | Complete    | 2026-03-09 |
 | 16. Commands and Deprecation | 0/? | Not started | - |
