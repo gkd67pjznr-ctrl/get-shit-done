@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: In Progress
-stopped_at: Gap closure phases 16.1 and 16.2 created from milestone audit
-last_updated: "2026-03-09T11:30:00.000Z"
-last_activity: 2026-03-09 -- Gap closure phases created (16.1 installer fixes, 16.2 doc debt)
+stopped_at: Phase 16.1 Plan 01 complete -- all 4 success criteria met
+last_updated: "2026-03-09T12:25:00.000Z"
+last_activity: 2026-03-09 -- Phase 16.1-01 complete: installer wired, src/ cleaned
 progress:
   total_phases: 7
   completed_phases: 5
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-07)
 
 ## Current Position
 
-Phase: 16.1 (6 of 7 in v4.0) - Installer & Integration Fixes (gap closure)
+Phase: 16.2 (7 of 7 in v4.0) - Documentation & Test Debt (gap closure)
 Plan: Not yet planned
-Status: Gap closure phases created from milestone audit; Phase 16.1 needs planning
-Last activity: 2026-03-09 -- Milestone audit identified 3 partial requirements, 3 integration gaps, 12 tech debt items
+Status: Phase 16.1 complete; Phase 16.2 needs planning
+Last activity: 2026-03-09 -- Phase 16.1-01 complete: installer wired (INST-06, CFG-02), src/ cleaned (DEPR-03)
 
-Progress: [##############------] 71% (Phases 12-16 complete; 16.1, 16.2 gap closure remaining)
+Progress: [################----] 86% (Phases 12-16.1 complete; 16.2 gap closure remaining)
 
 ## Performance Metrics
 
@@ -112,6 +112,10 @@ Recent decisions affecting current work:
 - [16-02]: DASH-04 test updated to point to commands/gsd/dashboard.md (deleted .claude/commands/gsd-dashboard.md as planned)
 - [16-02]: wrapper_commands removed from all 4 files; only pre-existing config-get failure in test suite
 - [16-02]: .planning/config.json is gitignored -- wrapper_commands removed locally only
+- [16.1-01]: !isGlobal (not runtime === claude && !isGlobal) used for patterns dir creation -- runtime-agnostic
+- [16.1-01]: config migration in installer is best-effort try/catch -- never fails install
+- [16.1-01]: DEFAULT_CONFIG_PATH in reader.ts now .planning/config.json; parse fails softly returning defaults (acceptable for 16.1)
+- [16.1-01]: desktop/ does not exist in gsdup -- DEPR-03 npx grep test passes correctly post-fix via exit code behavior
 
 ### Pending Todos
 
@@ -124,6 +128,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-09
-Stopped at: Gap closure phases 16.1 and 16.2 created from milestone audit
-Resume file: .planning/v4.0-MILESTONE-AUDIT.md
-Next: `/gsd:plan-phase 16.1` — plan installer & integration fixes
+Stopped at: Phase 16.1-01 complete
+Resume file: .planning/milestones/v4.0/phases/16.1-installer-and-integration-fixes/16.1-01-SUMMARY.md
+Next: `/gsd:plan-phase 16.2` — plan documentation & test debt

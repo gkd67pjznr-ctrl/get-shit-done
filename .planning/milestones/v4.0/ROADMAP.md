@@ -98,8 +98,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. Running `bin/install.js` creates `.planning/patterns/` directory in the target project
   2. Running `bin/install.js` on a project with `skill-creator.json` auto-migrates config into `config.json`
   3. `grep -r 'skill-creator\.json' src/` returns zero matches
-  4. `grep -r 'npx skill-creator' src/ dashboard/` returns zero matches
-**Plans**: TBD
+  4. `grep -r 'npx skill-creator' src/ desktop/` returns zero matches
+**Plans**:
+  - [x] Plan 16.1-01: Installer wiring and source cleanup (CFG-02, INST-06, DEPR-03)
 
 ### Phase 16.2: Documentation & Test Debt
 **Goal**: Clean up all documentation debt accumulated during Phases 12-16 — REQUIREMENTS.md checkboxes, test stubs, VALIDATION.md statuses, STATUS.md
@@ -125,5 +126,5 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16 -> 16.1 -> 16.2
 | 14. Agent Merge and Dashboard | 2/2 | Complete    | 2026-03-09 |
 | 15. Native Observation | 2/2 | Complete    | 2026-03-09 |
 | 16. Commands and Deprecation | 2/2 | Complete    | 2026-03-09 |
-| 16.1. Installer & Integration Fixes | 0/? | Not started | - |
+| 16.1. Installer & Integration Fixes | 1/1 | Complete    | 2026-03-09 |
 | 16.2. Documentation & Test Debt | 0/? | Not started | - |
