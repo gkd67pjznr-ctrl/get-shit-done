@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: In Progress
-stopped_at: Phase 16.1 Plan 01 complete -- all 4 success criteria met
-last_updated: "2026-03-09T12:25:00.000Z"
-last_activity: 2026-03-09 -- Phase 16.1-01 complete: installer wired, src/ cleaned
+status: planning
+stopped_at: Phase 16.2-01 complete
+last_updated: "2026-03-09T13:30:00.000Z"
+last_activity: "2026-03-09 -- Phase 16.2-01 complete: REQUIREMENTS.md all [x], 4 test stubs replaced, hook cleaned, VALIDATION.md files marked nyquist_compliant"
 progress:
   total_phases: 7
-  completed_phases: 5
-  total_plans: 0
-  completed_plans: 0
-  percent: 71
+  completed_phases: 7
+  total_plans: 9
+  completed_plans: 9
+  percent: 100
 ---
 
 # Project State -- Milestone v4.0
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-07)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts -- enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 16.1 - Installer & Integration Fixes (gap closure)
+**Current focus:** Phase 16.2 complete -- v4.0 milestone fully delivered
 
 ## Current Position
 
 Phase: 16.2 (7 of 7 in v4.0) - Documentation & Test Debt (gap closure)
-Plan: Not yet planned
-Status: Phase 16.1 complete; Phase 16.2 needs planning
-Last activity: 2026-03-09 -- Phase 16.1-01 complete: installer wired (INST-06, CFG-02), src/ cleaned (DEPR-03)
+Plan: 01 -- COMPLETE
+Status: All 7 phases complete. v4.0 milestone fully delivered.
+Last activity: 2026-03-09 -- Phase 16.2-01 complete: REQUIREMENTS.md all [x], 4 test stubs replaced, hook cleaned, VALIDATION.md files marked nyquist_compliant
 
 Progress: [################----] 86% (Phases 12-16.1 complete; 16.2 gap closure remaining)
 
@@ -128,6 +128,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-09
-Stopped at: Phase 16.1-01 complete
-Resume file: .planning/milestones/v4.0/phases/16.1-installer-and-integration-fixes/16.1-01-SUMMARY.md
-Next: `/gsd:plan-phase 16.2` — plan documentation & test debt
+Stopped at: Phase 16.2-01 complete
+Resume file: .planning/milestones/v4.0/phases/16.2-documentation-and-test-debt/16.2-01-SUMMARY.md
+Next: v4.0 milestone complete -- begin v5.0 planning or release tagging

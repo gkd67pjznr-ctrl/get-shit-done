@@ -17,8 +17,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 14: Agent Merge and Dashboard** - Agent inline integration, dashboard copy-and-verify (completed 2026-03-08)
 - [x] **Phase 15: Native Observation** - Observation capture baked into all 7 GSD workflow commands (completed 2026-03-08)
 - [x] **Phase 16: Commands and Deprecation** - New commands, wrapper removal, standalone package deprecation (completed 2026-03-09)
-- [ ] **Phase 16.1: Installer & Integration Fixes** - Wire patterns dir creation, config migration, clean src/ skill-creator references (gap closure)
-- [ ] **Phase 16.2: Documentation & Test Debt** - Update REQUIREMENTS.md checkboxes, fill test stubs, clean VALIDATION.md statuses (gap closure)
+- [x] **Phase 16.1: Installer & Integration Fixes** - Wire patterns dir creation, config migration, clean src/ skill-creator references (gap closure) (completed 2026-03-09)
+- [x] **Phase 16.2: Documentation & Test Debt** - Update REQUIREMENTS.md checkboxes, fill test stubs, clean VALIDATION.md statuses (gap closure)
 
 ## Phase Details
 
@@ -112,7 +112,8 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. All 4 test stubs in `installer-content.test.cjs` are real assertions (no `assert.ok(true, 'TODO')`)
   3. `phase-boundary-check.sh` echo string does not reference `skill-creator`
   4. VALIDATION.md files for Phases 14 and 16 show `nyquist_compliant: true`
-**Plans**: TBD
+**Plans**:
+  - [x] Plan 16.2-01: Documentation and test debt cleanup (REQUIREMENTS.md, test stubs, hooks, VALIDATION.md)
 
 ## Progress
 
@@ -127,4 +128,4 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16 -> 16.1 -> 16.2
 | 15. Native Observation | 2/2 | Complete    | 2026-03-09 |
 | 16. Commands and Deprecation | 2/2 | Complete    | 2026-03-09 |
 | 16.1. Installer & Integration Fixes | 1/1 | Complete    | 2026-03-09 |
-| 16.2. Documentation & Test Debt | 0/? | Not started | - |
+| 16.2. Documentation & Test Debt | 1/1 | Complete    | 2026-03-09 |
