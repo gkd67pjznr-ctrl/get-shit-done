@@ -19,7 +19,7 @@ progress:
 Phase: Not started (defining requirements)
 Plan: —
 Status: Defining requirements
-Last activity: 2026-03-09 - Completed quick task 19: Restyle dashboard to Claude Code terminal aesthetic
+Last activity: 2026-03-09 - Completed quick task 22: Fix dashboard duplicating completed phase lines in milestone accordion
 
 ## Active Milestones
 
@@ -81,7 +81,7 @@ See: .planning/PROJECT.md (updated 2026-03-05)
 | 19 | Restyle dashboard to Claude Code terminal aesthetic (monospace, pipe rows, Unicode block bars) | 2026-03-09 | 04d0888 | Complete | [19-restyle-dashboard-to-match-claude-code-t](./quick/19-restyle-dashboard-to-match-claude-code-t/) |
 | 20 | Enhance dashboard terminal aesthetic (status color-coding, sidebar milestones+progress bars, larger metrics) | 2026-03-09 | e3539b1 | Verified | [20-enhance-dashboard-terminal-aesthetic-wit](./quick/20-enhance-dashboard-terminal-aesthetic-wit/) |
 | 21 | Fix dashboard milestone status to read from ROADMAP.md checkboxes (ground truth override) | 2026-03-09 | ef6b726 | Verified | [21-fix-dashboard-milestone-status-to-read-f](./quick/21-fix-dashboard-milestone-status-to-read-f/) |
-| 22 | Fix dashboard duplicating completed phases (parseRoadmapFile filtering plan-level checkboxes) | 2026-03-09 | 4b9c21f | Complete | [22-fix-dashboard-duplicating-completed-phas](./quick/22-fix-dashboard-duplicating-completed-phas/) |
+| 22 | Fix dashboard duplicating completed phases (parseRoadmapFile filtering plan-level checkboxes) | 2026-03-09 | 4b9c21f | Verified | [22-fix-dashboard-duplicating-completed-phas](./quick/22-fix-dashboard-duplicating-completed-phas/) |
 
 ## Session Continuity
 
