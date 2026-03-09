@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: Defining requirements
 last_updated: "2026-03-09T16:17:02.718Z"
-last_activity: 2026-03-09 -- Phase 21-04b executed (PAT-03, PAT-04) -- v5.0 milestone complete
+last_activity: 2026-03-09 -- Quick task 21 complete -- ROADMAP.md checkbox override for milestone active state
 progress:
   total_phases: 5
   completed_phases: 2
@@ -80,7 +80,7 @@ See: .planning/PROJECT.md (updated 2026-03-05)
 | 18 | Fix dashboard multi-milestone active state, project-card cap, and accordion header phase/pct badges | 2026-03-09 | b572d3f | Verified | [18-fix-dashboard-multi-milestone-active-sta](./quick/18-fix-dashboard-multi-milestone-active-sta/) |
 | 19 | Restyle dashboard to Claude Code terminal aesthetic (monospace, pipe rows, Unicode block bars) | 2026-03-09 | 04d0888 | Complete | [19-restyle-dashboard-to-match-claude-code-t](./quick/19-restyle-dashboard-to-match-claude-code-t/) |
 | 20 | Enhance dashboard terminal aesthetic (status color-coding, sidebar milestones+progress bars, larger metrics) | 2026-03-09 | e3539b1 | Verified | [20-enhance-dashboard-terminal-aesthetic-wit](./quick/20-enhance-dashboard-terminal-aesthetic-wit/) |
-| 21 | Fix dashboard milestone status to read from ROADMAP.md checkboxes (ground truth override) | 2026-03-09 | ef6b726 | Complete | [21-fix-dashboard-milestone-status-to-read-f](./quick/21-fix-dashboard-milestone-status-to-read-f/) |
+| 21 | Fix dashboard milestone status to read from ROADMAP.md checkboxes (ground truth override) | 2026-03-09 | ef6b726 | Verified | [21-fix-dashboard-milestone-status-to-read-f](./quick/21-fix-dashboard-milestone-status-to-read-f/) |
 
 ## Session Continuity
 
