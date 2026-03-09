@@ -240,6 +240,44 @@ describe('CFG-02: migrateSkillCreatorConfig', () => {
   });
 });
 
+describe('CFG-02: installer wires migrateSkillCreatorConfig on local install', () => {
+  const { migrateSkillCreatorConfig } = require('../get-shit-done/bin/lib/migrate.cjs');
+
+  test('calling migrateSkillCreatorConfig removes skill-creator.json and merges into config.json', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-cfg02-wire-'));
+    const planningDir = path.join(tmpDir, '.planning');
+    fs.mkdirSync(planningDir, { recursive: true });
+
+    // Write a minimal skill-creator.json (format from Phase 12 research)
+    const scConfig = {
+      observation: { enabled: true, sampleRate: 1.0, storageLimit: 100 },
+      suggestion: { enabled: true, minSessions: 3, confidenceThreshold: 0.7 },
+      skill: { autoApply: false, requireApproval: true }
+    };
+    fs.writeFileSync(
+      path.join(planningDir, 'skill-creator.json'),
+      JSON.stringify(scConfig, null, 2)
+    );
+
+    // Simulate installer local-only block calling migration
+    migrateSkillCreatorConfig(planningDir);
+
+    // Assertions
+    assert.ok(
+      !fs.existsSync(path.join(planningDir, 'skill-creator.json')),
+      'skill-creator.json should be removed after migration'
+    );
+    assert.ok(
+      fs.existsSync(path.join(planningDir, 'config.json')),
+      'config.json should exist after migration'
+    );
+    const merged = JSON.parse(fs.readFileSync(path.join(planningDir, 'config.json'), 'utf8'));
+    assert.ok(merged.adaptive_learning, 'config.json should have adaptive_learning key');
+
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+});
+
 // ── SKILL-01 and SKILL-02: skills/ directory structure ────────────────────────
 
 const EXPECTED_SKILLS = [
