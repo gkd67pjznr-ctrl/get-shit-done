@@ -323,6 +323,20 @@ Debt entry $ENTRY_ID resolved.
   Component: $ENTRY_COMPONENT
 ```
 
+Record observation to sessions.jsonl:
+
+```bash
+OBS_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+OBS_FILE=".planning/patterns/sessions.jsonl"
+
+if [ ! -d ".planning/patterns" ]; then
+  echo "Observation skipped: .planning/patterns/ not found. Fix: mkdir -p .planning/patterns"
+else
+  echo "{\"timestamp\":\"${OBS_TIMESTAMP}\",\"type\":\"workflow\",\"source\":\"workflow\",\"command\":\"debt\",\"phase\":\"none\",\"milestone\":\"none\",\"duration\":null,\"outcome\":\"success\",\"skills_loaded\":[],\"details\":{\"entry_id\":\"${ENTRY_ID}\",\"severity\":\"${ENTRY_SEVERITY}\",\"status_transition\":\"open->resolved\"}}" >> "$OBS_FILE" 2>/dev/null \
+    || echo "Observation failed: could not write to $OBS_FILE. Fix: touch $OBS_FILE"
+fi
+```
+
 Suggest next steps:
 ```
 Next: Run /gsd:fix-debt again to fix the next entry, or /gsd:progress to check milestone status.
