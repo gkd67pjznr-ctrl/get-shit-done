@@ -42,7 +42,7 @@ function Overview({ onOpenTerminal }) {
     <div class="card-grid">
       ${ps.map(p => html`<${ProjectCard} key=${p.name} project=${p} onOpenTerminal=${onOpenTerminal} />`)}
     </div>
-    <div style="text-align:center; font-size:10px; color:var(--text-muted); padding: 8px; font-family:var(--font-data);">
+    <div style="text-align:center; font-size:12px; color:var(--text-muted); padding: 8px; font-family:var(--font-data);">
       Tip: Name Claude Code tmux sessions starting with <code>cc</code> for session tracking
     </div>
   `;
@@ -55,7 +55,7 @@ function App() {
 
   return html`
     <${Header} onToggleSidebar=${() => setSidebarOpen(!sidebarOpen)} />
-    <nav style="padding:4px 16px; border-bottom:1px solid var(--border-subtle,#2a2a2a); font-size:12px;">
+    <nav style="padding:4px 16px; border-bottom:1px solid var(--border-subtle,#2a2a2a); font-size:14px;">
       <a href="#/" style="color:var(--text-muted); text-decoration:none; margin-right:16px;">Overview</a>
       <a href="#/patterns" style="color:var(--text-muted); text-decoration:none;">Patterns</a>
     </nav>

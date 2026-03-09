@@ -38,15 +38,11 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
   const debtOpen = project.debt ? project.debt.open : 0;
 
   // Milestones to display: all active ones + most recent completed (cap 6)
-  const activeMilestones = project.milestones ? project.milestones.filter(m => m.active) : [];
-  const completedMilestones_ = project.milestones ? project.milestones.filter(m => !m.active) : [];
+  const activeMilestones = project.milestones ? project.milestones.filter(m => m.active).reverse() : [];
+  const completedMilestones_ = project.milestones ? project.milestones.filter(m => !m.active).reverse() : [];
   const milestonesToShow = project.milestones && project.milestones.length > 0
-    ? activeMilestones.concat(completedMilestones_.slice(-1)).slice(0, 6)
+    ? activeMilestones.concat(completedMilestones_.slice(0, 1)).slice(0, 6)
     : [];
-
-  // Primary milestone for inline display
-  const primaryMs = milestonesToShow[0] || null;
-  const extraMilestones = milestonesToShow.slice(1);
 
   const [sessionExpanded, setSessionExpanded] = useState(false);
   const tmux = project.tmux || { available: false, sessions: [], panes: [] };
@@ -72,40 +68,15 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
     }
   }
 
-  // Primary milestone info
-  let primaryMsName = null, primaryPhase = null, primaryPct = null, primaryShimmerClass = '';
-  if (primaryMs) {
-    const state = primaryMs.state || {};
-    primaryMsName = primaryMs.name;
-    primaryPhase = state.current_phase || null;
-    primaryPct = parseProgress(state.progress);
-    primaryShimmerClass = primaryMs.active ? computeShimmerClass(project) : '';
-  }
-
   return html`
     <div
       ref=${cardRef}
       class="project-card ${isStale ? 'stale' : ''} ${isPaused ? 'paused' : ''} ${project._appear ? 'card-appear' : ''}"
       onClick=${handleClick}
     >
-      <!-- Primary row: name | milestone | phase | progress | health | sessions [toggle] -->
+      <!-- Header row: name | health | sessions | controls -->
       <div class="card-header">
         <span class="card-project-name ${isPaused ? 'status-not-started' : healthClass(health)}">${project.display_name || project.name}</span>
-
-        ${primaryMsName ? html`
-          <${Sep} />
-          <span style="color:var(--term-cyan);font-size:11px;flex-shrink:0">${primaryMsName}</span>
-        ` : null}
-
-        ${primaryPhase ? html`
-          <${Sep} />
-          <span style="color:var(--text-secondary);font-size:11px;flex-shrink:0">${primaryPhase}</span>
-        ` : null}
-
-        ${primaryPct !== null ? html`
-          <${Sep} />
-          <${ProgressBar} value=${primaryPct} shimmerClass=${primaryShimmerClass} />
-        ` : null}
 
         ${health && !isPaused ? html`
           <${Sep} />
@@ -114,7 +85,7 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
 
         ${debtOpen > 0 ? html`
           <${Sep} />
-          <span style="color:var(--signal-warning);font-size:11px;flex-shrink:0">${debtOpen} debt</span>
+          <span style="color:var(--signal-warning);font-size:13px;flex-shrink:0">${debtOpen} debt</span>
         ` : null}
 
         ${!isStale ? html`
@@ -144,23 +115,32 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
           <${Sep} />
           <span class="quality-badge">${quality}</span>
         ` : null}
+
+        ${project.path ? html`
+          <span style="flex:1"></span>
+          <span style="color:var(--text-muted);font-size:12px;font-family:var(--font-data);white-space:nowrap;flex-shrink:0">${project.path.replace(/^\/Users\/[^/]+/, '~')}</span>
+        ` : null}
       </div>
 
-      <!-- Additional active milestones beyond the first -->
-      ${extraMilestones.filter(ms => ms.active).map(ms => {
-        const state = ms.state || {};
-        const pct = parseProgress(state.progress);
-        const shimClass = computeShimmerClass(project);
-        return html`
-          <div style="padding-left:var(--space-md);font-family:var(--font-data);font-size:11px;color:var(--term-dim);display:flex;align-items:center;gap:6px" key=${ms.name}>
-            <span>▸</span>
-            <span style="color:var(--term-cyan)">${ms.name}</span>
-            ${state.current_phase ? html`<${Sep} /><span style="color:var(--text-secondary)">${state.current_phase}</span>` : null}
-            <${Sep} />
-            <${ProgressBar} value=${pct} shimmerClass=${shimClass} />
-          </div>
-        `;
-      })}
+      <!-- Milestone list — columnized grid for aligned progress bars -->
+      ${milestonesToShow.length > 0 ? html`
+        <div class="card-milestone-grid">
+          ${milestonesToShow.map(ms => {
+            const state = ms.state || {};
+            const pct = parseProgress(state.progress);
+            const shimClass = ms.active ? computeShimmerClass(project) : '';
+            return html`
+              <div class="card-milestone-row" key=${ms.name}>
+                <span class="card-ms-indicator">${ms.active ? '▸' : '·'}</span>
+                <span class="card-ms-name" style="color:var(--term-cyan)">${ms.name}</span>
+                <span class="card-ms-phase" style="color:var(--text-secondary)">${state.current_phase || ''}</span>
+                <span class="card-ms-bar"><${ProgressBar} value=${pct} shimmerClass=${shimClass} /></span>
+                <span class="card-ms-pct">${pct !== null ? html`${pct}%` : ''}</span>
+              </div>
+            `;
+          })}
+        </div>
+      ` : null}
 
       ${isStale ? html`
         <div class="stale-warning">⚠ Path not found</div>

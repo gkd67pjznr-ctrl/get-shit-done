@@ -18,8 +18,8 @@
   /* Typography — monospace only */
   --font-data: 'JetBrains Mono', 'Fira Code', monospace;
   --font-ui: 'JetBrains Mono', 'Fira Code', monospace;
-  --font-size-base: 12px;
-  --font-size-sm: 11px;
+  --font-size-base: 14px;
+  --font-size-sm: 13px;
 
   /* GitHub-dark palette */
   --bg-base: #0d1117;

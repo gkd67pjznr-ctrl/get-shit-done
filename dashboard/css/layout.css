@@ -11,12 +11,12 @@
   padding: 0 var(--space-lg);
   gap: 0;
   font-family: var(--font-data);
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .header-brand {
   font-family: var(--font-data);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--term-green);
   white-space: nowrap;
@@ -28,7 +28,7 @@
   align-items: center;
   gap: 0;
   flex: 1;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-secondary);
 }
 
@@ -45,7 +45,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text-muted);
   margin-left: auto;
   font-family: var(--font-data);
@@ -82,7 +82,7 @@
 
 .sidebar-project-name {
   font-family: var(--font-data);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   /* color set by status-* class; fallback inherits --text-primary from parent */
   white-space: nowrap;
@@ -91,7 +91,7 @@
 }
 
 .sidebar-milestone {
-  font-size: 11px;
+  font-size: 13px;
   /* color set by status-* class; fallback via inherit */
   padding: 0 0 0 var(--space-sm);
   white-space: nowrap;
@@ -141,7 +141,7 @@
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
   cursor: pointer;
-  font-size: 16px;
+  font-size: 18px;
 }
 
 /* Sidebar metrics section (below project list) */
@@ -153,7 +153,7 @@
 
 .sidebar-metrics-title {
   font-family: var(--font-data);
-  font-size: 10px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--term-dim);
@@ -164,7 +164,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text-secondary);
   padding: 2px 0;
 }
@@ -173,12 +173,12 @@
   font-family: var(--font-data);
   font-weight: 600;
   color: var(--text-primary);
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .sidebar-metric-label {
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .sidebar-health-summary {
@@ -190,7 +190,7 @@
 
 .sidebar-health-chip {
   font-family: var(--font-data);
-  font-size: 10px;
+  font-size: 12px;
   padding: 0;
   border: none;
 }

@@ -1,12 +1,11 @@
 import { html } from 'htm/preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { Terminal } from '@xterm/xterm';
-import { AttachAddon } from '@xterm/addon-attach';
 import { FitAddon } from '@xterm/addon-fit';
 
 /**
  * Full-screen modal overlay with an interactive xterm.js terminal connected
- * to a tmux session via WebSocket.
+ * to a tmux session via WebSocket (tmux control mode backend).
  *
  * Props:
  *   sessionName {string} -- tmux session name to attach to
@@ -41,12 +40,17 @@ export function TerminalModal({ sessionName, onClose }) {
     const ws = new WebSocket(
       `${protocol}//${location.host}/ws/terminal/${encodeURIComponent(sessionName)}`
     );
-    ws.binaryType = 'arraybuffer';
 
     ws.onopen = () => {
       setConnected(true);
-      const attachAddon = new AttachAddon(ws);
-      term.loadAddon(attachAddon);
+      // Send initial resize so tmux knows the terminal dimensions
+      const { cols, rows } = term;
+      ws.send(JSON.stringify({ type: 'resize', cols, rows }));
+    };
+
+    // Server sends text data (unescaped ANSI from tmux control mode)
+    ws.onmessage = (event) => {
+      term.write(typeof event.data === 'string' ? event.data : new Uint8Array(event.data));
     };
 
     ws.onerror = () => {
@@ -59,6 +63,13 @@ export function TerminalModal({ sessionName, onClose }) {
       else if (e.code === 4009) setError('Session already attached in another window');
       else if (e.code !== 1000 && e.code !== 1001) setError(`Connection closed (${e.code})`);
     };
+
+    // Forward user keystrokes to server
+    term.onData((data) => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(data);
+      }
+    });
 
     // Propagate terminal resize to tmux
     term.onResize(({ cols, rows }) => {
@@ -104,7 +115,7 @@ export function TerminalModal({ sessionName, onClose }) {
           <div class="terminal-header-title">
             <div class="terminal-session-dot ${connected ? '' : 'disconnected'}" />
             <span>Session: ${sessionName}</span>
-            ${error && html`<span style="color:#f44336; font-size:11px;">${error}</span>`}
+            ${error && html`<span style="color:#f44336; font-size:13px;">${error}</span>`}
           </div>
           <button class="terminal-close-btn" onClick=${onClose}>Close</button>
         </div>
