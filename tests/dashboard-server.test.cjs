@@ -343,3 +343,176 @@ describe('gsd dashboard serve CLI integration', () => {
     assert.strictEqual(result.success, false, 'Should fail with out-of-range port');
   });
 });
+
+// ─── Multi-milestone parseProjectData() ───────────────────────────────────────
+
+function createMilestoneProject() {
+  const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-srv-ms-proj-'));
+  const gsdHome = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-srv-ms-home-'));
+
+  const milestonesDir = path.join(projectDir, '.planning', 'milestones');
+
+  for (const version of ['v1.0', 'v2.0']) {
+    const msDir = path.join(milestonesDir, version);
+    fs.mkdirSync(msDir, { recursive: true });
+
+    fs.writeFileSync(
+      path.join(msDir, 'STATE.md'),
+      `# State\n\n## Current Position\n\nPhase: 01\nStatus: in-progress\nProgress: [████░░░░░░] 40%\n`,
+      'utf-8'
+    );
+    fs.writeFileSync(
+      path.join(msDir, 'ROADMAP.md'),
+      `# Roadmap\n\n- [x] Phase 01 - Setup\n- [ ] Phase 02 - Implementation\n`,
+      'utf-8'
+    );
+    fs.writeFileSync(
+      path.join(msDir, 'REQUIREMENTS.md'),
+      `# Requirements\n\n- [x] REQ-01 Something\n- [ ] REQ-02 Another\n`,
+      'utf-8'
+    );
+  }
+
+  // Add a phases directory for v2.0 with a plan file
+  const phasesDir = path.join(milestonesDir, 'v2.0', 'phases', '01-setup');
+  fs.mkdirSync(phasesDir, { recursive: true });
+  fs.writeFileSync(path.join(phasesDir, '01-01-PLAN.md'), '# Plan\n', 'utf-8');
+
+  return { projectDir, gsdHome };
+}
+
+describe('parseProjectData includes multi-milestone data', () => {
+  it('parseProjectData() returns milestones array with correct count', () => {
+    const { projectDir, gsdHome } = createMilestoneProject();
+    try {
+      const serverModule = require(path.join(__dirname, '..', 'get-shit-done', 'bin', 'lib', 'server.cjs'));
+      const data = serverModule.parseProjectData({
+        name: 'ms-test',
+        display_name: 'MS Test',
+        path: projectDir,
+        added: new Date().toISOString(),
+      });
+      assert.ok(Array.isArray(data.milestones), 'milestones should be an array');
+      assert.equal(data.milestones.length, 2, 'should have 2 milestone entries');
+      for (const ms of data.milestones) {
+        assert.ok('name' in ms, 'milestone should have name');
+        assert.ok('active' in ms, 'milestone should have active');
+        assert.ok('state' in ms, 'milestone should have state');
+        assert.ok('roadmap' in ms, 'milestone should have roadmap');
+        assert.ok('requirements' in ms, 'milestone should have requirements');
+        assert.ok('phases_summary' in ms, 'milestone should have phases_summary');
+      }
+    } finally {
+      cleanup(projectDir);
+      cleanup(gsdHome);
+    }
+  });
+
+  it('milestones array is empty for project with flat .planning/ layout', () => {
+    const { projectDir, gsdHome } = createRegistryProject();
+    try {
+      const serverModule = require(path.join(__dirname, '..', 'get-shit-done', 'bin', 'lib', 'server.cjs'));
+      const data = serverModule.parseProjectData({
+        name: 'flat-test',
+        display_name: 'Flat Test',
+        path: projectDir,
+        added: new Date().toISOString(),
+      });
+      assert.ok(Array.isArray(data.milestones), 'milestones should be an array');
+      assert.equal(data.milestones.length, 0, 'should have 0 milestone entries for flat layout');
+    } finally {
+      cleanup(projectDir);
+      cleanup(gsdHome);
+    }
+  });
+});
+
+// ─── Static file serving ──────────────────────────────────────────────────────
+
+function httpGetRaw(port, rawPath) {
+  // Use raw TCP socket to send path without client-side URL normalization
+  // Resolves 'localhost' to handle both IPv4 and IPv6 environments
+  return new Promise((resolve, reject) => {
+    const net = require('net');
+    const dns = require('dns');
+    dns.lookup('localhost', (err, address) => {
+      if (err) { reject(err); return; }
+      const sock = new net.Socket();
+      let data = '';
+      sock.connect(port, address, () => {
+        sock.write(`GET ${rawPath} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n`);
+      });
+      sock.on('data', chunk => { data += chunk.toString(); });
+      sock.on('end', () => {
+        const statusMatch = data.match(/^HTTP\/1\.1 (\d+)/);
+        const status = statusMatch ? parseInt(statusMatch[1], 10) : 0;
+        const headerBody = data.split('\r\n\r\n');
+        const headers = {};
+        for (const line of headerBody[0].split('\r\n').slice(1)) {
+          const idx = line.indexOf(':');
+          if (idx > -1) headers[line.slice(0, idx).toLowerCase().trim()] = line.slice(idx + 1).trim();
+        }
+        resolve({ status, headers, body: headerBody[1] || '' });
+      });
+      sock.on('error', reject);
+      sock.setTimeout(3000, () => sock.destroy(new Error('timeout')));
+    });
+  });
+}
+
+describe('static file serving', () => {
+  it('GET / returns 200 with text/html content-type', async () => {
+    const port = randomPort();
+    const tmpDashDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-srv-dash-'));
+    fs.writeFileSync(path.join(tmpDashDir, 'index.html'), '<html><body>test</body></html>', 'utf-8');
+    const gsdHome = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-srv-dash-home-'));
+    writeRegistry(gsdHome, []);
+    const handle = startTestServer(port, { gsdHome: path.join(gsdHome, '.gsd'), dashboardDir: tmpDashDir });
+    await waitForServerReady(port);
+    try {
+      const res = await httpGet(port, '/');
+      assert.equal(res.status, 200, 'Expected 200');
+      assert.ok(res.headers['content-type'] && res.headers['content-type'].includes('text/html'), 'Expected text/html');
+    } finally {
+      await handle.close();
+      cleanup(tmpDashDir);
+      cleanup(gsdHome);
+    }
+  });
+
+  it('GET /nonexistent-page returns 200 (SPA fallback to index.html)', async () => {
+    const port = randomPort();
+    const tmpDashDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-srv-dash-'));
+    fs.writeFileSync(path.join(tmpDashDir, 'index.html'), '<html><body>spa</body></html>', 'utf-8');
+    const gsdHome = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-srv-dash-home-'));
+    writeRegistry(gsdHome, []);
+    const handle = startTestServer(port, { gsdHome: path.join(gsdHome, '.gsd'), dashboardDir: tmpDashDir });
+    await waitForServerReady(port);
+    try {
+      const res = await httpGet(port, '/nonexistent-page');
+      assert.equal(res.status, 200, 'Expected 200 SPA fallback');
+    } finally {
+      await handle.close();
+      cleanup(tmpDashDir);
+      cleanup(gsdHome);
+    }
+  });
+
+  it('path traversal attempt returns 403', async () => {
+    const port = randomPort();
+    const tmpDashDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-srv-dash-'));
+    fs.writeFileSync(path.join(tmpDashDir, 'index.html'), '<html><body>test</body></html>', 'utf-8');
+    const gsdHome = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-srv-dash-home-'));
+    writeRegistry(gsdHome, []);
+    const handle = startTestServer(port, { gsdHome: path.join(gsdHome, '.gsd'), dashboardDir: tmpDashDir });
+    await waitForServerReady(port);
+    try {
+      const res = await httpGetRaw(port, '/../../etc/passwd');
+      assert.equal(res.status, 403, 'Expected 403 for path traversal');
+    } finally {
+      await handle.close();
+      cleanup(tmpDashDir);
+      cleanup(gsdHome);
+    }
+  });
+});
