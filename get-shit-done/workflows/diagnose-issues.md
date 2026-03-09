@@ -182,6 +182,20 @@ Debug sessions: ${DEBUG_DIR}/
 Proceeding to plan fixes...
 ```
 
+Record observation before returning to verify-work.
+
+```bash
+OBS_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+OBS_FILE=".planning/patterns/sessions.jsonl"
+
+if [ ! -d ".planning/patterns" ]; then
+  echo "Observation skipped: .planning/patterns/ not found. Fix: mkdir -p .planning/patterns"
+else
+  echo "{\"timestamp\":\"${OBS_TIMESTAMP}\",\"type\":\"workflow\",\"source\":\"workflow\",\"command\":\"debug\",\"phase\":\"${phase_num}\",\"milestone\":\"none\",\"duration\":null,\"outcome\":\"success\",\"skills_loaded\":[],\"details\":{\"gaps_diagnosed\":0,\"root_causes_found\":0,\"inconclusive_count\":0}}" >> "$OBS_FILE" 2>/dev/null \
+    || echo "Observation failed: could not write to $OBS_FILE. Fix: touch $OBS_FILE"
+fi
+```
+
 Return to verify-work orchestrator for automatic planning.
 Do NOT offer manual next steps - verify-work handles the rest.
 </step>
