@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 13: Installer and Content Delivery** - Installer copies skills/teams/hooks, CLAUDE.md merge, manifest tracking (completed 2026-03-08)
 - [x] **Phase 14: Agent Merge and Dashboard** - Agent inline integration, dashboard copy-and-verify (completed 2026-03-08)
 - [x] **Phase 15: Native Observation** - Observation capture baked into all 7 GSD workflow commands (completed 2026-03-08)
-- [ ] **Phase 16: Commands and Deprecation** - New commands, wrapper removal, standalone package deprecation
+- [x] **Phase 16: Commands and Deprecation** - New commands, wrapper removal, standalone package deprecation (completed 2026-03-09)
 
 ## Phase Details
 
@@ -85,7 +85,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. No `/wrap:*` or `/sc:*` commands exist -- help text and docs reflect the integrated system
 **Plans**:
   - [x] Plan 16-01: New commands and standalone command porting (CMD-01, CMD-02, CMD-03, CMD-04)
-  - [ ] Plan 16-02: Deprecation cleanup and doc updates (DEPR-01, DEPR-02, DEPR-03, DEPR-04)
+  - [x] Plan 16-02: Deprecation cleanup and doc updates (DEPR-01, DEPR-02, DEPR-03, DEPR-04)
 
 ## Progress
 
@@ -98,4 +98,4 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16
 | 13. Installer and Content Delivery | 2/3 | Complete    | 2026-03-08 |
 | 14. Agent Merge and Dashboard | 2/2 | Complete    | 2026-03-09 |
 | 15. Native Observation | 2/2 | Complete    | 2026-03-09 |
-| 16. Commands and Deprecation | 1/2 | In progress | - |
+| 16. Commands and Deprecation | 2/2 | Complete    | 2026-03-09 |

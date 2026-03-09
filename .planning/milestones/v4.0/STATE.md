@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Plan 16-01 complete -- CMD-01/02/03/04 done (suggest, digest, session-start, 13 standalones ported)
-last_updated: "2026-03-09T07:00:00.000Z"
-last_activity: 2026-03-09 -- Plan 16-01 executed (3 SC commands ported, 13 standalone commands ported to gsd: namespace)
+stopped_at: Plan 16-02 complete -- DEPR-01/02/03/04 done (wrap/ sc/ deleted, skill files cleaned, schema updated, deprecation notice created)
+last_updated: "2026-03-09T10:45:00.000Z"
+last_activity: 2026-03-09 -- Plan 16-02 executed (wrap/sc/ dirs deleted, 13 standalones deleted, 7 skill files updated, wrapper_commands removed, deprecation doc created)
 progress:
   total_phases: 5
   completed_phases: 1
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-07)
 
 ## Current Position
 
-Phase: 16 (5 of 5 in v4.0) - Commands and Deprecation -- IN PROGRESS
-Plan: 1 of 2 in current phase -- COMPLETE (Plan 16-01)
-Status: Plan 16-01 complete -- CMD-01/02/03/04 done (suggest, digest, session-start, 13 standalones ported to gsd: namespace)
-Last activity: 2026-03-09 -- Plan 16-01 executed (3 SC commands ported, 13 standalone commands ported to gsd: namespace)
+Phase: 16 (5 of 5 in v4.0) - Commands and Deprecation -- COMPLETE
+Plan: 2 of 2 in current phase -- COMPLETE (Plan 16-02)
+Status: Plan 16-02 complete -- DEPR-01/02/03/04 done; Phase 16 complete; Milestone v4.0 COMPLETE
+Last activity: 2026-03-09 -- Plan 16-02 executed (wrap/sc/ dirs deleted, skill files cleaned, wrapper_commands removed, deprecation notice created)
 
-Progress: [###################_] 90% (Phases 12, 13, 14, 15 complete; Phase 16 Plan 01 complete)
+Progress: [####################] 100% (Phases 12, 13, 14, 15, 16 complete -- Milestone v4.0 COMPLETE)
 
 ## Performance Metrics
 
@@ -109,6 +109,9 @@ Recent decisions affecting current work:
 - [16-01]: session-start Step 5 uses Glob scan only; npx skill-creator status --json removed entirely (not just as fallback)
 - [16-01]: 13 standalone commands copied unchanged except frontmatter name field updated to gsd: prefix
 - [16-01]: sc/ source files NOT deleted in Plan 16-01 -- deletion is Plan 16-02 scope (DEPR-01, DEPR-02)
+- [16-02]: DASH-04 test updated to point to commands/gsd/dashboard.md (deleted .claude/commands/gsd-dashboard.md as planned)
+- [16-02]: wrapper_commands removed from all 4 files; only pre-existing config-get failure in test suite
+- [16-02]: .planning/config.json is gitignored -- wrapper_commands removed locally only
 
 ### Pending Todos
 
@@ -121,6 +124,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-09
-Stopped at: Plan 16-01 complete -- CMD-01/02/03/04 done
-Resume file: .planning/milestones/v4.0/phases/16-commands-and-deprecation/16-01-SUMMARY.md
-Next: Phase 16 Plan 16-02 -- Deprecation cleanup (remove sc/ and wrap/ dirs, update skill files, update schema.ts, add deprecation notice)
+Stopped at: Plan 16-02 complete -- Phase 16 complete -- Milestone v4.0 COMPLETE
+Resume file: .planning/milestones/v4.0/phases/16-commands-and-deprecation/16-02-SUMMARY.md
+Next: Milestone v4.0 is complete. Next milestone: v5.0 Device-Wide Dashboard (in progress)
