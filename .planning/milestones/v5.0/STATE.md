@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 20-02 complete. Tmux poll loop, PATCH tracking endpoint, and setTracking helper wired in.
-last_updated: "2026-03-09T16:00:00.000Z"
-last_activity: 2026-03-09 -- Phase 20-02 executed (tmux poll loop, PATCH /tracking endpoint, setTracking in dashboard.cjs)
+stopped_at: Phase 20-04 complete. CSS additions and ProgressBar shimmerClass prop added.
+last_updated: "2026-03-09T17:00:00.000Z"
+last_activity: 2026-03-09 -- Phase 20-04 executed (amber shimmer CSS, paused card styles, session badge styles, sidebar metrics, ProgressBar shimmerClass prop)
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 14
-  completed_plans: 8
-  percent: 57
+  completed_plans: 9
+  percent: 64
 ---
 
 # Project State -- Milestone v5.0
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-07)
 ## Current Position
 
 Phase: 20 (4 of 5 in v5.0) (Tmux Monitoring and Cross-Project Metrics)
-Plan: 2 of 2 in current phase (20-02 complete)
+Plan: 4 of 5 in current phase (20-04 complete)
 Status: In Progress
-Last activity: 2026-03-09 -- Phase 20-02 executed (tmux poll loop, PATCH /tracking endpoint, setTracking in dashboard.cjs)
+Last activity: 2026-03-09 -- Phase 20-04 executed (amber shimmer CSS, paused card styles, session badge styles, sidebar metrics, ProgressBar shimmerClass prop)
 
 Progress: [██████░░░░] 57%
 
@@ -80,6 +80,8 @@ Recent decisions affecting current work:
 - [20-01]: parseProjectData extended with optional tmuxCache param; backward-compatible (tmux.available: false default)
 - [20-02]: tmuxCache threaded as explicit parameter through createHttpServer, watchProject, watchRegistry (not closure -- cleaner)
 - [20-02]: CORS extended to GET, PATCH, OPTIONS; setTracking in dashboard.cjs uses delete for true (omit=true backward compat)
+- [20-04]: ProgressBar shimmerClass string prop takes precedence over boolean shimmer; shimmerClass || (shimmer ? 'shimmer-active' : '') pattern
+- [20-04]: Amber shimmer shares @keyframes shimmer with blue variant -- no keyframe duplication
 
 ### Pending Todos
 
@@ -92,7 +94,7 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-09
-Stopped at: Phase 20-02 complete. Tmux poll loop, PATCH tracking endpoint, and setTracking helper wired in.
+Stopped at: Phase 20-04 complete. CSS additions and ProgressBar shimmerClass prop added.
 Resume file: None
-Next step: Phase 20-03 -- dashboard UI for tmux session badges, health labels, and sidebar metrics.
+Next step: Phase 20-05 -- final integration, wiring tmux state into dashboard UI components.
 
