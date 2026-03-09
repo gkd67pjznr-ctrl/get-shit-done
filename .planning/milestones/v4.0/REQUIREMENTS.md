@@ -14,12 +14,12 @@ Requirements for adaptive learning integration. Each maps to roadmap phases.
 - [x] **INST-03**: Installer copies all hook scripts to `~/.claude/hooks/` and registers in settings.json
 - [x] **INST-04**: Installer creates CLAUDE.md using HTML comment markers (`<!-- GSD:BEGIN/END -->`) -- merges with existing user content, never overwrites
 - [x] **INST-05**: Installer tracks user-deleted skills in manifest so updates don't re-add them
-- [ ] **INST-06**: Installer creates `.planning/patterns/` directory with `.gitignore` entry *(gap closure: Phase 16.1)*
+- [x] **INST-06**: Installer creates `.planning/patterns/` directory with `.gitignore` entry *(gap closure: Phase 16.1)*
 
 ### Config
 
 - [x] **CFG-01**: Skill-creator config merged into GSD `config.json` under `adaptive_learning` key
-- [ ] **CFG-02**: Config migration detects standalone `skill-creator.json` and merges into `config.json` *(gap closure: Phase 16.1)*
+- [x] **CFG-02**: Config migration detects standalone `skill-creator.json` and merges into `config.json` *(gap closure: Phase 16.1)*
 
 ### Skills
 
@@ -73,7 +73,7 @@ Requirements for adaptive learning integration. Each maps to roadmap phases.
 
 - [x] **DEPR-01**: Wrapper commands (`/wrap:*`) removed -- GSD commands are natively skill-aware
 - [x] **DEPR-02**: `/sc:*` commands removed -- functionality absorbed into `/gsd:*` commands
-- [ ] **DEPR-03**: Help text and docs updated to reflect integrated system *(gap closure: Phase 16.1)*
+- [x] **DEPR-03**: Help text and docs updated to reflect integrated system *(gap closure: Phase 16.1)*
 - [x] **DEPR-04**: gsd-skill-creator marked as deprecated with migration notice
 
 ## v5.0+ Requirements
@@ -106,12 +106,12 @@ Deferred to future release. Tracked but not in current roadmap.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | CFG-01 | Phase 12 | Complete |
-| CFG-02 | Phase 12 → Phase 16.1 (gap closure) | Pending |
+| CFG-02 | Phase 16.1 (gap closure) | Complete |
 | SKILL-01 | Phase 12 | Complete |
 | SKILL-02 | Phase 12 | Complete |
 | TEAM-01 | Phase 12 | Complete |
 | TEAM-02 | Phase 12 | Complete |
-| INST-06 | Phase 12 → Phase 16.1 (gap closure) | Pending |
+| INST-06 | Phase 16.1 (gap closure) | Complete |
 | INST-01 | Phase 13 | Complete |
 | INST-02 | Phase 13 | Complete |
 | INST-03 | Phase 13 | Complete |
@@ -142,15 +142,15 @@ Deferred to future release. Tracked but not in current roadmap.
 | CMD-04 | Phase 16 | Complete |
 | DEPR-01 | Phase 16 | Complete |
 | DEPR-02 | Phase 16 | Complete |
-| DEPR-03 | Phase 16 → Phase 16.1 (gap closure) | Pending |
+| DEPR-03 | Phase 16.1 (gap closure) | Complete |
 | DEPR-04 | Phase 16 | Complete |
 
 **Coverage:**
 - v4.0 requirements: 39 total
 - Mapped to phases: 39
 - Unmapped: 0
-- Complete: 36
-- Pending (gap closure): 3 (CFG-02, INST-06, DEPR-03 → Phase 16.1)
+- Complete: 39
+- Pending: 0
 
 ---
 *Requirements defined: 2026-03-07*
