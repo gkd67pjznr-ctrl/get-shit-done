@@ -54,6 +54,7 @@
     "test:coverage": "c8 --check-coverage --lines 70 --reporter text --include 'get-shit-done/bin/lib/*.cjs' --exclude 'tests/**' --all node scripts/run-tests.cjs"
   },
   "dependencies": {
-    "chokidar": "^4.0.3"
+    "chokidar": "^4.0.3",
+    "ws": "^8.19.0"
   }
 }
