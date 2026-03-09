@@ -40,6 +40,9 @@ function Overview() {
     <div class="card-grid">
       ${ps.map(p => html`<${ProjectCard} key=${p.name} project=${p} />`)}
     </div>
+    <div style="text-align:center; font-size:10px; color:var(--text-muted); padding: 8px; font-family:var(--font-data);">
+      Tip: Name Claude Code tmux sessions starting with <code>cc</code> for session tracking
+    </div>
   `;
 }
 
