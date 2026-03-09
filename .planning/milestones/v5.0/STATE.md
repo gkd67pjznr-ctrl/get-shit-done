@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Dashboard UI
 status: in-progress
-stopped_at: Phase 19-03 complete. 5 lib/utility modules and 5 Preact components written; 16 tests pass.
-last_updated: "2026-03-09T06:30:00.000Z"
-last_activity: 2026-03-09 -- Phase 19-03 executed (router, api, sse, state, format libs; header, sidebar, progress-bar, empty-state, project-card components)
+stopped_at: Phase 19-04 complete. ProjectDetail component with milestone accordions and app.js SPA entry point written; full dashboard SPA operational.
+last_updated: "2026-03-09T07:15:00.000Z"
+last_activity: 2026-03-09 -- Phase 19-04 executed (project-detail.js, app.js; SPA end-to-end verified)
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 5
-  completed_plans: 5
-  percent: 60
+  completed_plans: 6
+  percent: 80
 ---
 
 # Project State -- Milestone v5.0
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-07)
 ## Current Position
 
 Phase: 19 (3 of 5 in v5.0) (Dashboard UI)
-Plan: 3 of 4 in current phase (complete)
+Plan: 4 of 4 in current phase (complete)
 Status: In Progress
-Last activity: 2026-03-09 -- Phase 19-03 executed (router, api, sse, state, format libs; header, sidebar, progress-bar, empty-state, project-card components)
+Last activity: 2026-03-09 -- Phase 19-04 executed (project-detail.js, app.js; SPA end-to-end verified)
 
-Progress: [██████░░░░] 60%
+Progress: [████████░░] 80%
 
 ## Performance Metrics
 
@@ -71,6 +71,9 @@ Recent decisions affecting current work:
 - [19-03]: sse.js imports projects from state.js to mutate on SSE events; state.js has no imports (clean dep direction)
 - [19-03]: ProjectCard shows active milestones + last completed, capped at 3 rows per card
 - [19-03]: Flash animation: remove class, force reflow via void el.offsetWidth, re-add -- restarts CSS keyframe animation
+- [19-04]: MilestoneAccordion unexported, co-located in project-detail.js -- detail view self-contained
+- [19-04]: init() fires after render() so App mounts before data arrives; loading signal gates pending UI
+- [19-04]: SSE deferred to after initial fetchProjects() to layer updates on top of baseline state
 
 ### Pending Todos
 
@@ -84,7 +87,7 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-09
-Stopped at: Phase 19-03 complete. 5 lib/utility modules and 5 Preact components written; 16 tests pass.
+Stopped at: Phase 19-04 complete. Full dashboard SPA operational -- ProjectDetail, app.js, end-to-end verified.
 Resume file: None
-Next step: Execute plan 19-04 (app.js entry point + project-detail.js)
+Next step: Phase 19 complete. Proceed to next phase in v5.0 roadmap.
 
