@@ -157,11 +157,11 @@ function scanPhasesSummary(phasesDir) {
 
 // ─── Tmux polling functions ───────────────────────────────────────────────────
 
-const TMUX_FORMAT = '#{session_name}|#{pane_index}|#{pane_current_path}|#{pane_title}|#{pane_current_command}|#{session_windows}|#{window_panes}|#{window_activity}|#{pane_pid}';
+const TMUX_FORMAT = '#{session_name}|#{pane_index}|#{pane_current_path}|#{pane_title}|#{pane_current_command}|#{session_windows}|#{window_panes}|#{window_activity}|#{pane_pid}|#{window_name}|#{window_index}';
 
 function parseTmuxOutput(raw) {
   return raw.split('\n').filter(line => line.trim() !== '').map(line => {
-    const [sessionName, paneIndex, paneCwd, paneTitle, paneCmd, sessionWindows, windowPanes, windowActivity, panePid] = line.split('|');
+    const [sessionName, paneIndex, paneCwd, paneTitle, paneCmd, sessionWindows, windowPanes, windowActivity, panePid, windowName, windowIndex] = line.split('|');
     return {
       sessionName,
       paneIndex: parseInt(paneIndex, 10),
@@ -172,7 +172,9 @@ function parseTmuxOutput(raw) {
       windowPanes: parseInt(windowPanes, 10),
       lastActivity: parseInt(windowActivity, 10) * 1000,
       pid: parseInt(panePid, 10),
-      isClaude: sessionName.startsWith('cc'),
+      windowName: windowName || sessionName,
+      windowIndex: parseInt(windowIndex, 10) || 0,
+      isClaude: (windowName || '').startsWith('cc'),
     };
   });
 }
@@ -219,7 +221,7 @@ function tmuxStateHash(tmuxEntry) {
   if (!tmuxEntry) return '';
   const sortedSessions = Array.from(tmuxEntry.sessions).sort();
   const sortedPaneKeys = tmuxEntry.panes
-    .map(p => `${p.sessionName}:${p.paneIndex}:${p.lastActivity}`)
+    .map(p => `${p.sessionName}:${p.windowName}:${p.paneIndex}:${p.lastActivity}`)
     .sort();
   return JSON.stringify({ sessions: sortedSessions, paneKeys: sortedPaneKeys });
 }
@@ -639,15 +641,27 @@ function setupTerminalWebSocket(httpServer) {
 
   wss.on('connection', (ws, req) => {
     const urlPath = (req.url || '').split('?')[0];
-    const sessionName = decodeURIComponent(urlPath.slice('/ws/terminal/'.length));
+    const rawTarget = decodeURIComponent(urlPath.slice('/ws/terminal/'.length));
 
-    if (!sessionName) {
+    if (!rawTarget) {
       ws.close(4000, 'Session name required');
       return;
     }
 
-    // Reject duplicate connections to the same session
-    if (activeSessions.has(sessionName)) {
+    // Support "session:window" format to target a specific window
+    let sessionName, windowTarget;
+    if (rawTarget.includes(':')) {
+      [sessionName, windowTarget] = rawTarget.split(':', 2);
+    } else {
+      sessionName = rawTarget;
+      windowTarget = null;
+    }
+
+    // Use the full target as the dedup key (so different windows can open simultaneously)
+    const dedupKey = rawTarget;
+
+    // Reject duplicate connections to the same target
+    if (activeSessions.has(dedupKey)) {
       ws.close(4009, 'Session already attached');
       return;
     }
@@ -663,17 +677,18 @@ function setupTerminalWebSocket(httpServer) {
       return;
     }
 
-    // Get the active pane ID for this session
+    // Resolve the target pane — either from a specific window or the session's active pane
+    const tmuxTarget = windowTarget ? `${sessionName}:${windowTarget}` : sessionName;
     let targetPane;
     try {
       targetPane = execSync(
-        `tmux display-message -t "${sessionName}" -p '#{pane_id}'`,
+        `tmux display-message -t "${tmuxTarget}" -p '#{pane_id}'`,
         { encoding: 'utf-8', stdio: 'pipe', timeout: 2000 }
       ).trim();
     } catch {
-      targetPane = null; // will use session name as target
+      targetPane = null;
     }
-    const sendTarget = targetPane || sessionName;
+    const sendTarget = targetPane || tmuxTarget;
 
     // Use tmux control mode (-C) which works with piped stdio.
     // Control mode streams structured events on stdout and accepts
@@ -683,7 +698,7 @@ function setupTerminalWebSocket(httpServer) {
       env: { ...process.env, TERM: 'xterm-256color' },
     });
 
-    activeSessions.set(sessionName, { proc, ws, paneId: sendTarget });
+    activeSessions.set(dedupKey, { proc, ws, paneId: sendTarget });
 
     // Send initial screen capture so the terminal isn't blank
     try {
@@ -763,7 +778,7 @@ function setupTerminalWebSocket(httpServer) {
     });
 
     const cleanup = () => {
-      activeSessions.delete(sessionName);
+      activeSessions.delete(dedupKey);
       if (!proc.killed) {
         try { proc.stdin.end(); } catch { /* ignore */ }
         proc.kill('SIGHUP');
@@ -774,7 +789,7 @@ function setupTerminalWebSocket(httpServer) {
     ws.on('error', cleanup);
 
     proc.on('exit', () => {
-      activeSessions.delete(sessionName);
+      activeSessions.delete(dedupKey);
       if (ws.readyState === 1) ws.close();
     });
   });

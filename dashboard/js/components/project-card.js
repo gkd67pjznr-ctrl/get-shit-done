@@ -152,8 +152,7 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
           <table>
             <thead>
               <tr>
-                <th>Session</th>
-                <th>Win</th>
+                <th>Window</th>
                 <th>Panes</th>
                 <th>Status</th>
                 <th>Idle</th>
@@ -168,13 +167,13 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
                   if (idleSecs < 10) status = 'working';
                   else if (idleSecs < 300) status = 'waiting';
                 }
+                const termTarget = pane.sessionName + ':' + (pane.windowName || pane.sessionName);
                 return html`
                   <tr key=${i} class="${pane.isClaude ? 'claude-pane' : ''}">
                     <td><button class="tmux-session-link" onClick=${(e) => {
                       e.stopPropagation();
-                      onOpenTerminal(pane.sessionName);
-                    }}>${pane.sessionName}</button></td>
-                    <td>${pane.sessionWindows}</td>
+                      onOpenTerminal(termTarget);
+                    }}>${pane.windowName || pane.sessionName}</button></td>
                     <td>${pane.windowPanes}</td>
                     <td>${status}</td>
                     <td>${fmtIdleDuration(pane.lastActivity)}</td>

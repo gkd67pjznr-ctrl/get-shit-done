@@ -114,7 +114,7 @@ export function TerminalModal({ sessionName, onClose }) {
         <div class="terminal-header">
           <div class="terminal-header-title">
             <div class="terminal-session-dot ${connected ? '' : 'disconnected'}" />
-            <span>Session: ${sessionName}</span>
+            <span>${sessionName.includes(':') ? sessionName.split(':')[1] : sessionName}</span>
             ${error && html`<span style="color:#f44336; font-size:13px;">${error}</span>`}
           </div>
           <button class="terminal-close-btn" onClick=${onClose}>Close</button>
