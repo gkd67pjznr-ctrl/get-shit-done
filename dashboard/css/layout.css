@@ -172,6 +172,7 @@
   font-family: var(--font-data);
   font-weight: 600;
   color: var(--text-primary);
+  font-size: 13px;
 }
 
 .sidebar-metric-label {
@@ -191,4 +192,27 @@
   font-size: 10px;
   padding: 0;
   border: none;
+}
+
+/* Progress background on sidebar project rows */
+.sidebar-project-bar {
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar-project-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: var(--bar-pct, 0%);
+  background: rgba(63, 185, 80, 0.08);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.sidebar-project-bar > * {
+  position: relative;
+  z-index: 1;
 }

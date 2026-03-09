@@ -90,7 +90,7 @@ export function ProjectCard({ project }) {
     >
       <!-- Primary row: name | milestone | phase | progress | health | sessions [toggle] -->
       <div class="card-header">
-        <span class="card-project-name">${project.display_name || project.name}</span>
+        <span class="card-project-name ${isPaused ? 'status-not-started' : healthClass(health)}">${project.display_name || project.name}</span>
 
         ${primaryMsName ? html`
           <${Sep} />

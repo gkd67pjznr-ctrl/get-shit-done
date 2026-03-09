@@ -1,7 +1,7 @@
 import { html } from 'htm/preact';
 import { projects } from '../lib/state.js';
 import { navigate } from '../lib/router.js';
-import { getActiveMilestone, healthLabel, healthClass } from '../utils/format.js';
+import { getActiveMilestone, healthLabel, healthClass, statusClass, parseProgress } from '../utils/format.js';
 
 function SidebarMetrics({ projects }) {
   const tracked = projects.filter(p => p.tracking !== false);
@@ -83,16 +83,28 @@ export function Sidebar({ onClose }) {
     <nav class="sidebar">
       ${ps.map(p => {
         const active = getActiveMilestone(p.milestones);
+        const pct = active && active.state ? parseProgress(active.state.progress) : null;
+        const activeMilestones = (p.milestones || []).filter(m => m.active);
         return html`
-          <div class="sidebar-project" key=${p.name}>
-            <div class="sidebar-project-name" onClick=${() => { navigate(`/project/${encodeURIComponent(p.name)}`); onClose && onClose(); }}>
+          <div class="sidebar-project sidebar-project-bar"
+            style=${pct !== null ? `--bar-pct:${pct}%` : ''}
+            key=${p.name}>
+            <div class="sidebar-project-name ${p.tracking === false ? 'status-not-started' : healthClass(p.health)}"
+              onClick=${() => { navigate(`/project/${encodeURIComponent(p.name)}`); onClose && onClose(); }}>
               ${p.display_name || p.name}
             </div>
-            ${active ? html`
-              <div class="sidebar-milestone" onClick=${() => { navigate(`/project/${encodeURIComponent(p.name)}/${encodeURIComponent(active.name)}`); onClose && onClose(); }}>
-                ${active.name}
-              </div>
-            ` : null}
+            ${activeMilestones.map(ms => {
+              const phases = ms.roadmap ? (ms.roadmap.phases || []) : [];
+              const total = phases.length;
+              const done = phases.filter(ph => ph.status === 'complete').length;
+              const msStatus = ms.state && ms.state.status;
+              return html`
+                <div class="sidebar-milestone ${statusClass(msStatus)}" key=${ms.name}
+                  onClick=${() => { navigate(`/project/${encodeURIComponent(p.name)}/${encodeURIComponent(ms.name)}`); onClose && onClose(); }}>
+                  ${ms.name}${total > 0 ? html` <span style="color:var(--term-dim);font-size:10px">[${done}/${total}]</span>` : null}
+                </div>
+              `;
+            })}
           </div>
         `;
       })}
