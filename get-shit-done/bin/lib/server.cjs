@@ -5,8 +5,9 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const chokidar = require('chokidar');
-const { execSync, spawn } = require('child_process');
+const { execSync } = require('child_process');
 const { WebSocketServer } = require('ws');
+const pty = require('node-pty');
 
 const { resolveActiveMilestone, planningRoot, compareVersions } = require('./core.cjs');
 const { loadRegistry, getDashboardPath } = require('./dashboard.cjs');
@@ -327,6 +328,25 @@ function parseAllMilestones(projectPath) {
         const roadmapContent = fs.readFileSync(path.join(milestoneRoot, 'ROADMAP.md'), 'utf-8');
         entry.roadmap = parseRoadmapFile(roadmapContent);
       } catch { /* leave null */ }
+
+      // Override active/completed state using ROADMAP.md checkboxes (ground truth).
+      // STATE.md status field is unreliable — Claude may write "completed" even when phases remain.
+      if (entry.roadmap && entry.roadmap.phases && entry.roadmap.phases.length > 0) {
+        const totalPhases = entry.roadmap.phases.length;
+        const completedPhases = entry.roadmap.phases.filter(p => p.status === 'complete').length;
+        const allDone = completedPhases === totalPhases;
+
+        // ROADMAP.md is authoritative: all phases checked = done (inactive), any pending = active
+        entry.active = !allDone;
+
+        // Inject computed progress into state so frontend shows accurate percentage
+        const pct = Math.round((completedPhases / totalPhases) * 100);
+        if (entry.state) {
+          entry.state.progress = `[${completedPhases}/${totalPhases} phases] ${pct}%`;
+        } else {
+          entry.state = { current_phase: null, status: null, progress: `[${completedPhases}/${totalPhases} phases] ${pct}%`, last_activity: null };
+        }
+      }
 
       try {
         const reqContent = fs.readFileSync(path.join(milestoneRoot, 'REQUIREMENTS.md'), 'utf-8');
