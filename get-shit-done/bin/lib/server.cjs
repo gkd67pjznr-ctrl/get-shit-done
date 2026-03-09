@@ -721,10 +721,12 @@ function setupTerminalWebSocket(httpServer) {
         const line = buffer.slice(0, newlineIdx);
         buffer = buffer.slice(newlineIdx + 1);
 
-        // %output %<pane_id> <escaped-data>
+        // %output %<pane_id> <escaped-data> — only forward for our target pane
         if (line.startsWith('%output ')) {
           const spaceAfterPane = line.indexOf(' ', 8);
           if (spaceAfterPane !== -1) {
+            const paneId = line.slice(8, spaceAfterPane);
+            if (targetPane && paneId !== targetPane) continue;
             const rawData = line.slice(spaceAfterPane + 1);
             // Unescape tmux control mode encoding: \033 → ESC, \015 → CR, \012 → LF, \\ → \
             const unescaped = rawData
