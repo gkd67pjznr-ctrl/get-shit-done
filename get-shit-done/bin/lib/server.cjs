@@ -76,16 +76,31 @@ function parseRoadmapFile(content) {
       if (checkMatch) {
         const done = checkMatch[1].trim().toLowerCase() === 'x';
         const rest = checkMatch[2].trim();
-        // Extract phase number if present
-        const numMatch = rest.match(/^(?:Phase\s+)?(\d+)[\s:-]+(.+)$/i);
+        // Skip plan-level checkboxes — two formats found in older ROADMAPs:
+        //   "- [x] 01-01-PLAN.md — ..." (contains PLAN.md)
+        //   "- [x] 07-01: Delete ..."   (NN-NN: plan number format)
+        if (/PLAN\.md/i.test(rest)) continue;
+        if (/^\d{2}-\d{2}[\s:-]/.test(rest)) continue;
+        // Strip markdown bold formatting before numeric extraction
+        const cleanRest = rest.replace(/\*\*/g, '').trim();
+        // Extract phase number if present (supports integers and decimals like 16.1)
+        const numMatch = cleanRest.match(/^(?:Phase\s+)?(\d+(?:\.\d+)*)[\s:-]+(.+)$/i);
         if (numMatch) {
           phases.push({ number: numMatch[1], name: numMatch[2].trim(), status: done ? 'complete' : 'pending', goal: null });
         } else {
-          phases.push({ number: null, name: rest, status: done ? 'complete' : 'pending', goal: null });
+          phases.push({ number: null, name: cleanRest, status: done ? 'complete' : 'pending', goal: null });
         }
       }
     }
-    return { phases };
+    // Deduplicate by phase number — keep first occurrence; null-number entries always kept
+    const seen = new Set();
+    const deduped = phases.filter(p => {
+      if (p.number === null) return true;
+      if (seen.has(p.number)) return false;
+      seen.add(p.number);
+      return true;
+    });
+    return { phases: deduped };
   } catch {
     return null;
   }
@@ -649,57 +664,48 @@ function setupTerminalWebSocket(httpServer) {
       return;
     }
 
-    // Spawn tmux attach-session
-    const proc = spawn('tmux', ['attach-session', '-t', sessionName], {
-      stdio: ['pipe', 'pipe', 'pipe'],
+    // Spawn tmux attach-session inside a real PTY via node-pty
+    // (tmux requires a TTY — piped stdio causes immediate exit)
+    const proc = pty.spawn('tmux', ['attach-session', '-t', sessionName], {
+      name: 'xterm-256color',
+      cols: 80,
+      rows: 24,
       env: { ...process.env, TERM: 'xterm-256color' },
     });
 
     activeSessions.set(sessionName, { proc, ws });
 
-    proc.stdout.on('data', (data) => {
+    // PTY output → WebSocket
+    proc.onData((data) => {
       if (ws.readyState === 1 /* OPEN */) {
         try { ws.send(data); } catch { /* ignore -- client may have closed */ }
       }
     });
 
-    proc.stderr.on('data', (data) => {
-      if (ws.readyState === 1) {
-        try { ws.send(data); } catch { /* ignore */ }
-      }
-    });
-
     ws.on('message', (data) => {
-      // Try to parse as JSON control message first
+      const str = typeof data === 'string' ? data : data.toString();
+      // Try to parse as JSON control message (resize)
       try {
-        const msg = JSON.parse(data.toString());
+        const msg = JSON.parse(str);
         if (msg.type === 'resize' && msg.cols && msg.rows) {
-          execSync(
-            `tmux resize-window -t "${sessionName}" -x ${msg.cols} -y ${msg.rows}`,
-            { stdio: 'pipe', timeout: 1000 }
-          );
+          proc.resize(msg.cols, msg.rows);
           return; // control message handled -- do not forward to stdin
         }
-      } catch { /* not JSON -- fall through to binary forward */ }
+      } catch { /* not JSON -- fall through to keystroke forward */ }
 
-      // Forward raw keystrokes / data to tmux stdin
-      if (!proc.stdin.destroyed) {
-        try { proc.stdin.write(data); } catch { /* ignore */ }
-      }
+      // Forward raw keystrokes to the PTY
+      try { proc.write(str); } catch { /* ignore */ }
     });
 
     const cleanup = () => {
       activeSessions.delete(sessionName);
-      if (!proc.killed) {
-        proc.stdin.end();
-        proc.kill('SIGHUP');
-      }
+      try { proc.kill(); } catch { /* already dead */ }
     };
 
     ws.on('close', cleanup);
     ws.on('error', cleanup);
 
-    proc.on('exit', () => {
+    proc.onExit(() => {
       activeSessions.delete(sessionName);
       if (ws.readyState === 1) ws.close();
     });
@@ -708,7 +714,7 @@ function setupTerminalWebSocket(httpServer) {
   // Clean up all sessions on server shutdown
   process.on('SIGINT', () => {
     for (const { proc } of activeSessions.values()) {
-      if (!proc.killed) proc.kill('SIGHUP');
+      try { proc.kill(); } catch { /* ignore */ }
     }
   });
 
