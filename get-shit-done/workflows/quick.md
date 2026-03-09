@@ -538,6 +538,23 @@ Build file list:
 - If `$DISCUSS_MODE` and context file exists: `${QUICK_DIR}/${next_num}-CONTEXT.md`
 - If `$FULL_MODE` and verification file exists: `${QUICK_DIR}/${next_num}-VERIFICATION.md`
 
+Record observation before final commit:
+
+```bash
+OBS_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+OBS_FILE=".planning/patterns/sessions.jsonl"
+OBS_MILESTONE="${MILESTONE_SCOPE:-none}"
+OBS_FULL=$( [ "${FULL_MODE}" = "true" ] && echo "true" || echo "false" )
+OBS_DISCUSS=$( [ "${DISCUSS_MODE}" = "true" ] && echo "true" || echo "false" )
+
+if [ ! -d ".planning/patterns" ]; then
+  echo "Observation skipped: .planning/patterns/ not found. Fix: mkdir -p .planning/patterns"
+else
+  echo "{\"timestamp\":\"${OBS_TIMESTAMP}\",\"type\":\"workflow\",\"source\":\"workflow\",\"command\":\"quick\",\"phase\":\"${next_num}\",\"milestone\":\"${OBS_MILESTONE}\",\"duration\":null,\"outcome\":\"success\",\"skills_loaded\":[],\"details\":{\"description\":\"quick-task\",\"full_mode\":${OBS_FULL},\"discuss_mode\":${OBS_DISCUSS}}}" >> "$OBS_FILE" 2>/dev/null \
+    || echo "Observation failed: could not write to $OBS_FILE. Fix: touch $OBS_FILE"
+fi
+```
+
 ```bash
 node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs(quick-${next_num}): ${DESCRIPTION}" --files ${file_list}
 ```
