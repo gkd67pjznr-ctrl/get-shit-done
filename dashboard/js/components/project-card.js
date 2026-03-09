@@ -1,10 +1,11 @@
 import { html } from 'htm/preact';
-import { useRef, useEffect } from 'preact/hooks';
+import { useState, useRef, useEffect } from 'preact/hooks';
 import { navigate } from '../lib/router.js';
 import { ProgressBar } from './progress-bar.js';
 import {
   parseProgress, fmtPct, fmtQuality, statusClass,
-  getActiveMilestone, countCompletedMilestones, inferWorkflowStep
+  getActiveMilestone, countCompletedMilestones, inferWorkflowStep,
+  healthLabel, healthClass, computeShimmerClass, fmtIdleDuration
 } from '../utils/format.js';
 
 export function ProjectCard({ project }) {
@@ -27,6 +28,9 @@ export function ProjectCard({ project }) {
   // Check if project path is stale (no state data and no milestones)
   const isStale = !project.state && (!project.milestones || project.milestones.length === 0);
 
+  const health = project.health || null;
+  const isPaused = project.tracking === false;
+
   const quality = fmtQuality(project.config);
   const debtOpen = project.debt ? project.debt.open : 0;
   const completedMilestones = countCompletedMilestones(project.milestones);
@@ -47,13 +51,16 @@ export function ProjectCard({ project }) {
   return html`
     <div
       ref=${cardRef}
-      class="project-card ${isStale ? 'stale' : ''} ${project._appear ? 'card-appear' : ''}"
+      class="project-card ${isStale ? 'stale' : ''} ${isPaused ? 'paused' : ''} ${project._appear ? 'card-appear' : ''}"
       onClick=${handleClick}
     >
       <div class="card-header">
         <span class="card-project-name">${project.display_name || project.name}</span>
         ${quality ? html`
           <span class="quality-badge status-not-started">${quality}</span>
+        ` : null}
+        ${health && !isPaused ? html`
+          <span class="health-label ${healthClass(health)}">${healthLabel(health)}</span>
         ` : null}
       </div>
 
@@ -88,7 +95,7 @@ export function ProjectCard({ project }) {
                   <span class="milestone-progress-text">${fmtPct(pct)}</span>
                 </div>
                 <div style="display:flex; align-items:center; gap:8px;">
-                  <${ProgressBar} value=${pct} shimmer=${ms.active && workflowStep === 'execute'} />
+                  <${ProgressBar} value=${pct} shimmerClass=${ms.active ? computeShimmerClass(project) : ''} />
                   ${phases.length > 0 ? html`
                     <span style="font-size:11px; color:var(--text-muted); white-space:nowrap; font-family:var(--font-data)">
                       ${completedPhases}/${phases.length}
