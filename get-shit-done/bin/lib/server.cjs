@@ -125,6 +125,67 @@ function scanPhasesSummary(phasesDir) {
   }
 }
 
+// ─── Multi-milestone aggregation ─────────────────────────────────────────────
+
+function parseAllMilestones(projectPath) {
+  try {
+    const milestonesDir = path.join(projectPath, '.planning', 'milestones');
+    let dirs;
+    try {
+      dirs = fs.readdirSync(milestonesDir, { withFileTypes: true });
+    } catch {
+      return [];
+    }
+
+    const milestoneEntries = dirs
+      .filter(d => d.isDirectory() && /^v\d/.test(d.name))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    let activeMilestone = null;
+    try {
+      activeMilestone = resolveActiveMilestone(projectPath);
+    } catch { /* leave null */ }
+
+    const result = [];
+    for (const dir of milestoneEntries) {
+      const milestoneRoot = path.join(milestonesDir, dir.name);
+      const entry = {
+        name: dir.name,
+        active: dir.name === activeMilestone,
+        state: null,
+        roadmap: null,
+        requirements: null,
+        phases_summary: [],
+      };
+
+      try {
+        const stateContent = fs.readFileSync(path.join(milestoneRoot, 'STATE.md'), 'utf-8');
+        entry.state = parseStateFile(stateContent);
+      } catch { /* leave null */ }
+
+      try {
+        const roadmapContent = fs.readFileSync(path.join(milestoneRoot, 'ROADMAP.md'), 'utf-8');
+        entry.roadmap = parseRoadmapFile(roadmapContent);
+      } catch { /* leave null */ }
+
+      try {
+        const reqContent = fs.readFileSync(path.join(milestoneRoot, 'REQUIREMENTS.md'), 'utf-8');
+        entry.requirements = parseRequirementsFile(reqContent);
+      } catch { /* leave null */ }
+
+      try {
+        const phasesDir = path.join(milestoneRoot, 'phases');
+        entry.phases_summary = scanPhasesSummary(phasesDir);
+      } catch { /* leave [] */ }
+
+      result.push(entry);
+    }
+    return result;
+  } catch {
+    return [];
+  }
+}
+
 // ─── Core data aggregation ────────────────────────────────────────────────────
 
 function parseProjectData(project) {
@@ -170,6 +231,8 @@ function parseProjectData(project) {
     } catch { phases_summary = []; }
   } catch { /* project path unresolvable */ }
 
+  const milestones = parseAllMilestones(project.path);
+
   return {
     name: project.name,
     display_name: project.display_name,
@@ -181,6 +244,7 @@ function parseProjectData(project) {
     config,
     debt,
     phases_summary,
+    milestones,
     parsed_at: new Date().toISOString(),
   };
 }
@@ -594,6 +658,7 @@ function startDashboardServer(port, opts = {}) {
 module.exports = {
   startDashboardServer,
   parseProjectData,
+  parseAllMilestones,
   formatSSE,
   broadcast,
 };
