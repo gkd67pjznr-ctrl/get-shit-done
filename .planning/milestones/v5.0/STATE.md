@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-stopped_at: Phase 21 plan 02 complete. setupTerminalWebSocket implemented and tested in server.cjs.
-last_updated: "2026-03-09T17:00:00.000Z"
-last_activity: 2026-03-09 -- Phase 21-02 executed (setupTerminalWebSocket WebSocket-to-tmux bridge, integration tests)
+stopped_at: Phase 21 plan 04b complete. Cross-project pattern aggregation, PatternPage component, and /#/patterns route wired.
+last_updated: "2026-03-09T18:45:00.000Z"
+last_activity: 2026-03-09 -- Phase 21-04b executed (PAT-03 cross-project aggregation in digest/suggest, PAT-04 PatternPage dashboard component)
 progress:
   total_phases: 5
-  completed_phases: 4
-  total_plans: 14
-  completed_plans: 14
-  percent: 86
+  completed_phases: 5
+  total_plans: 16
+  completed_plans: 16
+  percent: 100
 ---
 
 # Project State -- Milestone v5.0
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-07)
 
 ## Current Position
 
-Phase: 21 IN PROGRESS (5 of 5 in v5.0) (Embedded Terminals and Pattern System)
-Plan: 02 complete -- setupTerminalWebSocket WebSocket-to-tmux bridge
-Status: Phase 21 Plan 02 Complete
-Last activity: 2026-03-09 -- Phase 21-02 executed (setupTerminalWebSocket, integration tests)
+Phase: 21 COMPLETE (5 of 5 in v5.0) (Embedded Terminals and Pattern System)
+Plan: 04b complete -- cross-project pattern aggregation + PatternPage dashboard component
+Status: Phase 21 Complete -- v5.0 Milestone Complete
+Last activity: 2026-03-09 -- Phase 21-04b executed (PAT-03, PAT-04)
 
-Progress: [████████░░] 86%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -91,8 +91,14 @@ Recent decisions affecting current work:
 - [21-02]: setupTerminalWebSocket uses noServer: true WebSocketServer sharing HTTP server port -- no second port needed
 - [21-02]: tmux has-session validation is synchronous (execSync, 2s timeout) to keep connection handler linear
 - [21-02]: Single ws.on('message') handler dispatches JSON resize control messages vs binary stdin forwarding
+- [21-03]: xterm.js addons use ?external=@xterm/xterm CDN flag to prevent duplicate Terminal class instances
+- [21-03]: ResizeObserver debounced 100ms fires fitAddon.fit() to sync terminal dimensions with container
+- [21-03]: onOpenTerminal threaded App -> Overview -> ProjectCard props; TerminalModal rendered outside page-layout div inside App fragment
 - [21-04a]: aggregatePatterns uses commit_type || event || type || 'unknown' to normalize type field across different JSONL schemas
 - [21-04a]: loadRegistry() in /api/patterns route uses process.env.GSD_HOME (set by startDashboardServer); extra arg is harmless
+- [21-04b]: digest/suggest cross-project: read ~/.gsd/dashboard.json, iterate projects array, read per-project sessions/suggestions, merge + deduplicate
+- [21-04b]: PatternPage uses local useState/useEffect (not signals) -- self-contained, consistent with plan spec
+- [21-04b]: Nav bar placed between Header and page-layout with two muted links; patterns dispatch is first branch in route conditional
 
 ### Pending Todos
 
@@ -106,7 +112,7 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-09
-Stopped at: Phase 21 plan 02 complete. setupTerminalWebSocket implemented and tested.
+Stopped at: Phase 21 plan 04b complete. All PAT requirements done. v5.0 milestone complete.
 Resume file: None
-Next step: Phase 21 Plan 03 -- xterm.js frontend terminal component.
+Next step: v5.0 milestone complete -- plan next milestone or ship.
 

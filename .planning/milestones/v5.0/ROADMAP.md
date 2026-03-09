@@ -16,7 +16,7 @@ Transform GSD from a single-project CLI tool into a device-wide multi-project co
 - [x] **Phase 18: Data Aggregation and Server** - File watchers, data collectors, HTTP server, and SSE live refresh
 - [x] **Phase 19: Dashboard UI** - Multi-project overview page and per-project drill-down (completed 2026-03-09)
 - [x] **Phase 20: Tmux Monitoring and Cross-Project Metrics** - Session detection, metadata cards, health scoring, and aggregated metrics (completed 2026-03-09)
-- [ ] **Phase 21: Embedded Terminals and Pattern System** - Interactive xterm.js terminals and cross-project pattern analysis
+- [x] **Phase 21: Embedded Terminals and Pattern System** - Interactive xterm.js terminals and cross-project pattern analysis (completed 2026-03-09)
 
 ## Phase Details
 
@@ -85,4 +85,4 @@ Phases execute in numeric order: 17 -> 17.x -> 18 -> 18.x -> 19 -> 20 -> 21
 | 18. Data Aggregation and Server | 2/2 | Complete    | 2026-03-09 |
 | 19. Dashboard UI | 4/4 | Complete    | 2026-03-09 |
 | 20. Tmux Monitoring and Metrics | 6/6 | Complete    | 2026-03-09 |
-| 21. Embedded Terminals and Patterns | 3/6 | In Progress|  |
+| 21. Embedded Terminals and Patterns | 6/6 | Complete | 2026-03-09 |
