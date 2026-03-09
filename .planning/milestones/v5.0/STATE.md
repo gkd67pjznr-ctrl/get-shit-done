@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: completed
-stopped_at: Phase 19-01 complete. Static file serving, multi-milestone API, browser auto-open; 16 tests pass.
-last_updated: "2026-03-09T05:30:00.000Z"
-last_activity: 2026-03-09 -- Phase 19-01 executed (parseAllMilestones, static serving, browser auto-open, 5 new tests)
+milestone: v5.0
+milestone_name: Dashboard UI
+status: in-progress
+stopped_at: Phase 19-02 complete. SPA scaffold with index.html + import map, directory structure, all 5 CSS files; 16 tests pass.
+last_updated: "2026-03-09T06:00:00.000Z"
+last_activity: 2026-03-09 -- Phase 19-02 executed (SPA scaffold, CSS design system, removed v4.0 HTML files)
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 5
-  completed_plans: 3
-  percent: 50
+  completed_plans: 4
+  percent: 55
 ---
 
 # Project State -- Milestone v5.0
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-07)
 ## Current Position
 
 Phase: 19 (3 of 5 in v5.0) (Dashboard UI)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase (complete)
 Status: In Progress
-Last activity: 2026-03-09 -- Phase 19-01 executed (parseAllMilestones, static serving, browser auto-open, 5 new tests)
+Last activity: 2026-03-09 -- Phase 19-02 executed (SPA scaffold, CSS design system, removed v4.0 HTML files)
 
-Progress: [█████░░░░░] 50%
+Progress: [██████░░░░] 55%
 
 ## Performance Metrics
 
@@ -65,6 +65,9 @@ Recent decisions affecting current work:
 - [19-01]: SPA fallback returns 200 + index.html for any non-existent path; API routes always take priority
 - [19-01]: DASHBOARD_DIR = path.join(__dirname, '..', '..', '..', 'dashboard'); dashboardDir opt threads for test isolation
 - [19-01]: Browser auto-open fires after 300ms setTimeout; failure is non-fatal
+- [19-02]: import map uses ?external=preact on signals and htm -- prevents duplicate Preact instances that break signals
+- [19-02]: CSS shimmer-active class defined for Phase 20 hook point; Phase 20 toggles via SSE, no Plan 03 action needed
+- [19-02]: v4.0 HTML files were untracked by git (generated files); deleted from filesystem only
 
 ### Pending Todos
 
@@ -78,7 +81,7 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-09
-Stopped at: Phase 18-02 complete. CLI serve subcommand with --port flag, port conflict detection/takeover, 11 tests pass.
+Stopped at: Phase 19-02 complete. SPA scaffold with index.html + Preact import map, CSS design system (5 files, 561 lines), all v4.0 HTML removed; 16 tests pass.
 Resume file: None
-Next step: `/gsd:plan-phase 19` -- plan Phase 19-02 (frontend SPA)
+Next step: Execute plan 19-03 (JS lib + components)
 
