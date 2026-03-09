@@ -19,6 +19,11 @@ function handleEvent(e) {
       }
     } else if (e.type === 'project-removed') {
       projects.value = projects.value.filter(p => p.name !== data.name);
+    } else if (e.type === 'tmux-update') {
+      // Merge tmux data into the matching project without triggering full card flash
+      projects.value = projects.value.map(p =>
+        p.name === data.name ? { ...p, tmux: data.tmux } : p
+      );
     }
   } catch { /* ignore malformed events */ }
 }
@@ -44,4 +49,5 @@ export function connectSSE() {
   es.addEventListener('project-update',  handleEvent);
   es.addEventListener('project-added',   handleEvent);
   es.addEventListener('project-removed', handleEvent);
+  es.addEventListener('tmux-update',     handleEvent);
 }
