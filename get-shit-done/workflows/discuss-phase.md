@@ -586,6 +586,23 @@ node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs(state): record
 ```
 </step>
 
+<step name="observe">
+Record this discuss-phase run to sessions.jsonl. This step runs after all commits -- failure here does not block completion.
+
+```bash
+OBS_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+OBS_FILE=".planning/patterns/sessions.jsonl"
+OBS_MILESTONE="${MILESTONE_SCOPE:-none}"
+
+if [ ! -d ".planning/patterns" ]; then
+  echo "Observation skipped: .planning/patterns/ not found. Fix: mkdir -p .planning/patterns"
+else
+  echo "{\"timestamp\":\"${OBS_TIMESTAMP}\",\"type\":\"workflow\",\"source\":\"workflow\",\"command\":\"discuss\",\"phase\":\"${phase_number}\",\"milestone\":\"${OBS_MILESTONE}\",\"duration\":null,\"outcome\":\"success\",\"skills_loaded\":[],\"details\":{\"areas_discussed\":0,\"decisions_count\":0,\"deferred_count\":0}}" >> "$OBS_FILE" 2>/dev/null \
+    || echo "Observation failed: could not write to $OBS_FILE. Fix: touch $OBS_FILE"
+fi
+```
+</step>
+
 <step name="auto_advance">
 Check for auto-advance trigger:
 
