@@ -81,6 +81,6 @@ See: .planning/PROJECT.md (updated 2026-03-05)
 
 ## Session Continuity
 
-Last activity: 2026-03-09 -- Quick task 19: dashboard restyled to terminal aesthetic (monospace, flat rows, block progress bars)
+Last activity: 2026-03-09 -- Phase 21-01 executed (ws install, PAT-01 and TERM-03 test stubs)
 Resume file: None
-Next step: Phase 21 -- terminal backend (tmux pane integration, escape sequence handling)
+Next step: Phase 21 Plan 02 -- implement setupTerminalWebSocket and terminal backend

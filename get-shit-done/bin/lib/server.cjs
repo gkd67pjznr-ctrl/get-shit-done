@@ -5,7 +5,8 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const chokidar = require('chokidar');
-const { execSync } = require('child_process');
+const { execSync, spawn } = require('child_process');
+const { WebSocketServer } = require('ws');
 
 const { resolveActiveMilestone, planningRoot, compareVersions } = require('./core.cjs');
 const { loadRegistry, getDashboardPath } = require('./dashboard.cjs');
@@ -338,6 +339,65 @@ function parseAllMilestones(projectPath) {
   }
 }
 
+// ─── Cross-Project Pattern Aggregation (PAT-01) ───────────────────────────────
+
+/**
+ * Reads sessions.jsonl from every project in the registry and returns a merged
+ * array of pattern summary objects.
+ *
+ * Each returned object:
+ *   { type, count, projects: string[], projectCount, lastSeen }
+ *
+ * @param {Array<{name: string, path: string}>} registry
+ * @returns {Array}
+ */
+function aggregatePatterns(registry) {
+  /** @type {Map<string, { count: number, projects: Set<string>, lastSeen: string|null }>} */
+  const byType = new Map();
+
+  for (const project of registry) {
+    const sessionsFile = path.join(project.path, '.planning', 'patterns', 'sessions.jsonl');
+    let lines;
+    try {
+      lines = fs.readFileSync(sessionsFile, 'utf-8').trim().split('\n').filter(Boolean);
+    } catch {
+      continue; // project has no sessions.jsonl -- skip
+    }
+
+    for (const line of lines) {
+      let entry;
+      try {
+        entry = JSON.parse(line);
+      } catch {
+        continue; // malformed JSONL -- skip
+      }
+      entry._project = project.name;
+
+      const type = entry.commit_type || entry.event || entry.type || 'unknown';
+      if (!byType.has(type)) {
+        byType.set(type, { count: 0, projects: new Set(), lastSeen: null });
+      }
+      const bucket = byType.get(type);
+      bucket.count++;
+      bucket.projects.add(project.name);
+      if (entry.timestamp && (!bucket.lastSeen || entry.timestamp > bucket.lastSeen)) {
+        bucket.lastSeen = entry.timestamp;
+      }
+    }
+  }
+
+  // Sort by count descending
+  return Array.from(byType.entries())
+    .sort((a, b) => b[1].count - a[1].count)
+    .map(([type, data]) => ({
+      type,
+      count: data.count,
+      projects: Array.from(data.projects).sort(),
+      projectCount: data.projects.size,
+      lastSeen: data.lastSeen,
+    }));
+}
+
 // ─── Core data aggregation ────────────────────────────────────────────────────
 
 function parseProjectData(project, tmuxCache) {
@@ -604,6 +664,18 @@ function createHttpServer(port, cache, clients, dashboardDir, tmuxCache) {
           res.end(JSON.stringify({ error: err.message }));
         }
       });
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/api/patterns') {
+      const registry = loadRegistry(opts.gsdHome);
+      const patterns = aggregatePatterns(registry);
+      res.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'no-cache',
+      });
+      res.end(JSON.stringify(patterns));
       return;
     }
 
@@ -960,6 +1032,7 @@ module.exports = {
   startDashboardServer,
   parseProjectData,
   parseAllMilestones,
+  aggregatePatterns,
   formatSSE,
   broadcast,
   _parseTmuxOutput: parseTmuxOutput,

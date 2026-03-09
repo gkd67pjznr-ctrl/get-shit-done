@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Phase 20 complete. All 6 plans (20-01 through 20-06) committed.
-last_updated: "2026-03-09T18:15:00.000Z"
-last_activity: 2026-03-09 -- Phase 20-06 executed (SidebarMetrics component, cc naming tip, final verification)
+status: in_progress
+stopped_at: Phase 21 plan 01 complete. ws installed, PAT-01 and TERM-03 test stubs created.
+last_updated: "2026-03-09T15:08:00.000Z"
+last_activity: 2026-03-09 -- Phase 21-01 executed (ws install, patterns.test.cjs, server.test.cjs)
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 14
-  completed_plans: 11
-  percent: 78
+  completed_plans: 13
+  percent: 82
 ---
 
 # Project State -- Milestone v5.0
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-07)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts -- enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 20 - Tmux Monitoring and Cross-Project Metrics
+**Current focus:** Phase 21 - Embedded Terminals and Pattern System
 
 ## Current Position
 
-Phase: 20 COMPLETE (4 of 5 in v5.0) (Tmux Monitoring and Cross-Project Metrics)
-Plan: 6 of 6 in current phase (20-06 complete -- all plans done)
-Status: Phase 20 Complete
-Last activity: 2026-03-09 -- Phase 20-06 executed (SidebarMetrics, cc tip, final verification and commit)
+Phase: 21 IN PROGRESS (5 of 5 in v5.0) (Embedded Terminals and Pattern System)
+Plan: 1 of N in current phase (21-01 complete -- scaffolding done)
+Status: Phase 21 Plan 01 Complete
+Last activity: 2026-03-09 -- Phase 21-01 executed (ws install, patterns.test.cjs, server.test.cjs)
 
 Progress: [████████░░] 78%
 
@@ -87,6 +87,7 @@ Recent decisions affecting current work:
 - [20-06]: SidebarMetrics uses tracking !== false (not === true) to treat undefined/null as tracked (backward-compat)
 - [20-06]: Quality fallback chain: p.quality || milestones[0].quality || null; null defaults to 'standard' bucket
 - [20-06]: healthLabel/healthClass already exported from format.js -- imported into sidebar.js without new code
+- [21-01]: Node.js built-in test runner requires Promise-based async tests -- done() callback causes "asynchronous activity after test ended" error; pattern: return new Promise((resolve) => ...)
 
 ### Pending Todos
 
@@ -95,11 +96,12 @@ None.
 ### Blockers/Concerns
 
 - tmux CLI as terminal backend (Phase 21) may need prototype spike -- escape sequence handling unproven
+- ws test stubs use simplified route matching stubs -- Plan 21-02 must implement setupTerminalWebSocket to fully exercise them
 
 ## Session Continuity
 
 Last session: 2026-03-09
-Stopped at: Phase 20 fully complete. All 6 plans committed (20-01 through 20-06).
+Stopped at: Phase 21 plan 01 complete. ws installed, PAT-01 and TERM-03 test stubs created.
 Resume file: None
-Next step: Phase 21 -- terminal backend (tmux pane integration, escape sequence handling).
+Next step: Phase 21 Plan 02 -- implement setupTerminalWebSocket and terminal backend.
 
