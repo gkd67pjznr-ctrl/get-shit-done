@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
 const COMMANDS_GSD = path.join(ROOT, 'commands', 'gsd');
@@ -163,4 +164,31 @@ test('DEPR-03: no wrapper_commands field in schema.ts', () => {
 test('DEPR-04: deprecation notice exists in docs/', () => {
   const noticePath = path.join(ROOT, 'docs', 'skill-creator-deprecation.md');
   assert.ok(fs.existsSync(noticePath), 'docs/skill-creator-deprecation.md must exist');
+});
+
+const ROOT_DIR = path.resolve(__dirname, '..');
+
+// ===== DEPR-03: No skill-creator.json refs in src/ =====
+test('DEPR-03: no skill-creator.json references in src/ TypeScript files', () => {
+  let output = '';
+  try {
+    output = execSync('grep -r "skill-creator\\.json" src/', { cwd: ROOT_DIR, encoding: 'utf8' });
+  } catch (_) {
+    // exit 1 means no matches -- that is the success case
+    return;
+  }
+  // If we reach here, grep found matches (exit 0)
+  assert.fail(`Found skill-creator.json references in src/:\n${output}`);
+});
+
+// ===== DEPR-03: No npx skill-creator refs in src/ or desktop/ =====
+test('DEPR-03: no npx skill-creator references in src/ or desktop/', () => {
+  let output = '';
+  try {
+    output = execSync('grep -r "npx skill-creator" src/ desktop/', { cwd: ROOT_DIR, encoding: 'utf8' });
+  } catch (_) {
+    // exit 1 means no matches -- success
+    return;
+  }
+  assert.fail(`Found npx skill-creator references:\n${output}`);
 });
