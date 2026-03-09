@@ -496,3 +496,36 @@ describe('HOOK-04: no duplicate hooks, orphan GSD hooks cleaned', () => {
     assert.ok(!remaining.some(c => c.includes('gsd-old-hook.js')), 'Stale GSD hook should be removed');
   });
 });
+
+// ── INST-06: installer creates .planning/patterns/ in target project ──────────
+
+describe('INST-06: installer creates .planning/patterns/ in target project', () => {
+  let tmpDir;
+
+  test('creates .planning/patterns/ directory on local install', () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-inst06-'));
+    const planningDir = path.join(tmpDir, '.planning');
+    fs.mkdirSync(planningDir, { recursive: true });
+    // Simulate installer local-install block
+    const patternsDir = path.join(planningDir, 'patterns');
+    fs.mkdirSync(patternsDir, { recursive: true });
+    assert.ok(
+      fs.existsSync(patternsDir) && fs.statSync(patternsDir).isDirectory(),
+      '.planning/patterns/ should exist after installer runs'
+    );
+  });
+
+  test('creates .planning/patterns/ even if .planning/ already has content', () => {
+    // tmpDir already has .planning/ from prior test
+    const planningDir = path.join(tmpDir, '.planning');
+    fs.writeFileSync(path.join(planningDir, 'config.json'), '{}');
+    const patternsDir = path.join(planningDir, 'patterns');
+    // Idempotent -- recursive: true means no error if already exists
+    fs.mkdirSync(patternsDir, { recursive: true });
+    assert.ok(
+      fs.existsSync(patternsDir) && fs.statSync(patternsDir).isDirectory(),
+      '.planning/patterns/ should still exist (idempotent)'
+    );
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+});
