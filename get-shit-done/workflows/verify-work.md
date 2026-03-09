@@ -325,6 +325,22 @@ Commit the UAT file:
 node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "test({phase_num}): complete UAT - {passed} passed, {issues} issues" --files ".planning/phases/XX-name/{phase_num}-UAT.md"
 ```
 
+Record observation to sessions.jsonl before presenting results.
+
+```bash
+OBS_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+OBS_FILE=".planning/patterns/sessions.jsonl"
+OBS_MILESTONE="${MILESTONE_SCOPE:-none}"
+OBS_OUTCOME=$( [ "${issues:-0}" -eq 0 ] && echo "success" || echo "partial" )
+
+if [ ! -d ".planning/patterns" ]; then
+  echo "Observation skipped: .planning/patterns/ not found. Fix: mkdir -p .planning/patterns"
+else
+  echo "{\"timestamp\":\"${OBS_TIMESTAMP}\",\"type\":\"workflow\",\"source\":\"workflow\",\"command\":\"verify\",\"phase\":\"${phase_number}\",\"milestone\":\"${OBS_MILESTONE}\",\"duration\":null,\"outcome\":\"${OBS_OUTCOME}\",\"skills_loaded\":[],\"details\":{\"tests_total\":${total:-0},\"tests_passed\":${passed:-0},\"tests_failed\":${issues:-0},\"gaps_count\":${issues:-0}}}" >> "$OBS_FILE" 2>/dev/null \
+    || echo "Observation failed: could not write to $OBS_FILE. Fix: touch $OBS_FILE"
+fi
+```
+
 Present summary:
 ```
 ## UAT Complete: Phase {phase}
