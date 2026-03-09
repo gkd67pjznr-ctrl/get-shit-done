@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-stopped_at: Phase 21 plan 04a complete. aggregatePatterns implemented in server.cjs, live tests added to patterns.test.cjs.
-last_updated: "2026-03-09T16:00:00.000Z"
-last_activity: 2026-03-09 -- Phase 21-04a executed (aggregatePatterns, /api/patterns endpoint, live tests)
+stopped_at: Phase 21 plan 02 complete. setupTerminalWebSocket implemented and tested in server.cjs.
+last_updated: "2026-03-09T17:00:00.000Z"
+last_activity: 2026-03-09 -- Phase 21-02 executed (setupTerminalWebSocket WebSocket-to-tmux bridge, integration tests)
 progress:
   total_phases: 5
   completed_phases: 4
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-07)
 ## Current Position
 
 Phase: 21 IN PROGRESS (5 of 5 in v5.0) (Embedded Terminals and Pattern System)
-Plan: 04a complete -- aggregatePatterns and /api/patterns endpoint
-Status: Phase 21 Plan 04a Complete
-Last activity: 2026-03-09 -- Phase 21-04a executed (aggregatePatterns, /api/patterns endpoint, live tests)
+Plan: 02 complete -- setupTerminalWebSocket WebSocket-to-tmux bridge
+Status: Phase 21 Plan 02 Complete
+Last activity: 2026-03-09 -- Phase 21-02 executed (setupTerminalWebSocket, integration tests)
 
 Progress: [████████░░] 86%
 
@@ -88,6 +88,9 @@ Recent decisions affecting current work:
 - [20-06]: Quality fallback chain: p.quality || milestones[0].quality || null; null defaults to 'standard' bucket
 - [20-06]: healthLabel/healthClass already exported from format.js -- imported into sidebar.js without new code
 - [21-01]: Node.js built-in test runner requires Promise-based async tests -- done() callback causes "asynchronous activity after test ended" error; pattern: return new Promise((resolve) => ...)
+- [21-02]: setupTerminalWebSocket uses noServer: true WebSocketServer sharing HTTP server port -- no second port needed
+- [21-02]: tmux has-session validation is synchronous (execSync, 2s timeout) to keep connection handler linear
+- [21-02]: Single ws.on('message') handler dispatches JSON resize control messages vs binary stdin forwarding
 - [21-04a]: aggregatePatterns uses commit_type || event || type || 'unknown' to normalize type field across different JSONL schemas
 - [21-04a]: loadRegistry() in /api/patterns route uses process.env.GSD_HOME (set by startDashboardServer); extra arg is harmless
 
@@ -98,12 +101,12 @@ None.
 ### Blockers/Concerns
 
 - tmux CLI as terminal backend (Phase 21) may need prototype spike -- escape sequence handling unproven
-- setupTerminalWebSocket now implemented in server.cjs (21-02 applied concurrently)
+None.
 
 ## Session Continuity
 
 Last session: 2026-03-09
-Stopped at: Phase 21 plan 04a complete. aggregatePatterns implemented in server.cjs, live tests added to patterns.test.cjs.
+Stopped at: Phase 21 plan 02 complete. setupTerminalWebSocket implemented and tested.
 Resume file: None
-Next step: Phase 21 remaining plans (terminal WebSocket, dashboard UI integration).
+Next step: Phase 21 Plan 03 -- xterm.js frontend terminal component.
 

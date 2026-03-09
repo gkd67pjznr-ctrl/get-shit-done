@@ -85,4 +85,4 @@ Phases execute in numeric order: 17 -> 17.x -> 18 -> 18.x -> 19 -> 20 -> 21
 | 18. Data Aggregation and Server | 2/2 | Complete    | 2026-03-09 |
 | 19. Dashboard UI | 4/4 | Complete    | 2026-03-09 |
 | 20. Tmux Monitoring and Metrics | 6/6 | Complete    | 2026-03-09 |
-| 21. Embedded Terminals and Patterns | 2/6 | In Progress|  |
+| 21. Embedded Terminals and Patterns | 3/6 | In Progress|  |
