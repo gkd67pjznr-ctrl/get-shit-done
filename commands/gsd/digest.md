@@ -35,11 +35,37 @@ If the scan produces new observations, they will be included in the subsequent s
 
 ## Step 2: Load session data
 
-Read `.planning/patterns/sessions.jsonl` in full using the Read tool.
+### 2a. Load current project sessions
 
-- If the file does not exist or is empty, display:
+Read `.planning/patterns/sessions.jsonl` using the Read tool.
+
+- If the file does not exist or is empty, note that the current project has no session data.
+
+### 2b. Load sessions from all registered projects (cross-project)
+
+Read `~/.gsd/dashboard.json` using the Read tool.
+
+- If the file does not exist or contains no projects, skip this step and note: "No registered projects found. Only current project data analyzed."
+- If the file exists and has a `projects` array, iterate over each project entry (each has a `name` and `path` field).
+- For each registered project, attempt to read `<project.path>/.planning/patterns/sessions.jsonl`.
+- If a project's file does not exist, skip it silently.
+- Tag each entry with its source project: when analyzing, note which project each entry came from.
+- Combine all entries (current project + all registered projects) into a single dataset.
+- Deduplicate entries that appear in both the current project file and the registered project file for the same path (this can happen if the current project is also registered).
+
+At the top of the digest output, note:
+```
+**Sources:** Current project + N registered projects (M with session data)
+```
+
+### 2c. Combined dataset
+
+Proceed with the combined dataset for all subsequent analysis steps (3a through 3f). When showing phase activity (step 3b), include a "Project" column to show which project each phase belongs to when multiple projects are analyzed.
+
+If the combined dataset is empty, display:
   > No session data available. Session observations are captured by the post-commit hook. Make some commits and try again.
   Then stop.
+
 - Parse each line as JSON. Count total entries.
 - Note: if the file is very large (more than 500 lines), mention that analysis may take a moment.
 

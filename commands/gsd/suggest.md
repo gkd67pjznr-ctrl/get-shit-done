@@ -27,9 +27,30 @@ Note: This command runs regardless of the `suggest_on_session_start` toggle sinc
 
 ## Step 2: Load suggestions
 
-Read `.planning/patterns/suggestions.json` using the Read tool.
+### 2a. Load current project suggestions
 
-**If the file does not exist or is empty**, display the following and stop:
+Read `.planning/patterns/suggestions.json` using the Read tool. If it exists, parse as a JSON array. If missing, treat as an empty array.
+
+### 2b. Load suggestions from all registered projects (cross-project)
+
+Read `~/.gsd/dashboard.json` using the Read tool.
+
+- If the file does not exist or has no `projects` array, skip this step.
+- For each registered project (each with `name` and `path`), attempt to read `<project.path>/.planning/patterns/suggestions.json`.
+- If a project's suggestions file does not exist, skip it.
+- For each suggestion loaded from a registered project, add a `_sourceProject` field with the project's `name` value to distinguish it from the current project's suggestions.
+- Combine all suggestions (current + registered projects) into a single working array.
+- Deduplicate by `candidate.id` -- if the same ID appears in multiple projects, keep the one with the most recent `createdAt` (or the first occurrence if timestamps match).
+
+If cross-project suggestions are found, display at the start:
+```
+Loading suggestions from N registered projects...
+Found M cross-project suggestions in addition to local suggestions.
+```
+
+### 2c. Handle combined result
+
+If the combined array is empty, display the following and stop:
 
 ```
 No pending suggestions.
@@ -39,7 +60,10 @@ observations to `.planning/patterns/sessions.jsonl`, and the pattern detection
 pipeline proposes skills when recurring patterns reach the configured threshold.
 ```
 
-**If the file exists**, parse it as a JSON array of suggestion objects.
+If entries exist, proceed to Step 3 using the combined array. When displaying each suggestion in Step 4, include the source project if `_sourceProject` is set:
+```
+**Source project:** [project name]
+```
 
 ## Step 3: Filter for pending suggestions
 
