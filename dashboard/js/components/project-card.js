@@ -159,7 +159,7 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
               </tr>
             </thead>
             <tbody>
-              ${tmux.panes.map((pane, i) => {
+              ${[...tmux.panes].sort((a, b) => b.isClaude - a.isClaude || (a.windowName || '').localeCompare(b.windowName || '')).map((pane, i) => {
                 const now = Date.now();
                 const idleSecs = pane.lastActivity ? (now - pane.lastActivity) / 1000 : null;
                 let status = 'idle';
