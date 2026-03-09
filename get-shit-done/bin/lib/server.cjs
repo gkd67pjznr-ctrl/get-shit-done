@@ -747,6 +747,35 @@ function setupTerminalWebSocket(httpServer) {
 
     proc.stderr.on('data', () => { /* ignore control mode stderr */ });
 
+    // Tmux prefix key interception — Ctrl+B (0x02) followed by a command key
+    // gets translated into tmux control mode commands, since send-keys -H
+    // bypasses tmux's key binding system entirely.
+    let prefixPending = false;
+    let prefixTimer = null;
+    const TMUX_PREFIX_COMMANDS = {
+      'c':  `new-window -t ${sessionName}`,
+      'n':  `next-window -t ${sessionName}`,
+      'p':  `previous-window -t ${sessionName}`,
+      'l':  `last-window -t ${sessionName}`,
+      'd':  null, // detach — close the WebSocket
+      'z':  `resize-pane -t ${sendTarget} -Z`,
+      '%':  `split-window -h -t ${sendTarget}`,
+      '"':  `split-window -v -t ${sendTarget}`,
+      'o':  `select-pane -t ${sendTarget} -t :.+`,
+      ';':  `last-pane -t ${sessionName}`,
+      '{':  `swap-pane -U -t ${sendTarget}`,
+      '}':  `swap-pane -D -t ${sendTarget}`,
+      'x':  `kill-pane -t ${sendTarget}`,
+      '!':  `break-pane -t ${sendTarget}`,
+      '&':  `kill-window -t ${sessionName}`,
+      ' ':  `next-layout -t ${sessionName}`,
+      '[':  `copy-mode -t ${sendTarget}`,
+    };
+    // Window select: 0-9
+    for (let i = 0; i <= 9; i++) {
+      TMUX_PREFIX_COMMANDS[String(i)] = `select-window -t ${sessionName}:${i}`;
+    }
+
     ws.on('message', (data) => {
       const str = typeof data === 'string' ? data : data.toString();
 
@@ -754,7 +783,6 @@ function setupTerminalWebSocket(httpServer) {
       try {
         const msg = JSON.parse(str);
         if (msg.type === 'resize' && msg.cols && msg.rows) {
-          // In control mode, send resize command via stdin
           const cols = parseInt(msg.cols, 10);
           const rows = parseInt(msg.rows, 10);
           if (cols > 0 && rows > 0 && !proc.stdin.destroyed) {
@@ -764,10 +792,35 @@ function setupTerminalWebSocket(httpServer) {
         }
       } catch { /* not JSON — fall through to keystroke forward */ }
 
-      // Forward keystrokes via tmux send-keys -H (hex mode).
-      // xterm.js sends raw bytes including escape sequences for special keys
-      // (Enter=\r, arrows=\x1b[A, Ctrl+C=\x03, etc). Hex mode handles all of
-      // them correctly without needing to map key names.
+      // Handle tmux prefix key sequence
+      if (prefixPending) {
+        clearTimeout(prefixTimer);
+        prefixPending = false;
+
+        const key = str;
+        const cmd = TMUX_PREFIX_COMMANDS[key];
+        if (cmd !== undefined) {
+          if (cmd === null) {
+            // 'd' = detach — close the connection
+            ws.close(1000, 'Detached');
+          } else if (!proc.stdin.destroyed) {
+            proc.stdin.write(cmd + '\n');
+          }
+          return;
+        }
+        // Unknown prefix combo — send both the prefix byte and the key
+        // (fall through to send-keys below with the follow-up key)
+      }
+
+      // Ctrl+B (0x02) — start prefix sequence
+      if (str === '\x02') {
+        prefixPending = true;
+        // Auto-cancel after 2s if no follow-up key
+        prefixTimer = setTimeout(() => { prefixPending = false; }, 2000);
+        return;
+      }
+
+      // Forward keystrokes via tmux send-keys -H (hex mode)
       if (!proc.stdin.destroyed) {
         const hexBytes = Buffer.from(str, 'utf-8')
           .toString('hex')
