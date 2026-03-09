@@ -17,6 +17,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 14: Agent Merge and Dashboard** - Agent inline integration, dashboard copy-and-verify (completed 2026-03-08)
 - [x] **Phase 15: Native Observation** - Observation capture baked into all 7 GSD workflow commands (completed 2026-03-08)
 - [x] **Phase 16: Commands and Deprecation** - New commands, wrapper removal, standalone package deprecation (completed 2026-03-09)
+- [ ] **Phase 16.1: Installer & Integration Fixes** - Wire patterns dir creation, config migration, clean src/ skill-creator references (gap closure)
+- [ ] **Phase 16.2: Documentation & Test Debt** - Update REQUIREMENTS.md checkboxes, fill test stubs, clean VALIDATION.md statuses (gap closure)
 
 ## Phase Details
 
@@ -87,10 +89,34 @@ Decimal phases appear between their surrounding integers in numeric order.
   - [x] Plan 16-01: New commands and standalone command porting (CMD-01, CMD-02, CMD-03, CMD-04)
   - [x] Plan 16-02: Deprecation cleanup and doc updates (DEPR-01, DEPR-02, DEPR-03, DEPR-04)
 
+### Phase 16.1: Installer & Integration Fixes
+**Goal**: Fix cross-phase integration gaps — installer creates `.planning/patterns/` in target projects, config migration is wired into the installer, and residual `skill-creator.json` references are removed from TypeScript source
+**Depends on**: Phase 16 (gap closure)
+**Requirements**: CFG-02, INST-06, DEPR-03
+**Gap Closure**: Closes 3 requirement gaps, 3 integration gaps, 3 flow breaks from v4.0-MILESTONE-AUDIT.md
+**Success Criteria** (what must be TRUE):
+  1. Running `bin/install.js` creates `.planning/patterns/` directory in the target project
+  2. Running `bin/install.js` on a project with `skill-creator.json` auto-migrates config into `config.json`
+  3. `grep -r 'skill-creator\.json' src/` returns zero matches
+  4. `grep -r 'npx skill-creator' src/ dashboard/` returns zero matches
+**Plans**: TBD
+
+### Phase 16.2: Documentation & Test Debt
+**Goal**: Clean up all documentation debt accumulated during Phases 12-16 — REQUIREMENTS.md checkboxes, test stubs, VALIDATION.md statuses, STATUS.md
+**Depends on**: Phase 16.1
+**Requirements**: (none — housekeeping only)
+**Gap Closure**: Closes 12 tech debt items from v4.0-MILESTONE-AUDIT.md
+**Success Criteria** (what must be TRUE):
+  1. All 39 requirements in REQUIREMENTS.md show `[x]` and `Complete` in traceability table
+  2. All 4 test stubs in `installer-content.test.cjs` are real assertions (no `assert.ok(true, 'TODO')`)
+  3. `phase-boundary-check.sh` echo string does not reference `skill-creator`
+  4. VALIDATION.md files for Phases 14 and 16 show `nyquist_compliant: true`
+**Plans**: TBD
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16
+Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16 -> 16.1 -> 16.2
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -99,3 +125,5 @@ Phases execute in numeric order: 12 -> 13 -> 14 -> 15 -> 16
 | 14. Agent Merge and Dashboard | 2/2 | Complete    | 2026-03-09 |
 | 15. Native Observation | 2/2 | Complete    | 2026-03-09 |
 | 16. Commands and Deprecation | 2/2 | Complete    | 2026-03-09 |
+| 16.1. Installer & Integration Fixes | 0/? | Not started | - |
+| 16.2. Documentation & Test Debt | 0/? | Not started | - |

@@ -9,6 +9,19 @@ const chokidar = require('chokidar');
 const { resolveActiveMilestone, planningRoot } = require('./core.cjs');
 const { loadRegistry, getDashboardPath } = require('./dashboard.cjs');
 
+const DASHBOARD_DIR = path.join(__dirname, '..', '..', '..', 'dashboard');
+
+const MIME_TYPES = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.ico': 'image/x-icon',
+};
+
 // ─── Markdown parsing helpers ─────────────────────────────────────────────────
 
 function parseStateFile(content) {
@@ -300,6 +313,53 @@ function handleGetProject(res, cache, name) {
   res.end(JSON.stringify(project));
 }
 
+// ─── Static file serving ─────────────────────────────────────────────────────
+
+function serveStatic(req, res, dashboardDir) {
+  // Path traversal guard: reject any URL containing '..'
+  if (req.url && req.url.includes('..')) {
+    res.writeHead(403, { 'Content-Type': 'text/plain' });
+    res.end('Forbidden');
+    return;
+  }
+
+  let { pathname } = (() => {
+    try { return new URL(req.url, 'http://localhost'); } catch { return { pathname: '/' }; }
+  })();
+
+  if (pathname === '/') pathname = '/index.html';
+
+  const resolved = path.resolve(path.join(dashboardDir, pathname));
+  const dashboardResolved = path.resolve(dashboardDir);
+
+  // Secondary path traversal guard: resolved path must be inside dashboard dir
+  if (!resolved.startsWith(dashboardResolved + path.sep) && resolved !== dashboardResolved) {
+    res.writeHead(403, { 'Content-Type': 'text/plain' });
+    res.end('Forbidden');
+    return;
+  }
+
+  const ext = path.extname(resolved);
+  const mimeType = MIME_TYPES[ext] || 'application/octet-stream';
+
+  try {
+    const content = fs.readFileSync(resolved);
+    res.writeHead(200, { 'Content-Type': mimeType });
+    res.end(content);
+  } catch {
+    // SPA fallback: serve index.html for any missing file
+    const indexPath = path.join(dashboardDir, 'index.html');
+    try {
+      const indexContent = fs.readFileSync(indexPath);
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(indexContent);
+    } catch {
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('Not found');
+    }
+  }
+}
+
 // ─── HTTP server ──────────────────────────────────────────────────────────────
 
 const CORS_HEADERS = {
@@ -308,7 +368,7 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
-function createHttpServer(port, cache, clients) {
+function createHttpServer(port, cache, clients, dashboardDir) {
   const server = http.createServer((req, res) => {
     // CORS preflight
     if (req.method === 'OPTIONS') {
@@ -351,8 +411,7 @@ function createHttpServer(port, cache, clients) {
       return;
     }
 
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Not found' }));
+    serveStatic(req, res, dashboardDir || DASHBOARD_DIR);
   });
 
   return server;
@@ -579,7 +638,7 @@ function startDashboardServer(port, opts = {}) {
   const registryWatcher = watchRegistry(cache, watchers, clients, debounceTimers, opts);
 
   // Create and start HTTP server
-  const server = createHttpServer(port, cache, clients);
+  const server = createHttpServer(port, cache, clients, opts.dashboardDir || DASHBOARD_DIR);
 
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {

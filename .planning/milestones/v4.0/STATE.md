@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Plan 16-02 complete -- DEPR-01/02/03/04 done (wrap/ sc/ deleted, skill files cleaned, schema updated, deprecation notice created)
-last_updated: "2026-03-09T10:45:00.000Z"
-last_activity: 2026-03-09 -- Plan 16-02 executed (wrap/sc/ dirs deleted, 13 standalones deleted, 7 skill files updated, wrapper_commands removed, deprecation doc created)
+status: In Progress
+stopped_at: Gap closure phases 16.1 and 16.2 created from milestone audit
+last_updated: "2026-03-09T11:30:00.000Z"
+last_activity: 2026-03-09 -- Gap closure phases created (16.1 installer fixes, 16.2 doc debt)
 progress:
-  total_phases: 5
-  completed_phases: 1
-  total_plans: 4
-  completed_plans: 2
-  percent: 80
+  total_phases: 7
+  completed_phases: 5
+  total_plans: 0
+  completed_plans: 0
+  percent: 71
 ---
 
 # Project State -- Milestone v4.0
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-07)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts -- enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 16 - Commands and Deprecation
+**Current focus:** Phase 16.1 - Installer & Integration Fixes (gap closure)
 
 ## Current Position
 
-Phase: 16 (5 of 5 in v4.0) - Commands and Deprecation -- COMPLETE
-Plan: 2 of 2 in current phase -- COMPLETE (Plan 16-02)
-Status: Plan 16-02 complete -- DEPR-01/02/03/04 done; Phase 16 complete; Milestone v4.0 COMPLETE
-Last activity: 2026-03-09 -- Plan 16-02 executed (wrap/sc/ dirs deleted, skill files cleaned, wrapper_commands removed, deprecation notice created)
+Phase: 16.1 (6 of 7 in v4.0) - Installer & Integration Fixes (gap closure)
+Plan: Not yet planned
+Status: Gap closure phases created from milestone audit; Phase 16.1 needs planning
+Last activity: 2026-03-09 -- Milestone audit identified 3 partial requirements, 3 integration gaps, 12 tech debt items
 
-Progress: [####################] 100% (Phases 12, 13, 14, 15, 16 complete -- Milestone v4.0 COMPLETE)
+Progress: [##############------] 71% (Phases 12-16 complete; 16.1, 16.2 gap closure remaining)
 
 ## Performance Metrics
 
@@ -124,6 +124,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-09
-Stopped at: Plan 16-02 complete -- Phase 16 complete -- Milestone v4.0 COMPLETE
-Resume file: .planning/milestones/v4.0/phases/16-commands-and-deprecation/16-02-SUMMARY.md
-Next: Milestone v4.0 is complete. Next milestone: v5.0 Device-Wide Dashboard (in progress)
+Stopped at: Gap closure phases 16.1 and 16.2 created from milestone audit
+Resume file: .planning/v4.0-MILESTONE-AUDIT.md
+Next: `/gsd:plan-phase 16.1` — plan installer & integration fixes
