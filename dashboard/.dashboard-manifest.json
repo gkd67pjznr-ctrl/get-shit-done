@@ -1,0 +1,25 @@
+{
+  "version": "5.0",
+  "spa": true,
+  "generatedAt": "2026-03-09T00:00:00.000Z",
+  "files": [
+    "index.html",
+    "js/app.js",
+    "js/lib/router.js",
+    "js/lib/api.js",
+    "js/lib/sse.js",
+    "js/lib/state.js",
+    "js/utils/format.js",
+    "js/components/header.js",
+    "js/components/sidebar.js",
+    "js/components/project-card.js",
+    "js/components/project-detail.js",
+    "js/components/progress-bar.js",
+    "js/components/empty-state.js",
+    "css/tokens.css",
+    "css/layout.css",
+    "css/cards.css",
+    "css/detail.css",
+    "css/animations.css"
+  ]
+}
