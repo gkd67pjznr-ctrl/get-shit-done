@@ -768,6 +768,20 @@ async function main() {
           // Delegate to server module (long-running foreground process)
           const { startDashboardServer } = require('./lib/server.cjs');
           startDashboardServer(port);
+          const url = `http://localhost:${port}`;
+          const { exec } = require('child_process');
+          const platform = process.platform;
+          setTimeout(() => {
+            const cmd = platform === 'darwin' ? `open "${url}"`
+              : platform === 'win32' ? `start "" "${url}"`
+              : `xdg-open "${url}"`;
+            exec(cmd, (err) => {
+              if (err) {
+                // Non-fatal: print a hint if browser open fails
+                console.log('[gsd-server] Could not open browser automatically. Visit: ' + url);
+              }
+            });
+          }, 300);
           // NOTE: do NOT call process.exit() here -- the server runs until SIGINT
           break;
         }
