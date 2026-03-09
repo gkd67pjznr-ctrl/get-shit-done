@@ -42,6 +42,19 @@
   animation: slide-in 250ms ease-out;
 }
 
+/* Amber shimmer for Claude panes waiting for user input (output stopped 10s-5m) */
+.shimmer-amber .progress-fill {
+  background: linear-gradient(
+    90deg,
+    var(--signal-warning) 0%,
+    rgba(249, 115, 22, 0.5) 40%,
+    var(--signal-warning) 60%,
+    rgba(249, 115, 22, 0.5) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
 /* Progress bar smooth transition */
 .progress-fill {
   transition: width 300ms ease-out;

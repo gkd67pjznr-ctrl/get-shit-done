@@ -144,3 +144,54 @@
   cursor: pointer;
   font-size: 16px;
 }
+
+/* Sidebar metrics section (below project list, Phase 20) */
+.sidebar-metrics {
+  border-top: 1px solid var(--border);
+  padding: var(--space-md) var(--space-md);
+  margin-top: auto;
+}
+
+.sidebar-metrics-title {
+  font-family: var(--font-data);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: var(--space-sm);
+}
+
+.sidebar-metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: var(--text-secondary);
+  padding: 2px 0;
+}
+
+.sidebar-metric-value {
+  font-family: var(--font-data);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.sidebar-metric-label {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.sidebar-health-summary {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  margin-top: var(--space-sm);
+}
+
+.sidebar-health-chip {
+  font-family: var(--font-data);
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
+  border: 1px solid currentColor;
+}

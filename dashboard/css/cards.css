@@ -132,3 +132,111 @@
   font-size: 12px;
   color: var(--signal-warning);
 }
+
+/* Paused/tracking-off project cards */
+.project-card.paused {
+  opacity: 0.45;
+}
+
+.project-card.paused:hover {
+  border-color: var(--border);
+  box-shadow: none;
+  cursor: default;
+}
+
+/* Health score label on project card */
+.health-label {
+  font-family: var(--font-data);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid currentColor;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Session badge (always visible on card) */
+.session-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-data);
+  font-size: 10px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  transition: border-color 150ms ease;
+  user-select: none;
+}
+
+.session-badge:hover {
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+
+.session-badge.no-sessions {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.session-badge.no-sessions:hover {
+  border-color: transparent;
+  color: var(--text-muted);
+}
+
+/* Session metadata expand/collapse panel */
+.session-metadata {
+  font-size: 11px;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-sm);
+  margin-top: calc(var(--space-sm) * -1);
+}
+
+.session-metadata table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.session-metadata th {
+  font-family: var(--font-data);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  text-align: left;
+  padding: 2px 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.session-metadata td {
+  padding: 3px 4px;
+  font-family: var(--font-data);
+  font-size: 11px;
+}
+
+.session-metadata tr.claude-pane td {
+  color: var(--accent);
+}
+
+/* Tracking toggle button on card */
+.tracking-toggle {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-family: var(--font-data);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: border-color 150ms ease, color 150ms ease;
+}
+
+.tracking-toggle:hover {
+  border-color: var(--accent);
+  color: var(--text-secondary);
+}
