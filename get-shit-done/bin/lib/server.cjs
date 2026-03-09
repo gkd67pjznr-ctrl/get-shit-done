@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const chokidar = require('chokidar');
+const { execSync } = require('child_process');
 
 const { resolveActiveMilestone, planningRoot } = require('./core.cjs');
 const { loadRegistry, getDashboardPath } = require('./dashboard.cjs');
@@ -138,6 +139,132 @@ function scanPhasesSummary(phasesDir) {
   }
 }
 
+// ─── Tmux polling functions ───────────────────────────────────────────────────
+
+const TMUX_FORMAT = '#{session_name}|#{pane_index}|#{pane_current_path}|#{pane_title}|#{pane_current_command}|#{session_windows}|#{window_panes}|#{window_activity}|#{pane_pid}';
+
+function parseTmuxOutput(raw) {
+  return raw.split('\n').filter(line => line.trim() !== '').map(line => {
+    const [sessionName, paneIndex, paneCwd, paneTitle, paneCmd, sessionWindows, windowPanes, windowActivity, panePid] = line.split('|');
+    return {
+      sessionName,
+      paneIndex: parseInt(paneIndex, 10),
+      cwd: paneCwd,
+      title: paneTitle,
+      command: paneCmd,
+      sessionWindows: parseInt(sessionWindows, 10),
+      windowPanes: parseInt(windowPanes, 10),
+      lastActivity: parseInt(windowActivity, 10) * 1000,
+      pid: parseInt(panePid, 10),
+      isClaude: sessionName.startsWith('cc'),
+    };
+  });
+}
+
+function pollTmux() {
+  try {
+    const raw = execSync(`tmux list-panes -a -F '${TMUX_FORMAT}'`, {
+      encoding: 'utf-8',
+      timeout: 3000,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    return parseTmuxOutput(raw);
+  } catch {
+    return [];
+  }
+}
+
+function mapPanesToProjects(panes, cache) {
+  // Sort project paths by length descending so most-specific path wins
+  const sortedProjects = Array.from(cache.entries()).sort(
+    ([, a], [, b]) => (b.path || '').length - (a.path || '').length
+  );
+
+  const result = new Map();
+
+  for (const pane of panes) {
+    for (const [name, project] of sortedProjects) {
+      if (project.path && pane.cwd && pane.cwd.startsWith(project.path)) {
+        if (!result.has(name)) {
+          result.set(name, { sessions: new Set(), panes: [] });
+        }
+        const entry = result.get(name);
+        entry.sessions.add(pane.sessionName);
+        entry.panes.push(pane);
+        break;
+      }
+    }
+  }
+
+  return result;
+}
+
+function tmuxStateHash(tmuxEntry) {
+  if (!tmuxEntry) return '';
+  const sortedSessions = Array.from(tmuxEntry.sessions).sort();
+  const sortedPaneKeys = tmuxEntry.panes
+    .map(p => `${p.sessionName}:${p.paneIndex}:${p.lastActivity}`)
+    .sort();
+  return JSON.stringify({ sessions: sortedSessions, paneKeys: sortedPaneKeys });
+}
+
+// ─── Health score computation ─────────────────────────────────────────────────
+
+function computeHealthScore(projectData) {
+  try {
+    const factors = [];
+    const now = Date.now();
+
+    // Factor 1: Progress momentum -- parse last_activity date
+    if (projectData.state && projectData.state.last_activity) {
+      const dateMatch = projectData.state.last_activity.match(/^(\d{4}-\d{2}-\d{2})/);
+      if (dateMatch) {
+        const activityDate = new Date(dateMatch[1]).getTime();
+        const daysSince = (now - activityDate) / (1000 * 60 * 60 * 24);
+        if (daysSince > 30) factors.push('at_risk');
+        else if (daysSince > 14) factors.push('warning');
+      }
+    }
+
+    // Factor 2: Stale in-progress phases
+    if (projectData.state && projectData.state.last_activity) {
+      const dateMatch = projectData.state.last_activity.match(/^(\d{4}-\d{2}-\d{2})/);
+      const status = (projectData.state.status || '').toLowerCase();
+      if (dateMatch && (status.includes('in-progress') || status.includes('executing'))) {
+        const activityDate = new Date(dateMatch[1]).getTime();
+        const daysSince = (now - activityDate) / (1000 * 60 * 60 * 24);
+        if (daysSince > 7) factors.push('warning');
+      }
+    }
+
+    // Factor 3: Open debt
+    if (projectData.debt) {
+      if (projectData.debt.open > 10) factors.push('at_risk');
+      else if (projectData.debt.open > 5) factors.push('warning');
+    }
+
+    // Factor 4: Blocked milestones
+    if (Array.isArray(projectData.milestones)) {
+      for (const ms of projectData.milestones) {
+        const msStatus = (ms.state && ms.state.status) || '';
+        if (/block/i.test(msStatus)) {
+          factors.push('warning');
+          break;
+        }
+      }
+    }
+
+    if (factors.includes('at_risk')) return { label: 'At Risk', level: 'error' };
+    if (factors.includes('warning')) return { label: 'Needs Attention', level: 'warning' };
+    if (!projectData.state && (!projectData.milestones || projectData.milestones.length === 0)) {
+      return { label: 'New/Unknown', level: 'neutral' };
+    }
+    return { label: 'Healthy', level: 'success' };
+  } catch {
+    return { label: 'New/Unknown', level: 'neutral' };
+  }
+}
+
 // ─── Multi-milestone aggregation ─────────────────────────────────────────────
 
 function parseAllMilestones(projectPath) {
@@ -201,7 +328,7 @@ function parseAllMilestones(projectPath) {
 
 // ─── Core data aggregation ────────────────────────────────────────────────────
 
-function parseProjectData(project) {
+function parseProjectData(project, tmuxCache) {
   let state = null;
   let roadmap = null;
   let requirements = null;
@@ -246,6 +373,16 @@ function parseProjectData(project) {
 
   const milestones = parseAllMilestones(project.path);
 
+  // Health score (null for paused projects)
+  const tracking = project.tracking !== false; // default true
+  const health = tracking ? computeHealthScore({ state, roadmap, debt, milestones }) : null;
+
+  // Tmux data for this project
+  const tmuxEntry = tmuxCache && tmuxCache.get(project.name);
+  const tmux = tmuxEntry
+    ? { available: true, sessions: Array.from(tmuxEntry.sessions), panes: tmuxEntry.panes }
+    : { available: false, sessions: [], panes: [] };
+
   return {
     name: project.name,
     display_name: project.display_name,
@@ -259,6 +396,9 @@ function parseProjectData(project) {
     phases_summary,
     milestones,
     parsed_at: new Date().toISOString(),
+    health,
+    tmux,
+    tracking,
   };
 }
 
@@ -720,4 +860,9 @@ module.exports = {
   parseAllMilestones,
   formatSSE,
   broadcast,
+  _parseTmuxOutput: parseTmuxOutput,
+  _pollTmux: pollTmux,
+  _mapPanesToProjects: mapPanesToProjects,
+  _tmuxStateHash: tmuxStateHash,
+  _computeHealthScore: computeHealthScore,
 };
