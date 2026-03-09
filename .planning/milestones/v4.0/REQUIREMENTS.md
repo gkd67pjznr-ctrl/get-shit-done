@@ -59,10 +59,10 @@ Requirements for adaptive learning integration. Each maps to roadmap phases.
 
 ### Dashboard
 
-- [ ] **DASH-01**: Dashboard TypeScript source (~80 files, ~15K LOC) copied into gsdup repo
-- [ ] **DASH-02**: Dashboard dependencies added to gsdup's package.json
-- [ ] **DASH-03**: Dashboard builds and runs successfully from gsdup
-- [ ] **DASH-04**: `/gsd:dashboard` command works (generate, watch, clean subcommands)
+- [x] **DASH-01**: Dashboard TypeScript source (~80 files, ~15K LOC) copied into gsdup repo
+- [x] **DASH-02**: Dashboard dependencies added to gsdup's package.json
+- [x] **DASH-03**: Dashboard builds and runs successfully from gsdup
+- [x] **DASH-04**: `/gsd:dashboard` command works (generate, watch, clean subcommands)
 
 ### Teams
 
@@ -124,10 +124,10 @@ Deferred to future release. Tracked but not in current roadmap.
 | AGNT-01 | Phase 14 | Complete |
 | AGNT-02 | Phase 14 | Complete |
 | AGNT-03 | Phase 14 | Complete |
-| DASH-01 | Phase 14 | Pending |
-| DASH-02 | Phase 14 | Pending |
-| DASH-03 | Phase 14 | Pending |
-| DASH-04 | Phase 14 | Pending |
+| DASH-01 | Phase 14 | Complete |
+| DASH-02 | Phase 14 | Complete |
+| DASH-03 | Phase 14 | Complete |
+| DASH-04 | Phase 14 | Complete |
 | OBS-01 | Phase 15 | Pending |
 | OBS-02 | Phase 15 | Pending |
 | OBS-03 | Phase 15 | Pending |

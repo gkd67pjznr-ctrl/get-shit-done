@@ -10,6 +10,7 @@ commands.html
 
 # Build artifacts (committed to npm, not git)
 hooks/dist/
+dist/
 
 # Coverage artifacts
 coverage/
