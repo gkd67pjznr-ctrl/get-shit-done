@@ -1,99 +1,101 @@
-/* Project card */
+/* Project card — flat terminal row */
 .project-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: var(--space-lg);
+  background: var(--bg-base);
+  border: none;
+  border-bottom: 1px solid var(--bg-elevated);
+  padding: var(--space-sm) var(--space-md);
   cursor: pointer;
-  transition: border-color 200ms ease, box-shadow 200ms ease;
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: 2px;
+  transition: background 150ms ease;
 }
 
 .project-card:hover {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent-muted);
+  background: var(--bg-elevated);
+  border-color: var(--bg-elevated);
+  box-shadow: none;
 }
 
 .project-card.stale {
-  opacity: 0.55;
+  opacity: 0.4;
   cursor: default;
 }
 
 /* Card header row */
 .card-header {
   display: flex;
-  align-items: flex-start;
-  gap: var(--space-sm);
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-data);
 }
 
 .card-project-name {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
   color: var(--text-primary);
-  flex: 1;
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex-shrink: 0;
+  min-width: 120px;
 }
 
 /* Quality badge */
 .quality-badge {
   font-family: var(--font-data);
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
-  border: 1px solid;
+  font-size: 11px;
+  padding: 0;
+  border: none;
+  background: none;
+  text-transform: none;
+  letter-spacing: 0;
   flex-shrink: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  color: var(--term-dim);
 }
 
-/* Card meta row: debt count, completed milestones */
+/* Card meta row */
 .card-meta {
   display: flex;
-  gap: var(--space-md);
+  gap: var(--space-sm);
   font-size: 11px;
-  color: var(--text-muted);
+  font-family: var(--font-data);
+  color: var(--term-dim);
 }
 
 .card-meta-item strong { color: var(--text-secondary); }
 
 /* Milestone rows inside card */
-.milestone-rows { display: flex; flex-direction: column; gap: var(--space-sm); }
+.milestone-rows { display: flex; flex-direction: column; gap: 0; }
 
 .milestone-row {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: var(--space-sm);
-  background: var(--bg-elevated);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-muted);
+  gap: 0;
+  padding: 2px 0 2px var(--space-md);
+  background: none;
+  border: none;
+  border-left: 1px solid var(--bg-elevated);
 }
 
 .milestone-row-header {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  gap: 6px;
   font-size: 12px;
+  font-family: var(--font-data);
 }
 
 .milestone-name {
   font-family: var(--font-data);
   font-size: 11px;
-  color: var(--text-secondary);
+  color: var(--term-cyan);
   flex-shrink: 0;
+  min-width: 80px;
 }
 
 .milestone-status-badge {
-  font-size: 10px;
-  padding: 1px 5px;
-  border-radius: var(--radius-sm);
-  background: var(--bg-card);
-  border: 1px solid;
+  font-size: 11px;
+  padding: 0;
+  border: none;
+  background: none;
   flex-shrink: 0;
 }
 
@@ -116,11 +118,24 @@
 
 /* Workflow step badge */
 .workflow-badge {
-  font-size: 10px;
-  padding: 1px 5px;
-  border-radius: var(--radius-sm);
-  background: var(--accent-muted);
-  color: var(--accent);
+  font-size: 11px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--term-dim);
+  flex-shrink: 0;
+}
+
+/* Health score label on project card */
+.health-label {
+  font-family: var(--font-data);
+  font-size: 11px;
+  font-weight: 400;
+  padding: 0;
+  border: none;
+  background: none;
+  text-transform: none;
+  letter-spacing: 0;
   flex-shrink: 0;
 }
 
@@ -135,66 +150,45 @@
 
 /* Paused/tracking-off project cards */
 .project-card.paused {
-  opacity: 0.45;
+  opacity: 0.35;
 }
 
 .project-card.paused:hover {
-  border-color: var(--border);
-  box-shadow: none;
+  background: var(--bg-base);
   cursor: default;
 }
 
-/* Health score label on project card */
-.health-label {
-  font-family: var(--font-data);
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
-  border: 1px solid currentColor;
-  flex-shrink: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-/* Session badge (always visible on card) */
+/* Session badge */
 .session-badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   font-family: var(--font-data);
-  font-size: 10px;
-  color: var(--text-muted);
+  font-size: 11px;
+  color: var(--term-dim);
   cursor: pointer;
-  padding: 2px 4px;
-  border-radius: var(--radius-sm);
-  border: 1px solid transparent;
-  transition: border-color 150ms ease;
+  padding: 0;
+  border: none;
+  background: none;
   user-select: none;
 }
 
-.session-badge:hover {
-  border-color: var(--border);
-  color: var(--text-secondary);
-}
+.session-badge:hover { color: var(--text-secondary); }
 
 .session-badge.no-sessions {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: default;
 }
 
-.session-badge.no-sessions:hover {
-  border-color: transparent;
-  color: var(--text-muted);
-}
+.session-badge.no-sessions:hover { color: var(--term-dim); }
 
 /* Session metadata expand/collapse panel */
 .session-metadata {
   font-size: 11px;
   color: var(--text-secondary);
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--term-separator);
   padding-top: var(--space-sm);
-  margin-top: calc(var(--space-sm) * -1);
+  margin-top: 2px;
 }
 
 .session-metadata table {
@@ -210,7 +204,7 @@
   color: var(--text-muted);
   text-align: left;
   padding: 2px 4px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--term-separator);
 }
 
 .session-metadata td {
@@ -226,17 +220,15 @@
 /* Tracking toggle button on card */
 .tracking-toggle {
   background: none;
-  border: 1px solid var(--border);
-  color: var(--text-muted);
+  border: none;
+  color: var(--term-dim);
   font-size: 10px;
   font-family: var(--font-data);
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
+  padding: 0;
   cursor: pointer;
-  transition: border-color 150ms ease, color 150ms ease;
+  transition: color 150ms ease;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
-.tracking-toggle:hover {
-  border-color: var(--accent);
-  color: var(--text-secondary);
-}
+.tracking-toggle:hover { color: var(--text-secondary); }

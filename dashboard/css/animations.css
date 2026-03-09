@@ -1,32 +1,30 @@
 /* Card flash on SSE update */
 @keyframes card-flash {
-  0%   { border-color: var(--accent); box-shadow: 0 0 12px var(--accent-muted); }
-  100% { border-color: var(--border); box-shadow: none; }
+  0%   { background: var(--bg-elevated); }
+  100% { background: var(--bg-base); }
 }
 
 .card-flash {
   animation: card-flash 600ms ease-out;
 }
 
-/* Shimmer for active Claude sessions (toggled by Phase 20 SSE events) */
-@keyframes shimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position:  200% center; }
+/* Shimmer for active Claude sessions — text opacity pulse */
+@keyframes shimmer-text {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 
-.shimmer-active .progress-fill {
-  background: linear-gradient(
-    90deg,
-    var(--accent) 0%,
-    rgba(88, 166, 255, 0.6) 40%,
-    var(--accent) 60%,
-    rgba(88, 166, 255, 0.6) 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 2s ease-in-out infinite;
+.shimmer-active {
+  animation: shimmer-text 1.8s ease-in-out infinite;
 }
 
-/* Connecting pulse for SSE dot */
+/* Amber shimmer for Claude panes waiting for user input */
+.shimmer-amber {
+  animation: shimmer-text 1.8s ease-in-out infinite;
+  color: var(--signal-warning) !important;
+}
+
+/* Connecting pulse for SSE indicator */
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.4; }
@@ -34,28 +32,10 @@
 
 /* Slide-fade-in for new project cards */
 @keyframes slide-in {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
 .card-appear {
-  animation: slide-in 250ms ease-out;
-}
-
-/* Amber shimmer for Claude panes waiting for user input (output stopped 10s-5m) */
-.shimmer-amber .progress-fill {
-  background: linear-gradient(
-    90deg,
-    var(--signal-warning) 0%,
-    rgba(249, 115, 22, 0.5) 40%,
-    var(--signal-warning) 60%,
-    rgba(249, 115, 22, 0.5) 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 2s ease-in-out infinite;
-}
-
-/* Progress bar smooth transition */
-.progress-fill {
-  transition: width 300ms ease-out;
+  animation: slide-in 200ms ease-out;
 }

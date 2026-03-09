@@ -64,9 +64,9 @@ function SidebarMetrics({ projects }) {
         </span>
       </div>
       <div class="sidebar-health-summary">
-        ${healthCounts.healthy > 0 ? html`<span class="sidebar-health-chip status-active">${healthCounts.healthy} healthy</span>` : null}
-        ${healthCounts.attention > 0 ? html`<span class="sidebar-health-chip status-attention">${healthCounts.attention} attention</span>` : null}
-        ${healthCounts.risk > 0 ? html`<span class="sidebar-health-chip status-blocked">${healthCounts.risk} at risk</span>` : null}
+        ${healthCounts.healthy > 0 ? html`<span style="color:var(--term-green);font-family:var(--font-data);font-size:10px">${healthCounts.healthy} healthy</span>` : null}
+        ${healthCounts.attention > 0 ? html`<span style="color:var(--signal-warning);font-family:var(--font-data);font-size:10px">${healthCounts.attention} attention</span>` : null}
+        ${healthCounts.risk > 0 ? html`<span style="color:var(--term-red);font-family:var(--font-data);font-size:10px">${healthCounts.risk} at risk</span>` : null}
       </div>
     </div>
   `;

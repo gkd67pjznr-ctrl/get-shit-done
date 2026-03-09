@@ -4,27 +4,35 @@
   top: 0;
   z-index: 100;
   height: var(--header-height);
-  background: var(--bg-elevated);
-  border-bottom: 1px solid var(--border);
+  background: var(--bg-base);
+  border-bottom: 1px solid var(--term-separator);
   display: flex;
   align-items: center;
-  padding: 0 var(--space-xl);
-  gap: var(--space-xl);
+  padding: 0 var(--space-lg);
+  gap: 0;
+  font-family: var(--font-data);
+  font-size: 12px;
 }
 
 .header-brand {
   font-family: var(--font-data);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--term-green);
   white-space: nowrap;
+  margin-right: 4px;
 }
 
 .header-stats {
   display: flex;
-  gap: var(--space-xl);
+  align-items: center;
+  gap: 0;
   flex: 1;
   font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.header-stat {
   color: var(--text-secondary);
 }
 
@@ -36,23 +44,12 @@
 .sse-indicator {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: 4px;
   font-size: 11px;
   color: var(--text-muted);
   margin-left: auto;
+  font-family: var(--font-data);
 }
-
-.sse-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--signal-neutral);
-  flex-shrink: 0;
-}
-
-.sse-dot.connected    { background: var(--signal-success); }
-.sse-dot.disconnected { background: var(--signal-error); }
-.sse-dot.connecting   { background: var(--signal-warning); animation: pulse 1s ease-in-out infinite; }
 
 /* Page layout with sidebar */
 .page-layout {
@@ -65,21 +62,26 @@
 .sidebar {
   width: var(--sidebar-width);
   flex-shrink: 0;
-  background: var(--bg-elevated);
-  border-right: 1px solid var(--border);
+  background: var(--bg-base);
+  border-right: 1px solid var(--term-separator);
   overflow-y: auto;
-  padding: var(--space-lg) 0;
+  padding: var(--space-sm) 0;
 }
 
 .sidebar-project {
-  padding: var(--space-sm) var(--space-lg);
+  padding: 3px var(--space-md);
   cursor: pointer;
+  border-left: 2px solid transparent;
 }
 
-.sidebar-project:hover { background: var(--bg-card); }
+.sidebar-project:hover {
+  background: var(--bg-elevated);
+  border-left-color: var(--term-green);
+}
 
 .sidebar-project-name {
-  font-size: 13px;
+  font-family: var(--font-data);
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
@@ -89,36 +91,32 @@
 
 .sidebar-milestone {
   font-size: 11px;
-  color: var(--text-muted);
-  padding: 2px var(--space-sm);
+  color: var(--term-dim);
+  padding: 0 0 0 var(--space-sm);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   cursor: pointer;
 }
 
-.sidebar-milestone:hover { color: var(--accent); }
+.sidebar-milestone:hover { color: var(--term-cyan); }
 
 /* Main scrollable area */
 .main-content {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-xl);
+  padding: var(--space-lg);
 }
 
-/* Responsive card grid */
+/* Flat column list instead of card grid */
 .card-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-xl);
-}
-
-@media (max-width: 1200px) {
-  .card-grid { grid-template-columns: repeat(2, 1fr); }
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-top: 1px solid var(--term-separator);
 }
 
 @media (max-width: 768px) {
-  .card-grid { grid-template-columns: 1fr; }
   .sidebar { display: none; }
   .sidebar.open {
     display: block;
@@ -145,11 +143,11 @@
   font-size: 16px;
 }
 
-/* Sidebar metrics section (below project list, Phase 20) */
+/* Sidebar metrics section (below project list) */
 .sidebar-metrics {
-  border-top: 1px solid var(--border);
-  padding: var(--space-md) var(--space-md);
-  margin-top: auto;
+  border-top: 1px solid var(--term-separator);
+  padding: var(--space-sm) var(--space-md);
+  margin-top: var(--space-sm);
 }
 
 .sidebar-metrics-title {
@@ -157,8 +155,8 @@
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--text-muted);
-  margin-bottom: var(--space-sm);
+  color: var(--term-dim);
+  margin-bottom: 4px;
 }
 
 .sidebar-metric-row {
@@ -191,7 +189,6 @@
 .sidebar-health-chip {
   font-family: var(--font-data);
   font-size: 10px;
-  padding: 1px 5px;
-  border-radius: var(--radius-sm);
-  border: 1px solid currentColor;
+  padding: 0;
+  border: none;
 }
