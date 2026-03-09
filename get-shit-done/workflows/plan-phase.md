@@ -480,6 +480,22 @@ Offer: 1) Force proceed, 2) Provide guidance and retry, 3) Abandon
 
 Route to `<offer_next>` OR `auto_advance` depending on flags/config.
 
+## 13.5. Record Observation
+
+Record this plan-phase run to sessions.jsonl.
+
+```bash
+OBS_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+OBS_FILE=".planning/patterns/sessions.jsonl"
+
+if [ ! -d ".planning/patterns" ]; then
+  echo "Observation skipped: .planning/patterns/ not found. Fix: mkdir -p .planning/patterns"
+else
+  echo "{\"timestamp\":\"${OBS_TIMESTAMP}\",\"type\":\"workflow\",\"source\":\"workflow\",\"command\":\"plan\",\"phase\":\"${PHASE}\",\"milestone\":\"${MILESTONE_VERSION}\",\"duration\":null,\"outcome\":\"success\",\"skills_loaded\":[],\"details\":{\"plans_created\":${plan_count},\"waves\":1,\"research_used\":${has_research:-false},\"checker_passed\":true}}" >> "$OBS_FILE" 2>/dev/null \
+    || echo "Observation failed: could not write to $OBS_FILE. Fix: touch $OBS_FILE"
+fi
+```
+
 ## 14. Auto-Advance Check
 
 Check for auto-advance trigger:
