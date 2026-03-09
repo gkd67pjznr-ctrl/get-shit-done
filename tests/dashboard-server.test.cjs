@@ -319,3 +319,27 @@ describe('--port flag configures server port', () => {
     }
   });
 });
+
+// ─── CLI integration: gsd dashboard serve port validation ────────────────────
+
+describe('gsd dashboard serve CLI integration', () => {
+  it('--port abc exits non-zero with error', () => {
+    const result = runGsdToolsFull(['dashboard', 'serve', '--port', 'abc']);
+    assert.strictEqual(result.success, false, 'Should fail with invalid port');
+    assert.ok(
+      (result.stderr && result.stderr.includes('Invalid port')) ||
+      (result.error && result.error.includes('Invalid port')),
+      'Error message must mention invalid port'
+    );
+  });
+
+  it('--port 0 exits non-zero with error', () => {
+    const result = runGsdToolsFull(['dashboard', 'serve', '--port', '0']);
+    assert.strictEqual(result.success, false, 'Should fail with invalid port 0');
+  });
+
+  it('--port 99999 exits non-zero with error', () => {
+    const result = runGsdToolsFull(['dashboard', 'serve', '--port', '99999']);
+    assert.strictEqual(result.success, false, 'Should fail with out-of-range port');
+  });
+});
