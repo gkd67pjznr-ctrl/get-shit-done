@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 20-04 complete. CSS additions and ProgressBar shimmerClass prop added.
-last_updated: "2026-03-09T17:00:00.000Z"
-last_activity: 2026-03-09 -- Phase 20-04 executed (amber shimmer CSS, paused card styles, session badge styles, sidebar metrics, ProgressBar shimmerClass prop)
+stopped_at: Phase 20 complete. All 6 plans (20-01 through 20-06) committed.
+last_updated: "2026-03-09T18:15:00.000Z"
+last_activity: 2026-03-09 -- Phase 20-06 executed (SidebarMetrics component, cc naming tip, final verification)
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 14
-  completed_plans: 9
-  percent: 64
+  completed_plans: 11
+  percent: 78
 ---
 
 # Project State -- Milestone v5.0
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-07)
 
 ## Current Position
 
-Phase: 20 (4 of 5 in v5.0) (Tmux Monitoring and Cross-Project Metrics)
-Plan: 4 of 5 in current phase (20-04 complete)
-Status: In Progress
-Last activity: 2026-03-09 -- Phase 20-04 executed (amber shimmer CSS, paused card styles, session badge styles, sidebar metrics, ProgressBar shimmerClass prop)
+Phase: 20 COMPLETE (4 of 5 in v5.0) (Tmux Monitoring and Cross-Project Metrics)
+Plan: 6 of 6 in current phase (20-06 complete -- all plans done)
+Status: Phase 20 Complete
+Last activity: 2026-03-09 -- Phase 20-06 executed (SidebarMetrics, cc tip, final verification and commit)
 
-Progress: [██████░░░░] 57%
+Progress: [████████░░] 78%
 
 ## Performance Metrics
 
@@ -84,6 +84,9 @@ Recent decisions affecting current work:
 - [20-03]: healthClass falls back to status-not-started for unknown level strings; fmtIdleDuration returns 'unknown' for null/NaN
 - [20-04]: ProgressBar shimmerClass string prop takes precedence over boolean shimmer; shimmerClass || (shimmer ? 'shimmer-active' : '') pattern
 - [20-04]: Amber shimmer shares @keyframes shimmer with blue variant -- no keyframe duplication
+- [20-06]: SidebarMetrics uses tracking !== false (not === true) to treat undefined/null as tracked (backward-compat)
+- [20-06]: Quality fallback chain: p.quality || milestones[0].quality || null; null defaults to 'standard' bucket
+- [20-06]: healthLabel/healthClass already exported from format.js -- imported into sidebar.js without new code
 
 ### Pending Todos
 
@@ -96,7 +99,7 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-09
-Stopped at: Phase 20-04 complete. CSS additions and ProgressBar shimmerClass prop added.
+Stopped at: Phase 20 fully complete. All 6 plans committed (20-01 through 20-06).
 Resume file: None
-Next step: Phase 20-05 -- final integration, wiring tmux state into dashboard UI components.
+Next step: Phase 21 -- terminal backend (tmux pane integration, escape sequence handling).
 

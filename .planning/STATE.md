@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Defining requirements
-last_updated: "2026-03-09T12:03:20.696Z"
-last_activity: 2026-03-07 — Milestone v5.0 started (parallel to v4.0)
+last_updated: "2026-03-09T14:25:25.495Z"
+last_activity: 2026-03-09 — Milestone v4.0 archived, v5.0 in progress
 progress:
   total_phases: 5
-  completed_phases: 1
-  total_plans: 4
-  completed_plans: 2
+  completed_phases: 2
+  total_plans: 8
+  completed_plans: 6
 ---
 
 # Project State — Coordinator
@@ -19,14 +19,13 @@ progress:
 Phase: Not started (defining requirements)
 Plan: —
 Status: Defining requirements
-Last activity: 2026-03-07 — Milestone v5.0 started (parallel to v4.0)
+Last activity: 2026-03-09 — Milestone v4.0 archived, v5.0 in progress
 
 ## Active Milestones
 
 | Milestone | Status | Workspace |
 |-----------|--------|-----------|
-| v4.0 Adaptive Learning Integration | Complete (7/7 phases, 39/39 requirements) | `.planning/milestones/v4.0/` |
-| v5.0 Device-Wide Dashboard | Defining requirements | `.planning/milestones/v5.0/` |
+| v5.0 Device-Wide Dashboard | In progress | `.planning/milestones/v5.0/` |
 
 ## Completed Milestones
 
@@ -37,6 +36,7 @@ Last activity: 2026-03-07 — Milestone v5.0 started (parallel to v4.0)
 | v2.0 Concurrent Milestones | 2026-02-25 | 8-14 |
 | v3.0 Tech Debt System | 2026-02-26 | 3.1-3.5 |
 | v3.1 Legacy Strip & README | 2026-03-05 | 4-11 |
+| v4.0 Adaptive Learning Integration | 2026-03-09 | 12-16.2 |
 
 ## Layout
 
@@ -54,7 +54,7 @@ Each milestone has its own workspace under `.planning/milestones/<version>/` con
 See: .planning/PROJECT.md (updated 2026-03-05)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** v4.0 Adaptive Learning Integration
+**Current focus:** v5.0 Device-Wide Dashboard
 
 ### Quick Tasks Completed
 
@@ -79,6 +79,6 @@ See: .planning/PROJECT.md (updated 2026-03-05)
 
 ## Session Continuity
 
-Last activity: 2026-03-08 — Phase 18-01 complete (v5.0 Data Aggregation and Server — server.cjs, chokidar@4, 8 tests passing)
-Resume file: .planning/milestones/v5.0/phases/19-dashboard-ui/19-CONTEXT.md
-Next step: `/gsd:plan-phase 19` — plan the Dashboard UI phase
+Last activity: 2026-03-09 -- Phase 20 complete (all 6 plans: tmux polling, health scoring, shimmer CSS, ProjectCard UI, SidebarMetrics)
+Resume file: None
+Next step: Phase 21 -- terminal backend (tmux pane integration, escape sequence handling)
