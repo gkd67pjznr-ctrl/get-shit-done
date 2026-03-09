@@ -163,6 +163,7 @@ const init = require('./lib/init.cjs');
 const frontmatter = require('./lib/frontmatter.cjs');
 const debt = require('./lib/debt.cjs');
 const migrate = require('./lib/migrate.cjs');
+const dashboard = require('./lib/dashboard.cjs');
 
 // ─── CLI Router ───────────────────────────────────────────────────────────────
 
@@ -734,6 +735,24 @@ async function main() {
         limit: limitIdx !== -1 ? parseInt(args[limitIdx + 1], 10) : 10,
         freshness: freshnessIdx !== -1 ? args[freshnessIdx + 1] : null,
       }, raw);
+      break;
+    }
+
+    case 'dashboard': {
+      const subAction = args[1];
+      switch (subAction) {
+        case 'add':
+          dashboard.cmdDashboardAdd(cwd, args.slice(2), raw);
+          break;
+        case 'remove':
+          dashboard.cmdDashboardRemove(args[2], raw);
+          break;
+        case 'list':
+          dashboard.cmdDashboardList(raw);
+          break;
+        default:
+          error(`Unknown dashboard subcommand: ${subAction || '(none)'}. Usage: gsd dashboard add|remove|list`);
+      }
       break;
     }
 
