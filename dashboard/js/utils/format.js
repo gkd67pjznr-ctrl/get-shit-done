@@ -51,3 +51,50 @@ export function countCompletedMilestones(milestones) {
   return milestones.filter(m => !m.active && m.state && m.state.status &&
     m.state.status.toLowerCase().includes('complet')).length;
 }
+
+// Return the human-readable health label string
+export function healthLabel(health) {
+  if (!health) return null;
+  return health.label; // 'Healthy', 'Needs Attention', 'At Risk', 'New/Unknown'
+}
+
+// Map health level to signal CSS class name
+export function healthClass(health) {
+  if (!health) return '';
+  const map = {
+    success: 'status-active',
+    warning: 'status-attention',
+    error: 'status-blocked',
+    neutral: 'status-not-started',
+  };
+  return map[health.level] || 'status-not-started';
+}
+
+// Format millisecond timestamp as human-readable idle duration
+export function fmtIdleDuration(lastActivityMs) {
+  if (!lastActivityMs || isNaN(lastActivityMs)) return 'unknown';
+  const seconds = Math.floor((Date.now() - lastActivityMs) / 1000);
+  if (seconds < 0) return 'just now';
+  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
+  return `${Math.floor(seconds / 86400)}d`;
+}
+
+// Compute shimmer animation class based on tmux pane activity
+export function computeShimmerClass(project) {
+  // Returns: 'shimmer-active' (blue), 'shimmer-amber' (waiting), or '' (idle/no sessions)
+  if (!project || !project.tracking) return '';
+  const tmux = project.tmux;
+  if (!tmux || !tmux.available || !tmux.panes || tmux.panes.length === 0) return '';
+  const now = Date.now();
+  const claudePanes = tmux.panes.filter(p => p.isClaude);
+  if (claudePanes.length === 0) return '';
+  const WORKING_THRESHOLD = 10 * 1000;
+  const WAITING_THRESHOLD = 5 * 60 * 1000;
+  const hasWorking = claudePanes.some(p => p.lastActivity && (now - p.lastActivity) < WORKING_THRESHOLD);
+  if (hasWorking) return 'shimmer-active';
+  const hasWaiting = claudePanes.some(p => p.lastActivity && (now - p.lastActivity) < WAITING_THRESHOLD);
+  if (hasWaiting) return 'shimmer-amber';
+  return '';
+}
