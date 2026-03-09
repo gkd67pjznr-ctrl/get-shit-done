@@ -443,6 +443,22 @@ node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs(phase-{X}): co
 ```
 </step>
 
+<step name="observe">
+Record this execute-phase run to sessions.jsonl. This step runs after all commits and roadmap updates -- failure here does not block completion.
+
+```bash
+OBS_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+OBS_FILE=".planning/patterns/sessions.jsonl"
+
+if [ ! -d ".planning/patterns" ]; then
+  echo "Observation skipped: .planning/patterns/ not found. Fix: mkdir -p .planning/patterns"
+else
+  echo "{\"timestamp\":\"${OBS_TIMESTAMP}\",\"type\":\"workflow\",\"source\":\"workflow\",\"command\":\"execute\",\"phase\":\"${PHASE_NUMBER}\",\"milestone\":\"${MILESTONE_VERSION}\",\"duration\":null,\"outcome\":\"success\",\"skills_loaded\":[],\"details\":{\"plans_executed\":${completed_count},\"plans_total\":${plan_count},\"verification_status\":\"passed\",\"gaps_found\":false}}" >> "$OBS_FILE" 2>/dev/null \
+    || echo "Observation failed: could not write to $OBS_FILE. Fix: touch $OBS_FILE"
+fi
+```
+</step>
+
 <step name="offer_next">
 
 **Exception:** If `gaps_found`, the `verify_phase_goal` step already presents the gap-closure path (`/gsd:plan-phase {X} --gaps`). No additional routing needed — skip auto-advance.
