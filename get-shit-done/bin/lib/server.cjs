@@ -408,6 +408,65 @@ function watchRegistry(cache, watchers, clients, debounceTimers, opts = {}) {
   return watcher;
 }
 
+// ─── Port conflict detection and takeover ─────────────────────────────────────
+
+function tryTakeoverPort(port, server, cache, clients, watchers, debounceTimers) {
+  // Try GET /api/projects on the port to detect if it's another gsd-server
+  const req = http.get(`http://localhost:${port}/api/projects`, (res) => {
+    let body = '';
+    res.on('data', chunk => body += chunk);
+    res.on('end', () => {
+      let isGsdServer = false;
+      try {
+        const parsed = JSON.parse(body);
+        // Our server returns an Array from /api/projects
+        isGsdServer = Array.isArray(parsed);
+      } catch {}
+
+      if (isGsdServer) {
+        console.log(`[gsd-server] Detected another gsd server on port ${port}. Taking over...`);
+        // Kill the process holding the port
+        try {
+          const { execSync } = require('child_process');
+          // lsof -ti :PORT returns PIDs using the port; kill them
+          const pids = execSync(`lsof -ti :${port}`, { encoding: 'utf-8' }).trim();
+          if (pids) {
+            execSync(`kill -9 ${pids.split('\n').join(' ')}`);
+          }
+        } catch (killErr) {
+          if (killErr.message && killErr.message.includes('lsof')) {
+            console.error('[gsd-server] Port takeover failed: lsof not available on this platform. Use --port to choose a different port.');
+          } else {
+            console.error('[gsd-server] Failed to kill existing process:', killErr.message);
+          }
+          process.exit(1);
+        }
+        // Wait 500ms and retry listen
+        setTimeout(() => {
+          server.listen(port, 'localhost', () => {
+            console.log(`[gsd-server] Dashboard server running at http://localhost:${port}`);
+          });
+        }, 500);
+      } else {
+        console.error(`[gsd-server] Port ${port} is in use by another process. Use --port to choose a different port.`);
+        process.exit(1);
+      }
+    });
+  });
+
+  req.on('error', () => {
+    // Port is in use but not responding as HTTP -- not our server
+    console.error(`[gsd-server] Port ${port} is in use by another process. Use --port to choose a different port.`);
+    process.exit(1);
+  });
+
+  req.setTimeout(1000, () => {
+    req.destroy();
+    console.error(`[gsd-server] Port ${port} is in use by another process. Use --port to choose a different port.`);
+    process.exit(1);
+  });
+}
+
 // ─── Main entry point ─────────────────────────────────────────────────────────
 
 function startDashboardServer(port, opts = {}) {
@@ -457,6 +516,15 @@ function startDashboardServer(port, opts = {}) {
 
   // Create and start HTTP server
   const server = createHttpServer(port, cache, clients);
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      tryTakeoverPort(port, server, cache, clients, watchers, debounceTimers);
+    } else {
+      console.error('[gsd-server] Fatal error:', err.message);
+      process.exit(1);
+    }
+  });
 
   server.listen(port, 'localhost', () => {
     console.log('[gsd-server] Dashboard server running at http://localhost:' + port);
