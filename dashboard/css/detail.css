@@ -104,32 +104,13 @@
   color: var(--text-muted);
 }
 
-/* Inline progress bar in header */
+/* Inline progress bar in header — color override by completion tier */
 .accordion-pct-bar {
-  width: 60px;
   flex-shrink: 0;
 }
-
-/* Color-coded percentage badge */
-.accordion-pct-badge {
-  font-family: var(--font-data);
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-.accordion-pct-badge.pct-green {
-  color: var(--signal-success);
-  background: color-mix(in srgb, var(--signal-success) 15%, transparent);
-}
-.accordion-pct-badge.pct-amber {
-  color: var(--signal-warning);
-  background: color-mix(in srgb, var(--signal-warning) 15%, transparent);
-}
-.accordion-pct-badge.pct-red {
-  color: var(--signal-error);
-  background: color-mix(in srgb, var(--signal-error) 15%, transparent);
-}
+.accordion-pct-bar.pct-green span { color: var(--signal-success); }
+.accordion-pct-bar.pct-amber span { color: var(--signal-warning); }
+.accordion-pct-bar.pct-red span { color: var(--signal-error); }
 
 /* In-progress pulse badge */
 .accordion-inprogress-badge {

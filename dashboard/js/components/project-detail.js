@@ -40,10 +40,9 @@ function MilestoneAccordion({ milestone, openByDefault, id }) {
         <span class="accordion-milestone-right">
           ${totalPhases > 0 ? html`<span class="accordion-phase-count">${completedPhases}/${totalPhases}</span>` : null}
           ${effectivePct !== null ? html`
-            <span class="accordion-pct-bar">
+            <span class="accordion-pct-bar ${pctClass}">
               <${ProgressBar} value=${effectivePct} />
             </span>
-            <span class="accordion-pct-badge ${pctClass}">${fmtPct(effectivePct)}</span>
           ` : null}
         </span>
       </div>
