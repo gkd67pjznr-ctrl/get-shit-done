@@ -572,6 +572,122 @@ function serveStatic(req, res, dashboardDir) {
   }
 }
 
+// ─── Terminal WebSocket Bridge (TERM-03) ──────────────────────────────────────
+
+/**
+ * Attaches a WebSocket server to the existing HTTP server to bridge browser
+ * clients to live tmux sessions. URL pattern: /ws/terminal/<sessionName>
+ *
+ * @param {http.Server} httpServer
+ * @returns {WebSocketServer}
+ */
+function setupTerminalWebSocket(httpServer) {
+  const wss = new WebSocketServer({ noServer: true });
+  const activeSessions = new Map(); // sessionName -> { proc, ws }
+
+  httpServer.on('upgrade', (req, socket, head) => {
+    const urlPath = (req.url || '').split('?')[0];
+    if (urlPath.startsWith('/ws/terminal/')) {
+      wss.handleUpgrade(req, socket, head, (ws) => {
+        wss.emit('connection', ws, req);
+      });
+    } else {
+      socket.destroy();
+    }
+  });
+
+  wss.on('connection', (ws, req) => {
+    const urlPath = (req.url || '').split('?')[0];
+    const sessionName = decodeURIComponent(urlPath.slice('/ws/terminal/'.length));
+
+    if (\!sessionName) {
+      ws.close(4000, 'Session name required');
+      return;
+    }
+
+    // Reject duplicate connections to the same session
+    if (activeSessions.has(sessionName)) {
+      ws.close(4009, 'Session already attached');
+      return;
+    }
+
+    // Validate the tmux session exists
+    try {
+      execSync(`tmux has-session -t "${sessionName}"`, {
+        stdio: 'pipe',
+        timeout: 2000,
+      });
+    } catch {
+      ws.close(4004, 'Session not found');
+      return;
+    }
+
+    // Spawn tmux attach-session
+    const proc = spawn('tmux', ['attach-session', '-t', sessionName], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env, TERM: 'xterm-256color' },
+    });
+
+    activeSessions.set(sessionName, { proc, ws });
+
+    proc.stdout.on('data', (data) => {
+      if (ws.readyState === 1 /* OPEN */) {
+        try { ws.send(data); } catch { /* ignore -- client may have closed */ }
+      }
+    });
+
+    proc.stderr.on('data', (data) => {
+      if (ws.readyState === 1) {
+        try { ws.send(data); } catch { /* ignore */ }
+      }
+    });
+
+    ws.on('message', (data) => {
+      // Try to parse as JSON control message first
+      try {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'resize' && msg.cols && msg.rows) {
+          execSync(
+            `tmux resize-window -t "${sessionName}" -x ${msg.cols} -y ${msg.rows}`,
+            { stdio: 'pipe', timeout: 1000 }
+          );
+          return; // control message handled -- do not forward to stdin
+        }
+      } catch { /* not JSON -- fall through to binary forward */ }
+
+      // Forward raw keystrokes / data to tmux stdin
+      if (\!proc.stdin.destroyed) {
+        try { proc.stdin.write(data); } catch { /* ignore */ }
+      }
+    });
+
+    const cleanup = () => {
+      activeSessions.delete(sessionName);
+      if (\!proc.killed) {
+        proc.stdin.end();
+        proc.kill('SIGHUP');
+      }
+    };
+
+    ws.on('close', cleanup);
+    ws.on('error', cleanup);
+
+    proc.on('exit', () => {
+      activeSessions.delete(sessionName);
+      if (ws.readyState === 1) ws.close();
+    });
+  });
+
+  // Clean up all sessions on server shutdown
+  process.on('SIGINT', () => {
+    for (const { proc } of activeSessions.values()) {
+      if (\!proc.killed) proc.kill('SIGHUP');
+    }
+  });
+
+  return wss;
+}
+
 // ─── HTTP server ──────────────────────────────────────────────────────────────
 
 const CORS_HEADERS = {
@@ -1040,4 +1156,5 @@ module.exports = {
   _mapPanesToProjects: mapPanesToProjects,
   _tmuxStateHash: tmuxStateHash,
   _computeHealthScore: computeHealthScore,
+  setupTerminalWebSocket,
 };
