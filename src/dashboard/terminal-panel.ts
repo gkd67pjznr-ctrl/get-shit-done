@@ -36,7 +36,7 @@ export function renderTerminalPanel(config: TerminalConfig): string {
   ></iframe>
   <div class="terminal-fallback" style="display: block;">
     <div class="terminal-fallback-title">Terminal Offline</div>
-    <div class="terminal-fallback-message">Terminal service is not available. Start Wetty with: <code>npx skill-creator terminal start</code></div>
+    <div class="terminal-fallback-message">Terminal service is not available.</div>
     <div class="terminal-fallback-url">${url}</div>
   </div>
   <script>

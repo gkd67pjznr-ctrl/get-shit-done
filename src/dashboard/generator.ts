@@ -474,7 +474,7 @@ export async function generate(options: GenerateOptions): Promise<GenerateResult
   try {
     const bsData = await collectBudgetSiliconData({
       skillsDir: join(process.cwd(), '.claude', 'commands'),
-      configPath: join(options.planningDir, 'skill-creator.json'),
+      configPath: join(options.planningDir, 'config.json'),
     });
     const gaugeHtml = renderBudgetGauge(bsData.gauge);
     const siliconHtml = renderSiliconPanel(bsData.silicon);

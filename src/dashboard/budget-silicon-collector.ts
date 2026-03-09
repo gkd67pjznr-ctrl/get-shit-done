@@ -109,7 +109,7 @@ export function toSiliconPanelData(config: IntegrationConfig | null): SiliconPan
 export interface CollectBudgetSiliconOptions {
   /** Path to skills directory (default: '.claude/commands'). */
   skillsDir?: string;
-  /** Path to integration config file (default: '.planning/skill-creator.json'). */
+  /** Path to integration config file (default: '.planning/config.json'). */
   configPath?: string;
   /** Budget profile for loading projection. */
   profile?: BudgetProfile;
@@ -129,7 +129,7 @@ export async function collectBudgetSiliconData(
 ): Promise<{ gauge: BudgetGaugeData; silicon: SiliconPanelData }> {
   const {
     skillsDir = '.claude/commands',
-    configPath = '.planning/skill-creator.json',
+    configPath = '.planning/config.json',
     profile,
   } = options;
 
