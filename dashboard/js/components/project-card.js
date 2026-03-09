@@ -153,7 +153,6 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
             <thead>
               <tr>
                 <th>Window</th>
-                <th>Panes</th>
                 <th>Status</th>
                 <th>Idle</th>
               </tr>
@@ -163,9 +162,10 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
                 const now = Date.now();
                 const idleSecs = pane.lastActivity ? (now - pane.lastActivity) / 1000 : null;
                 let status = 'idle';
+                let statusColor = 'var(--signal-error)';
                 if (pane.isClaude && idleSecs !== null) {
-                  if (idleSecs < 10) status = 'working';
-                  else if (idleSecs < 300) status = 'waiting';
+                  if (idleSecs < 10) { status = 'working'; statusColor = 'var(--signal-success)'; }
+                  else if (idleSecs < 300) { status = 'waiting'; statusColor = 'var(--signal-warning)'; }
                 }
                 const termTarget = pane.sessionName + ':' + (pane.windowName || pane.sessionName);
                 return html`
@@ -174,8 +174,7 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
                       e.stopPropagation();
                       onOpenTerminal(termTarget);
                     }}>${pane.windowName || pane.sessionName}</button></td>
-                    <td>${pane.windowPanes}</td>
-                    <td>${status}</td>
+                    <td style="color:${statusColor}">${status}</td>
                     <td>${fmtIdleDuration(pane.lastActivity)}</td>
                   </tr>
                 `;
