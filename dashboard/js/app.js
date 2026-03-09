@@ -10,6 +10,7 @@ import { Sidebar } from './components/sidebar.js';
 import { ProjectCard } from './components/project-card.js';
 import { ProjectDetail } from './components/project-detail.js';
 import { EmptyState } from './components/empty-state.js';
+import { PatternPage } from './components/pattern-page.js';
 
 function Overview() {
   const ps = projects.value;
@@ -52,12 +53,18 @@ function App() {
 
   return html`
     <${Header} onToggleSidebar=${() => setSidebarOpen(!sidebarOpen)} />
+    <nav style="padding:4px 16px; border-bottom:1px solid var(--border-subtle,#2a2a2a); font-size:12px;">
+      <a href="#/" style="color:var(--text-muted); text-decoration:none; margin-right:16px;">Overview</a>
+      <a href="#/patterns" style="color:var(--text-muted); text-decoration:none;">Patterns</a>
+    </nav>
     <div class="page-layout">
       <${Sidebar} class=${sidebarOpen ? 'open' : ''} onClose=${() => setSidebarOpen(false)} />
       <main class="main-content">
-        ${r.page === 'detail'
-          ? html`<${ProjectDetail} name=${r.name} milestone=${r.milestone} />`
-          : html`<${Overview} />`
+        ${r.page === 'patterns'
+          ? html`<${PatternPage} />`
+          : r.page === 'detail'
+            ? html`<${ProjectDetail} name=${r.name} milestone=${r.milestone} />`
+            : html`<${Overview} />`
         }
       </main>
     </div>

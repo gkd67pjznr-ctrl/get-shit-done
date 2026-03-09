@@ -16,6 +16,9 @@ function parseHash() {
       milestone: parts[2] ? decodeURIComponent(parts[2]) : null,
     };
   }
+  if (parts[0] === 'patterns') {
+    return { page: 'patterns' };
+  }
   return { page: 'overview' };
 }
 
