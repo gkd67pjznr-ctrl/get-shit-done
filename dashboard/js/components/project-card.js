@@ -35,11 +35,11 @@ export function ProjectCard({ project }) {
   const debtOpen = project.debt ? project.debt.open : 0;
   const completedMilestones = countCompletedMilestones(project.milestones);
 
-  // Milestones to display: active ones, or all if none active
+  // Milestones to display: all active ones + most recent completed (cap 6)
+  const activeMilestones = project.milestones ? project.milestones.filter(m => m.active) : [];
+  const completedMilestones_ = project.milestones ? project.milestones.filter(m => !m.active) : [];
   const milestonesToShow = project.milestones && project.milestones.length > 0
-    ? project.milestones.filter(m => m.active).concat(
-        project.milestones.filter(m => !m.active).slice(-1) // most recent completed
-      ).slice(0, 3)
+    ? activeMilestones.concat(completedMilestones_.slice(-1)).slice(0, 6)
     : [];
 
   const [sessionExpanded, setSessionExpanded] = useState(false);

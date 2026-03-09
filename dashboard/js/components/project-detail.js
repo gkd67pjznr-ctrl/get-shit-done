@@ -15,6 +15,17 @@ function MilestoneAccordion({ milestone, openByDefault, id }) {
   const phases = roadmap.phases || [];
   const pct = parseProgress(state.progress);
 
+  const completedPhases = phases.filter(p => p.status === 'complete').length;
+  const totalPhases = phases.length;
+  const pctClass = pct === null ? '' : pct >= 75 ? 'pct-green' : pct >= 25 ? 'pct-amber' : 'pct-red';
+  const stateStatus = (state.status || '').toLowerCase();
+  const isWorking = milestone.active && (
+    stateStatus.includes('execut') ||
+    stateStatus.includes('in-progress') ||
+    stateStatus.includes('building') ||
+    stateStatus.includes('in progress')
+  );
+
   return html`
     <div class="milestone-accordion" id=${id} ref=${ref}>
       <div class="milestone-accordion-header" onClick=${() => setOpen(!open)}>
@@ -23,8 +34,10 @@ function MilestoneAccordion({ milestone, openByDefault, id }) {
         <span class="accordion-milestone-status ${milestone.active ? 'status-active' : 'status-complete'}">
           ${milestone.active ? 'active' : 'completed'}
         </span>
-        <span class="accordion-milestone-progress">
-          ${pct !== null ? fmtPct(pct) : ''}
+        ${isWorking ? html`<span class="accordion-inprogress-badge">in progress</span>` : null}
+        <span class="accordion-milestone-right">
+          ${totalPhases > 0 ? html`<span class="accordion-phase-count">${completedPhases}/${totalPhases} phases</span>` : null}
+          ${pct !== null ? html`<span class="accordion-pct-badge ${pctClass}">${fmtPct(pct)}</span>` : null}
         </span>
       </div>
 
