@@ -11,7 +11,7 @@ import {
 // Reusable pipe separator — dim, non-selectable
 const Sep = () => html`<span style="color:var(--term-dim);user-select:none"> | </span>`;
 
-export function ProjectCard({ project }) {
+export function ProjectCard({ project, onOpenTerminal = () => {} }) {
   const cardRef = useRef(null);
   const prevFlash = useRef(null);
 
@@ -190,7 +190,10 @@ export function ProjectCard({ project }) {
                 }
                 return html`
                   <tr key=${i} class="${pane.isClaude ? 'claude-pane' : ''}">
-                    <td>${pane.sessionName}</td>
+                    <td><button class="tmux-session-link" onClick=${(e) => {
+                      e.stopPropagation();
+                      onOpenTerminal(pane.sessionName);
+                    }}>${pane.sessionName}</button></td>
                     <td>${pane.sessionWindows}</td>
                     <td>${pane.windowPanes}</td>
                     <td>${status}</td>

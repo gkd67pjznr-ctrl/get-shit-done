@@ -11,8 +11,9 @@ import { ProjectCard } from './components/project-card.js';
 import { ProjectDetail } from './components/project-detail.js';
 import { EmptyState } from './components/empty-state.js';
 import { PatternPage } from './components/pattern-page.js';
+import { TerminalModal } from './components/terminal-modal.js';
 
-function Overview() {
+function Overview({ onOpenTerminal }) {
   const ps = projects.value;
   const isLoading = loading.value;
   const err = fetchError.value;
@@ -39,7 +40,7 @@ function Overview() {
 
   return html`
     <div class="card-grid">
-      ${ps.map(p => html`<${ProjectCard} key=${p.name} project=${p} />`)}
+      ${ps.map(p => html`<${ProjectCard} key=${p.name} project=${p} onOpenTerminal=${onOpenTerminal} />`)}
     </div>
     <div style="text-align:center; font-size:10px; color:var(--text-muted); padding: 8px; font-family:var(--font-data);">
       Tip: Name Claude Code tmux sessions starting with <code>cc</code> for session tracking
@@ -49,6 +50,7 @@ function Overview() {
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [openTerminalSession, setOpenTerminalSession] = useState(null);
   const r = route.value;
 
   return html`
@@ -64,10 +66,16 @@ function App() {
           ? html`<${PatternPage} />`
           : r.page === 'detail'
             ? html`<${ProjectDetail} name=${r.name} milestone=${r.milestone} />`
-            : html`<${Overview} />`
+            : html`<${Overview} onOpenTerminal=${setOpenTerminalSession} />`
         }
       </main>
     </div>
+    ${openTerminalSession && html`
+      <${TerminalModal}
+        sessionName=${openTerminalSession}
+        onClose=${() => setOpenTerminalSession(null)}
+      />
+    `}
   `;
 }
 
