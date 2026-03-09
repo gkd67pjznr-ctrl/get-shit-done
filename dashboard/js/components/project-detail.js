@@ -17,7 +17,9 @@ function MilestoneAccordion({ milestone, openByDefault, id }) {
 
   const completedPhases = phases.filter(p => p.status === 'complete').length;
   const totalPhases = phases.length;
-  const pctClass = pct === null ? '' : pct >= 75 ? 'pct-green' : pct >= 25 ? 'pct-amber' : 'pct-red';
+  // Use STATE.md progress if available, otherwise compute from phase completion
+  const effectivePct = pct !== null ? pct : (totalPhases > 0 ? Math.round((completedPhases / totalPhases) * 100) : null);
+  const pctClass = effectivePct === null ? '' : effectivePct >= 75 ? 'pct-green' : effectivePct >= 25 ? 'pct-amber' : 'pct-red';
   const stateStatus = (state.status || '').toLowerCase();
   const isWorking = milestone.active && (
     stateStatus.includes('execut') ||
@@ -36,8 +38,13 @@ function MilestoneAccordion({ milestone, openByDefault, id }) {
         </span>
         ${isWorking ? html`<span class="accordion-inprogress-badge">in progress</span>` : null}
         <span class="accordion-milestone-right">
-          ${totalPhases > 0 ? html`<span class="accordion-phase-count">${completedPhases}/${totalPhases} phases</span>` : null}
-          ${pct !== null ? html`<span class="accordion-pct-badge ${pctClass}">${fmtPct(pct)}</span>` : null}
+          ${totalPhases > 0 ? html`<span class="accordion-phase-count">${completedPhases}/${totalPhases}</span>` : null}
+          ${effectivePct !== null ? html`
+            <span class="accordion-pct-bar">
+              <${ProgressBar} value=${effectivePct} />
+            </span>
+            <span class="accordion-pct-badge ${pctClass}">${fmtPct(effectivePct)}</span>
+          ` : null}
         </span>
       </div>
 

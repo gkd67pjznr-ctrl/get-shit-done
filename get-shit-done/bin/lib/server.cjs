@@ -299,8 +299,9 @@ function parseAllMilestones(projectPath) {
         entry.state = parseStateFile(stateContent);
       } catch { /* leave null */ }
 
-      // Determine active from YAML frontmatter status (canonical), falling back to body Status line
-      const TERMINAL = /^(completed|shipped|done)$/i;
+      // Determine active: check YAML frontmatter status first, then body Status, then roadmap
+      const TERMINAL_EXACT = /^(completed|shipped|done)$/i;
+      const TERMINAL_CONTAINS = /\b(complete|completed|shipped|done|milestone complete)\b/i;
       let canonicalStatus = null;
       try {
         const stateContent = fs.readFileSync(path.join(milestoneRoot, 'STATE.md'), 'utf-8');
@@ -310,11 +311,17 @@ function parseAllMilestones(projectPath) {
           if (statusLine) canonicalStatus = statusLine[1].trim();
         }
       } catch { /* already read above, ignore */ }
-      // Use frontmatter status if available, otherwise fall back to parsed body Status
-      const effectiveStatus = canonicalStatus || (entry.state && entry.state.status);
-      entry.active = effectiveStatus
-        ? !TERMINAL.test(effectiveStatus.trim())
-        : false;
+
+      if (canonicalStatus) {
+        // Frontmatter status is canonical — exact match
+        entry.active = !TERMINAL_EXACT.test(canonicalStatus);
+      } else if (entry.state && entry.state.status) {
+        // Body Status line is descriptive — use contains match
+        entry.active = !TERMINAL_CONTAINS.test(entry.state.status);
+      } else {
+        // No status at all — infer from roadmap (all phases done = inactive)
+        entry.active = false;
+      }
 
       try {
         const roadmapContent = fs.readFileSync(path.join(milestoneRoot, 'ROADMAP.md'), 'utf-8');
