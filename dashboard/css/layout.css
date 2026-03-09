@@ -72,6 +72,7 @@
   padding: 3px var(--space-md);
   cursor: pointer;
   border-left: 2px solid transparent;
+  color: var(--text-primary);
 }
 
 .sidebar-project:hover {
@@ -83,7 +84,7 @@
   font-family: var(--font-data);
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-primary);
+  /* color set by status-* class; fallback inherits --text-primary from parent */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -91,7 +92,7 @@
 
 .sidebar-milestone {
   font-size: 11px;
-  color: var(--term-dim);
+  /* color set by status-* class; fallback via inherit */
   padding: 0 0 0 var(--space-sm);
   white-space: nowrap;
   overflow: hidden;

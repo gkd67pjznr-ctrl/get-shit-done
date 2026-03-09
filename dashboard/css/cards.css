@@ -33,7 +33,7 @@
 .card-project-name {
   font-size: 13px;
   font-weight: 700;
-  color: var(--text-primary);
+  /* color set by status-* class; fallback via inherit */
   flex-shrink: 0;
   min-width: 120px;
 }
