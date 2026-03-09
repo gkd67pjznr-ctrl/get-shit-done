@@ -1,0 +1,56 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root {
+  /* Domain colors */
+  --color-frontend: #58a6ff;
+  --color-backend: #3fb950;
+  --color-testing: #d29922;
+  --color-infrastructure: #bc8cff;
+  --color-observation: #39d2c0;
+  --color-silicon: #f778ba;
+
+  /* Signal colors */
+  --signal-success: #22c55e;
+  --signal-warning: #f97316;
+  --signal-error: #ef4444;
+  --signal-neutral: #6b7280;
+
+  /* Typography */
+  --font-data: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* GitHub-dark palette */
+  --bg-base: #0d1117;
+  --bg-elevated: #161b22;
+  --bg-card: #1c2128;
+  --border: #30363d;
+  --border-muted: #21262d;
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted: #6e7681;
+  --accent: #58a6ff;
+  --accent-muted: rgba(88, 166, 255, 0.15);
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
+
+  /* Layout */
+  --sidebar-width: 220px;
+  --header-height: 52px;
+  --radius: 6px;
+  --radius-sm: 4px;
+}
+
+body { font-variant-numeric: tabular-nums; }
+
+/* Five-state status vocabulary */
+.status-not-started { color: var(--signal-neutral); }
+.status-active       { color: var(--signal-success); }
+.status-complete     { color: var(--color-frontend); }
+.status-blocked      { color: var(--signal-error); }
+.status-attention    { color: var(--signal-warning); }

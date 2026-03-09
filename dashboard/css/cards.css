@@ -1,0 +1,134 @@
+/* Project card */
+.project-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-lg);
+  cursor: pointer;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.project-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-muted);
+}
+
+.project-card.stale {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* Card header row */
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
+.card-project-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Quality badge */
+.quality-badge {
+  font-family: var(--font-data);
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Card meta row: debt count, completed milestones */
+.card-meta {
+  display: flex;
+  gap: var(--space-md);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.card-meta-item strong { color: var(--text-secondary); }
+
+/* Milestone rows inside card */
+.milestone-rows { display: flex; flex-direction: column; gap: var(--space-sm); }
+
+.milestone-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--space-sm);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-muted);
+}
+
+.milestone-row-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 12px;
+}
+
+.milestone-name {
+  font-family: var(--font-data);
+  font-size: 11px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.milestone-status-badge {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  border: 1px solid;
+  flex-shrink: 0;
+}
+
+.milestone-phase-name {
+  font-size: 12px;
+  color: var(--text-primary);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.milestone-progress-text {
+  font-family: var(--font-data);
+  font-size: 11px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+/* Workflow step badge */
+.workflow-badge {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-muted);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+/* Stale project warning */
+.stale-warning {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: 12px;
+  color: var(--signal-warning);
+}
