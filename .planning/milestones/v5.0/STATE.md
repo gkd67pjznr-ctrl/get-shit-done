@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 19-04 complete. Full dashboard SPA operational -- ProjectDetail, app.js, end-to-end verified.
-last_updated: "2026-03-09T11:57:47.698Z"
-last_activity: 2026-03-09 -- Phase 19-04 executed (project-detail.js, app.js; SPA end-to-end verified)
+stopped_at: Phase 20-02 complete. Tmux poll loop, PATCH tracking endpoint, and setTracking helper wired in.
+last_updated: "2026-03-09T16:00:00.000Z"
+last_activity: 2026-03-09 -- Phase 20-02 executed (tmux poll loop, PATCH /tracking endpoint, setTracking in dashboard.cjs)
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 8
-  completed_plans: 6
-  percent: 80
+  total_plans: 14
+  completed_plans: 8
+  percent: 57
 ---
 
 # Project State -- Milestone v5.0
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-07)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts -- enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 19 - Dashboard UI
+**Current focus:** Phase 20 - Tmux Monitoring and Cross-Project Metrics
 
 ## Current Position
 
-Phase: 19 (3 of 5 in v5.0) (Dashboard UI)
-Plan: 4 of 4 in current phase (complete)
+Phase: 20 (4 of 5 in v5.0) (Tmux Monitoring and Cross-Project Metrics)
+Plan: 2 of 2 in current phase (20-02 complete)
 Status: In Progress
-Last activity: 2026-03-09 -- Phase 19-04 executed (project-detail.js, app.js; SPA end-to-end verified)
+Last activity: 2026-03-09 -- Phase 20-02 executed (tmux poll loop, PATCH /tracking endpoint, setTracking in dashboard.cjs)
 
-Progress: [████████░░] 80%
+Progress: [██████░░░░] 57%
 
 ## Performance Metrics
 
@@ -74,6 +74,12 @@ Recent decisions affecting current work:
 - [19-04]: MilestoneAccordion unexported, co-located in project-detail.js -- detail view self-contained
 - [19-04]: init() fires after render() so App mounts before data arrives; loading signal gates pending UI
 - [19-04]: SSE deferred to after initial fetchProjects() to layer updates on top of baseline state
+- [20-01]: isClaude detection uses sessionName.startsWith('cc') only (not pane title) per CONTEXT.md locked decision
+- [20-01]: tmuxStateHash uses Set + sorted arrays for deterministic JSON stringify diffing
+- [20-01]: computeHealthScore parses last_activity date with /^(\d{4}-\d{2}-\d{2})/ regex (format: "2026-03-09 -- ...")
+- [20-01]: parseProjectData extended with optional tmuxCache param; backward-compatible (tmux.available: false default)
+- [20-02]: tmuxCache threaded as explicit parameter through createHttpServer, watchProject, watchRegistry (not closure -- cleaner)
+- [20-02]: CORS extended to GET, PATCH, OPTIONS; setTracking in dashboard.cjs uses delete for true (omit=true backward compat)
 
 ### Pending Todos
 
@@ -82,12 +88,11 @@ None.
 ### Blockers/Concerns
 
 - tmux CLI as terminal backend (Phase 21) may need prototype spike -- escape sequence handling unproven
-- Project-to-tmux-session mapping heuristics need design in Phase 20
 
 ## Session Continuity
 
 Last session: 2026-03-09
-Stopped at: Phase 19-04 complete. Full dashboard SPA operational -- ProjectDetail, app.js, end-to-end verified.
+Stopped at: Phase 20-02 complete. Tmux poll loop, PATCH tracking endpoint, and setTracking helper wired in.
 Resume file: None
-Next step: Phase 19 complete. Proceed to next phase in v5.0 roadmap.
+Next step: Phase 20-03 -- dashboard UI for tmux session badges, health labels, and sidebar metrics.
 
