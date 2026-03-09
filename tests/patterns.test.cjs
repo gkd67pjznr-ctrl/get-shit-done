@@ -84,3 +84,77 @@ describe('aggregatePatterns', () => {
     assert.equal(parsed[0].commit_type, 'feat');
   });
 });
+
+describe('aggregatePatterns (live implementation)', () => {
+  const { aggregatePatterns } = require('../get-shit-done/bin/lib/server.cjs');
+
+  it('returns empty array for empty registry', () => {
+    const result = aggregatePatterns([]);
+    assert.deepEqual(result, []);
+  });
+
+  it('aggregates entries from a single project', () => {
+    const { dir } = createPatternFixture([
+      { commit_type: 'feat', timestamp: '2026-03-01T10:00:00Z' },
+      { commit_type: 'feat', timestamp: '2026-03-01T11:00:00Z' },
+      { commit_type: 'fix', timestamp: '2026-03-01T12:00:00Z' },
+    ]);
+    const result = aggregatePatterns([{ name: 'proj-a', path: dir }]);
+    assert.equal(result.length, 2);
+    const feat = result.find(r => r.type === 'feat');
+    assert.ok(feat, 'feat type must be present');
+    assert.equal(feat.count, 2);
+    assert.deepEqual(feat.projects, ['proj-a']);
+    assert.equal(feat.projectCount, 1);
+  });
+
+  it('merges entries across multiple projects', () => {
+    const { dir: dirA } = createPatternFixture([
+      { commit_type: 'feat', timestamp: '2026-03-01T10:00:00Z' },
+    ]);
+    const { dir: dirB } = createPatternFixture([
+      { commit_type: 'feat', timestamp: '2026-03-02T10:00:00Z' },
+      { commit_type: 'fix', timestamp: '2026-03-02T11:00:00Z' },
+    ]);
+
+    const result = aggregatePatterns([
+      { name: 'proj-a', path: dirA },
+      { name: 'proj-b', path: dirB },
+    ]);
+
+    const feat = result.find(r => r.type === 'feat');
+    assert.ok(feat, 'feat type must be present');
+    assert.equal(feat.count, 2);
+    assert.equal(feat.projectCount, 2);
+    assert.deepEqual(feat.projects, ['proj-a', 'proj-b']);
+    assert.equal(feat.lastSeen, '2026-03-02T10:00:00Z');
+  });
+
+  it('skips project with missing sessions.jsonl', () => {
+    const emptyDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-pat-missing-'));
+    fs.mkdirSync(path.join(emptyDir, '.planning'), { recursive: true });
+    const { dir: dirA } = createPatternFixture([
+      { commit_type: 'feat', timestamp: '2026-03-01T10:00:00Z' },
+    ]);
+    const result = aggregatePatterns([
+      { name: 'empty', path: emptyDir },
+      { name: 'proj-a', path: dirA },
+    ]);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].type, 'feat');
+  });
+
+  it('sorts results by count descending', () => {
+    const { dir } = createPatternFixture([
+      { commit_type: 'fix', timestamp: '2026-03-01T10:00:00Z' },
+      { commit_type: 'feat', timestamp: '2026-03-01T11:00:00Z' },
+      { commit_type: 'feat', timestamp: '2026-03-01T12:00:00Z' },
+      { commit_type: 'feat', timestamp: '2026-03-01T13:00:00Z' },
+    ]);
+    const result = aggregatePatterns([{ name: 'proj', path: dir }]);
+    assert.equal(result[0].type, 'feat', 'highest count type must come first');
+    assert.equal(result[0].count, 3);
+    assert.equal(result[1].type, 'fix');
+    assert.equal(result[1].count, 1);
+  });
+});
