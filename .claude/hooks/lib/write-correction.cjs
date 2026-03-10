@@ -221,7 +221,68 @@ function writeCorrection(entry, options) {
   }
 }
 
-module.exports = { writeCorrection };
+/**
+ * Reads all correction entries from corrections.jsonl and any corrections-*.jsonl
+ * archive files in .planning/patterns/. Applies optional filters and returns entries
+ * sorted by timestamp descending (most recent first).
+ *
+ * Filters:
+ *   status: 'active'  — exclude entries where retired_at is truthy
+ *   status: 'retired' — include only entries where retired_at is truthy
+ *
+ * @param {{ status?: 'active'|'retired' }} [filters]
+ * @param {{ cwd?: string }} [options]
+ * @returns {object[]}
+ */
+function readCorrections(filters, options) {
+  try {
+    const f = filters || {};
+    const cwd = (options && options.cwd) ? options.cwd : process.cwd();
+    const patternsDir = path.join(cwd, '.planning', 'patterns');
+
+    // Gather all correction files: active + archives
+    const files = ['corrections.jsonl'];
+    try {
+      const dirFiles = fs.readdirSync(patternsDir);
+      for (const df of dirFiles) {
+        if (df.startsWith('corrections-') && df.endsWith('.jsonl')) {
+          files.push(df);
+        }
+      }
+    } catch (e) {
+      // No archive files or patternsDir missing — proceed with just active file
+    }
+
+    let entries = [];
+    for (const file of files) {
+      try {
+        const content = fs.readFileSync(path.join(patternsDir, file), 'utf-8');
+        const lines = content.split('\n').filter(l => l.trim() !== '');
+        for (const line of lines) {
+          try { entries.push(JSON.parse(line)); } catch (e) { /* skip malformed */ }
+        }
+      } catch (e) {
+        // Skip unreadable files silently
+      }
+    }
+
+    // Apply status filter
+    if (f.status === 'active') {
+      entries = entries.filter(e => !e.retired_at);
+    } else if (f.status === 'retired') {
+      entries = entries.filter(e => !!e.retired_at);
+    }
+
+    // Sort by timestamp descending (most recent first)
+    entries.sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
+
+    return entries;
+  } catch (e) {
+    return [];
+  }
+}
+
+module.exports = { writeCorrection, readCorrections };
 
 // CLI invocation: node write-correction.cjs '{"correction_from":"...","correction_to":"...",...}' '<cwd>'
 if (require.main === module) {
