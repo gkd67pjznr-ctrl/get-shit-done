@@ -607,10 +607,49 @@ describe('checkAndPromote — integration', () => {
   });
 
   it('promotion does not break existing correction capture when write-preference module is absent', () => {
-    it.todo;
+    // Create temp dir with only write-correction.cjs (no write-preference.cjs)
+    const tmpIsolated = fs.mkdtempSync(path.join(os.tmpdir(), 'isolated-test-'));
+    try {
+      const libDir = path.join(tmpIsolated, '.claude', 'hooks', 'lib');
+      fs.mkdirSync(libDir, { recursive: true });
+      fs.copyFileSync(
+        path.join(process.cwd(), '.claude/hooks/lib/write-correction.cjs'),
+        path.join(libDir, 'write-correction.cjs')
+      );
+      // No write-preference.cjs copied -- simulates missing module
+      const planningDir = path.join(tmpIsolated, '.planning');
+      fs.mkdirSync(planningDir, { recursive: true });
+      fs.writeFileSync(path.join(planningDir, 'config.json'), JSON.stringify({
+        adaptive_learning: { observation: { retention_days: 90, max_entries: 1000, capture_corrections: true } }
+      }));
+
+      const corrLib = path.join(libDir, 'write-correction.cjs');
+      const entry = makeValidEntry({ diagnosis_category: 'code.style_mismatch', scope: 'file' });
+      const result = spawnSync(process.execPath, [corrLib, JSON.stringify(entry), tmpIsolated], {
+        encoding: 'utf-8', timeout: 10000,
+      });
+      expect(result.status).toBe(0);
+      expect(fs.existsSync(path.join(tmpIsolated, '.planning', 'patterns', 'corrections.jsonl'))).toBe(true);
+      expect(fs.existsSync(path.join(tmpIsolated, '.planning', 'patterns', 'preferences.jsonl'))).toBe(false);
+    } finally {
+      fs.rmSync(tmpIsolated, { recursive: true, force: true });
+    }
   });
 
   it('full round-trip: 3 corrections promote to preference, readPreferences returns it', () => {
-    it.todo;
+    const { writeCorrection } = require(path.join(process.cwd(), '.claude/hooks/lib/write-correction.cjs'));
+    const corrEntry = makeValidEntry({ diagnosis_category: 'code.style_mismatch', scope: 'file' });
+
+    writeCorrection(corrEntry, { cwd: tmpDir });
+    writeCorrection(corrEntry, { cwd: tmpDir });
+    writeCorrection(corrEntry, { cwd: tmpDir });
+
+    const prefs = readPreferences({ scope: 'file', status: 'active' }, { cwd: tmpDir });
+    expect(prefs.length).toBe(1);
+    expect(prefs[0].category).toBe('code.style_mismatch');
+    expect(prefs[0].scope).toBe('file');
+    expect(prefs[0].confidence).toBeCloseTo(0.6, 5);
+    expect(prefs[0].source_count).toBe(3);
+    expect(prefs[0].retired_at).toBeNull();
   });
 });
