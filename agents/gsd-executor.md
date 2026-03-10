@@ -715,6 +715,31 @@ Populate from the `GATE_OUTCOMES` array collected during quality_sentinel execut
 ```
 
 This surfaces the information required for strict mode blocking gate identification.
+
+**Gate execution persistence (conditional on quality level):**
+
+After writing the Quality Gates section to SUMMARY.md (or after the fast-mode check), persist all gate outcomes to disk:
+
+```bash
+# Only runs in standard or strict mode (QUALITY_LEVEL already read above)
+if [ "$QUALITY_LEVEL" != "fast" ]; then
+  GATE_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  OBSERVATIONS_DIR=".planning/observations"
+  mkdir -p "$OBSERVATIONS_DIR"
+  GATE_FILE="$OBSERVATIONS_DIR/gate-executions.jsonl"
+
+  for entry in "${GATE_OUTCOMES[@]}"; do
+    IFS='|' read -r task_num step_name outcome detail <<< "$entry"
+    printf '{"gate":"%s","task":%s,"outcome":"%s","detail":"%s","quality_level":"%s","phase":"%s","plan":"%s","timestamp":"%s"}\n' \
+      "$step_name" "$task_num" "$outcome" "${detail//\"/\\\"}" \
+      "$QUALITY_LEVEL" "$PHASE" "$PLAN" "$GATE_TS" >> "$GATE_FILE"
+  done
+fi
+```
+
+This appends one JSONL line per gate outcome to `.planning/observations/gate-executions.jsonl`. The file is created if absent. No rotation is performed here — rotation is handled by `write-gate-execution.cjs` when invoked directly.
+
+**Fast mode:** When `QUALITY_LEVEL` is `fast`, the `GATE_OUTCOMES` array is empty (sentinel was skipped entirely) and this block is skipped by the `if` guard. No gate-execution entries are produced.
 </summary_creation>
 
 <self_check>
