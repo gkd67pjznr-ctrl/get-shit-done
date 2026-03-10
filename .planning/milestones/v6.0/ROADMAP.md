@@ -93,7 +93,7 @@ Phases execute in numeric order: 22 -> 23 -> 24 -> 25 -> 26 -> 27
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 22. Data Layer and Correction Capture | 0/? | Not started | - |
+| 22. Data Layer and Correction Capture | 2/3 | In Progress|  |
 | 23. Preference Tracking | 0/? | Not started | - |
 | 24. Live Recall and Session Injection | 0/? | Not started | - |
 | 25. Observer Agent and Suggestion Pipeline | 0/? | Not started | - |
