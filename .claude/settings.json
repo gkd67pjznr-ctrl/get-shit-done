@@ -32,6 +32,14 @@
             "command": "bash .claude/hooks/session-state.sh"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/gsd-recall-corrections.cjs"
+          }
+        ]
       }
     ],
     "SessionEnd": [

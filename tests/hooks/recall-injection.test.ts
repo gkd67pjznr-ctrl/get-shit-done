@@ -1,8 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createRequire } from 'module';
+import { spawnSync } from 'child_process';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+
+const HOOK_PATH = path.join(process.cwd(), '.claude/hooks/gsd-recall-corrections.cjs');
 
 const require = createRequire(import.meta.url);
 const WRITE_CORRECTION_PATH = path.join(process.cwd(), '.claude/hooks/lib/write-correction.cjs');
@@ -45,6 +48,11 @@ function createTempDir(): string {
 
 function writeCorrectionsFile(dir: string, entries: object[], filename = 'corrections.jsonl'): void {
   const filePath = path.join(dir, '.planning', 'patterns', filename);
+  fs.writeFileSync(filePath, entries.map(e => JSON.stringify(e)).join('\n') + '\n');
+}
+
+function writePreferencesFile(dir: string, entries: object[]): void {
+  const filePath = path.join(dir, '.planning', 'patterns', 'preferences.jsonl');
   fs.writeFileSync(filePath, entries.map(e => JSON.stringify(e)).join('\n') + '\n');
 }
 
@@ -243,5 +251,62 @@ describe('silent — empty input produces empty output', () => {
   it('empty corrections and preferences produces empty string', () => {
     const output = assembleRecall([], []);
     expect(output).toBe('');
+  });
+});
+
+describe('hook output integration', () => {
+  it('hook output — produces system-reminder wrapper with entries', () => {
+    const pref = makePrefEntry({ category: 'code.wrong_pattern', scope: 'file', preference_text: 'Always use correct pattern', retired_at: null });
+    const corr = makeValidEntry({ diagnosis_category: 'process.regression', scope: 'project', correction_to: 'Do not regress', retired_at: null });
+    writePreferencesFile(tmpDir, [pref]);
+    writeCorrectionsFile(tmpDir, [corr]);
+
+    const result = spawnSync(process.execPath, [HOOK_PATH], { cwd: tmpDir, encoding: 'utf-8' });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('<system-reminder>');
+    expect(result.stdout).toContain('## Correction Recall');
+    expect(result.stdout).toContain('Preferences (learned):');
+    expect(result.stdout).toContain('Recent corrections:');
+  });
+
+  it('hook output — silent when no data', () => {
+    // tmpDir has .planning/patterns/ but no JSONL files
+    const result = spawnSync(process.execPath, [HOOK_PATH], { cwd: tmpDir, encoding: 'utf-8' });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout.trim()).toBe('');
+  });
+
+  it('hook output — preferences appear before corrections', () => {
+    const pref = makePrefEntry({ category: 'code.wrong_pattern', scope: 'file', preference_text: 'Always use correct pattern', retired_at: null });
+    const corr = makeValidEntry({ diagnosis_category: 'process.regression', scope: 'project', correction_to: 'Do not regress', retired_at: null });
+    writePreferencesFile(tmpDir, [pref]);
+    writeCorrectionsFile(tmpDir, [corr]);
+
+    const result = spawnSync(process.execPath, [HOOK_PATH], { cwd: tmpDir, encoding: 'utf-8' });
+
+    const prefIndex = result.stdout.indexOf('Always use correct pattern');
+    const corrIndex = result.stdout.indexOf('Do not regress');
+    expect(prefIndex).toBeGreaterThan(-1);
+    expect(corrIndex).toBeGreaterThan(-1);
+    expect(prefIndex).toBeLessThan(corrIndex);
+  });
+
+  it('hook output — dedup removes promoted correction from corrections list', () => {
+    const pref = makePrefEntry({ category: 'code.wrong_pattern', scope: 'file', preference_text: 'Always use correct pattern', retired_at: null });
+    const promotedCorr = makeValidEntry({ diagnosis_category: 'code.wrong_pattern', scope: 'file', correction_to: 'Use correct pattern (promoted)', retired_at: null });
+    const otherCorr = makeValidEntry({ diagnosis_category: 'process.regression', scope: 'project', correction_to: 'Do not regress', retired_at: null });
+    writePreferencesFile(tmpDir, [pref]);
+    writeCorrectionsFile(tmpDir, [promotedCorr, otherCorr]);
+
+    const result = spawnSync(process.execPath, [HOOK_PATH], { cwd: tmpDir, encoding: 'utf-8' });
+
+    expect(result.stdout).toContain('process.regression');
+    // The promoted correction's diagnosis_category should not appear in the corrections section
+    // (it appears only once as part of the preference, not again in corrections)
+    const corrSectionIndex = result.stdout.indexOf('Recent corrections:');
+    const corrSection = result.stdout.slice(corrSectionIndex);
+    expect(corrSection).not.toContain('Use correct pattern (promoted)');
   });
 });
