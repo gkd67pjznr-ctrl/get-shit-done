@@ -70,7 +70,85 @@ All changes are additive. Existing projects with no `quality` key in `config.jso
 
 ---
 
-## 4. Enabling Quality Enforcement
+## 4. Concurrent Milestones
+
+This is the single biggest architectural departure from vanilla GSD, and as far as we know, no other Claude Code project management framework has anything like it.
+
+Vanilla GSD is linear. One milestone at a time. One set of planning docs. One `STATE.md`, one `ROADMAP.md`, one `phases/` directory. If you're working on v2.0 and an urgent v1.1 hotfix comes in, you're stuck — you either shelve your v2.0 work manually, or you try to juggle both in the same planning directory and hope nothing collides. For solo developers running multiple work streams (a new feature release, a bugfix branch, an experimental prototype), this is a real bottleneck.
+
+Concurrent milestones blow that limitation wide open. Every milestone gets its own fully isolated workspace under `.planning/milestones/<version>/`, each with its own `STATE.md`, `ROADMAP.md`, `REQUIREMENTS.md`, and `phases/` directory. You can have v1.1, v2.0, and v3.0-experimental all active simultaneously, each with independent phase tracking, independent state, and zero cross-contamination. The `--milestone` flag threads through every GSD command — planning, execution, verification, debt tracking, all of it — so you always know exactly which work stream you're operating in.
+
+This isn't a shallow feature bolted on top. The entire core was rearchitected for it: `planningRoot()` dynamically resolves to the correct milestone workspace, `resolveActiveMilestone()` auto-detects active milestone directories, and every function in `phase.cjs`, `roadmap.cjs`, `state.cjs`, and `milestone.cjs` is milestone-aware. The `migrate.cjs` module handles upgrading existing flat-layout projects to the milestone-scoped layout non-destructively (`migrate --dry-run` to preview, `migrate --apply --version vX.Y` to execute). There's even a `manifest-check` command that validates milestone workspace integrity.
+
+The result: you work on whatever you want, whenever you want, and each work stream maintains its own complete, consistent planning state. Switch between milestones freely. Run phases in one while planning another. The framework handles the routing.
+
+**Enabling concurrent milestones:**
+
+Set `concurrent: true` in `.planning/config.json`:
+
+```json
+{
+  "concurrent": true
+}
+```
+
+Create a milestone workspace:
+
+```
+/gsd:new-milestone v2.0
+```
+
+This creates `.planning/milestones/v2.0/` with its own complete planning directory structure.
+
+Work within the milestone using the `--milestone` flag:
+
+```
+/gsd:execute-phase --milestone v2.0
+/gsd:plan-phase --milestone v2.0
+/gsd:progress --milestone v2.0
+```
+
+See [UPGRADES.md](UPGRADES.md#milestone-v20--concurrent-milestones-shipped-2026-02-25) for the full architecture details.
+
+---
+
+## 5. Device-Wide Dashboard
+
+No other Claude Code framework gives you a live, real-time dashboard across every project on your machine. This is the first of its kind.
+
+When you're running multiple GSD projects — and especially multiple concurrent milestones across those projects — keeping track of what's happening where becomes its own cognitive overhead. Which project is mid-phase? Which milestone just shipped? How much has this sprint cost? What sessions are running? The dashboard answers all of that from a single browser tab.
+
+The dashboard is a full web application served locally. It discovers every GSD project registered on your machine, aggregates their planning state in real time via Server-Sent Events, and renders a unified view of your entire development operation. The overview page shows every project with its milestone status, accumulated cost, session duration, and lines changed. Click into any project and you get per-phase progress bars, milestone breakdowns, and the full state of that project's planning docs — all live-updating as work happens.
+
+But it goes further than status displays. The dashboard has embedded terminal sessions backed by tmux integration — you can monitor and interact with running Claude Code sessions directly from the dashboard UI. It detects untagged tmux sessions that aren't associated with any project and surfaces them so nothing falls through the cracks. There's a pattern library that aggregates corrections across all your projects, showing you the learning signals your adaptive layer is accumulating over time.
+
+The whole thing runs on a lightweight Node.js server (`server.cjs`) with a vanilla JS frontend — no framework dependencies, no build step for the dashboard itself. Components are modular (sidebar, project cards, project detail, terminal modal, pattern page, progress bars) and the CSS is clean and purposeful. It starts on port 3141 by default and stays out of your way until you need it.
+
+**Starting the dashboard:**
+
+```bash
+gsd dashboard serve
+```
+
+**Features:**
+- Project overview with milestone status, cost, and duration
+- Per-project detail with phase progress, live-updating via SSE
+- Embedded terminal sessions (tmux integration) — monitor and interact with running sessions
+- Pattern library from accumulated corrections across all projects
+- Untagged tmux session detection — nothing gets lost
+- Lightweight, zero-dependency frontend — no build step required
+
+**Commands:**
+- gsd dashboard serve | starts dashboard, default port 3141
+- gsd dashboard list | shows all projects registered to dashboard
+- gsd dashboard add | adds current directory to dashboard
+- gsd dashboard remove | removes current directory from dashboard
+
+**Dashboard files:** `dashboard/` directory contains the UI (HTML, CSS, JS components).
+
+---
+
+## 6. Enabling Quality Enforcement
 
 Quality enforcement is off by default. Enable it per-project:
 
@@ -106,37 +184,7 @@ To set a global default for new projects:
 
 ---
 
-## 5. Enabling Concurrent Milestones
-
-Concurrent milestones let you run multiple work streams in parallel, each with an isolated `.planning/milestones/<version>/` workspace. This project itself uses milestone-scoped layout as the default.
-
-**Step 1:** Set `concurrent: true` in `.planning/config.json`:
-
-```json
-{
-  "concurrent": true
-}
-```
-
-**Step 2:** Create a milestone workspace:
-
-```
-/gsd:new-milestone v2.0
-```
-
-This creates `.planning/milestones/v2.0/` with its own `STATE.md`, `ROADMAP.md`, `REQUIREMENTS.md`, and `phases/` directory.
-
-**Step 3:** Work within the milestone using the `--milestone` flag:
-
-```
-/gsd:execute-phase --milestone v2.0
-```
-
-See [UPGRADES.md](UPGRADES.md#milestone-v20--concurrent-milestones-shipped-2026-02-25) for the full architecture details.
-
----
-
-## 6. Using Tech Debt Tracking
+## 7. Using Tech Debt Tracking
 
 Tech debt is tracked in `.planning/DEBT.md` with structured TD-NNN entries. At `standard` or `strict` quality levels, the executor auto-logs high-severity issues discovered during execution.
 
@@ -174,7 +222,19 @@ This spawns the GSD executor to fix the issue, runs tests to verify, and marks t
 
 ---
 
-## 7. Updating: Keeping Fork Changes When GSD Updates
+## 8. Adaptive Learning Layer
+
+**Skills** live in `.claude/skills/`. Each skill is a `SKILL.md` that auto-activates based on context. The fork ships 17 skills covering: GSD workflow routing, session awareness, beautiful commits, code review, context handoff, security hygiene, test generation, TypeScript patterns, API design, skill integration, correction capture, and others.
+
+**Hooks** live in `.claude/hooks/`. 13 hook files handle: commit validation (`validate-commit.sh`), session state (`session-state.sh`), phase boundary checks (`phase-boundary-check.sh`), work state save/restore, session snapshots, correction capture, and statusline.
+
+**Correction capture** (v6.0, in progress): When you correct Claude's output, the correction is captured as a learning signal. Repeated corrections become preferences that are auto-promoted to skill rules.
+
+Skills and hooks are installed to `~/.claude/` via the standard deploy process (Section 2).
+
+---
+
+## 9. Updating: Keeping Fork Changes When GSD Updates
 
 Vanilla GSD updates via `npx get-shit-done-cc@latest`, which overwrites `~/.claude/get-shit-done/` with the upstream version. This removes this fork's changes.
 
@@ -201,46 +261,6 @@ Vanilla GSD updates via `npx get-shit-done-cc@latest`, which overwrites `~/.clau
    ```
 
 **Recommended approach:** Before any GSD update, check upstream's changelog. After updating, deploy from this repo and run tests. The fork is structured to minimize merge conflicts — all additions are in separate files or clearly delimited sections.
-
----
-
-## 8. Adaptive Learning Layer
-
-**Skills** live in `.claude/skills/`. Each skill is a `SKILL.md` that auto-activates based on context. The fork ships 17 skills covering: GSD workflow routing, session awareness, beautiful commits, code review, context handoff, security hygiene, test generation, TypeScript patterns, API design, skill integration, correction capture, and others.
-
-**Hooks** live in `.claude/hooks/`. 13 hook files handle: commit validation (`validate-commit.sh`), session state (`session-state.sh`), phase boundary checks (`phase-boundary-check.sh`), work state save/restore, session snapshots, correction capture, and statusline.
-
-**Correction capture** (v6.0, in progress): When you correct Claude's output, the correction is captured as a learning signal. Repeated corrections become preferences that are auto-promoted to skill rules.
-
-Skills and hooks are installed to `~/.claude/` via the standard deploy process (Section 2).
-
----
-
-## 9. Dashboard
-
-The device-wide dashboard provides a real-time view of all GSD projects on your machine.
-
-**Starting the dashboard:**
-
-```bash
-gsd dashboard serve
-```
-
-**Features:**
-- Project overview with milestone status, cost, and duration
-- Per-project detail with phase progress
-- Embedded terminal sessions (tmux integration)
-- Pattern library from accumulated corrections
-- Untagged tmux session detection
-
-**Commands:**
-- gsd dashboard serve | starts dashboard, default port 3141
-- gsd dashboard list | shows all projects registered to dashboard
-- gsd dashboard add | adds current directory to dashboard
-- gsd dashboard remove | removes current directory from dashboard
-
-
-**Dashboard files:** `dashboard/` directory contains the UI (HTML, CSS, JS components).
 
 ---
 
