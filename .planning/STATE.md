@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Defining requirements
-last_updated: "2026-03-10T08:32:02.101Z"
+last_updated: "2026-03-10T09:40:16.838Z"
 last_activity: 2026-03-10 — Milestone v6.0 started
 progress:
   total_phases: 6
@@ -62,9 +62,10 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 | # | Description | Date | Commit | Status | Directory |
 |---|-------------|------|--------|--------|-----------|
 | 25 | Enhance global statusline: v3 features, milestone detection fix, cost accumulation | 2026-03-10 | — | Verified | [25-enhance-status-line](./quick/25-enhance-status-line-for-all-projects-wit/) |
+| 26 | Add cost, duration, lines-changed to dashboard milestone rows | 2026-03-10 | 734adf9 | Complete | [26-add-cost-duration-lines-changed-and-mile](./quick/26-add-cost-duration-lines-changed-and-mile/) |
 
 ## Session Continuity
 
-Last activity: 2026-03-10 — Completed quick task 25: Enhance global statusline with v3 features, milestone detection fix, cost accumulation
+Last activity: 2026-03-10 — Completed quick task 26: Add cost, duration, lines-changed to dashboard milestone rows
 Resume file: .planning/milestones/v6.0/phases/22-data-layer-and-correction-capture/22-CONTEXT.md
 Next step: Define requirements for v6.0
