@@ -10,7 +10,7 @@ Transform the observation system from a passive event logger into an intelligent
 - Integer phases (22-27): Planned milestone work
 - Decimal phases (e.g., 23.1): Urgent insertions (marked with INSERTED)
 
-- [~] **Phase 22: Data Layer and Correction Capture** - Hook-based correction detection with structured JSONL storage and rotation (Plan 22-01 complete)
+- [x] **Phase 22: Data Layer and Correction Capture** - Hook-based correction detection with structured JSONL storage and rotation (Plans 22-01, 22-02, 22-03 complete)
 - [ ] **Phase 23: Self-Diagnosis and Preference Tracking** - Root cause categorization of corrections and promotion to durable preferences
 - [ ] **Phase 24: Live Recall and Session Injection** - Surfacing corrections and preferences at session start and during active work
 - [ ] **Phase 25: Observer Agent and Suggestion Pipeline** - Pattern aggregation and suggestion generation with guardrail enforcement
@@ -30,9 +30,8 @@ Transform the observation system from a passive event logger into an intelligent
   4. When corrections.jsonl exceeds 1000 lines, older entries are rotated to dated archive files respecting retention_days config
 **Plans**:
   - [x] Plan 22-01: Correction Write Library and JSONL Rotation (complete, commit bbc2017)
-  - [ ] Plan 22-02: Edit-Based Detection Hook
-  - [ ] Plan 22-03: Self-Report Channel
-  - [ ] Plan 22-04: Revert Detection Hook
+  - [x] Plan 22-02: Edit-Based Detection Hook (complete, commit 924ad16)
+  - [x] Plan 22-03: Self-Report Skill and Phase Verification (complete, commit 6dbaf61)
 
 ### Phase 23: Preference Tracking
 **Goal**: Repeated corrections are promoted to durable preferences so Claude builds persistent memory of user expectations
@@ -93,7 +92,7 @@ Phases execute in numeric order: 22 -> 23 -> 24 -> 25 -> 26 -> 27
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 22. Data Layer and Correction Capture | 2/3 | In Progress|  |
+| 22. Data Layer and Correction Capture | 3/3 | Complete | 2026-03-10 |
 | 23. Preference Tracking | 0/? | Not started | - |
 | 24. Live Recall and Session Injection | 0/? | Not started | - |
 | 25. Observer Agent and Suggestion Pipeline | 0/? | Not started | - |
