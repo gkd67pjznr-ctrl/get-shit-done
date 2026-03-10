@@ -11,12 +11,12 @@
   padding: 0 var(--space-lg);
   gap: 0;
   font-family: var(--font-data);
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .header-brand {
   font-family: var(--font-data);
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 700;
   color: var(--term-green);
   white-space: nowrap;
@@ -28,7 +28,7 @@
   align-items: center;
   gap: 0;
   flex: 1;
-  font-size: 14px;
+  font-size: 16px;
   color: var(--text-secondary);
 }
 
@@ -45,16 +45,30 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 13px;
+  font-size: 15px;
   color: var(--text-muted);
   margin-left: auto;
   font-family: var(--font-data);
 }
 
+/* Subnav bar below header */
+.subnav {
+  position: sticky;
+  top: var(--header-height);
+  z-index: 99;
+  height: var(--subnav-height);
+  background: var(--bg-base);
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border-subtle, #2a2a2a);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+}
+
 /* Page layout with sidebar */
 .page-layout {
   display: flex;
-  height: calc(100vh - var(--header-height));
+  height: calc(100vh - var(--header-height) - var(--subnav-height));
   overflow: hidden;
 }
 
@@ -82,7 +96,7 @@
 
 .sidebar-project-name {
   font-family: var(--font-data);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   /* color set by status-* class; fallback inherits --text-primary from parent */
   white-space: nowrap;
@@ -91,7 +105,7 @@
 }
 
 .sidebar-milestone {
-  font-size: 13px;
+  font-size: 15px;
   /* color set by status-* class; fallback via inherit */
   padding: 0 0 0 var(--space-sm);
   white-space: nowrap;
@@ -124,7 +138,7 @@
     position: fixed;
     top: var(--header-height);
     left: 0;
-    height: calc(100vh - var(--header-height));
+    height: calc(100vh - var(--header-height) - var(--subnav-height));
     z-index: 200;
   }
   .hamburger { display: flex !important; }
@@ -141,7 +155,7 @@
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
   cursor: pointer;
-  font-size: 18px;
+  font-size: 20px;
 }
 
 /* Sidebar metrics section (below project list) */
@@ -153,7 +167,7 @@
 
 .sidebar-metrics-title {
   font-family: var(--font-data);
-  font-size: 12px;
+  font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--term-dim);
@@ -164,7 +178,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 13px;
+  font-size: 15px;
   color: var(--text-secondary);
   padding: 2px 0;
 }
@@ -173,12 +187,12 @@
   font-family: var(--font-data);
   font-weight: 600;
   color: var(--text-primary);
-  font-size: 15px;
+  font-size: 17px;
 }
 
 .sidebar-metric-label {
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .sidebar-health-summary {
@@ -190,7 +204,7 @@
 
 .sidebar-health-chip {
   font-family: var(--font-data);
-  font-size: 12px;
+  font-size: 14px;
   padding: 0;
   border: none;
 }

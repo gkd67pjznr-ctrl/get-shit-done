@@ -152,7 +152,7 @@ function App() {
 
   return html`
     <${Header} onToggleSidebar=${() => setSidebarOpen(!sidebarOpen)} />
-    <nav style="position:sticky; top:var(--header-height); z-index:99; background:var(--bg-base); padding:4px 16px; border-bottom:1px solid var(--border-subtle,#2a2a2a); font-size:16px; display:flex; align-items:center;">
+    <nav class="subnav">
       <a href="#/" style="color:var(--text-muted); text-decoration:none; margin-right:16px;">Overview</a>
       <a href="#/patterns" style="color:var(--text-muted); text-decoration:none;">Patterns</a>
       <${TotalCost} />
