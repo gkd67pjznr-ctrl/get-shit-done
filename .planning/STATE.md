@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Defining requirements
-last_updated: "2026-03-10T17:04:00.000Z"
-last_activity: "2026-03-10 — Completed quick task 30: Move untagged sessions to sidebar"
+last_updated: "2026-03-10T17:30:00.000Z"
+last_activity: "2026-03-10 — Completed quick task 31: Quality gating metrics research and scope"
 progress:
   total_phases: 6
   completed_phases: 1
@@ -19,7 +19,7 @@ progress:
 Phase: Not started (defining requirements)
 Plan: —
 Status: Defining requirements
-Last activity: 2026-03-10 — Completed quick task 30: Move untagged sessions to sidebar
+Last activity: 2026-03-10 — Completed quick task 31: Quality gating metrics research and scope
 
 ## Active Milestones
 
@@ -67,9 +67,10 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 | 28 | Rewrite FORK-GUIDE.md to reflect current v6.0-era state | 2026-03-10 | e93052a | Complete | [28-rewrite-fork-guide-md-to-reflect-current](./quick/28-rewrite-fork-guide-md-to-reflect-current/) |
 | 29 | Reorder FORK-GUIDE features: concurrent milestones and dashboard to top | 2026-03-10 | a2bc506 | Complete | [29-reorder-fork-guide-features-list-concurr](./quick/29-reorder-fork-guide-features-list-concurr/) |
 | 30 | Move untagged sessions from overview to sidebar grouped by project | 2026-03-10 | 7195fb4 | Verified | [30-move-untagged-sessions-to-sidebar-sectio](./quick/30-move-untagged-sessions-to-sidebar-sectio/) |
+| 31 | Quality gating metrics research and scope — v7.0 milestone brief | 2026-03-10 | 9f240df | Complete | [31-quality-gating-metrics-research-and-scop](./quick/31-quality-gating-metrics-research-and-scop/) |
 
 ## Session Continuity
 
-Last activity: 2026-03-10 — Completed quick task 30: Move untagged sessions to sidebar
+Last activity: 2026-03-10 — Completed quick task 31: Quality gating metrics research and scope
 Resume file: .planning/milestones/v6.0/phases/23-preference-tracking/23-CONTEXT.md
-Next step: Define requirements for v6.0
+Next step: Define requirements for v6.0 or begin v7.0 Quality Enforcement Observability milestone (quick task 31 scoped it)
