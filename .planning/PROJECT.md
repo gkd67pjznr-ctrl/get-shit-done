@@ -80,9 +80,20 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 
 ### Active
 
-(See v6.0 milestone requirements)
+(See v6.0 and v7.0 milestone requirements)
 
 ## Current Milestones
+
+### v7.0 Quality Enforcement Observability
+
+**Goal:** Make quality gate enforcement fully observable — every gate execution persisted to disk, every correction tagged with enforcement context, dashboard shows real gate health metrics grounded in actual session data.
+
+**Target features:**
+- Gate execution persistence (gate-executions.jsonl via write-gate-execution.cjs)
+- Quality context on corrections (quality_level field on correction entries)
+- Context7 invocation logging (context7-calls.jsonl with library, tokens, usage)
+- Dashboard gate health panel (gate firing rates, outcome distribution, quality level usage)
+- Gate-to-correction attribution analysis (heuristic mapping from corrections to gates)
 
 ### v6.0 Adaptive Observation & Learning Loop
 
