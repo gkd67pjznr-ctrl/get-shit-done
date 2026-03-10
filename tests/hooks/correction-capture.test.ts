@@ -267,6 +267,193 @@ describe('writeCorrection retention cleanup', () => {
   });
 });
 
+// ─── Suite: gsd-correction-capture hook — revert detection ───────────────────
+
+const HOOK_PATH = path.join(process.cwd(), '.claude/hooks/gsd-correction-capture.js');
+
+/**
+ * Creates a temp project dir wired up with a real .planning/config.json
+ * and a symlink to the write-correction library so the hook can require() it.
+ */
+function createHookTempDir(): string {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hook-test-'));
+  const planningDir = path.join(dir, '.planning');
+  fs.mkdirSync(planningDir, { recursive: true });
+  // Config with capture_corrections: true
+  fs.writeFileSync(
+    path.join(planningDir, 'config.json'),
+    JSON.stringify({
+      adaptive_learning: {
+        observation: { retention_days: 90, max_entries: 1000, capture_corrections: true },
+      },
+    })
+  );
+  // Wire up the write-correction library under .claude/hooks/lib/
+  const libDir = path.join(dir, '.claude', 'hooks', 'lib');
+  fs.mkdirSync(libDir, { recursive: true });
+  const libSrc = path.join(process.cwd(), '.claude/hooks/lib/write-correction.cjs');
+  fs.copyFileSync(libSrc, path.join(libDir, 'write-correction.cjs'));
+  return dir;
+}
+
+function runHook(stdinJson: object, hookCwd?: string): { status: number | null; stdout: string; stderr: string } {
+  const result = spawnSync(process.execPath, [HOOK_PATH], {
+    input: JSON.stringify(stdinJson),
+    encoding: 'utf-8',
+    timeout: 10000,
+    cwd: hookCwd,
+  });
+  return { status: result.status, stdout: result.stdout || '', stderr: result.stderr || '' };
+}
+
+describe('gsd-correction-capture hook — revert detection', () => {
+  let hookDir: string;
+
+  beforeEach(() => {
+    hookDir = createHookTempDir();
+  });
+
+  afterEach(() => {
+    try { fs.rmSync(hookDir, { recursive: true, force: true }); } catch { /* ignore */ }
+  });
+
+  it('writes a correction entry when git revert is detected', () => {
+    const result = runHook({
+      session_id: 'revert-test-001',
+      cwd: hookDir,
+      tool_name: 'Bash',
+      tool_input: { command: 'git revert HEAD' },
+    });
+    expect(result.status).toBe(0);
+    const correctionsPath = path.join(hookDir, '.planning', 'patterns', 'corrections.jsonl');
+    expect(fs.existsSync(correctionsPath)).toBe(true);
+    const lines = fs.readFileSync(correctionsPath, 'utf-8').split('\n').filter(l => l.trim() !== '');
+    expect(lines.length).toBeGreaterThanOrEqual(1);
+    const entry = JSON.parse(lines[0]);
+    expect(entry.source).toBe('revert_detection');
+    expect(entry.diagnosis_category).toBe('process.regression');
+  });
+
+  it('writes a correction entry when git reset --hard is detected', () => {
+    const result = runHook({
+      session_id: 'reset-test-001',
+      cwd: hookDir,
+      tool_name: 'Bash',
+      tool_input: { command: 'git reset --hard HEAD~1' },
+    });
+    expect(result.status).toBe(0);
+    const correctionsPath = path.join(hookDir, '.planning', 'patterns', 'corrections.jsonl');
+    expect(fs.existsSync(correctionsPath)).toBe(true);
+    const lines = fs.readFileSync(correctionsPath, 'utf-8').split('\n').filter(l => l.trim() !== '');
+    const entry = JSON.parse(lines[0]);
+    expect(entry.source).toBe('revert_detection');
+  });
+
+  it('does not write a correction entry for a non-revert bash command', () => {
+    const result = runHook({
+      session_id: 'noop-test-001',
+      cwd: hookDir,
+      tool_name: 'Bash',
+      tool_input: { command: 'ls -la' },
+    });
+    expect(result.status).toBe(0);
+    const correctionsPath = path.join(hookDir, '.planning', 'patterns', 'corrections.jsonl');
+    expect(fs.existsSync(correctionsPath)).toBe(false);
+  });
+});
+
+// ─── Suite: gsd-correction-capture hook — edit detection ─────────────────────
+
+describe('gsd-correction-capture hook — edit detection', () => {
+  let hookDir: string;
+
+  beforeEach(() => {
+    hookDir = createHookTempDir();
+  });
+
+  afterEach(() => {
+    try { fs.rmSync(hookDir, { recursive: true, force: true }); } catch { /* ignore */ }
+  });
+
+  it('records file on Write tool call', () => {
+    const sessionId = 'track-test-001';
+    const testFile = path.join(hookDir, 'test-file.js');
+    fs.writeFileSync(testFile, 'const x = 1;\n');
+
+    const result = runHook({
+      session_id: sessionId,
+      cwd: hookDir,
+      tool_name: 'Write',
+      tool_input: { path: testFile },
+    });
+    expect(result.status).toBe(0);
+
+    const trackingFile = `/tmp/gsd-session-${sessionId}-files.json`;
+    expect(fs.existsSync(trackingFile)).toBe(true);
+    const tracked = JSON.parse(fs.readFileSync(trackingFile, 'utf-8'));
+    expect(Object.keys(tracked)).toContain(testFile);
+  });
+
+  it('detects external edit on subsequent tool call', () => {
+    const sessionId = 'edit-detect-001';
+    const testFile = path.join(hookDir, 'watched.js');
+    fs.writeFileSync(testFile, 'const a = 1;\n');
+
+    // Step 1: Write tool call — records the file
+    runHook({
+      session_id: sessionId,
+      cwd: hookDir,
+      tool_name: 'Write',
+      tool_input: { path: testFile },
+    });
+
+    // Step 2: Simulate external edit — change mtime and size
+    // Wait a tick to ensure mtime differs, then rewrite with different content
+    const futureTime = new Date(Date.now() + 2000);
+    fs.writeFileSync(testFile, 'const a = 1; // user edited\n');
+    fs.utimesSync(testFile, futureTime, futureTime);
+
+    // Step 3: Bash tool call — should trigger edit detection scan
+    const result = runHook({
+      session_id: sessionId,
+      cwd: hookDir,
+      tool_name: 'Bash',
+      tool_input: { command: 'echo check' },
+    });
+    expect(result.status).toBe(0);
+
+    const correctionsPath = path.join(hookDir, '.planning', 'patterns', 'corrections.jsonl');
+    expect(fs.existsSync(correctionsPath)).toBe(true);
+    const lines = fs.readFileSync(correctionsPath, 'utf-8').split('\n').filter(l => l.trim() !== '');
+    expect(lines.length).toBeGreaterThanOrEqual(1);
+    const entry = JSON.parse(lines[0]);
+    expect(entry.source).toBe('edit_detection');
+    expect(entry.diagnosis_category).toBe('process.convention_violation');
+  });
+});
+
+// ─── Suite: gsd-correction-capture hook — silent failure ─────────────────────
+
+describe('gsd-correction-capture hook — silent failure', () => {
+  it('exits 0 with malformed stdin JSON', () => {
+    const result = spawnSync(process.execPath, [HOOK_PATH], {
+      input: 'not valid json',
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+    expect(result.status).toBe(0);
+  });
+
+  it('exits 0 with empty stdin', () => {
+    const result = spawnSync(process.execPath, [HOOK_PATH], {
+      input: '',
+      encoding: 'utf-8',
+      timeout: 10000,
+    });
+    expect(result.status).toBe(0);
+  });
+});
+
 // ─── Suite: CLI invocation ────────────────────────────────────────────────────
 
 describe('write-correction CLI invocation', () => {
