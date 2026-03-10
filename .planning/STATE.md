@@ -62,7 +62,7 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 | # | Description | Date | Commit | Status | Directory |
 |---|-------------|------|--------|--------|-----------|
 | 25 | Enhance global statusline: v3 features, milestone detection fix, cost accumulation | 2026-03-10 | — | Verified | [25-enhance-status-line](./quick/25-enhance-status-line-for-all-projects-wit/) |
-| 26 | Add cost, duration, lines-changed to dashboard milestone rows | 2026-03-10 | 734adf9 | Complete | [26-add-cost-duration-lines-changed-and-mile](./quick/26-add-cost-duration-lines-changed-and-mile/) |
+| 26 | Add cost, duration, lines-changed to dashboard milestone rows | 2026-03-10 | 734adf9 | Verified | [26-add-cost-duration-lines-changed-and-mile](./quick/26-add-cost-duration-lines-changed-and-mile/) |
 
 ## Session Continuity
 
