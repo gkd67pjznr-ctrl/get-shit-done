@@ -243,7 +243,7 @@
 
 .card-milestone-row {
   display: grid;
-  grid-template-columns: 14px 72px 1fr minmax(100px, 160px) minmax(0, 160px);
+  grid-template-columns: 12px 52px 1fr minmax(80px, 140px) minmax(0, 200px);
   align-items: center;
   gap: 6px;
   font-family: var(--font-data);

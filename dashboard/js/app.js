@@ -12,6 +12,25 @@ import { ProjectDetail } from './components/project-detail.js';
 import { EmptyState } from './components/empty-state.js';
 import { PatternPage } from './components/pattern-page.js';
 import { TerminalModal } from './components/terminal-modal.js';
+import { fmtCost } from './utils/format.js';
+
+function TotalCost() {
+  const ps = projects.value;
+  // Sum cost from cost-log (project totals) + live session costs from panes
+  let total = 0;
+  for (const p of ps) {
+    if (p.costLog?.total) total += p.costLog.total;
+    // Add live session costs from panes not yet in cost-log
+    if (p.tmux?.panes) {
+      for (const pane of p.tmux.panes) {
+        if (pane.sessionCost) total += pane.sessionCost;
+      }
+    }
+  }
+  if (total <= 0) return null;
+  const costColor = total < 5 ? 'var(--signal-success)' : total < 20 ? 'var(--signal-warning)' : 'var(--signal-error)';
+  return html`<span style="margin-left:auto; font-family:var(--font-data); font-size:15px; color:${costColor}">est. ${fmtCost(total)}</span>`;
+}
 
 function Overview({ onOpenTerminal }) {
   const ps = projects.value;
@@ -42,7 +61,7 @@ function Overview({ onOpenTerminal }) {
     <div class="card-grid">
       ${ps.map(p => html`<${ProjectCard} key=${p.name} project=${p} onOpenTerminal=${onOpenTerminal} />`)}
     </div>
-    <div style="text-align:center; font-size:12px; color:var(--text-muted); padding: 8px; font-family:var(--font-data);">
+    <div style="text-align:center; font-size:14px; color:var(--text-muted); padding: 8px; font-family:var(--font-data);">
       Tip: Name Claude Code tmux sessions starting with <code>cc</code> for session tracking
     </div>
   `;
@@ -55,9 +74,10 @@ function App() {
 
   return html`
     <${Header} onToggleSidebar=${() => setSidebarOpen(!sidebarOpen)} />
-    <nav style="padding:4px 16px; border-bottom:1px solid var(--border-subtle,#2a2a2a); font-size:14px;">
+    <nav style="position:sticky; top:var(--header-height); z-index:99; background:var(--bg-base); padding:4px 16px; border-bottom:1px solid var(--border-subtle,#2a2a2a); font-size:16px; display:flex; align-items:center;">
       <a href="#/" style="color:var(--text-muted); text-decoration:none; margin-right:16px;">Overview</a>
       <a href="#/patterns" style="color:var(--text-muted); text-decoration:none;">Patterns</a>
+      <${TotalCost} />
     </nav>
     <div class="page-layout">
       <${Sidebar} class=${sidebarOpen ? 'open' : ''} onClose=${() => setSidebarOpen(false)} />

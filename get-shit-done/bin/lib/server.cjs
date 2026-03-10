@@ -185,73 +185,58 @@ function readProjectCostLog(projectPath) {
 }
 
 /**
- * Run git diff --shortstat HEAD to get lines added/removed for the working tree.
- * Returns { added: number, removed: number } or null on error.
+ * Scan /tmp/claude-ctx-*.json bridge files for session metrics (cost, lines, duration).
+ * Returns a Map: projectPath → [{ session_id, cost, lines_added, lines_removed, duration_ms }]
+ * Cached for 5s to avoid hammering the filesystem on every project parse.
  */
-function readProjectGitStats(projectPath) {
+let _bridgeCache = null;
+let _bridgeCacheTs = 0;
+function scanSessionBridgeFiles() {
+  const now = Date.now();
+  if (_bridgeCache && (now - _bridgeCacheTs) < 5000) return _bridgeCache;
+
+  const result = new Map(); // projectPath → sessions[]
   try {
-    const raw = execSync('git diff --shortstat HEAD', {
-      cwd: projectPath,
-      encoding: 'utf-8',
-      timeout: 2000,
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
-    // "3 files changed, 639 insertions(+), 67 deletions(-)"
-    const addedMatch = raw.match(/(\d+)\s+insertion/);
-    const removedMatch = raw.match(/(\d+)\s+deletion/);
-    const added = addedMatch ? parseInt(addedMatch[1], 10) : 0;
-    const removed = removedMatch ? parseInt(removedMatch[1], 10) : 0;
-    if (added === 0 && removed === 0) return null;
-    return { added, removed };
-  } catch {
-    return null;
-  }
+    const tmpDir = os.tmpdir();
+    const files = fs.readdirSync(tmpDir).filter(f => f.startsWith('claude-ctx-') && f.endsWith('.json'));
+    for (const fname of files) {
+      try {
+        const data = JSON.parse(fs.readFileSync(path.join(tmpDir, fname), 'utf-8'));
+        if (!data.cwd || !data.session_id) continue;
+        // Stale check: skip bridge files older than 24h
+        if (data.timestamp && (now / 1000 - data.timestamp) > 86400) continue;
+        const entry = {
+          session_id: data.session_id,
+          cost: data.cost || 0,
+          lines_added: data.lines_added || 0,
+          lines_removed: data.lines_removed || 0,
+          duration_ms: data.duration_ms || 0,
+          cwd: data.cwd,
+        };
+        if (!result.has(data.cwd)) result.set(data.cwd, []);
+        result.get(data.cwd).push(entry);
+      } catch { /* skip malformed */ }
+    }
+  } catch { /* /tmp unreadable */ }
+  _bridgeCache = result;
+  _bridgeCacheTs = now;
+  return result;
 }
 
 /**
- * Find the most recent bridge file (/tmp/claude-ctx-*.json) whose cwd matches
- * this project path, then look up the corresponding cost-log timestamps for duration.
- * Returns duration in milliseconds, or null.
+ * Get session metrics for a specific project path from bridge file scan.
+ * Returns array of { session_id, cost, lines_added, lines_removed, duration_ms }.
  */
-function readSessionDuration(projectPath) {
-  try {
-    const tmpDir = os.tmpdir();
-    const bridgeFiles = fs.readdirSync(tmpDir).filter(f => f.startsWith('claude-ctx-') && f.endsWith('.json'));
-    let bestSession = null;
-    let bestTs = 0;
-    for (const fname of bridgeFiles) {
-      try {
-        const data = JSON.parse(fs.readFileSync(path.join(tmpDir, fname), 'utf-8'));
-        if (data.cwd && projectPath && data.cwd.startsWith(projectPath) && data.timestamp > bestTs) {
-          bestTs = data.timestamp;
-          bestSession = data.session_id;
-        }
-      } catch { /* skip */ }
+function getProjectSessions(projectPath) {
+  if (!projectPath) return [];
+  const bridge = scanSessionBridgeFiles();
+  const sessions = [];
+  for (const [cwd, entries] of bridge) {
+    if (cwd === projectPath || cwd.startsWith(projectPath + '/')) {
+      sessions.push(...entries);
     }
-    if (!bestSession) return null;
-
-    // Read the cost-log.jsonl for this project — find earliest and latest entry for the session
-    const logPath = path.join(projectPath, '.planning', 'cost-log.jsonl');
-    const lines = fs.readFileSync(logPath, 'utf-8').trim().split('\n').filter(Boolean);
-    let firstTs = null;
-    let lastTs = null;
-    for (const line of lines) {
-      try {
-        const entry = JSON.parse(line);
-        if (entry.session === bestSession && entry.ts) {
-          const t = new Date(entry.ts).getTime();
-          if (!firstTs || t < firstTs) firstTs = t;
-          if (!lastTs || t > lastTs) lastTs = t;
-        }
-      } catch { /* skip */ }
-    }
-    if (firstTs && lastTs && lastTs > firstTs) {
-      return lastTs - firstTs;
-    }
-    return null;
-  } catch {
-    return null;
   }
+  return sessions;
 }
 
 // ─── Tmux polling functions ───────────────────────────────────────────────────
@@ -599,8 +584,22 @@ function parseProjectData(project, tmuxCache) {
 
   // Session metadata enrichment
   const costLog = readProjectCostLog(project.path);
-  const gitStats = readProjectGitStats(project.path);
-  const sessionDurationMs = readSessionDuration(project.path);
+  const sessionData = getProjectSessions(project.path);
+
+  // Enrich tmux panes with per-session cost/lines from bridge files
+  if (tmux.panes && sessionData.length > 0) {
+    for (const pane of tmux.panes) {
+      if (!pane.isClaude) continue;
+      // Match pane to session by CWD
+      const match = sessionData.find(s => pane.cwd && (s.cwd === pane.cwd || pane.cwd.startsWith(s.cwd + '/') || s.cwd.startsWith(pane.cwd)));
+      if (match) {
+        pane.sessionCost = match.cost;
+        pane.sessionLinesAdded = match.lines_added;
+        pane.sessionLinesRemoved = match.lines_removed;
+        pane.sessionDurationMs = match.duration_ms;
+      }
+    }
+  }
 
   return {
     name: project.name,
@@ -619,8 +618,6 @@ function parseProjectData(project, tmuxCache) {
     tmux,
     tracking,
     costLog,
-    gitStats,
-    sessionDurationMs,
   };
 }
 

@@ -6,7 +6,7 @@ import {
   parseProgress, fmtPct, fmtQuality, statusClass,
   getActiveMilestone, countCompletedMilestones, inferWorkflowStep,
   healthLabel, healthClass, computeShimmerClass, fmtIdleDuration,
-  fmtCost, fmtLinesChanged, fmtSessionDuration
+  fmtCost, fmtSessionDuration, fmtLinesChanged
 } from '../utils/format.js';
 
 // Shell commands that indicate no Claude process is running in the pane
@@ -159,15 +159,6 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
             const pct = parseProgress(state.progress);
             const shimClass = ms.active ? computeShimmerClass(project) : '';
             const msPanes = milestonePane.get(ms.name) || [];
-            // Build metadata tail: +N/-N $X.XX Xm
-            const tailParts = [];
-            const lines = fmtLinesChanged(project.gitStats?.added, project.gitStats?.removed);
-            const cost = fmtCost(project.costLog?.total);
-            const dur = fmtSessionDuration(project.sessionDurationMs);
-            if (lines) tailParts.push(lines);
-            if (cost) tailParts.push(cost);
-            if (dur) tailParts.push(dur);
-            const metaTail = tailParts.join(' ');
             return html`
               <div
                 class="card-milestone-row"
@@ -180,7 +171,7 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
                 <span class="card-ms-name" style="color:var(--term-cyan)">${ms.name}</span>
                 <span class="card-ms-phase" style="color:var(--text-secondary)">${state.current_phase || ''}</span>
                 <span class="card-ms-bar"><${ProgressBar} value=${pct} shimmerClass=${shimClass} /></span>
-                <span class="card-ms-meta">${metaTail}</span>
+                <span></span>
               </div>
               ${msPanes.map(pane => {
                 const now = Date.now();
@@ -193,6 +184,8 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
                   else if (idleSecs < 300) { status = 'waiting'; statusColor = 'var(--signal-warning)'; }
                 }
                 const termTarget = pane.sessionName + ':' + (pane.windowName || pane.sessionName);
+                // Per-session metrics from bridge files
+                const hasSessionData = pane.sessionCost || pane.sessionLinesAdded || pane.sessionLinesRemoved || pane.sessionDurationMs;
                 return html`
                   <div class="card-milestone-row card-ms-pane-row" key=${pane.windowName}>
                     <span class="card-ms-indicator"></span>
@@ -202,7 +195,9 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
                     }}>${pane.windowName}</button>
                     <span class=${status === 'waiting' ? 'shimmer-red' : ''} style="color:${statusColor};font-size:14px">${status}</span>
                     <span style="color:var(--text-muted);font-size:14px">${fmtIdleDuration(pane.lastActivity)}</span>
-                    <span></span>
+                    <span class="card-ms-meta">${hasSessionData ? html`
+                      ${pane.sessionLinesAdded || pane.sessionLinesRemoved ? html`<span style="color:var(--signal-success)">+${pane.sessionLinesAdded || 0}</span>/<span style="color:var(--signal-error)">-${pane.sessionLinesRemoved || 0}</span> ` : ''}${pane.sessionCost ? html`<span style="color:${pane.sessionCost < 1 ? 'var(--signal-success)' : pane.sessionCost < 5 ? 'var(--signal-warning)' : 'var(--signal-error)'}">$${pane.sessionCost.toFixed(2)}</span> ` : ''}${fmtSessionDuration(pane.sessionDurationMs) || ''}
+                    ` : ''}</span>
                   </div>
                 `;
               })}
