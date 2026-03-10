@@ -1,31 +1,31 @@
 ---
 gsd_state_version: 1.0
-milestone: none
-milestone_name: ""
-status: idle
-last_updated: "2026-03-09T17:31:09.524Z"
-last_activity: 2026-03-09 -- Quick task 23 complete -- audit and fix planning/milestone folder structure
+milestone: v6.0
+milestone_name: "Adaptive Observation & Learning Loop"
+status: defining-requirements
+last_updated: "2026-03-10T12:00:00.000Z"
+last_activity: 2026-03-10 -- Milestone v6.0 started
 progress:
-  total_phases: 21
-  completed_phases: 21
-  total_plans: 20
-  completed_plans: 20
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State — Coordinator
 
 ## Current Position
 
-Phase: None (all milestones complete)
+Phase: Not started (defining requirements)
 Plan: —
-Status: Idle — all milestones complete
-Last activity: 2026-03-09 - Completed quick task 23: Audit and fix planning/milestone folder structure
+Status: Defining requirements
+Last activity: 2026-03-10 — Milestone v6.0 started
 
 ## Active Milestones
 
 | Milestone | Status | Workspace |
 |-----------|--------|-----------|
-| — | — | — |
+| v6.0 Adaptive Observation & Learning Loop | Defining requirements | `.planning/milestones/v6.0/` |
 
 ## Completed Milestones
 
@@ -52,40 +52,13 @@ Each milestone has its own workspace under `.planning/milestones/<version>/` con
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-05)
+See: .planning/PROJECT.md (updated 2026-03-10)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** None (v5.0 shipped)
-
-### Quick Tasks Completed
-
-| # | Description | Date | Commit | Status | Directory |
-|---|-------------|------|--------|--------|-----------|
-| 2 | Execute post-activation handoff tasks (milestone-scoped tests + fix test failures) | 2026-02-25 | a512d78 | Verified | [2-execute-post-activation-handoff-tasks-fr](./quick/2-execute-post-activation-handoff-tasks-fr/) |
-| 3 | Test GSD migration tool on gymrats project (MIGR-01/02/03 validation) | 2026-02-26 | 7437cee | Verified | [3-test-gsd-migration-tool-on-gymrats-proje](./quick/3-test-gsd-migration-tool-on-gymrats-proje/) |
-| 4 | Migrate gymrats2 to milestone-scoped layout (71 phases → 9 milestones) | 2026-02-26 | b14662b | Verified | [4-migrate-gymrats2-to-milestone-scoped-lay](./quick/4-migrate-gymrats2-to-milestone-scoped-lay/) |
-| 5 | Create UPGRADES.md documenting all fork accomplishments (v1.0-v3.0) | 2026-02-27 | df1c94a | Verified | [5-create-upgrades-readme-documenting-all-a](./quick/5-create-upgrades-readme-documenting-all-a/) |
-| 6 | Add quality question to GSD onboarding and settings workflows | 2026-02-27 | dae0e06 | Verified | [6-we-need-the-quality-question-in-the-gsd-](./quick/6-we-need-the-quality-question-in-the-gsd-/) |
-| 7 | Fix phase detection path mismatch (BUG-01 auto-create, BUG-02 numeric sort) | 2026-02-28 | d58a9e2 | Verified | [7-fix-next-phase-detection-path-mismatch-i](./quick/7-fix-next-phase-detection-path-mismatch-i/) |
-| 8 | Fix roadmap get-phase to find phases in non-active milestones (BUG-ROADMAP-01) | 2026-03-01 | 0c2c558 | Verified | [8-fix-roadmap-get-phase-to-correctly-find-](./quick/8-fix-roadmap-get-phase-to-correctly-find-/) |
-| 9 | Fix gsd-tools.cjs init to support milestone-scoped layout without concurrent flag | 2026-03-02 | e0d31a0 | Verified | [9-fix-gsd-tools-cjs-init-to-support-milest](./quick/9-fix-gsd-tools-cjs-init-to-support-milest/) |
-| 10 | Fix CLI init phase commands to auto-resolve milestone scope (BUG-INIT-CROSSMS-01) | 2026-03-02 | 2f09c76 | Verified | [10-fix-cli-phase-op-init-to-auto-resolve-mi](./quick/10-fix-cli-phase-op-init-to-auto-resolve-mi/) |
-| 11 | Enable full GSD quality settings in Gymrats2, Pyxelate, and global defaults | 2026-03-03 | d0ee944 | Verified | [11-enable-full-gsd-quality-settings-in-gymr](./quick/11-enable-full-gsd-quality-settings-in-gymr/) |
-| 12 | Fix plan-phase to consistently use milestone-scoped directories (planning_root/phase_dir) | 2026-03-03 | 872199e | Verified | [12-fix-plan-phase-to-consistently-use-miles](./quick/12-fix-plan-phase-to-consistently-use-miles/) |
-| 13 | Feasibility analysis: rebuild GSD with milestone-scoped as the only layout option | 2026-03-03 | 52843ff | Verified | [13-feasibility-analysis-rebuild-gsd-with-mi](./quick/13-feasibility-analysis-rebuild-gsd-with-mi/) |
-| 14 | Create GSD fork documentation (README header + FORK-GUIDE.md) and push to GitHub | 2026-03-04 | d426324 | Verified | [14-create-gsd-fork-documentation-and-git-re](./quick/14-create-gsd-fork-documentation-and-git-re/) |
-| 15 | Integrate tech debt logging into GSD execution workflows | 2026-03-05 | ea39e62 | Verified | [15-investigate-why-tech-debt-feature-isn-t-](./quick/15-investigate-why-tech-debt-feature-isn-t-/) |
-| 16 | Fix milestone phase numbering so new milestones compute correct starting phase | 2026-03-05 | 8613919 | Verified | [16-fix-milestone-phase-numbering-new-milest](./quick/16-fix-milestone-phase-numbering-new-milest/) |
-| 17 | Catalogue todo system consolidation fix (unified /add-to-todos + /check-todos with GSD folder system) | 2026-03-07 | 32730b5 | Verified | [17-catalogue-todo-system-consolidation-fix-](./quick/17-catalogue-todo-system-consolidation-fix-/) |
-| 18 | Fix dashboard multi-milestone active state, project-card cap, and accordion header phase/pct badges | 2026-03-09 | b572d3f | Verified | [18-fix-dashboard-multi-milestone-active-sta](./quick/18-fix-dashboard-multi-milestone-active-sta/) |
-| 19 | Restyle dashboard to Claude Code terminal aesthetic (monospace, pipe rows, Unicode block bars) | 2026-03-09 | 04d0888 | Complete | [19-restyle-dashboard-to-match-claude-code-t](./quick/19-restyle-dashboard-to-match-claude-code-t/) |
-| 20 | Enhance dashboard terminal aesthetic (status color-coding, sidebar milestones+progress bars, larger metrics) | 2026-03-09 | e3539b1 | Verified | [20-enhance-dashboard-terminal-aesthetic-wit](./quick/20-enhance-dashboard-terminal-aesthetic-wit/) |
-| 21 | Fix dashboard milestone status to read from ROADMAP.md checkboxes (ground truth override) | 2026-03-09 | ef6b726 | Verified | [21-fix-dashboard-milestone-status-to-read-f](./quick/21-fix-dashboard-milestone-status-to-read-f/) |
-| 22 | Fix dashboard duplicating completed phases (parseRoadmapFile filtering plan-level checkboxes) | 2026-03-09 | 4b9c21f | Verified | [22-fix-dashboard-duplicating-completed-phas](./quick/22-fix-dashboard-duplicating-completed-phas/) |
-| 23 | Audit and fix planning/milestone folder structure (STATE.md, ROADMAP.md, v5.0, archived milestones) | 2026-03-09 | — | Complete | [23-audit-and-fix-planning-milestone-folder-](./quick/23-audit-and-fix-planning-milestone-folder-/) |
+**Current focus:** v6.0 Adaptive Observation & Learning Loop
 
 ## Session Continuity
 
-Last activity: 2026-03-09 -- Quick task 23 complete -- audit and fix planning/milestone folder structure
+Last activity: 2026-03-10 — Milestone v6.0 started
 Resume file: None
-Next step: All milestones complete -- plan next milestone or explore new features
+Next step: Define requirements for v6.0

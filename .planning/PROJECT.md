@@ -80,7 +80,22 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 
 ### Active
 
+(See v6.0 milestone requirements)
+
 ## Current Milestones
+
+### v6.0 Adaptive Observation & Learning Loop
+
+**Goal:** Transform the observation system from a passive event logger into an intelligent correction-capture and preference-learning pipeline that feeds back into skill refinement — so Claude learns from its mistakes and adapts to user expectations.
+
+**Target features:**
+- Hook-based real-time correction and mistake capture during sessions
+- Auto self-diagnosis when Claude is corrected (root cause analysis)
+- Preference tracking as durable, referenceable patterns
+- Live recall of corrections within current session + at session start
+- Observer agent implementation (session boundary analysis, pattern aggregation)
+- Suggestion pipeline writer (generate candidates for `/gsd:suggest`)
+- Enhanced `/gsd:digest` with correction analysis and collaborative skill refinement
 
 ### v4.0 Adaptive Learning Integration — SHIPPED 2026-03-09
 
@@ -177,4 +192,4 @@ Tests passing across 23+ test suites.
 | No --milestone on migrate | Operates on project-level .planning/, not milestone workspaces | ✓ Good — migration is project-scoped, not milestone-scoped |
 
 ---
-*Last updated: 2026-03-09 after v4.0 milestone*
+*Last updated: 2026-03-10 after v6.0 milestone start*
