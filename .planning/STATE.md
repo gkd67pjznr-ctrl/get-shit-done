@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Defining requirements
-last_updated: "2026-03-10T09:40:16.838Z"
+last_updated: "2026-03-10T12:45:12.238Z"
 last_activity: 2026-03-10 — Milestone v6.0 started
 progress:
   total_phases: 6
@@ -63,9 +63,10 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 |---|-------------|------|--------|--------|-----------|
 | 25 | Enhance global statusline: v3 features, milestone detection fix, cost accumulation | 2026-03-10 | — | Verified | [25-enhance-status-line](./quick/25-enhance-status-line-for-all-projects-wit/) |
 | 26 | Add cost, duration, lines-changed to dashboard milestone rows | 2026-03-10 | dbdaa85 | Verified | [26-add-cost-duration-lines-changed-and-mile](./quick/26-add-cost-duration-lines-changed-and-mile/) |
+| 27 | Show untagged tmux sessions on overview page | 2026-03-10 | 7f16b24 | Complete | [27-show-untagged-tmux-sessions-on-overview-](./quick/27-show-untagged-tmux-sessions-on-overview-/) |
 
 ## Session Continuity
 
-Last activity: 2026-03-10 — Fixed quick task 26: per-session cost/lines on pane rows, total cost in nav bar
+Last activity: 2026-03-10 — Quick task 27 complete: untagged sessions section on Overview, badge removed from cards
 Resume file: .planning/milestones/v6.0/phases/22-data-layer-and-correction-capture/22-CONTEXT.md
 Next step: Define requirements for v6.0
