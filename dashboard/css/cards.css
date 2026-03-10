@@ -318,3 +318,7 @@
   color: var(--term-dim);
   margin-bottom: 4px;
 }
+
+.untagged-sessions .card-milestone-row {
+  grid-template-columns: 36px 100px 1fr minmax(80px, 140px) minmax(0, 200px);
+}

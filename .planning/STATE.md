@@ -63,10 +63,10 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 |---|-------------|------|--------|--------|-----------|
 | 25 | Enhance global statusline: v3 features, milestone detection fix, cost accumulation | 2026-03-10 | — | Verified | [25-enhance-status-line](./quick/25-enhance-status-line-for-all-projects-wit/) |
 | 26 | Add cost, duration, lines-changed to dashboard milestone rows | 2026-03-10 | dbdaa85 | Verified | [26-add-cost-duration-lines-changed-and-mile](./quick/26-add-cost-duration-lines-changed-and-mile/) |
-| 27 | Show untagged tmux sessions on overview page | 2026-03-10 | 7f16b24 | Complete | [27-show-untagged-tmux-sessions-on-overview-](./quick/27-show-untagged-tmux-sessions-on-overview-/) |
+| 27 | Show untagged tmux sessions on overview page | 2026-03-10 | 2f78d08 | Verified | [27-show-untagged-tmux-sessions-on-overview-](./quick/27-show-untagged-tmux-sessions-on-overview-/) |
 
 ## Session Continuity
 
-Last activity: 2026-03-10 — Quick task 27 complete: untagged sessions section on Overview, badge removed from cards
+Last activity: 2026-03-10 — Completed quick task 27: show untagged tmux sessions on overview page with full status details
 Resume file: .planning/milestones/v6.0/phases/23-preference-tracking/23-CONTEXT.md
 Next step: Define requirements for v6.0
