@@ -8,6 +8,9 @@ import {
   healthLabel, healthClass, computeShimmerClass, fmtIdleDuration
 } from '../utils/format.js';
 
+// Shell commands that indicate no Claude process is running in the pane
+const SHELL_CMDS = new Set(['zsh', 'bash', 'sh', 'fish', 'dash']);
+
 // Reusable pipe separator — dim, non-selectable
 const Sep = () => html`<span style="color:var(--term-dim);user-select:none"> | </span>`;
 
@@ -156,7 +159,13 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
             const shimClass = ms.active ? computeShimmerClass(project) : '';
             const msPanes = milestonePane.get(ms.name) || [];
             return html`
-              <div class="card-milestone-row" key=${ms.name}>
+              <div
+                class="card-milestone-row"
+                key=${ms.name}
+                style="cursor:pointer"
+                title="View ${ms.name} details"
+                onClick=${(e) => { e.stopPropagation(); navigate('/project/' + encodeURIComponent(project.name) + '/' + encodeURIComponent(ms.name)); }}
+              >
                 <span class="card-ms-indicator">${ms.active ? '▸' : '·'}</span>
                 <span class="card-ms-name" style="color:var(--term-cyan)">${ms.name}</span>
                 <span class="card-ms-phase" style="color:var(--text-secondary)">${state.current_phase || ''}</span>
@@ -166,10 +175,11 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
               ${msPanes.map(pane => {
                 const now = Date.now();
                 const idleSecs = pane.lastActivity ? (now - pane.lastActivity) / 1000 : null;
+                const isClaudeProcess = pane.command && !SHELL_CMDS.has(pane.command);
                 let status = 'idle';
                 let statusColor = 'var(--signal-error)';
                 if (idleSecs !== null) {
-                  if (idleSecs < 10) { status = 'working'; statusColor = 'var(--signal-success)'; }
+                  if (isClaudeProcess && idleSecs < 10) { status = 'working'; statusColor = 'var(--signal-success)'; }
                   else if (idleSecs < 300) { status = 'waiting'; statusColor = 'var(--signal-warning)'; }
                 }
                 const termTarget = pane.sessionName + ':' + (pane.windowName || pane.sessionName);
@@ -180,7 +190,7 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
                       e.stopPropagation();
                       onOpenTerminal(termTarget);
                     }}>${pane.windowName}</button>
-                    <span style="color:${statusColor};font-size:12px">${status}</span>
+                    <span class=${status === 'waiting' ? 'shimmer-red' : ''} style="color:${statusColor};font-size:12px">${status}</span>
                     <span style="color:var(--text-muted);font-size:12px">${fmtIdleDuration(pane.lastActivity)}</span>
                     <span></span>
                   </div>
@@ -212,8 +222,9 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
                 const idleSecs = pane.lastActivity ? (now - pane.lastActivity) / 1000 : null;
                 let status = 'idle';
                 let statusColor = 'var(--signal-error)';
+                const isClaudeProcessD = pane.command && !SHELL_CMDS.has(pane.command);
                 if (pane.isClaude && idleSecs !== null) {
-                  if (idleSecs < 10) { status = 'working'; statusColor = 'var(--signal-success)'; }
+                  if (isClaudeProcessD && idleSecs < 10) { status = 'working'; statusColor = 'var(--signal-success)'; }
                   else if (idleSecs < 300) { status = 'waiting'; statusColor = 'var(--signal-warning)'; }
                 }
                 const termTarget = pane.sessionName + ':' + (pane.windowName || pane.sessionName);
@@ -223,7 +234,7 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
                       e.stopPropagation();
                       onOpenTerminal(termTarget);
                     }}>${pane.windowName || pane.sessionName}</button></td>
-                    <td style="color:${statusColor}">${status}</td>
+                    <td class=${status === 'waiting' ? 'shimmer-red' : ''} style="color:${statusColor}">${status}</td>
                     <td>${fmtIdleDuration(pane.lastActivity)}</td>
                   </tr>
                 `;

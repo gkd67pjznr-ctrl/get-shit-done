@@ -24,6 +24,12 @@
   color: var(--signal-warning) !important;
 }
 
+/* Red pulse for Claude panes waiting — signals attention needed */
+.shimmer-red {
+  animation: shimmer-text 1.8s ease-in-out infinite;
+  color: var(--signal-error) !important;
+}
+
 /* Connecting pulse for SSE indicator */
 @keyframes pulse {
   0%, 100% { opacity: 1; }
