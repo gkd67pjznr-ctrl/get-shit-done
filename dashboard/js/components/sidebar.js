@@ -1,7 +1,91 @@
 import { html } from 'htm/preact';
 import { projects } from '../lib/state.js';
 import { navigate } from '../lib/router.js';
-import { getActiveMilestone, healthLabel, healthClass, statusClass, parseProgress } from '../utils/format.js';
+import { getActiveMilestone, healthLabel, healthClass, statusClass, parseProgress, fmtIdleDuration, fmtSessionDuration, fmtCost } from '../utils/format.js';
+
+const SHELL_CMDS_SB = new Set(['zsh', 'bash', 'sh', 'fish', 'dash']);
+
+function SidebarUntaggedSessions({ projects: ps, onOpenTerminal }) {
+  const rows = [];
+  for (const project of ps) {
+    const tmux = project.tmux || { panes: [] };
+    const panes = tmux.panes || [];
+    const activeMilestones = project.milestones ? project.milestones.filter(m => m.active).reverse() : [];
+    const completedMilestones = project.milestones ? project.milestones.filter(m => !m.active).reverse() : [];
+    const milestones = activeMilestones.concat(completedMilestones.slice(0, 1)).slice(0, 6);
+    const matchedPaneNames = new Set();
+    if (panes.length > 0 && milestones.length > 0) {
+      for (const pane of panes) {
+        if (!pane.isClaude) continue;
+        const m = (pane.windowName || '').match(/(\d+)$/);
+        if (!m) continue;
+        const num = m[1];
+        const ms = milestones.find(ms => {
+          const vm = ms.name.match(/^v(\d+)/);
+          return vm && vm[1] === num;
+        });
+        if (ms) matchedPaneNames.add(pane.windowName);
+      }
+    }
+    for (const pane of panes) {
+      if (!matchedPaneNames.has(pane.windowName)) {
+        rows.push({ project, pane });
+      }
+    }
+  }
+
+  if (rows.length === 0) return null;
+
+  // Group by project, preserving order
+  const byProject = new Map();
+  for (const { project, pane } of rows) {
+    if (!byProject.has(project.name)) byProject.set(project.name, { project, panes: [] });
+    byProject.get(project.name).panes.push(pane);
+  }
+
+  return html`
+    <div class="sidebar-untagged">
+      <div class="sidebar-untagged-header">untagged</div>
+      ${Array.from(byProject.values()).map(({ project, panes }) => html`
+        <div key=${project.name}>
+          <div class="sidebar-untagged-project">${project.display_name || project.name}</div>
+          ${panes.map(pane => {
+            const now = Date.now();
+            const idleSecs = pane.lastActivity ? (now - pane.lastActivity) / 1000 : null;
+            const isClaudeProcess = pane.command && !SHELL_CMDS_SB.has(pane.command);
+            let status = 'idle';
+            let statusColor = 'var(--signal-error)';
+            if (idleSecs !== null) {
+              if (isClaudeProcess && idleSecs < 10) { status = 'working'; statusColor = 'var(--signal-success)'; }
+              else if (idleSecs < 300) { status = 'waiting'; statusColor = 'var(--signal-warning)'; }
+            }
+            const termTarget = pane.sessionName + ':' + (pane.windowName || pane.sessionName);
+            const hasSessionData = pane.sessionCost || pane.sessionLinesAdded || pane.sessionLinesRemoved || pane.sessionDurationMs;
+            return html`
+              <div class="sidebar-untagged-row" key=${pane.windowName + '-' + project.name}>
+                <button class="tmux-session-link sidebar-untagged-link" onClick=${(e) => {
+                  e.stopPropagation();
+                  onOpenTerminal && onOpenTerminal(termTarget);
+                }}>${pane.windowName || pane.sessionName}</button>
+                <span class="sidebar-untagged-status">
+                  <span class=${status === 'waiting' ? 'shimmer-red' : ''} style="color:${statusColor};font-size:11px">${status}</span>
+                  <span style="color:var(--color-testing);font-size:11px">${fmtIdleDuration(pane.lastActivity)}</span>
+                </span>
+                ${hasSessionData ? html`
+                  <span class="sidebar-untagged-metrics">
+                    ${pane.sessionLinesAdded || pane.sessionLinesRemoved ? html`<span style="color:var(--signal-success)">+${pane.sessionLinesAdded || 0}</span><span>/</span><span style="color:var(--signal-error)">-${pane.sessionLinesRemoved || 0}</span>` : ''}
+                    ${pane.sessionCost ? html`<span style="color:${pane.sessionCost < 1 ? 'var(--signal-success)' : pane.sessionCost < 5 ? 'var(--signal-warning)' : 'var(--signal-error)'}">$${pane.sessionCost.toFixed(2)}</span>` : ''}
+                    ${pane.sessionDurationMs ? html`<span style="color:var(--color-testing)">${fmtSessionDuration(pane.sessionDurationMs)}</span>` : ''}
+                  </span>
+                ` : ''}
+              </div>
+            `;
+          })}
+        </div>
+      `)}
+    </div>
+  `;
+}
 
 function SidebarMetrics({ projects }) {
   const tracked = projects.filter(p => p.tracking !== false);
@@ -72,7 +156,7 @@ function SidebarMetrics({ projects }) {
   `;
 }
 
-export function Sidebar({ onClose }) {
+export function Sidebar({ onClose, onOpenTerminal }) {
   const ps = projects.value;
 
   if (ps.length === 0) {
@@ -108,6 +192,7 @@ export function Sidebar({ onClose }) {
           </div>
         `;
       })}
+      <${SidebarUntaggedSessions} projects=${ps} onOpenTerminal=${onOpenTerminal} />
       <${SidebarMetrics} projects=${ps} />
     </nav>
   `;

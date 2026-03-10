@@ -335,31 +335,3 @@
   opacity: 0.35;
   animation: rainbow-wave 30s linear infinite;
 }
-
-/* Untagged sessions section on Overview page */
-.untagged-sessions {
-  border-top: 1px solid var(--term-separator);
-  padding: var(--space-sm) 0 var(--space-sm) var(--space-md);
-  margin-top: var(--space-sm);
-}
-
-.untagged-sessions-header {
-  font-family: var(--font-data);
-  font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--term-dim);
-  margin-bottom: 4px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--term-separator);
-}
-
-.untagged-sessions .card-milestone-row {
-  grid-template-columns: 56px 140px 80px minmax(60px, 100px) minmax(0, 260px);
-}
-
-.untagged-header-row {
-  opacity: 0.6;
-  margin-bottom: 2px;
-  padding-bottom: 3px;
-}
