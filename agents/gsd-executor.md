@@ -218,6 +218,35 @@ Record outcome:
 - If Context7 called: `GATE_OUTCOMES+=("${TASK_NUM}|context7_lookup|passed|queried {library}")`
 - If skipped (N/A or already queried): `GATE_OUTCOMES+=("${TASK_NUM}|context7_lookup|skipped|{reason}")`
 
+**Context7 call logging (standard and strict modes only):**
+
+When a Context7 query is made (not skipped), log the call to disk before proceeding to implementation:
+
+```bash
+CONTEXT7_LOG_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+OBSERVATIONS_DIR=".planning/observations"
+mkdir -p "$OBSERVATIONS_DIR"
+CONTEXT7_FILE="$OBSERVATIONS_DIR/context7-calls.jsonl"
+
+# TOKEN_CAP already in scope from the Context7 lookup step above
+# LIBRARY_ID comes from the resolved library ID in docs_to_consult
+# USED_FLAG will be set to true after applying the result; set false if result was N/A
+printf '{"library":"%s","query":"%s","tokens_requested":%s,"token_cap":%s,"used":%s,"quality_level":"%s","phase":"%s","plan":"%s","timestamp":"%s"}\n' \
+  "${LIBRARY_ID}" "${CONTEXT7_QUERY//\"/\\\"}" \
+  "${TOKEN_CAP}" "${TOKEN_CAP}" \
+  "${CONTEXT7_USED:-true}" \
+  "$QUALITY_LEVEL" "$PHASE" "$PLAN" "$CONTEXT7_LOG_TS" >> "$CONTEXT7_FILE"
+```
+
+Variables to set before this block:
+- `LIBRARY_ID`: the library path from `<docs_to_consult>` (e.g., `/vercel/next.js`)
+- `CONTEXT7_QUERY`: the query string from `<docs_to_consult>` (e.g., `schema validation with optional fields`)
+- `CONTEXT7_USED`: `true` if result was applied to implementation; `false` if result was not applicable
+
+**Fast mode:** The entire Step 2 is skipped when `QUALITY_LEVEL` is `fast`. This block lives inside Step 2, so it is never reached in fast mode. No context7-call entries are produced in fast mode.
+
+**If Context7 is skipped for this task** (N/A or already queried once this plan): Do NOT write a log entry. Only log actual API calls.
+
 **Step 3: Test Baseline** (skip if `fast`)
 ```bash
 node --test tests/*.test.cjs 2>&1 | tail -3
