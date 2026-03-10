@@ -71,7 +71,9 @@ function UntaggedSessions({ projects: ps, onOpenTerminal }) {
 
   return html`
     <div class="untagged-sessions">
+      <div class="rainbow-separator"></div>
       <div class="untagged-sessions-header">untagged sessions</div>
+      <div class="rainbow-separator"></div>
       <div class="card-milestone-grid" style="padding-left:var(--space-md)">
         <div class="card-milestone-row card-ms-pane-row untagged-header-row">
           <span style="color:var(--term-dim);font-size:12px">Project</span>

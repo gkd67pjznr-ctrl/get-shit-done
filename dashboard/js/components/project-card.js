@@ -130,11 +130,12 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
       <!-- Milestone list — columnized grid for aligned progress bars -->
       ${milestonesToShow.length > 0 ? html`
         <div class="card-milestone-grid">
-          ${milestonesToShow.map(ms => {
+          ${milestonesToShow.map((ms, msIdx) => {
             const state = ms.state || {};
             const pct = parseProgress(state.progress);
             const shimClass = ms.active ? computeShimmerClass(project) : '';
             const msPanes = milestonePane.get(ms.name) || [];
+            const isLast = msIdx === milestonesToShow.length - 1;
             return html`
               <div
                 class="card-milestone-row"
@@ -147,7 +148,6 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
                 <span class="card-ms-name" style="color:var(--term-cyan)">${ms.name}</span>
                 <span class="card-ms-phase" style="color:var(--text-secondary)">${state.current_phase || ''}</span>
                 <span class="card-ms-bar"><${ProgressBar} value=${pct} shimmerClass=${shimClass} /></span>
-                <span></span>
               </div>
               ${msPanes.map(pane => {
                 const now = Date.now();
@@ -177,6 +177,7 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
                   </div>
                 `;
               })}
+              ${!isLast ? html`<div class="rainbow-separator"></div>` : null}
             `;
           })}
         </div>

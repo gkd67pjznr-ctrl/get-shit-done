@@ -272,6 +272,8 @@
 .card-ms-bar {
   display: flex;
   align-items: center;
+  grid-column: 4 / -1;
+  justify-self: end;
 }
 
 .card-ms-pct {
@@ -303,9 +305,40 @@
   font-family: var(--font-data);
 }
 
+/* Rainbow dashed separator — animated multicolor wave */
+@keyframes rainbow-wave {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+.rainbow-separator {
+  height: 1px;
+  margin: 6px 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0px, transparent 3px,
+    var(--term-cyan) 3px, var(--term-cyan) 7px,
+    transparent 7px, transparent 10px,
+    var(--term-green) 10px, var(--term-green) 14px,
+    transparent 14px, transparent 17px,
+    var(--signal-warning) 17px, var(--signal-warning) 21px,
+    transparent 21px, transparent 24px,
+    var(--color-infrastructure) 24px, var(--color-infrastructure) 28px,
+    transparent 28px, transparent 31px,
+    var(--color-observation) 31px, var(--color-observation) 35px,
+    transparent 35px, transparent 38px,
+    var(--color-silicon) 38px, var(--color-silicon) 42px,
+    transparent 42px, transparent 45px,
+    var(--signal-error) 45px, var(--signal-error) 49px,
+    transparent 49px, transparent 52px
+  );
+  background-size: 200% 100%;
+  opacity: 0.35;
+  animation: rainbow-wave 8s linear infinite;
+}
+
 /* Untagged sessions section on Overview page */
 .untagged-sessions {
-  border-top: 1px solid var(--term-separator);
   padding: var(--space-sm) 0 var(--space-sm) var(--space-md);
   margin-top: var(--space-sm);
 }
@@ -317,6 +350,7 @@
   letter-spacing: 0.08em;
   color: var(--term-dim);
   margin-bottom: 4px;
+  padding-bottom: 6px;
 }
 
 .untagged-sessions .card-milestone-row {
@@ -326,6 +360,5 @@
 .untagged-header-row {
   opacity: 0.6;
   margin-bottom: 2px;
-  border-bottom: 1px solid var(--border-subtle, #2a2a2a);
   padding-bottom: 3px;
 }
