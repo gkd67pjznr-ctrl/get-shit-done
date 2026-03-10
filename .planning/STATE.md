@@ -65,7 +65,7 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 | 26 | Add cost, duration, lines-changed to dashboard milestone rows | 2026-03-10 | dbdaa85 | Verified | [26-add-cost-duration-lines-changed-and-mile](./quick/26-add-cost-duration-lines-changed-and-mile/) |
 | 27 | Show untagged tmux sessions on overview page | 2026-03-10 | 2f78d08 | Verified | [27-show-untagged-tmux-sessions-on-overview-](./quick/27-show-untagged-tmux-sessions-on-overview-/) |
 | 28 | Rewrite FORK-GUIDE.md to reflect current v6.0-era state | 2026-03-10 | e93052a | Complete | [28-rewrite-fork-guide-md-to-reflect-current](./quick/28-rewrite-fork-guide-md-to-reflect-current/) |
-| 29 | Reorder FORK-GUIDE features: concurrent milestones and dashboard to top | 2026-03-10 | — | Complete | [29-reorder-fork-guide-features-list-concurr](./quick/29-reorder-fork-guide-features-list-concurr/) |
+| 29 | Reorder FORK-GUIDE features: concurrent milestones and dashboard to top | 2026-03-10 | a2bc506 | Complete | [29-reorder-fork-guide-features-list-concurr](./quick/29-reorder-fork-guide-features-list-concurr/) |
 
 ## Session Continuity
 
