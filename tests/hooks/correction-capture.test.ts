@@ -267,6 +267,61 @@ describe('writeCorrection retention cleanup', () => {
   });
 });
 
+// ─── Suite: writeCorrection quality_level field ───────────────────────────────
+
+describe('writeCorrection quality_level field', () => {
+  it('persists quality_level when provided with value "fast"', () => {
+    const entry = makeValidEntry({ quality_level: 'fast' });
+    writeCorrection(entry, { cwd: tmpDir });
+    const correctionsPath = path.join(tmpDir, '.planning', 'patterns', 'corrections.jsonl');
+    const line = fs.readFileSync(correctionsPath, 'utf-8').trim();
+    const parsed = JSON.parse(line);
+    expect(parsed.quality_level).toBe('fast');
+  });
+
+  it('persists quality_level when provided with value "standard"', () => {
+    const entry = makeValidEntry({ quality_level: 'standard' });
+    writeCorrection(entry, { cwd: tmpDir });
+    const correctionsPath = path.join(tmpDir, '.planning', 'patterns', 'corrections.jsonl');
+    const line = fs.readFileSync(correctionsPath, 'utf-8').trim();
+    const parsed = JSON.parse(line);
+    expect(parsed.quality_level).toBe('standard');
+  });
+
+  it('persists quality_level when provided with value "strict"', () => {
+    const entry = makeValidEntry({ quality_level: 'strict' });
+    writeCorrection(entry, { cwd: tmpDir });
+    const correctionsPath = path.join(tmpDir, '.planning', 'patterns', 'corrections.jsonl');
+    const line = fs.readFileSync(correctionsPath, 'utf-8').trim();
+    const parsed = JSON.parse(line);
+    expect(parsed.quality_level).toBe('strict');
+  });
+
+  it('omits quality_level when not provided (field absent from written JSON)', () => {
+    const entry = makeValidEntry();
+    writeCorrection(entry, { cwd: tmpDir });
+    const correctionsPath = path.join(tmpDir, '.planning', 'patterns', 'corrections.jsonl');
+    const line = fs.readFileSync(correctionsPath, 'utf-8').trim();
+    const parsed = JSON.parse(line);
+    expect(Object.prototype.hasOwnProperty.call(parsed, 'quality_level')).toBe(false);
+  });
+
+  it('strips quality_level when value is invalid (field absent from written JSON)', () => {
+    const entry = makeValidEntry({ quality_level: 'turbo' });
+    writeCorrection(entry, { cwd: tmpDir });
+    const correctionsPath = path.join(tmpDir, '.planning', 'patterns', 'corrections.jsonl');
+    const line = fs.readFileSync(correctionsPath, 'utf-8').trim();
+    const parsed = JSON.parse(line);
+    expect(Object.prototype.hasOwnProperty.call(parsed, 'quality_level')).toBe(false);
+  });
+
+  it('does not affect { written: true } return value when quality_level is absent', () => {
+    const entry = makeValidEntry();
+    const result = writeCorrection(entry, { cwd: tmpDir });
+    expect(result).toEqual({ written: true });
+  });
+});
+
 // ─── Suite: gsd-correction-capture hook — revert detection ───────────────────
 
 const HOOK_PATH = path.join(process.cwd(), '.claude/hooks/gsd-correction-capture.js');

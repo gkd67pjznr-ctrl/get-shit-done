@@ -8,6 +8,9 @@
 const fs = require('fs');
 const path = require('path');
 
+// Valid quality levels for the quality_level field on correction entries
+const VALID_QUALITY_LEVELS = new Set(['fast', 'standard', 'strict']);
+
 // 14-category correction taxonomy (two-tier, dot-notation)
 const VALID_CATEGORIES = new Set([
   'code.wrong_pattern',
@@ -175,6 +178,12 @@ function writeCorrection(entry, options) {
 
     // Truncate long fields (create a shallow copy to avoid mutating caller's object)
     const safeEntry = Object.assign({}, entry);
+
+    // Strip invalid quality_level values silently
+    if (safeEntry.quality_level !== undefined && !VALID_QUALITY_LEVELS.has(safeEntry.quality_level)) {
+      delete safeEntry.quality_level;
+    }
+
     if (typeof safeEntry.correction_from === 'string' && safeEntry.correction_from.length > 200) {
       safeEntry.correction_from = safeEntry.correction_from.slice(0, 200);
     }
