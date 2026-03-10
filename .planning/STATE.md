@@ -19,7 +19,7 @@ progress:
 Phase: Not started (defining requirements)
 Plan: —
 Status: Defining requirements
-Last activity: 2026-03-10 — Milestone v6.0 started
+Last activity: 2026-03-10 — Quick task 24 complete (dashboard: milestone click nav, tmux filter, waiting pulse red)
 
 ## Active Milestones
 
@@ -59,6 +59,6 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 
 ## Session Continuity
 
-Last activity: 2026-03-10 — Milestone v6.0 started
+Last activity: 2026-03-10 — Quick task 24 complete (dashboard: milestone click nav, tmux filter, waiting pulse red)
 Resume file: .planning/milestones/v6.0/phases/22-data-layer-and-correction-capture/22-CONTEXT.md
 Next step: Define requirements for v6.0
