@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: Defining requirements
 last_updated: "2026-03-10T17:04:00.000Z"
-last_activity: "2026-03-10 — Completed quick task 29: Reorder FORK-GUIDE features list"
+last_activity: "2026-03-10 — Completed quick task 30: Move untagged sessions to sidebar"
 progress:
   total_phases: 6
   completed_phases: 1
@@ -19,7 +19,7 @@ progress:
 Phase: Not started (defining requirements)
 Plan: —
 Status: Defining requirements
-Last activity: 2026-03-10 — Completed quick task 29: Reorder FORK-GUIDE features list
+Last activity: 2026-03-10 — Completed quick task 30: Move untagged sessions to sidebar
 
 ## Active Milestones
 
@@ -66,9 +66,10 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 | 27 | Show untagged tmux sessions on overview page | 2026-03-10 | 2f78d08 | Verified | [27-show-untagged-tmux-sessions-on-overview-](./quick/27-show-untagged-tmux-sessions-on-overview-/) |
 | 28 | Rewrite FORK-GUIDE.md to reflect current v6.0-era state | 2026-03-10 | e93052a | Complete | [28-rewrite-fork-guide-md-to-reflect-current](./quick/28-rewrite-fork-guide-md-to-reflect-current/) |
 | 29 | Reorder FORK-GUIDE features: concurrent milestones and dashboard to top | 2026-03-10 | a2bc506 | Complete | [29-reorder-fork-guide-features-list-concurr](./quick/29-reorder-fork-guide-features-list-concurr/) |
+| 30 | Move untagged sessions from overview to sidebar grouped by project | 2026-03-10 | 7195fb4 | Complete | [30-move-untagged-sessions-to-sidebar-sectio](./quick/30-move-untagged-sessions-to-sidebar-sectio/) |
 
 ## Session Continuity
 
-Last activity: 2026-03-10 — Completed quick task 29: Reorder FORK-GUIDE features list
+Last activity: 2026-03-10 — Completed quick task 30: Move untagged sessions to sidebar
 Resume file: .planning/milestones/v6.0/phases/23-preference-tracking/23-CONTEXT.md
 Next step: Define requirements for v6.0
