@@ -31,7 +31,7 @@
 }
 
 .card-project-name {
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 700;
   /* color set by status-* class; fallback via inherit */
   flex-shrink: 0;
@@ -41,7 +41,7 @@
 /* Quality badge */
 .quality-badge {
   font-family: var(--font-data);
-  font-size: 13px;
+  font-size: 15px;
   padding: 0;
   border: none;
   background: none;
@@ -55,7 +55,7 @@
 .card-meta {
   display: flex;
   gap: var(--space-sm);
-  font-size: 13px;
+  font-size: 15px;
   font-family: var(--font-data);
   color: var(--term-dim);
 }
@@ -79,20 +79,20 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 14px;
+  font-size: 16px;
   font-family: var(--font-data);
 }
 
 .milestone-name {
   font-family: var(--font-data);
-  font-size: 13px;
+  font-size: 15px;
   color: var(--term-cyan);
   flex-shrink: 0;
   min-width: 80px;
 }
 
 .milestone-status-badge {
-  font-size: 13px;
+  font-size: 15px;
   padding: 0;
   border: none;
   background: none;
@@ -100,7 +100,7 @@
 }
 
 .milestone-phase-name {
-  font-size: 14px;
+  font-size: 16px;
   color: var(--text-primary);
   flex: 1;
   min-width: 0;
@@ -111,14 +111,14 @@
 
 .milestone-progress-text {
   font-family: var(--font-data);
-  font-size: 13px;
+  font-size: 15px;
   color: var(--text-secondary);
   flex-shrink: 0;
 }
 
 /* Workflow step badge */
 .workflow-badge {
-  font-size: 13px;
+  font-size: 15px;
   padding: 0;
   border: none;
   background: none;
@@ -129,7 +129,7 @@
 /* Health score label on project card */
 .health-label {
   font-family: var(--font-data);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 400;
   padding: 0;
   border: none;
@@ -144,7 +144,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  font-size: 14px;
+  font-size: 16px;
   color: var(--signal-warning);
 }
 
@@ -164,7 +164,7 @@
   align-items: center;
   gap: 4px;
   font-family: var(--font-data);
-  font-size: 13px;
+  font-size: 15px;
   color: var(--term-dim);
   cursor: pointer;
   padding: 0;
@@ -184,7 +184,7 @@
 
 /* Session metadata expand/collapse panel */
 .session-metadata {
-  font-size: 13px;
+  font-size: 15px;
   color: var(--text-secondary);
   border-top: 1px solid var(--term-separator);
   padding-top: var(--space-sm);
@@ -198,7 +198,7 @@
 
 .session-metadata th {
   font-family: var(--font-data);
-  font-size: 12px;
+  font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-muted);
@@ -210,7 +210,7 @@
 .session-metadata td {
   padding: 3px 4px;
   font-family: var(--font-data);
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .session-metadata tr.claude-pane td {
@@ -222,7 +222,7 @@
   background: none;
   border: none;
   color: var(--term-dim);
-  font-size: 12px;
+  font-size: 14px;
   font-family: var(--font-data);
   padding: 0;
   cursor: pointer;
@@ -243,17 +243,17 @@
 
 .card-milestone-row {
   display: grid;
-  grid-template-columns: 12px 52px 1fr minmax(80px, 140px) 36px;
+  grid-template-columns: 14px 72px 1fr minmax(100px, 160px) minmax(0, 160px);
   align-items: center;
   gap: 6px;
   font-family: var(--font-data);
-  font-size: 13px;
+  font-size: 15px;
   padding: 1px 0;
 }
 
 .card-ms-indicator {
   color: var(--term-dim);
-  font-size: 12px;
+  font-size: 14px;
   text-align: center;
 }
 
@@ -266,7 +266,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .card-ms-bar {
@@ -275,7 +275,7 @@
 }
 
 .card-ms-pct {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-secondary);
   text-align: right;
   white-space: nowrap;
@@ -287,5 +287,18 @@
 }
 
 .card-ms-pane-link {
-  font-size: 12px;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-ms-meta {
+  font-size: 13px;
+  color: var(--term-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: right;
+  font-family: var(--font-data);
 }

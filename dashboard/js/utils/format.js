@@ -81,6 +81,31 @@ export function fmtIdleDuration(lastActivityMs) {
   return `${Math.floor(seconds / 86400)}d`;
 }
 
+// Format cost as $X.XX (returns null if no value)
+export function fmtCost(total) {
+  if (total == null || total === 0) return null;
+  return '$' + total.toFixed(2);
+}
+
+// Format lines changed as +N/-N (returns null if no values)
+export function fmtLinesChanged(added, removed) {
+  if (added == null && removed == null) return null;
+  const a = added || 0;
+  const r = removed || 0;
+  if (a === 0 && r === 0) return null;
+  return `+${a}/-${r}`;
+}
+
+// Format duration in ms to "Xh Ym" or "Xm" (returns null if under 1 minute)
+export function fmtSessionDuration(ms) {
+  if (ms == null || ms < 60000) return null;
+  const totalMin = Math.floor(ms / 60000);
+  if (totalMin < 60) return `${totalMin}m`;
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return m > 0 ? `${h}h${m}m` : `${h}h`;
+}
+
 // Compute shimmer animation class based on tmux pane activity
 export function computeShimmerClass(project) {
   // Returns: 'shimmer-active' (blue), 'shimmer-amber' (waiting), or '' (idle/no sessions)

@@ -5,7 +5,8 @@ import { ProgressBar } from './progress-bar.js';
 import {
   parseProgress, fmtPct, fmtQuality, statusClass,
   getActiveMilestone, countCompletedMilestones, inferWorkflowStep,
-  healthLabel, healthClass, computeShimmerClass, fmtIdleDuration
+  healthLabel, healthClass, computeShimmerClass, fmtIdleDuration,
+  fmtCost, fmtLinesChanged, fmtSessionDuration
 } from '../utils/format.js';
 
 // Shell commands that indicate no Claude process is running in the pane
@@ -113,7 +114,7 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
 
         ${debtOpen > 0 ? html`
           <${Sep} />
-          <span style="color:var(--signal-warning);font-size:13px;flex-shrink:0">${debtOpen} debt</span>
+          <span style="color:var(--signal-warning);font-size:15px;flex-shrink:0">${debtOpen} debt</span>
         ` : null}
 
         ${!isStale ? html`
@@ -146,7 +147,7 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
 
         ${project.path ? html`
           <span style="flex:1"></span>
-          <span style="color:var(--text-muted);font-size:12px;font-family:var(--font-data);white-space:nowrap;flex-shrink:0">${project.path.replace(/^\/Users\/[^/]+/, '~')}</span>
+          <span style="color:var(--text-muted);font-size:14px;font-family:var(--font-data);white-space:nowrap;flex-shrink:0">${project.path.replace(/^\/Users\/[^/]+/, '~')}</span>
         ` : null}
       </div>
 
@@ -158,6 +159,15 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
             const pct = parseProgress(state.progress);
             const shimClass = ms.active ? computeShimmerClass(project) : '';
             const msPanes = milestonePane.get(ms.name) || [];
+            // Build metadata tail: +N/-N $X.XX Xm
+            const tailParts = [];
+            const lines = fmtLinesChanged(project.gitStats?.added, project.gitStats?.removed);
+            const cost = fmtCost(project.costLog?.total);
+            const dur = fmtSessionDuration(project.sessionDurationMs);
+            if (lines) tailParts.push(lines);
+            if (cost) tailParts.push(cost);
+            if (dur) tailParts.push(dur);
+            const metaTail = tailParts.join(' ');
             return html`
               <div
                 class="card-milestone-row"
@@ -170,7 +180,7 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
                 <span class="card-ms-name" style="color:var(--term-cyan)">${ms.name}</span>
                 <span class="card-ms-phase" style="color:var(--text-secondary)">${state.current_phase || ''}</span>
                 <span class="card-ms-bar"><${ProgressBar} value=${pct} shimmerClass=${shimClass} /></span>
-                <span class="card-ms-pct">${pct !== null ? html`${pct}%` : ''}</span>
+                <span class="card-ms-meta">${metaTail}</span>
               </div>
               ${msPanes.map(pane => {
                 const now = Date.now();
@@ -190,8 +200,8 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
                       e.stopPropagation();
                       onOpenTerminal(termTarget);
                     }}>${pane.windowName}</button>
-                    <span class=${status === 'waiting' ? 'shimmer-red' : ''} style="color:${statusColor};font-size:12px">${status}</span>
-                    <span style="color:var(--text-muted);font-size:12px">${fmtIdleDuration(pane.lastActivity)}</span>
+                    <span class=${status === 'waiting' ? 'shimmer-red' : ''} style="color:${statusColor};font-size:14px">${status}</span>
+                    <span style="color:var(--text-muted);font-size:14px">${fmtIdleDuration(pane.lastActivity)}</span>
                     <span></span>
                   </div>
                 `;
