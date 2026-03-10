@@ -72,19 +72,69 @@ All changes are additive. Existing projects with no `quality` key in `config.jso
 
 ## 4. Concurrent Milestones
 
-This is the single biggest architectural departure from vanilla GSD, and as far as we know, no other Claude Code project management framework has anything like it.
+> **First of its kind.** No other Claude Code project management framework supports parallel milestone workspaces. This is the single biggest architectural departure from vanilla GSD.
 
-Vanilla GSD is linear. One milestone at a time. One set of planning docs. One `STATE.md`, one `ROADMAP.md`, one `phases/` directory. If you're working on v2.0 and an urgent v1.1 hotfix comes in, you're stuck — you either shelve your v2.0 work manually, or you try to juggle both in the same planning directory and hope nothing collides. For solo developers running multiple work streams (a new feature release, a bugfix branch, an experimental prototype), this is a real bottleneck.
+### The problem with vanilla GSD
 
-Concurrent milestones blow that limitation wide open. Every milestone gets its own fully isolated workspace under `.planning/milestones/<version>/`, each with its own `STATE.md`, `ROADMAP.md`, `REQUIREMENTS.md`, and `phases/` directory. You can have v1.1, v2.0, and v3.0-experimental all active simultaneously, each with independent phase tracking, independent state, and zero cross-contamination. The `--milestone` flag threads through every GSD command — planning, execution, verification, debt tracking, all of it — so you always know exactly which work stream you're operating in.
+Vanilla GSD is linear. One milestone at a time. One set of planning docs. One `STATE.md`, one `ROADMAP.md`, one `phases/` directory.
 
-This isn't a shallow feature bolted on top. The entire core was rearchitected for it: `planningRoot()` dynamically resolves to the correct milestone workspace, `resolveActiveMilestone()` auto-detects active milestone directories, and every function in `phase.cjs`, `roadmap.cjs`, `state.cjs`, and `milestone.cjs` is milestone-aware. The `migrate.cjs` module handles upgrading existing flat-layout projects to the milestone-scoped layout non-destructively (`migrate --dry-run` to preview, `migrate --apply --version vX.Y` to execute). There's even a `manifest-check` command that validates milestone workspace integrity.
+If you're working on v2.0 and an urgent v1.1 hotfix comes in, you're stuck — you either shelve your v2.0 work manually, or you try to juggle both in the same planning directory and hope nothing collides. For solo developers running multiple work streams (a new feature release, a bugfix branch, an experimental prototype), this is a real bottleneck.
 
-The result: you work on whatever you want, whenever you want, and each work stream maintains its own complete, consistent planning state. Switch between milestones freely. Run phases in one while planning another. The framework handles the routing.
+### How concurrent milestones change everything
 
-**Enabling concurrent milestones:**
+Concurrent milestones blow that limitation wide open. Every milestone gets its own **fully isolated workspace** under `.planning/milestones/<version>/`:
 
-Set `concurrent: true` in `.planning/config.json`:
+```
+.planning/milestones/
+  v1.1/
+    STATE.md
+    ROADMAP.md
+    REQUIREMENTS.md
+    phases/
+  v2.0/
+    STATE.md
+    ROADMAP.md
+    REQUIREMENTS.md
+    phases/
+  v3.0-experimental/
+    STATE.md
+    ROADMAP.md
+    REQUIREMENTS.md
+    phases/
+```
+
+You can have v1.1, v2.0, and v3.0-experimental **all active simultaneously** — each with independent phase tracking, independent state, and zero cross-contamination.
+
+### Deep integration, not a bolt-on
+
+This isn't a shallow feature layered on top. The entire core was rearchitected:
+
+| Component | What changed |
+|-----------|-------------|
+| `planningRoot()` | Dynamically resolves to the correct milestone workspace |
+| `resolveActiveMilestone()` | Auto-detects active milestone directories |
+| `phase.cjs` | Every function is milestone-aware |
+| `roadmap.cjs` | Reads/writes to the correct milestone's `ROADMAP.md` |
+| `state.cjs` | Scoped state per milestone |
+| `milestone.cjs` | Workspace creation, validation, manifest checks |
+| `migrate.cjs` | Non-destructive upgrade from flat to milestone-scoped layout |
+
+The `migrate.cjs` module handles upgrading existing flat-layout projects to milestone-scoped layout safely:
+
+```bash
+gsd-tools migrate --dry-run           # Preview what would change
+gsd-tools migrate --apply --version v2.0  # Execute the migration
+```
+
+There's even a `manifest-check` command that validates milestone workspace integrity.
+
+### The result
+
+You work on whatever you want, whenever you want, and each work stream maintains its own complete, consistent planning state. Switch between milestones freely. Run phases in one while planning another. The framework handles the routing.
+
+### Getting started
+
+**Step 1:** Set `concurrent: true` in `.planning/config.json`:
 
 ```json
 {
@@ -92,7 +142,7 @@ Set `concurrent: true` in `.planning/config.json`:
 }
 ```
 
-Create a milestone workspace:
+**Step 2:** Create a milestone workspace:
 
 ```
 /gsd:new-milestone v2.0
@@ -100,13 +150,9 @@ Create a milestone workspace:
 
 This creates `.planning/milestones/v2.0/` with its own complete planning directory structure.
 
-Work within the milestone using the `--milestone` flag:
+**Step 3:** Just work. No additional flags needed.
 
-```
-/gsd:execute-phase --milestone v2.0
-/gsd:plan-phase --milestone v2.0
-/gsd:progress --milestone v2.0
-```
+Milestone scope is hardwired into all base GSD workflow commands. GSD auto-detects whether the project is milestone-scoped and routes to the correct workspace automatically.
 
 See [UPGRADES.md](UPGRADES.md#milestone-v20--concurrent-milestones-shipped-2026-02-25) for the full architecture details.
 
@@ -114,41 +160,77 @@ See [UPGRADES.md](UPGRADES.md#milestone-v20--concurrent-milestones-shipped-2026-
 
 ## 5. Device-Wide Dashboard
 
-No other Claude Code framework gives you a live, real-time dashboard across every project on your machine. This is the first of its kind.
+> **First of its kind.** No other Claude Code framework gives you a live, real-time dashboard across every project on your machine.
 
-When you're running multiple GSD projects — and especially multiple concurrent milestones across those projects — keeping track of what's happening where becomes its own cognitive overhead. Which project is mid-phase? Which milestone just shipped? How much has this sprint cost? What sessions are running? The dashboard answers all of that from a single browser tab.
+### Why this matters
 
-The dashboard is a full web application served locally. It discovers every GSD project registered on your machine, aggregates their planning state in real time via Server-Sent Events, and renders a unified view of your entire development operation. The overview page shows every project with its milestone status, accumulated cost, session duration, and lines changed. Click into any project and you get per-phase progress bars, milestone breakdowns, and the full state of that project's planning docs — all live-updating as work happens.
+When you're running multiple GSD projects — and especially multiple concurrent milestones across those projects — keeping track of what's happening where becomes its own cognitive overhead.
 
-But it goes further than status displays. The dashboard has embedded terminal sessions backed by tmux integration — you can monitor and interact with running Claude Code sessions directly from the dashboard UI. It detects untagged tmux sessions that aren't associated with any project and surfaces them so nothing falls through the cracks. There's a pattern library that aggregates corrections across all your projects, showing you the learning signals your adaptive layer is accumulating over time.
+Which project is mid-phase? Which milestone just shipped? How much has this sprint cost? What sessions are running? The dashboard answers all of that from **a single browser tab**.
 
-The whole thing runs on a lightweight Node.js server (`server.cjs`) with a vanilla JS frontend — no framework dependencies, no build step for the dashboard itself. Components are modular (sidebar, project cards, project detail, terminal modal, pattern page, progress bars) and the CSS is clean and purposeful. It starts on port 3141 by default and stays out of your way until you need it.
+### What you get
 
-**Starting the dashboard:**
+The dashboard is a full web application served locally. It discovers every GSD project registered on your machine, aggregates their planning state in real time via **Server-Sent Events**, and renders a unified view of your entire development operation.
+
+**Overview page:**
+- Every project with milestone status, accumulated cost, session duration, and lines changed
+- Live-updating as work happens — no refresh needed
+
+**Project detail page:**
+- Per-phase progress bars and milestone breakdowns
+- Full state of that project's planning docs
+- All live-updating via SSE
+
+**Embedded terminals:**
+- Monitor and interact with running Claude Code sessions directly from the dashboard UI
+- Backed by tmux integration — real terminal sessions, not read-only logs
+
+**Session awareness:**
+- Detects untagged tmux sessions not associated with any project
+- Surfaces them in the sidebar so nothing falls through the cracks
+
+**Pattern library:**
+- Aggregates corrections across all your projects
+- Shows the learning signals your adaptive layer is accumulating over time
+
+### Under the hood
+
+The whole thing runs on a lightweight Node.js server (`server.cjs`) with a vanilla JS frontend — no framework dependencies, no build step for the dashboard itself. Components are modular and the CSS is clean and purposeful:
+
+| Component | Purpose |
+|-----------|---------|
+| `sidebar.js` | Project list, session indicators |
+| `project-card.js` | Overview tiles with status summaries |
+| `project-detail.js` | Deep-dive per-project view |
+| `terminal-modal.js` | Embedded tmux terminal sessions |
+| `pattern-page.js` | Correction pattern library |
+| `progress-bar.js` | Phase and milestone progress |
+| `empty-state.js` | Zero-state guidance |
+
+### Getting started
+
+**Start the dashboard:**
 
 ```bash
 gsd dashboard serve
 ```
 
-**Features:**
-- Project overview with milestone status, cost, and duration
-- Per-project detail with phase progress, live-updating via SSE
-- Embedded terminal sessions (tmux integration) — monitor and interact with running sessions
-- Pattern library from accumulated corrections across all projects
-- Untagged tmux session detection — nothing gets lost
-- Lightweight, zero-dependency frontend — no build step required
+Starts on port 3141 by default. Open `http://localhost:3141` in your browser.
 
-**Commands:**
-- gsd dashboard serve | starts dashboard, default port 3141
-- gsd dashboard list | shows all projects registered to dashboard
-- gsd dashboard add | adds current directory to dashboard
-- gsd dashboard remove | removes current directory from dashboard
+**Manage projects:**
 
-**Dashboard files:** `dashboard/` directory contains the UI (HTML, CSS, JS components).
+| Command | Description |
+|---------|-------------|
+| `gsd dashboard serve` | Start the dashboard server |
+| `gsd dashboard list` | Show all registered projects |
+| `gsd dashboard add` | Register the current directory |
+| `gsd dashboard remove` | Unregister the current directory |
+
+**Dashboard files:** `dashboard/` directory contains the full UI (HTML, CSS, JS components).
 
 ---
 
-## 6. Enabling Quality Enforcement
+## 6. Quality Enforcement
 
 Quality enforcement is off by default. Enable it per-project:
 
@@ -166,17 +248,17 @@ Or edit `.planning/config.json` directly:
 }
 ```
 
-**Quality levels:**
+### Quality levels
 
 | Level | Codebase Scan | Context7 Lookup | Test Gate | Diff Review | Debt Auto-Log |
-|-------|--------------|-----------------|-----------|-------------|---------------|
+|-------|:------------:|:---------------:|:---------:|:-----------:|:-------------:|
 | `fast` | Skip | Skip | Skip | Skip | None |
 | `standard` | Run | New deps only | New exports | Run | Critical + high |
 | `strict` | Run | Always | Always | Run | All severities |
 
-**Recommendation:** Use `standard` for most projects. It adds meaningful enforcement without slowing execution significantly. Use `strict` when you need maximum coverage and are willing to accept longer execution times.
+> **Recommendation:** Use `standard` for most projects. It adds meaningful enforcement without slowing execution significantly. Use `strict` when you need maximum coverage and are willing to accept longer execution times.
 
-To set a global default for new projects:
+**Set a global default for new projects:**
 
 ```
 /gsd:set-quality standard --global
@@ -184,11 +266,13 @@ To set a global default for new projects:
 
 ---
 
-## 7. Using Tech Debt Tracking
+## 7. Tech Debt Tracking
 
-Tech debt is tracked in `.planning/DEBT.md` with structured TD-NNN entries. At `standard` or `strict` quality levels, the executor auto-logs high-severity issues discovered during execution.
+Tech debt is tracked in `.planning/DEBT.md` with structured `TD-NNN` entries. At `standard` or `strict` quality levels, the executor auto-logs high-severity issues discovered during execution.
 
-**Log a debt entry manually:**
+### Manual debt management
+
+**Log an entry:**
 
 ```bash
 gsd-tools debt log \
@@ -212,64 +296,97 @@ gsd-tools debt list --severity critical
 gsd-tools debt resolve --id TD-001 --status resolved
 ```
 
-**Fix debt with the skill:**
+### Automated fix workflow
 
 ```
 /gsd:fix-debt TD-001
 ```
 
-This spawns the GSD executor to fix the issue, runs tests to verify, and marks the entry resolved.
+This spawns the GSD executor to fix the issue, runs tests to verify, and marks the entry resolved — all in one command.
 
 ---
 
 ## 8. Adaptive Learning Layer
 
-**Skills** live in `.claude/skills/`. Each skill is a `SKILL.md` that auto-activates based on context. The fork ships 17 skills covering: GSD workflow routing, session awareness, beautiful commits, code review, context handoff, security hygiene, test generation, TypeScript patterns, API design, skill integration, correction capture, and others.
+### Skills
 
-**Hooks** live in `.claude/hooks/`. 13 hook files handle: commit validation (`validate-commit.sh`), session state (`session-state.sh`), phase boundary checks (`phase-boundary-check.sh`), work state save/restore, session snapshots, correction capture, and statusline.
+Skills live in `.claude/skills/`. Each skill is a `SKILL.md` that **auto-activates based on context** — no manual invocation needed.
 
-**Correction capture** (v6.0, in progress): When you correct Claude's output, the correction is captured as a learning signal. Repeated corrections become preferences that are auto-promoted to skill rules.
+The fork ships **17 skills** covering:
 
-Skills and hooks are installed to `~/.claude/` via the standard deploy process (Section 2).
+| Category | Skills |
+|----------|--------|
+| **Workflow** | GSD workflow routing, session awareness, skill integration |
+| **Code quality** | Beautiful commits, code review, test generation, TypeScript patterns |
+| **Knowledge** | API design, context handoff, security hygiene |
+| **Learning** | Correction capture, preference tracking |
+
+### Hooks
+
+Hooks live in `.claude/hooks/`. **13 hook files** handle:
+
+| Hook | Purpose |
+|------|---------|
+| `validate-commit.sh` | Enforces Conventional Commits format |
+| `session-state.sh` | Saves/restores session state |
+| `phase-boundary-check.sh` | Guards phase transitions |
+| Work state hooks | Save/restore across context resets |
+| Correction capture hooks | Log corrections as learning signals |
+| Statusline hooks | Update terminal status display |
+
+### Correction capture *(v6.0, in progress)*
+
+When you correct Claude's output, the correction is captured as a learning signal. Repeated corrections become preferences that are auto-promoted to skill rules. The system literally gets better the more you use it.
+
+> Skills and hooks are installed to `~/.claude/` via the standard deploy process (Section 2).
 
 ---
 
-## 9. Updating: Keeping Fork Changes When GSD Updates
+## 9. Updating After Upstream GSD Changes
 
 Vanilla GSD updates via `npx get-shit-done-cc@latest`, which overwrites `~/.claude/get-shit-done/` with the upstream version. This removes this fork's changes.
 
-**To reapply after an upstream update:**
+### Reapply after an upstream update
 
-1. Pull the latest upstream into this fork repo (optional — if you want upstream changes):
-   ```bash
-   git fetch origin
-   git merge origin/main
-   ```
+**1. Pull upstream** *(optional — if you want upstream changes):*
 
-2. Deploy the fork again using the 3-step process from Section 2:
-   ```bash
-   npm install -g .
-   node scripts/build-hooks.js
-   get-shit-done-cc --claude --global
-   ```
+```bash
+git fetch origin
+git merge origin/main
+```
 
-3. Verify with `/gsd:help` in Claude Code.
+**2. Redeploy the fork:**
 
-4. Run the test suite to confirm nothing broke:
-   ```bash
-   node --test tests/*.test.cjs
-   ```
+```bash
+npm install -g .
+node scripts/build-hooks.js
+get-shit-done-cc --claude --global
+```
 
-**Recommended approach:** Before any GSD update, check upstream's changelog. After updating, deploy from this repo and run tests. The fork is structured to minimize merge conflicts — all additions are in separate files or clearly delimited sections.
+**3. Verify:**
+
+```
+/gsd:help
+```
+
+**4. Run tests:**
+
+```bash
+node --test tests/*.test.cjs
+```
+
+> **Tip:** Before any GSD update, check upstream's changelog. The fork is structured to minimize merge conflicts — all additions are in separate files or clearly delimited sections.
 
 ---
 
 ## 10. Customizing for Your Needs
 
-- **Quality level** is per-project in `.planning/config.json`. Choose your tradeoff between speed and rigor.
-- **Tech debt auto-logging** is automatic at `standard` and `strict` quality levels. In `fast` mode, no debt entries are auto-created.
-- **Concurrent milestones** are opt-in via `concurrent: true` in config. Single-milestone projects work identically to vanilla GSD.
-- **Skills and hooks** live in `.claude/skills/` and `.claude/hooks/` after deployment.
+| Feature | Configuration | Default |
+|---------|--------------|---------|
+| **Quality level** | `quality.level` in `.planning/config.json` | `fast` (vanilla behavior) |
+| **Tech debt auto-logging** | Automatic at `standard`/`strict` | Off at `fast` |
+| **Concurrent milestones** | `concurrent: true` in config | Off (single-milestone) |
+| **Skills and hooks** | `.claude/skills/` and `.claude/hooks/` | Installed via deploy |
 
 ---
 
@@ -279,9 +396,9 @@ Vanilla GSD updates via `npx get-shit-done-cc@latest`, which overwrites `~/.clau
 node --test tests/*.test.cjs
 ```
 
-958 tests across 195 suites (35 test files). Uses Node.js built-in test runner — no test framework dependencies required.
+**958 tests** across **195 suites** (35 test files). Uses Node.js built-in test runner — no test framework dependencies required.
 
-**Expected output:** All 958 tests passing. If you see failures, check that you have Node.js 18+ installed and that `npm install` has been run.
+> **Expected:** All 958 tests passing. Requires Node.js 18+ and `npm install`.
 
 ---
 
@@ -290,44 +407,44 @@ node --test tests/*.test.cjs
 ```
 get-shit-done/
   bin/
-    gsd-tools.cjs            CLI entry point
+    gsd-tools.cjs              CLI entry point
     lib/
-      core.cjs               Shared utilities
-      phase.cjs              Phase lifecycle management
-      roadmap.cjs            ROADMAP.md parsing and updates
-      milestone.cjs          Milestone workspace management
-      debt.cjs               Tech debt CRUD
-      migrate.cjs            Planning layout migration
-      state.cjs              STATE.md management
-      init.cjs               Project initialization
-      dashboard.cjs          Dashboard aggregation
-      server.cjs             Dashboard HTTP server
-      config.cjs             Config management
-      commands.cjs           Command dispatch
-      frontmatter.cjs        Frontmatter parsing
-      template.cjs           Template generation
-      verify.cjs             Phase verification
-  workflows/                 35 workflow orchestrators (slash command definitions)
+      core.cjs                 Shared utilities
+      phase.cjs                Phase lifecycle management
+      roadmap.cjs              ROADMAP.md parsing and updates
+      milestone.cjs            Milestone workspace management
+      debt.cjs                 Tech debt CRUD
+      migrate.cjs              Planning layout migration
+      state.cjs                STATE.md management
+      init.cjs                 Project initialization
+      dashboard.cjs            Dashboard aggregation
+      server.cjs               Dashboard HTTP server
+      config.cjs               Config management
+      commands.cjs             Command dispatch
+      frontmatter.cjs          Frontmatter parsing
+      template.cjs             Template generation
+      verify.cjs               Phase verification
+  workflows/                   35 workflow orchestrators (slash command definitions)
 
 dashboard/
   js/
-    app.js                   Dashboard app entry point
-    components/              UI components (sidebar, project-card, project-detail,
-                             terminal-modal, pattern-page, progress-bar, etc.)
-    lib/                     API client, router, state, SSE
-  css/                       Dashboard styles
+    app.js                     Dashboard app entry point
+    components/                UI components (sidebar, project-card, project-detail,
+                               terminal-modal, pattern-page, progress-bar, etc.)
+    lib/                       API client, router, state, SSE
+  css/                         Dashboard styles
 
 .claude/
-  hooks/                     13 hook files (commit validation, session state,
-                             phase boundary, work state, correction capture, statusline)
-  skills/                    17 skills (gsd-workflow, session-awareness,
-                             beautiful-commits, correction-capture, and others)
+  hooks/                       13 hook files (commit validation, session state,
+                               phase boundary, work state, correction capture, statusline)
+  skills/                      17 skills (gsd-workflow, session-awareness,
+                               beautiful-commits, correction-capture, and others)
 
-tests/                       35 test suites (958 tests)
+tests/                         35 test suites (958 tests)
 
-.planning/                   This project's own planning documents
-  STATE.md                   Coordinator state
-  milestones/                Per-milestone workspaces (v1.0 through v6.0)
+.planning/                     This project's own planning documents
+  STATE.md                     Coordinator state
+  milestones/                  Per-milestone workspaces (v1.0 through v6.0)
     <version>/
       STATE.md
       ROADMAP.md
@@ -335,17 +452,17 @@ tests/                       35 test suites (958 tests)
       phases/
 
 scripts/
-  build-hooks.js             Builds hook files before deployment
+  build-hooks.js               Builds hook files before deployment
 
-UPGRADES.md                  Full milestone-by-milestone documentation
-DEPLOY.md                    Deployment instructions
+UPGRADES.md                    Full milestone-by-milestone documentation
+DEPLOY.md                      Deployment instructions
 ```
 
 ---
 
 ## Links
 
-- Upstream GSD repo: https://github.com/gsd-build/get-shit-done
-- This fork: https://github.com/gkd67pjznr-ctrl/get-shit-done
-- Full upgrade history: [UPGRADES.md](UPGRADES.md)
-- Deployment steps: [DEPLOY.md](DEPLOY.md)
+- **Upstream GSD:** https://github.com/gsd-build/get-shit-done
+- **This fork:** https://github.com/gkd67pjznr-ctrl/get-shit-done
+- **Upgrade history:** [UPGRADES.md](UPGRADES.md)
+- **Deployment steps:** [DEPLOY.md](DEPLOY.md)
