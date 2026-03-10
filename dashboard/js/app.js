@@ -41,7 +41,10 @@ function UntaggedSessions({ projects: ps, onOpenTerminal }) {
   for (const project of ps) {
     const tmux = project.tmux || { panes: [] };
     const panes = tmux.panes || [];
-    const milestones = project.milestones ? project.milestones.filter(m => m.active).reverse() : [];
+    // Match against active + most recent completed milestone (same set as ProjectCard)
+    const activeMilestones = project.milestones ? project.milestones.filter(m => m.active).reverse() : [];
+    const completedMilestones = project.milestones ? project.milestones.filter(m => !m.active).reverse() : [];
+    const milestones = activeMilestones.concat(completedMilestones.slice(0, 1)).slice(0, 6);
     // Build matchedPaneNames set (same logic as ProjectCard)
     const matchedPaneNames = new Set();
     if (panes.length > 0 && milestones.length > 0) {
