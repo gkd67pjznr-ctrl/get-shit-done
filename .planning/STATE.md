@@ -57,8 +57,14 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
 **Current focus:** v6.0 Adaptive Observation & Learning Loop
 
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Status | Directory |
+|---|-------------|------|--------|--------|-----------|
+| 25 | Enhance global statusline: v3 features, milestone detection fix, cost accumulation | 2026-03-10 | — | Verified | [25-enhance-status-line](./quick/25-enhance-status-line-for-all-projects-wit/) |
+
 ## Session Continuity
 
-Last activity: 2026-03-10 — Quick task 25 complete (global statusline: v3 features, milestone detection fix, cost accumulation)
+Last activity: 2026-03-10 — Completed quick task 25: Enhance global statusline with v3 features, milestone detection fix, cost accumulation
 Resume file: .planning/milestones/v6.0/phases/22-data-layer-and-correction-capture/22-CONTEXT.md
 Next step: Define requirements for v6.0
