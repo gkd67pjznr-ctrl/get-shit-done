@@ -56,26 +56,26 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| GATE-01 | — | Pending |
-| GATE-02 | — | Pending |
-| GATE-03 | — | Pending |
-| GATE-04 | — | Pending |
-| DASH-01 | — | Pending |
-| DASH-02 | — | Pending |
-| DASH-03 | — | Pending |
-| DASH-04 | — | Pending |
-| DASH-05 | — | Pending |
-| DASH-06 | — | Pending |
-| DASH-07 | — | Pending |
-| DASH-08 | — | Pending |
-| ANLZ-01 | — | Pending |
-| ANLZ-02 | — | Pending |
+| GATE-01 | Phase 28 | Pending |
+| GATE-02 | Phase 28 | Pending |
+| GATE-03 | Phase 28 | Pending |
+| GATE-04 | Phase 29 | Pending |
+| DASH-01 | Phase 30 | Pending |
+| DASH-02 | Phase 30 | Pending |
+| DASH-03 | Phase 30 | Pending |
+| DASH-04 | Phase 30 | Pending |
+| DASH-05 | Phase 30 | Pending |
+| DASH-06 | Phase 31 | Pending |
+| DASH-07 | Phase 31 | Pending |
+| DASH-08 | Phase 31 | Pending |
+| ANLZ-01 | Phase 32 | Pending |
+| ANLZ-02 | Phase 32 | Pending |
 
 **Coverage:**
 - v7.0 requirements: 14 total
-- Mapped to phases: 0
-- Unmapped: 14
+- Mapped to phases: 14
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-10*
-*Last updated: 2026-03-10 after initial definition*
+*Last updated: 2026-03-10 after roadmap creation*
