@@ -338,6 +338,7 @@
 
 /* Untagged sessions section on Overview page */
 .untagged-sessions {
+  border-top: 1px solid var(--term-separator);
   padding: var(--space-sm) 0 var(--space-sm) var(--space-md);
   margin-top: var(--space-sm);
 }
@@ -350,6 +351,7 @@
   color: var(--term-dim);
   margin-bottom: 4px;
   padding-bottom: 6px;
+  border-bottom: 1px solid var(--term-separator);
 }
 
 .untagged-sessions .card-milestone-row {
