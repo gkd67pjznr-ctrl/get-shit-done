@@ -12,7 +12,7 @@ import { ProjectDetail } from './components/project-detail.js';
 import { EmptyState } from './components/empty-state.js';
 import { PatternPage } from './components/pattern-page.js';
 import { TerminalModal } from './components/terminal-modal.js';
-import { fmtCost } from './utils/format.js';
+import { fmtCost, fmtIdleDuration, fmtSessionDuration } from './utils/format.js';
 
 function TotalCost() {
   const ps = projects.value;
@@ -30,6 +30,76 @@ function TotalCost() {
   if (total <= 0) return null;
   const costColor = total < 5 ? 'var(--signal-success)' : total < 20 ? 'var(--signal-warning)' : 'var(--signal-error)';
   return html`<span style="margin-left:auto; font-family:var(--font-data); font-size:15px; color:${costColor}">est. ${fmtCost(total)}</span>`;
+}
+
+const SHELL_CMDS_OV = new Set(['zsh', 'bash', 'sh', 'fish', 'dash']);
+
+function UntaggedSessions({ projects: ps, onOpenTerminal }) {
+  // Collect untagged panes: all panes across all projects that are NOT
+  // matched to a milestone. Replicates the dropdownPanes logic from ProjectCard.
+  const rows = [];
+  for (const project of ps) {
+    const tmux = project.tmux || { panes: [] };
+    const panes = tmux.panes || [];
+    const milestones = project.milestones ? project.milestones.filter(m => m.active).reverse() : [];
+    // Build matchedPaneNames set (same logic as ProjectCard)
+    const matchedPaneNames = new Set();
+    if (panes.length > 0 && milestones.length > 0) {
+      for (const pane of panes) {
+        if (!pane.isClaude) continue;
+        const m = (pane.windowName || '').match(/(\d+)$/);
+        if (!m) continue;
+        const num = m[1];
+        const ms = milestones.find(ms => {
+          const vm = ms.name.match(/^v(\d+)/);
+          return vm && vm[1] === num;
+        });
+        if (ms) matchedPaneNames.add(pane.windowName);
+      }
+    }
+    for (const pane of panes) {
+      if (!matchedPaneNames.has(pane.windowName)) {
+        rows.push({ project, pane });
+      }
+    }
+  }
+
+  if (rows.length === 0) return null;
+
+  return html`
+    <div class="untagged-sessions">
+      <div class="untagged-sessions-header">untagged sessions</div>
+      <div class="card-milestone-grid" style="padding-left:var(--space-md)">
+        ${rows.map(({ project, pane }) => {
+          const now = Date.now();
+          const idleSecs = pane.lastActivity ? (now - pane.lastActivity) / 1000 : null;
+          const isClaudeProcess = pane.command && !SHELL_CMDS_OV.has(pane.command);
+          let status = 'idle';
+          let statusColor = 'var(--signal-error)';
+          if (idleSecs !== null) {
+            if (isClaudeProcess && idleSecs < 10) { status = 'working'; statusColor = 'var(--signal-success)'; }
+            else if (idleSecs < 300) { status = 'waiting'; statusColor = 'var(--signal-warning)'; }
+          }
+          const termTarget = pane.sessionName + ':' + (pane.windowName || pane.sessionName);
+          const hasSessionData = pane.sessionCost || pane.sessionLinesAdded || pane.sessionLinesRemoved || pane.sessionDurationMs;
+          return html`
+            <div class="card-milestone-row card-ms-pane-row" key=${pane.windowName + '-' + project.name}>
+              <span class="card-ms-indicator" style="color:var(--text-muted);font-size:13px" title=${project.display_name || project.name}>${(project.display_name || project.name).slice(0, 3)}</span>
+              <button class="tmux-session-link card-ms-pane-link" onClick=${(e) => {
+                e.stopPropagation();
+                onOpenTerminal(termTarget);
+              }}>${pane.windowName || pane.sessionName}</button>
+              <span class=${status === 'waiting' ? 'shimmer-red' : ''} style="color:${statusColor};font-size:14px">${status}</span>
+              <span style="color:var(--text-muted);font-size:14px">${fmtIdleDuration(pane.lastActivity)}</span>
+              <span class="card-ms-meta">${hasSessionData ? html`
+                ${pane.sessionLinesAdded || pane.sessionLinesRemoved ? html`<span style="color:var(--signal-success)">+${pane.sessionLinesAdded || 0}</span>/<span style="color:var(--signal-error)">-${pane.sessionLinesRemoved || 0}</span> ` : ''}${pane.sessionCost ? html`<span style="color:${pane.sessionCost < 1 ? 'var(--signal-success)' : pane.sessionCost < 5 ? 'var(--signal-warning)' : 'var(--signal-error)'}">$${pane.sessionCost.toFixed(2)}</span> ` : ''}${fmtSessionDuration(pane.sessionDurationMs) || ''}
+              ` : ''}</span>
+            </div>
+          `;
+        })}
+      </div>
+    </div>
+  `;
 }
 
 function Overview({ onOpenTerminal }) {
@@ -61,6 +131,7 @@ function Overview({ onOpenTerminal }) {
     <div class="card-grid">
       ${ps.map(p => html`<${ProjectCard} key=${p.name} project=${p} onOpenTerminal=${onOpenTerminal} />`)}
     </div>
+    <${UntaggedSessions} projects=${ps} onOpenTerminal=${onOpenTerminal} />
     <div style="text-align:center; font-size:14px; color:var(--text-muted); padding: 8px; font-family:var(--font-data);">
       Tip: Name Claude Code tmux sessions starting with <code>cc</code> for session tracking
     </div>

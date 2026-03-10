@@ -302,3 +302,19 @@
   text-align: right;
   font-family: var(--font-data);
 }
+
+/* Untagged sessions section on Overview page */
+.untagged-sessions {
+  border-top: 1px solid var(--term-separator);
+  padding: var(--space-sm) 0 var(--space-sm) var(--space-md);
+  margin-top: var(--space-sm);
+}
+
+.untagged-sessions-header {
+  font-family: var(--font-data);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--term-dim);
+  margin-bottom: 4px;
+}
