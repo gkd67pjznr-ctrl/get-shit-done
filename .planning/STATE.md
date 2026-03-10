@@ -1,12 +1,12 @@
 ---
 gsd_state_version: 1.0
-milestone: v6.0
-milestone_name: "Adaptive Observation & Learning Loop"
-status: defining-requirements
-last_updated: "2026-03-10T12:00:00.000Z"
-last_activity: 2026-03-10 -- Milestone v6.0 started
+milestone: v1.0
+milestone_name: milestone
+status: Defining requirements
+last_updated: "2026-03-10T08:32:02.101Z"
+last_activity: 2026-03-10 — Milestone v6.0 started
 progress:
-  total_phases: 0
+  total_phases: 6
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -60,5 +60,5 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 ## Session Continuity
 
 Last activity: 2026-03-10 — Milestone v6.0 started
-Resume file: None
+Resume file: .planning/milestones/v6.0/phases/22-data-layer-and-correction-capture/22-CONTEXT.md
 Next step: Define requirements for v6.0
