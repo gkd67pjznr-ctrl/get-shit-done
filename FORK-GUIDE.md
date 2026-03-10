@@ -2,9 +2,9 @@
 
 ## 1. Overview
 
-This is a forked version of GSD (Get Shit Done) that adds quality enforcement, concurrent milestone workspaces, and structured tech debt tracking on top of the vanilla framework. It is designed for solo developers using Claude Code who want stronger guarantees about code quality beyond what vanilla GSD provides. All additions are additive and config-gated — the default quality level (`fast`) produces zero behavioral change from upstream GSD.
+This is a forked version of GSD (Get Shit Done) that adds quality enforcement, concurrent milestone workspaces, structured tech debt tracking, an adaptive learning layer (skills, agents, hooks, correction capture, preference tracking), and a device-wide project dashboard. It is designed for solo developers using Claude Code who want stronger guarantees about code quality and an AI assistant that improves over time by learning from corrections.
 
-See [UPGRADES.md](UPGRADES.md) for the full milestone-by-milestone documentation of what was built and why.
+All additions are additive and config-gated — the default quality level (`fast`) produces zero behavioral change from upstream GSD.
 
 ---
 
@@ -27,7 +27,7 @@ node scripts/build-hooks.js
 get-shit-done-cc --claude --global
 ```
 
-This installs the fork's agent files to `~/.claude/get-shit-done/`, replacing your current GSD install (vanilla or previous version of this fork).
+This installs the fork's files to `~/.claude/get-shit-done/`, replacing your current GSD install (vanilla or previous version of this fork). Skills and hooks are installed to `~/.claude/` as part of this process.
 
 **Step 3: Verify**
 
@@ -47,25 +47,26 @@ You should see all standard GSD commands listed. If you also see `/gsd:set-quali
 
 All changes are additive. Existing projects with no `quality` key in `config.json` default to `fast` mode, which is identical to vanilla GSD behavior.
 
-**Files modified vs vanilla GSD:**
-- `get-shit-done/agents/gsd-executor.md` — Quality Sentinel gates added (pre/post task)
-- `get-shit-done/agents/gsd-verifier.md` — Step 7b quality dimension checks added
-- `get-shit-done/agents/gsd-planner.md` — Quality directive fields added to task actions
-- `get-shit-done/bin/gsd-tools.cjs` — CLI entry point extended with new commands
-- All 7 workflow files — `--milestone` flag support added
+**v1.0 MVP (2026-02-24):** Quality levels (fast/standard/strict), Quality Sentinel gates in executor/verifier/planner.
 
-**New files:**
-- `get-shit-done/bin/lib/debt.cjs` — Tech debt CRUD module
-- `get-shit-done/bin/lib/migrate.cjs` — Planning layout migration module
-- `get-shit-done/commands/gsd/set-quality.md` — `/gsd:set-quality` command
-- `get-shit-done/commands/gsd/fix-debt.md` — `/gsd:fix-debt` command
+**v1.1 Quality UX (2026-02-24):** `/gsd:set-quality`, user-facing quality configuration.
 
-**Key new commands:**
-- `/gsd:set-quality [fast|standard|strict]` — switch quality levels
-- `/gsd:fix-debt TD-NNN` — resolve a tracked debt entry
-- `gsd-tools debt log/list/resolve` — manage tech debt entries
-- `gsd-tools migrate` — upgrade planning layouts to new schema
-- `gsd-tools milestone manifest-check` — detect file conflicts across concurrent milestones
+**v2.0 Concurrent Milestones (2026-02-25):** Milestone-scoped layout, `--milestone` flag across all commands, `gsd-tools milestone manifest-check`.
+
+**v3.0 Tech Debt System (2026-02-26):** `debt.cjs`, `migrate.cjs`, `/gsd:fix-debt`, `gsd-tools debt log/list/resolve`.
+
+**v3.1 Legacy Strip & README (2026-03-05):** Cleanup pass, README overhaul.
+
+**v4.0 Adaptive Learning Integration (2026-03-09):** Skills system (`.claude/skills/` — 17 skills), hooks system (`.claude/hooks/` — 13 hook files), native observation, correction capture, GSD dashboard command, adaptive agents.
+
+**v5.0 Device-Wide Dashboard (2026-03-09):** `dashboard/` UI (components, CSS, terminal modal), project registry, aggregation server (`dashboard.cjs`, `server.cjs`), tmux monitoring, embedded terminals, pattern system.
+
+**v6.0 Adaptive Observation & Learning Loop (in progress):** Correction capture pipeline, preference tracking and promotion.
+
+**Current file counts:**
+- 35 workflow files (`get-shit-done/workflows/`)
+- 15 lib modules (`get-shit-done/bin/lib/`)
+- 35 test files, 958 tests across 195 suites
 
 ---
 
@@ -107,7 +108,7 @@ To set a global default for new projects:
 
 ## 5. Enabling Concurrent Milestones
 
-Concurrent milestones let you run multiple work streams in parallel, each with an isolated `.planning/milestones/<version>/` workspace.
+Concurrent milestones let you run multiple work streams in parallel, each with an isolated `.planning/milestones/<version>/` workspace. This project itself uses milestone-scoped layout as the default.
 
 **Step 1:** Set `concurrent: true` in `.planning/config.json`:
 
@@ -199,63 +200,118 @@ Vanilla GSD updates via `npx get-shit-done-cc@latest`, which overwrites `~/.clau
    node --test tests/*.test.cjs
    ```
 
-The `/gsd:reapply-patches` workflow automates this: it reads the repo, identifies what changed versus the upstream baseline, and re-applies the fork-specific modifications on top of whatever upstream version is currently installed.
-
 **Recommended approach:** Before any GSD update, check upstream's changelog. After updating, deploy from this repo and run tests. The fork is structured to minimize merge conflicts — all additions are in separate files or clearly delimited sections.
 
 ---
 
-## 8. Customizing for Your Needs
+## 8. Adaptive Learning Layer
+
+**Skills** live in `.claude/skills/`. Each skill is a `SKILL.md` that auto-activates based on context. The fork ships 17 skills covering: GSD workflow routing, session awareness, beautiful commits, code review, context handoff, security hygiene, test generation, TypeScript patterns, API design, skill integration, correction capture, and others.
+
+**Hooks** live in `.claude/hooks/`. 13 hook files handle: commit validation (`validate-commit.sh`), session state (`session-state.sh`), phase boundary checks (`phase-boundary-check.sh`), work state save/restore, session snapshots, correction capture, and statusline.
+
+**Correction capture** (v6.0, in progress): When you correct Claude's output, the correction is captured as a learning signal. Repeated corrections become preferences that are auto-promoted to skill rules.
+
+Skills and hooks are installed to `~/.claude/` via the standard deploy process (Section 2).
+
+---
+
+## 9. Dashboard
+
+The device-wide dashboard provides a real-time view of all GSD projects on your machine.
+
+**Starting the dashboard:**
+
+```bash
+gsd-tools dashboard
+```
+
+**Features:**
+- Project overview with milestone status, cost, and duration
+- Per-project detail with phase progress
+- Embedded terminal sessions (tmux integration)
+- Pattern library from accumulated corrections
+- Untagged tmux session detection
+
+**Dashboard files:** `dashboard/` directory contains the UI (HTML, CSS, JS components).
+
+---
+
+## 10. Customizing for Your Needs
 
 - **Quality level** is per-project in `.planning/config.json`. Choose your tradeoff between speed and rigor.
 - **Tech debt auto-logging** is automatic at `standard` and `strict` quality levels. In `fast` mode, no debt entries are auto-created.
 - **Concurrent milestones** are opt-in via `concurrent: true` in config. Single-milestone projects work identically to vanilla GSD.
-- **Agent files** live at `~/.claude/get-shit-done/` after deployment. This repo is the source of truth — `DEPLOY.md` syncs changes to the installed location.
+- **Skills and hooks** live in `.claude/skills/` and `.claude/hooks/` after deployment.
 
 ---
 
-## 9. Running Tests
+## 11. Running Tests
 
 ```bash
 node --test tests/*.test.cjs
 ```
 
-298 tests across 14 suites. Uses Node.js built-in test runner — no test framework dependencies required.
+958 tests across 195 suites (35 test files). Uses Node.js built-in test runner — no test framework dependencies required.
 
-**Expected output:** All 298 tests passing. If you see failures, check that you have Node.js 18+ installed and that `npm install` has been run.
+**Expected output:** All 958 tests passing. If you see failures, check that you have Node.js 18+ installed and that `npm install` has been run.
 
 ---
 
-## 10. Project Structure
+## 12. Project Structure
 
 ```
 get-shit-done/
   bin/
-    gsd-tools.cjs          CLI entry point
+    gsd-tools.cjs            CLI entry point
     lib/
-      core.cjs             Shared utilities
-      phase.cjs            Phase lifecycle management
-      roadmap.cjs          ROADMAP.md parsing and updates
-      milestone.cjs        Milestone workspace management
-      debt.cjs             Tech debt CRUD
-      migrate.cjs          Planning layout migration
-      state.cjs            STATE.md management
-      init.cjs             Project initialization
-      (6 more modules)
-  agents/                  Executor, planner, verifier, researcher agents
-  commands/gsd/            Slash command definitions
-  workflows/               7 workflow orchestrators
+      core.cjs               Shared utilities
+      phase.cjs              Phase lifecycle management
+      roadmap.cjs            ROADMAP.md parsing and updates
+      milestone.cjs          Milestone workspace management
+      debt.cjs               Tech debt CRUD
+      migrate.cjs            Planning layout migration
+      state.cjs              STATE.md management
+      init.cjs               Project initialization
+      dashboard.cjs          Dashboard aggregation
+      server.cjs             Dashboard HTTP server
+      config.cjs             Config management
+      commands.cjs           Command dispatch
+      frontmatter.cjs        Frontmatter parsing
+      template.cjs           Template generation
+      verify.cjs             Phase verification
+  workflows/                 35 workflow orchestrators (slash command definitions)
 
-tests/                     14 test suites (298 tests)
+dashboard/
+  js/
+    app.js                   Dashboard app entry point
+    components/              UI components (sidebar, project-card, project-detail,
+                             terminal-modal, pattern-page, progress-bar, etc.)
+    lib/                     API client, router, state, SSE
+  css/                       Dashboard styles
 
-.planning/                 This project's own planning documents
-  PROJECT.md               Project context and decisions
-  DEBT.md                  Open tech debt entries
-  STATE.md                 Coordinator state (milestone-scoped layout)
-  milestones/              Per-milestone workspaces
+.claude/
+  hooks/                     13 hook files (commit validation, session state,
+                             phase boundary, work state, correction capture, statusline)
+  skills/                    17 skills (gsd-workflow, session-awareness,
+                             beautiful-commits, correction-capture, and others)
 
-UPGRADES.md                Full milestone-by-milestone documentation
-DEPLOY.md                  Deployment instructions
+tests/                       35 test suites (958 tests)
+
+.planning/                   This project's own planning documents
+  STATE.md                   Coordinator state
+  milestones/                Per-milestone workspaces (v1.0 through v6.0)
+    <version>/
+      STATE.md
+      ROADMAP.md
+      REQUIREMENTS.md
+      phases/
+
+scripts/
+  build-hooks.js             Builds hook files before deployment
+
+UPGRADES.md                  Full milestone-by-milestone documentation
+DEPLOY.md                    Deployment instructions
 ```
 
 ---
