@@ -66,7 +66,7 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 | 27 | Show untagged tmux sessions on overview page | 2026-03-10 | 2f78d08 | Verified | [27-show-untagged-tmux-sessions-on-overview-](./quick/27-show-untagged-tmux-sessions-on-overview-/) |
 | 28 | Rewrite FORK-GUIDE.md to reflect current v6.0-era state | 2026-03-10 | e93052a | Complete | [28-rewrite-fork-guide-md-to-reflect-current](./quick/28-rewrite-fork-guide-md-to-reflect-current/) |
 | 29 | Reorder FORK-GUIDE features: concurrent milestones and dashboard to top | 2026-03-10 | a2bc506 | Complete | [29-reorder-fork-guide-features-list-concurr](./quick/29-reorder-fork-guide-features-list-concurr/) |
-| 30 | Move untagged sessions from overview to sidebar grouped by project | 2026-03-10 | 7195fb4 | Complete | [30-move-untagged-sessions-to-sidebar-sectio](./quick/30-move-untagged-sessions-to-sidebar-sectio/) |
+| 30 | Move untagged sessions from overview to sidebar grouped by project | 2026-03-10 | 7195fb4 | Verified | [30-move-untagged-sessions-to-sidebar-sectio](./quick/30-move-untagged-sessions-to-sidebar-sectio/) |
 
 ## Session Continuity
 

@@ -67,17 +67,9 @@ function SidebarUntaggedSessions({ projects: ps, onOpenTerminal }) {
                   e.stopPropagation();
                   onOpenTerminal && onOpenTerminal(termTarget);
                 }}>${pane.windowName || pane.sessionName}</button>
-                <span class="sidebar-untagged-status">
-                  <span class=${status === 'waiting' ? 'shimmer-red' : ''} style="color:${statusColor};font-size:11px">${status}</span>
-                  <span style="color:var(--color-testing);font-size:11px">${fmtIdleDuration(pane.lastActivity)}</span>
-                </span>
-                ${hasSessionData ? html`
-                  <span class="sidebar-untagged-metrics">
-                    ${pane.sessionLinesAdded || pane.sessionLinesRemoved ? html`<span style="color:var(--signal-success)">+${pane.sessionLinesAdded || 0}</span><span>/</span><span style="color:var(--signal-error)">-${pane.sessionLinesRemoved || 0}</span>` : ''}
-                    ${pane.sessionCost ? html`<span style="color:${pane.sessionCost < 1 ? 'var(--signal-success)' : pane.sessionCost < 5 ? 'var(--signal-warning)' : 'var(--signal-error)'}">$${pane.sessionCost.toFixed(2)}</span>` : ''}
-                    ${pane.sessionDurationMs ? html`<span style="color:var(--color-testing)">${fmtSessionDuration(pane.sessionDurationMs)}</span>` : ''}
-                  </span>
-                ` : ''}
+                <span class=${status === 'waiting' ? 'shimmer-red' : ''} style="color:${statusColor}">${status}</span>
+                <span style="color:var(--color-testing)">${fmtIdleDuration(pane.lastActivity)}</span>
+                <span class="sidebar-untagged-metrics">${hasSessionData ? html`${pane.sessionLinesAdded || pane.sessionLinesRemoved ? html`<span style="color:var(--signal-success)">+${pane.sessionLinesAdded || 0}</span><span style="color:var(--term-dim)">/</span><span style="color:var(--signal-error)">-${pane.sessionLinesRemoved || 0}</span>` : ''}${pane.sessionCost ? html` <span style="color:${pane.sessionCost < 1 ? 'var(--signal-success)' : pane.sessionCost < 5 ? 'var(--signal-warning)' : 'var(--signal-error)'}">$${pane.sessionCost.toFixed(2)}</span>` : ''}` : ''}</span>
               </div>
             `;
           })}

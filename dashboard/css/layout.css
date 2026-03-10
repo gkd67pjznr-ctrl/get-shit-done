@@ -235,24 +235,24 @@
 /* Sidebar untagged sessions section */
 .sidebar-untagged {
   border-top: 1px solid var(--term-separator);
-  padding: var(--space-sm) 0 var(--space-sm) 0;
+  padding: 4px 0;
   margin-top: var(--space-sm);
 }
 
 .sidebar-untagged-header {
   font-family: var(--font-data);
-  font-size: 11px;
+  font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--term-dim);
-  padding: 0 var(--space-md) 4px var(--space-md);
+  padding: 0 var(--space-md) 2px var(--space-md);
 }
 
 .sidebar-untagged-project {
   font-family: var(--font-data);
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-muted);
-  padding: 2px var(--space-md) 1px var(--space-md);
+  padding: 3px var(--space-md) 0 var(--space-md);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   white-space: nowrap;
@@ -261,11 +261,14 @@
 }
 
 .sidebar-untagged-row {
-  display: flex;
-  flex-direction: column;
-  padding: 2px var(--space-md) 3px calc(var(--space-md) + 6px);
-  border-bottom: 1px solid transparent;
-  gap: 1px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto minmax(0, auto);
+  align-items: center;
+  gap: 4px;
+  padding: 0 var(--space-md) 0 calc(var(--space-md) + 4px);
+  font-family: var(--font-data);
+  font-size: 11px;
+  line-height: 18px;
 }
 
 .sidebar-untagged-row:hover {
@@ -274,7 +277,7 @@
 
 .sidebar-untagged-link {
   font-family: var(--font-data);
-  font-size: 12px;
+  font-size: 11px;
   color: var(--term-cyan);
   background: none;
   border: none;
@@ -284,19 +287,12 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 100%;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .sidebar-untagged-link:hover {
   color: var(--text-primary);
-}
-
-.sidebar-untagged-status {
-  font-size: 11px;
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  white-space: nowrap;
 }
 
 .sidebar-untagged-metrics {
@@ -306,7 +302,5 @@
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--text-muted);
-  display: flex;
-  gap: 3px;
-  flex-wrap: nowrap;
+  text-align: right;
 }
