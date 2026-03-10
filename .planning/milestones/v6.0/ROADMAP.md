@@ -41,7 +41,10 @@ Transform the observation system from a passive event logger into an intelligent
   1. When the same correction pattern appears 3+ times, a preference is automatically created in preferences.jsonl with a confidence score
   2. Each preference is tagged with a scope (file/filetype/phase/project/global) defaulting to the narrowest applicable scope
   3. Preferences are queryable by scope so downstream recall can filter by current context
-**Plans**: TBD
+**Plans**:
+  - [x] Plan 23-01: readPreferences() and Test Scaffold (complete)
+  - [x] Plan 23-02: write-preference.cjs upsert and promotion (complete)
+  - [x] Plan 23-03: Integration wiring and tests (complete, commits e9f9cf9, 4783da6)
 
 ### Phase 24: Live Recall and Session Injection
 **Goal**: Claude remembers its past mistakes -- corrections and preferences are surfaced at session boundaries and during active work
@@ -52,7 +55,10 @@ Transform the observation system from a passive event logger into an intelligent
   2. During active work, Claude cross-references historical corrections before repeating known mistakes
   3. Corrections and preferences that have been baked into skill refinements are excluded from recall
   4. Recall output is concise and actionable -- not a data dump, but targeted reminders
-**Plans**: TBD
+**Plans**:
+  - [x] Plan 24-01: readCorrections() and Test Scaffold (complete, commit 739dc71)
+  - [ ] Plan 24-02: inject-recall.cjs PreToolUse Hook
+  - [ ] Plan 24-03: Integration and Verification
 
 ### Phase 25: Observer Agent and Suggestion Pipeline
 **Goal**: An intelligent observer replaces the stub -- it aggregates patterns from corrections and generates skill refinement suggestions

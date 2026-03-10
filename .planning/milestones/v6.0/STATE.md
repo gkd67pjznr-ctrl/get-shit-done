@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Plan 23-03 complete (integration wiring + tests, commits e9f9cf9 and 4783da6)
-last_updated: "2026-03-10T13:31:09.752Z"
+status: in_progress
+stopped_at: Plan 24-01 complete (readCorrections() + test scaffold, commit 739dc71)
+last_updated: "2026-03-10T12:38:00.000Z"
 progress:
   total_phases: 6
   completed_phases: 2
-  total_plans: 6
-  completed_plans: 6
-  percent: 33
+  total_plans: 7
+  completed_plans: 7
+  percent: 38
 ---
 
 # Project State -- Milestone v6.0
@@ -20,15 +20,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-10)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts -- enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 24 - Preference Recall (next phase)
+**Current focus:** Phase 24 - Live Recall and Session Injection (in progress)
 
 ## Current Position
 
-Phase: 23 (2 of 6 in v6.0) (Preference Tracking) -- COMPLETE
-Plan: 3 of 3 in phase 23 (23-03 complete)
-Status: Phase 23 complete -- all 3 plans committed
+Phase: 24 (3 of 6 in v6.0) (Live Recall and Session Injection) -- IN PROGRESS
+Plan: 1 of 3 in phase 24 (24-01 complete)
+Status: Plan 24-01 complete -- readCorrections() and test scaffold committed
 
-Progress: [######....] 33%
+Progress: [#######...] 38%
 
 ## Performance Metrics
 
@@ -43,9 +43,10 @@ Progress: [######....] 33%
 |-------|-------|-------|----------|
 | 22 | 3 | 50 min | ~17 min |
 | 23 | 3 | 38 min | ~13 min |
+| 24 | 1/3 | ~15 min | ~15 min |
 
 **Recent Trend:**
-- Last 5 plans: 15 min, 20 min, ~15 min, 8 min, ~15 min
+- Last 5 plans: 20 min, ~15 min, 8 min, ~15 min, ~15 min
 - Trend: stable
 
 *Updated after each plan completion*
@@ -70,6 +71,8 @@ Recent decisions affecting current work:
 - **23-02:** CLI block: empty arg → "invalid JSON argument" to stderr, exits 0 -- matches write-correction.cjs silent failure pattern
 - **23-03:** `require('./write-preference.cjs')` placed inside try/catch in writeCorrection -- missing module is caught silently, correction write succeeds regardless
 - **23-03:** Integration graceful-degradation test copies write-correction.cjs to isolated temp lib dir (no write-preference.cjs); verifies corrections.jsonl written, preferences.jsonl absent
+- **24-01:** Token budget test uses `maxTokens = 200` (not 3000) to force truncation -- with 50-word entries each ~65 tokens, 25 entries fit inside 3000 tokens without truncation; small budget forces the overflow footer to appear
+- **24-01:** `countMatchingCorrections` is in `write-preference.cjs`, not `write-correction.cjs` -- the file-gathering loop template was reused from there
 
 ### Pending Todos
 
@@ -82,6 +85,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-10
-Stopped at: Plan 23-03 complete (integration wiring + tests, commits e9f9cf9 and 4783da6)
+Stopped at: Plan 24-01 complete (readCorrections() + test scaffold, commit 739dc71)
 Resume file: None
-Next: Phase 24 - Preference Recall (first phase after Preference Tracking)
+Next: Phase 24 Plan 02 - inject-recall.cjs PreToolUse hook
