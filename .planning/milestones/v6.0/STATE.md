@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-stopped_at: Plan 24-01 complete (readCorrections() + test scaffold, commit 739dc71)
-last_updated: "2026-03-10T12:38:00.000Z"
+stopped_at: Plan 24-02 complete (gsd-recall-corrections.cjs SessionStart hook + tests, commit f550e6c)
+last_updated: "2026-03-10T13:01:00.000Z"
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 7
-  completed_plans: 7
+  completed_plans: 8
   percent: 38
 ---
 
@@ -25,8 +25,8 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 ## Current Position
 
 Phase: 24 (3 of 6 in v6.0) (Live Recall and Session Injection) -- IN PROGRESS
-Plan: 1 of 3 in phase 24 (24-01 complete)
-Status: Plan 24-01 complete -- readCorrections() and test scaffold committed
+Plan: 2 of 3 in phase 24 (24-01, 24-02 complete)
+Status: Plan 24-02 complete -- gsd-recall-corrections.cjs SessionStart hook registered and tested
 
 Progress: [#######...] 38%
 
@@ -73,6 +73,8 @@ Recent decisions affecting current work:
 - **23-03:** Integration graceful-degradation test copies write-correction.cjs to isolated temp lib dir (no write-preference.cjs); verifies corrections.jsonl written, preferences.jsonl absent
 - **24-01:** Token budget test uses `maxTokens = 200` (not 3000) to force truncation -- with 50-word entries each ~65 tokens, 25 entries fit inside 3000 tokens without truncation; small budget forces the overflow footer to appear
 - **24-01:** `countMatchingCorrections` is in `write-preference.cjs`, not `write-correction.cjs` -- the file-gathering loop template was reused from there
+- **24-02:** Dedup key uses colon separator (`category + ':' + scope`) in hook's Set; integration tests use `spawnSync(process.execPath, [HOOK_PATH], { cwd: tmpDir })` so hook resolves `.planning/patterns/` relative to tmpDir
+- **24-02:** writePreferencesFile helper added to test file for symmetric test setup alongside writeCorrectionsFile
 
 ### Pending Todos
 
@@ -85,6 +87,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-10
-Stopped at: Plan 24-01 complete (readCorrections() + test scaffold, commit 739dc71)
+Stopped at: Plan 24-02 complete (gsd-recall-corrections.cjs SessionStart hook + tests, commit f550e6c)
 Resume file: None
-Next: Phase 24 Plan 02 - inject-recall.cjs PreToolUse hook
+Next: Phase 24 Plan 03
