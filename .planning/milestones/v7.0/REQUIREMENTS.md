@@ -1,0 +1,81 @@
+# Requirements: GSD Enhanced Fork — v7.0 Quality Enforcement Observability
+
+**Defined:** 2026-03-10
+**Core Value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
+
+## v7.0 Requirements
+
+Requirements for quality enforcement observability. Each maps to roadmap phases.
+
+### Gate Persistence
+
+- [ ] **GATE-01**: Gate execution events written to `gate-executions.jsonl` during every executor run (5 sentinel steps persisted)
+- [ ] **GATE-02**: Quality level field added to correction entries in `corrections.jsonl`
+- [ ] **GATE-03**: Context7 invocations logged to `context7-calls.jsonl` with library, tokens requested vs cap, and usage flag
+- [ ] **GATE-04**: Research and evaluate additional MCP servers, tools, or libraries for quality gating beyond Context7
+
+### Dashboard — Gate Health Page
+
+- [ ] **DASH-01**: Dedicated Gate Health page (standalone page like patterns page) with full gate metrics
+- [ ] **DASH-02**: Gate outcome distribution visualization (passed/warned/blocked/skipped rates)
+- [ ] **DASH-03**: Quality level usage distribution across sessions
+- [ ] **DASH-04**: Per-gate firing rates and warn rates
+- [ ] **DASH-05**: Context7 utilization metrics (calls, token usage, cap hits)
+
+### Dashboard — Overview Integration
+
+- [ ] **DASH-06**: Quality level indicator on each project header in overview page
+- [ ] **DASH-07**: Gate firing rates shown in milestone line items
+- [ ] **DASH-08**: Gate metrics summary in tmux terminal session cards
+
+### Analytics
+
+- [ ] **ANLZ-01**: Gate-to-correction attribution analysis script (heuristic mapping from correction categories to gates)
+- [ ] **ANLZ-02**: Attribution summary output to `gate-attribution.jsonl`
+
+## Future Requirements
+
+### v7.1 (deferred)
+
+- **ANLZ-03**: Automated periodic attribution analysis (cron-based or session-boundary triggered)
+- **ANLZ-04**: Quality level optimization recommendations based on accumulated gate/correction data
+- **DASH-09**: Historical gate health trends (week-over-week comparison)
+
+## Out of Scope
+
+| Feature | Reason |
+|---------|--------|
+| Real-time gate blocking UI | Gate blocking is a config-level decision (strict mode), not a dashboard feature |
+| Quality level auto-switching | Users must intentionally choose enforcement level; auto-switching undermines trust |
+| Gate modification from dashboard | Dashboard is read-only; quality config changes go through `/gsd:set-quality` |
+| Per-file gate coverage | Gate granularity is per-task, not per-file; file-level tracking adds complexity without value |
+
+## Traceability
+
+Which phases cover which requirements. Updated during roadmap creation.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| GATE-01 | — | Pending |
+| GATE-02 | — | Pending |
+| GATE-03 | — | Pending |
+| GATE-04 | — | Pending |
+| DASH-01 | — | Pending |
+| DASH-02 | — | Pending |
+| DASH-03 | — | Pending |
+| DASH-04 | — | Pending |
+| DASH-05 | — | Pending |
+| DASH-06 | — | Pending |
+| DASH-07 | — | Pending |
+| DASH-08 | — | Pending |
+| ANLZ-01 | — | Pending |
+| ANLZ-02 | — | Pending |
+
+**Coverage:**
+- v7.0 requirements: 14 total
+- Mapped to phases: 0
+- Unmapped: 14
+
+---
+*Requirements defined: 2026-03-10*
+*Last updated: 2026-03-10 after initial definition*
