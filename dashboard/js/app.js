@@ -73,6 +73,13 @@ function UntaggedSessions({ projects: ps, onOpenTerminal }) {
     <div class="untagged-sessions">
       <div class="untagged-sessions-header">untagged sessions</div>
       <div class="card-milestone-grid" style="padding-left:var(--space-md)">
+        <div class="card-milestone-row card-ms-pane-row untagged-header-row">
+          <span style="color:var(--term-dim);font-size:12px">Project</span>
+          <span style="color:var(--term-dim);font-size:12px">Window</span>
+          <span style="color:var(--term-dim);font-size:12px">Status</span>
+          <span style="color:var(--term-dim);font-size:12px">Idle</span>
+          <span style="color:var(--term-dim);font-size:12px;text-align:right">Metrics</span>
+        </div>
         ${rows.map(({ project, pane }) => {
           const now = Date.now();
           const idleSecs = pane.lastActivity ? (now - pane.lastActivity) / 1000 : null;
@@ -135,9 +142,6 @@ function Overview({ onOpenTerminal }) {
       ${ps.map(p => html`<${ProjectCard} key=${p.name} project=${p} onOpenTerminal=${onOpenTerminal} />`)}
     </div>
     <${UntaggedSessions} projects=${ps} onOpenTerminal=${onOpenTerminal} />
-    <div style="text-align:center; font-size:14px; color:var(--text-muted); padding: 8px; font-family:var(--font-data);">
-      Tip: Name Claude Code tmux sessions starting with <code>cc</code> for session tracking
-    </div>
   `;
 }
 
