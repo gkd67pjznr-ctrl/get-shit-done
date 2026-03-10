@@ -72,6 +72,6 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 
 ## Session Continuity
 
-Last activity: 2026-03-10 — Completed v6.0 phase 24 plan 01: readCorrections() and recall injection test scaffold (commit 739dc71)
+Last activity: 2026-03-10 — Completed v6.0 phase 24 plan 02: gsd-recall-corrections.cjs SessionStart hook + tests (commit f550e6c)
 Resume file: None
-Next step: Execute v6.0 24-02 (inject-recall.cjs PreToolUse hook)
+Next step: Execute v6.0 24-03
