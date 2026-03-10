@@ -197,6 +197,15 @@ function writeCorrection(entry, options) {
     }
 
     fs.appendFileSync(filePath, JSON.stringify(safeEntry) + '\n');
+
+    // Trigger preference promotion check (fire-and-forget, silent failure)
+    try {
+      const { checkAndPromote } = require('./write-preference.cjs');
+      checkAndPromote(safeEntry, { cwd });
+    } catch (e) {
+      // Silent -- preference promotion failure must not affect correction capture
+    }
+
     return { written: true };
   } catch (e) {
     return { written: false, reason: 'error', error: e.message };
