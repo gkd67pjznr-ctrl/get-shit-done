@@ -80,7 +80,7 @@ function MilestoneAccordion({ milestone, openByDefault, id }) {
                   const desc = dashIdx >= 0 ? p.name.slice(dashIdx + 3) : null;
                   return html`
                   <div class="phase-item ${p.status}" key=${i}>
-                    ${p.number ? html`<span style="font-family:var(--font-data);font-size:13px;color:var(--text-muted);width:28px;flex-shrink:0">${p.number}</span>` : null}
+                    ${p.number ? html`<span style="font-family:var(--font-data);font-size:15px;color:var(--text-muted);width:28px;flex-shrink:0">${p.number}</span>` : null}
                     <span><span style="color:var(--term-green)">${title}</span>${desc ? html` <span style="color:var(--term-dim)">—</span> <span>${desc}</span>` : null}</span>
                   </div>
                 `})}
@@ -91,14 +91,14 @@ function MilestoneAccordion({ milestone, openByDefault, id }) {
           ${(state.current_phase || state.last_activity) ? html`
             <div>
               <div class="accordion-section-title">State</div>
-              <div style="display:flex;flex-direction:column;gap:6px;font-size:15px;color:var(--text-secondary)">
+              <div style="display:flex;flex-direction:column;gap:6px;font-size:17px;color:var(--text-secondary)">
                 ${state.current_phase ? html`<div>Current phase: <strong style="color:var(--text-primary)">${state.current_phase}</strong></div>` : null}
                 ${state.status ? html`<div>Status: <span class="${statusClass(state.status)}">${state.status}</span></div>` : null}
                 ${state.last_activity ? html`<div>Last activity: <span style="color:var(--text-muted)">${state.last_activity}</span></div>` : null}
                 ${pct !== null ? html`
                   <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
                     <${ProgressBar} value=${pct} />
-                    <span style="font-family:var(--font-data);font-size:14px;color:var(--text-secondary)">${fmtPct(pct)}</span>
+                    <span style="font-family:var(--font-data);font-size:16px;color:var(--text-secondary)">${fmtPct(pct)}</span>
                   </div>
                 ` : null}
               </div>
@@ -175,7 +175,7 @@ export function ProjectDetail({ name, milestone: deepLinkMilestone }) {
       </div>
 
       ${sorted.length === 0 ? html`
-        <div style="color:var(--text-muted);font-size:16px">No milestone data available.</div>
+        <div style="color:var(--text-muted);font-size:18px">No milestone data available.</div>
       ` : null}
 
       <div style="display:flex;flex-direction:column;gap:12px">

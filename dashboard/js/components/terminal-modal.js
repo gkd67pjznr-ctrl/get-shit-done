@@ -22,7 +22,7 @@ export function TerminalModal({ sessionName, onClose }) {
 
     const term = new Terminal({
       cursorBlink: true,
-      fontSize: 13,
+      fontSize: 15,
       fontFamily: 'Menlo, "DejaVu Sans Mono", monospace',
       theme: {
         background: '#1a1a2e',
@@ -115,7 +115,7 @@ export function TerminalModal({ sessionName, onClose }) {
           <div class="terminal-header-title">
             <div class="terminal-session-dot ${connected ? '' : 'disconnected'}" />
             <span>${sessionName.includes(':') ? sessionName.split(':')[1] : sessionName}</span>
-            ${error && html`<span style="color:#f44336; font-size:13px;">${error}</span>`}
+            ${error && html`<span style="color:#f44336; font-size:15px;">${error}</span>`}
           </div>
           <button class="terminal-close-btn" onClick=${onClose}>Close</button>
         </div>

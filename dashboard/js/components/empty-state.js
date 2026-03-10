@@ -12,12 +12,12 @@ export function EmptyState() {
       text-align: center;
       padding: 32px;
     ">
-      <div style="font-size: 50px; opacity: 0.3">📋</div>
+      <div style="font-size: 52px; opacity: 0.3">📋</div>
       <div>
-        <h2 style="font-size: 22px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px">
+        <h2 style="font-size: 24px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px">
           No projects registered
         </h2>
-        <p style="color: var(--text-secondary); font-size: 16px; max-width: 420px; line-height: 1.6">
+        <p style="color: var(--text-secondary); font-size: 18px; max-width: 420px; line-height: 1.6">
           Register your GSD projects to see live status, progress, and drill-down detail.
         </p>
       </div>
@@ -30,10 +30,10 @@ export function EmptyState() {
         max-width: 480px;
         width: 100%;
       ">
-        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em">
+        <p style="font-size: 16px; color: var(--text-muted); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em">
           Getting started
         </p>
-        <ol style="font-size: 15px; color: var(--text-secondary); line-height: 2; padding-left: 20px;">
+        <ol style="font-size: 17px; color: var(--text-secondary); line-height: 2; padding-left: 20px;">
           <li>Open a terminal in your GSD project directory</li>
           <li>Run: <code style="font-family: var(--font-data); background: var(--bg-base); padding: 2px 6px; border-radius: 3px; color: var(--accent)">gsd dashboard add .</code></li>
           <li>This page updates automatically</li>

@@ -11,7 +11,7 @@ export function ProgressBar({ value, shimmer, shimmerClass, width = 10 }) {
   return html`
     <span
       class=${shimmerClass || (shimmer ? 'shimmer-active' : '')}
-      style="font-family:var(--font-data);font-size:13px;color:var(--term-green);white-space:nowrap;letter-spacing:0"
+      style="font-family:var(--font-data);font-size:15px;color:var(--term-green);white-space:nowrap;letter-spacing:0"
     >${bar} ${show ? fmtPct(pct) : '--'}</span>
   `;
 }

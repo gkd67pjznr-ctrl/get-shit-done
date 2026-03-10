@@ -1305,10 +1305,26 @@ function startDashboardServer(port, opts = {}) {
           // Update the cached project data with fresh tmux
           const project = cache.get(name);
           if (project) {
-            const updated = { ...project, tmux: tmuxEntry
+            const tmuxData = tmuxEntry
               ? { available: true, sessions: Array.from(tmuxEntry.sessions), panes: tmuxEntry.panes }
-              : { available: false, sessions: [], panes: [] }
-            };
+              : { available: false, sessions: [], panes: [] };
+            // Enrich panes with per-session metrics from bridge files
+            if (tmuxData.panes && tmuxData.panes.length > 0) {
+              const sessionData = getProjectSessions(project.path);
+              if (sessionData.length > 0) {
+                for (const pane of tmuxData.panes) {
+                  if (!pane.isClaude) continue;
+                  const match = sessionData.find(s => pane.cwd && (s.cwd === pane.cwd || pane.cwd.startsWith(s.cwd + '/') || s.cwd.startsWith(pane.cwd)));
+                  if (match) {
+                    pane.sessionCost = match.cost;
+                    pane.sessionLinesAdded = match.lines_added;
+                    pane.sessionLinesRemoved = match.lines_removed;
+                    pane.sessionDurationMs = match.duration_ms;
+                  }
+                }
+              }
+            }
+            const updated = { ...project, tmux: tmuxData };
             cache.set(name, updated);
             broadcast(clients, 'tmux-update', { name, tmux: updated.tmux });
           }

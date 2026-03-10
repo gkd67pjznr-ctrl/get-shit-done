@@ -58,12 +58,12 @@ export function PatternPage() {
 
   return html`
     <div style="padding:24px; max-width:960px;">
-      <h2 style="margin-bottom:4px; font-size:20px;">Cross-Project Patterns</h2>
-      <p style="font-size:14px; color:var(--text-muted); margin-bottom:20px;">
+      <h2 style="margin-bottom:4px; font-size:22px;">Cross-Project Patterns</h2>
+      <p style="font-size:16px; color:var(--text-muted); margin-bottom:20px;">
         Aggregated from all registered projects' session data.
       </p>
 
-      <table style="width:100%; border-collapse:collapse; font-size:15px;">
+      <table style="width:100%; border-collapse:collapse; font-size:17px;">
         <thead>
           <tr style="border-bottom:1px solid var(--border-color);">
             <th style="text-align:left; padding:8px 12px; color:var(--text-muted); font-weight:500;">Type</th>
@@ -104,7 +104,7 @@ export function PatternPage() {
                     ${p.projectCount} ${p.projectCount === 1 ? 'project' : 'projects'}
                   </span>
                 </td>
-                <td style="padding:8px 12px; text-align:right; color:var(--text-muted); font-size:14px;">
+                <td style="padding:8px 12px; text-align:right; color:var(--text-muted); font-size:16px;">
                   ${lastSeen}
                 </td>
               </tr>
@@ -113,7 +113,7 @@ export function PatternPage() {
         </tbody>
       </table>
 
-      <p style="font-size:13px; color:var(--text-muted); margin-top:16px;">
+      <p style="font-size:15px; color:var(--text-muted); margin-top:16px;">
         ${patterns.length} distinct pattern${patterns.length !== 1 ? 's' : ''} detected.
         Run <code>/gsd:digest</code> to get a full analysis.
       </p>

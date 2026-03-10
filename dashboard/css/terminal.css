@@ -29,7 +29,7 @@
   background: #111122;
   border-bottom: 1px solid #2a2a3e;
   font-family: var(--font-data, monospace);
-  font-size: 14px;
+  font-size: 16px;
   color: #a0a0b0;
   user-select: none;
 }
@@ -58,7 +58,7 @@
   padding: 2px 8px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 15px;
   font-family: var(--font-data, monospace);
 }
 
