@@ -117,10 +117,26 @@ function getCurrentPhaseAndMilestone(projectCwd) {
   }
 }
 
+// ─── Section 5b helper: read quality level from config ────────────────────────
+
+function getQualityLevel(projectCwd) {
+  try {
+    const configPath = path.join(projectCwd, '.planning', 'config.json');
+    const raw = fs.readFileSync(configPath, 'utf-8');
+    const config = JSON.parse(raw);
+    const level = (config.quality || {}).level;
+    if (level === 'fast' || level === 'standard' || level === 'strict') return level;
+    return 'fast'; // default to fast when not configured
+  } catch (e) {
+    return 'fast'; // default to fast on any error
+  }
+}
+
 // ─── Main logic (wrapped in try/catch for silent failure) ─────────────────────
 
 try {
   const { writeCorrection } = require(path.join(cwd, '.claude/hooks/lib/write-correction.cjs'));
+  const qualityLevel = getQualityLevel(cwd);
 
   // ─── Section 3: on Write or Edit — record file ────────────────────────────
 
@@ -165,6 +181,7 @@ try {
         timestamp: new Date().toISOString(),
         session_id: sessionId,
         milestone,
+        quality_level: qualityLevel,
         source: 'edit_detection',
       }, { cwd });
       // Update tracked stat so we don't re-fire on the same edit
@@ -197,6 +214,7 @@ try {
         timestamp: new Date().toISOString(),
         session_id: sessionId,
         milestone,
+        quality_level: qualityLevel,
         source: 'revert_detection',
       }, { cwd });
     }

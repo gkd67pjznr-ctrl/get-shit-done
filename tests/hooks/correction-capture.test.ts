@@ -415,6 +415,21 @@ describe('gsd-correction-capture hook — revert detection', () => {
     const correctionsPath = path.join(hookDir, '.planning', 'patterns', 'corrections.jsonl');
     expect(fs.existsSync(correctionsPath)).toBe(false);
   });
+
+  it('the written entry includes a quality_level field', () => {
+    const result = runHook({
+      session_id: 'revert-ql-test-001',
+      cwd: hookDir,
+      tool_name: 'Bash',
+      tool_input: { command: 'git revert HEAD' },
+    });
+    expect(result.status).toBe(0);
+    const correctionsPath = path.join(hookDir, '.planning', 'patterns', 'corrections.jsonl');
+    const lines = fs.readFileSync(correctionsPath, 'utf-8').split('\n').filter(l => l.trim() !== '');
+    const entry = JSON.parse(lines[0]);
+    expect(typeof entry.quality_level).toBe('string');
+    expect(entry.quality_level).toBe('fast'); // hookDir has no quality section, defaults to fast
+  });
 });
 
 // ─── Suite: gsd-correction-capture hook — edit detection ─────────────────────
@@ -484,6 +499,39 @@ describe('gsd-correction-capture hook — edit detection', () => {
     const entry = JSON.parse(lines[0]);
     expect(entry.source).toBe('edit_detection');
     expect(entry.diagnosis_category).toBe('process.convention_violation');
+  });
+
+  it('the written entry includes a quality_level field', () => {
+    const sessionId = 'edit-ql-test-001';
+    const testFile = path.join(hookDir, 'watched-ql.js');
+    fs.writeFileSync(testFile, 'const a = 1;\n');
+
+    // Step 1: Write tool call — records the file
+    runHook({
+      session_id: sessionId,
+      cwd: hookDir,
+      tool_name: 'Write',
+      tool_input: { path: testFile },
+    });
+
+    // Step 2: Simulate external edit
+    const futureTime = new Date(Date.now() + 2000);
+    fs.writeFileSync(testFile, 'const a = 1; // user edited\n');
+    fs.utimesSync(testFile, futureTime, futureTime);
+
+    // Step 3: Bash tool call — triggers edit detection scan
+    runHook({
+      session_id: sessionId,
+      cwd: hookDir,
+      tool_name: 'Bash',
+      tool_input: { command: 'echo check' },
+    });
+
+    const correctionsPath = path.join(hookDir, '.planning', 'patterns', 'corrections.jsonl');
+    const lines = fs.readFileSync(correctionsPath, 'utf-8').split('\n').filter(l => l.trim() !== '');
+    const entry = JSON.parse(lines[0]);
+    expect(typeof entry.quality_level).toBe('string');
+    expect(entry.quality_level).toBe('fast'); // hookDir has no quality section, defaults to fast
   });
 });
 
