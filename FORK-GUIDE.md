@@ -47,19 +47,19 @@ You should see all standard GSD commands listed. If you also see `/gsd:set-quali
 
 All changes are additive. Existing projects with no `quality` key in `config.json` default to `fast` mode, which is identical to vanilla GSD behavior.
 
+**v2.0 Concurrent Milestones (2026-02-25):** Milestone-scoped layout, `--milestone` flag across all commands, `gsd-tools milestone manifest-check`.
+
+**v5.0 Device-Wide Dashboard (2026-03-09):** `dashboard/` UI (components, CSS, terminal modal), project registry, aggregation server (`dashboard.cjs`, `server.cjs`), tmux monitoring, embedded terminals, pattern system.
+
 **v1.0 MVP (2026-02-24):** Quality levels (fast/standard/strict), Quality Sentinel gates in executor/verifier/planner.
 
 **v1.1 Quality UX (2026-02-24):** `/gsd:set-quality`, user-facing quality configuration.
-
-**v2.0 Concurrent Milestones (2026-02-25):** Milestone-scoped layout, `--milestone` flag across all commands, `gsd-tools milestone manifest-check`.
 
 **v3.0 Tech Debt System (2026-02-26):** `debt.cjs`, `migrate.cjs`, `/gsd:fix-debt`, `gsd-tools debt log/list/resolve`.
 
 **v3.1 Legacy Strip & README (2026-03-05):** Cleanup pass, README overhaul.
 
 **v4.0 Adaptive Learning Integration (2026-03-09):** Skills system (`.claude/skills/` — 17 skills), hooks system (`.claude/hooks/` — 13 hook files), native observation, correction capture, GSD dashboard command, adaptive agents.
-
-**v5.0 Device-Wide Dashboard (2026-03-09):** `dashboard/` UI (components, CSS, terminal modal), project registry, aggregation server (`dashboard.cjs`, `server.cjs`), tmux monitoring, embedded terminals, pattern system.
 
 **v6.0 Adaptive Observation & Learning Loop (in progress):** Correction capture pipeline, preference tracking and promotion.
 
@@ -223,7 +223,7 @@ The device-wide dashboard provides a real-time view of all GSD projects on your 
 **Starting the dashboard:**
 
 ```bash
-gsd-tools dashboard
+gsd dashboard serve
 ```
 
 **Features:**
@@ -232,6 +232,13 @@ gsd-tools dashboard
 - Embedded terminal sessions (tmux integration)
 - Pattern library from accumulated corrections
 - Untagged tmux session detection
+
+**Commands:**
+- gsd dashboard serve | starts dashboard, default port 3141
+- gsd dashboard list | shows all projects registered to dashboard
+- gsd dashboard add | adds current directory to dashboard
+- gsd dashboard remove | removes current directory from dashboard
+
 
 **Dashboard files:** `dashboard/` directory contains the UI (HTML, CSS, JS components).
 

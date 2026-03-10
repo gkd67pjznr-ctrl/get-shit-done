@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Defining requirements
-last_updated: "2026-03-10T16:19:30.113Z"
-last_activity: "2026-03-10 — Quick task 25 complete (global statusline: v3 features, milestone detection fix, cost accumulation)"
+last_updated: "2026-03-10T17:04:00.000Z"
+last_activity: "2026-03-10 — Completed quick task 29: Reorder FORK-GUIDE features list"
 progress:
   total_phases: 6
   completed_phases: 1
@@ -19,7 +19,7 @@ progress:
 Phase: Not started (defining requirements)
 Plan: —
 Status: Defining requirements
-Last activity: 2026-03-10 — Quick task 25 complete (global statusline: v3 features, milestone detection fix, cost accumulation)
+Last activity: 2026-03-10 — Completed quick task 29: Reorder FORK-GUIDE features list
 
 ## Active Milestones
 
@@ -65,9 +65,10 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 | 26 | Add cost, duration, lines-changed to dashboard milestone rows | 2026-03-10 | dbdaa85 | Verified | [26-add-cost-duration-lines-changed-and-mile](./quick/26-add-cost-duration-lines-changed-and-mile/) |
 | 27 | Show untagged tmux sessions on overview page | 2026-03-10 | 2f78d08 | Verified | [27-show-untagged-tmux-sessions-on-overview-](./quick/27-show-untagged-tmux-sessions-on-overview-/) |
 | 28 | Rewrite FORK-GUIDE.md to reflect current v6.0-era state | 2026-03-10 | e93052a | Complete | [28-rewrite-fork-guide-md-to-reflect-current](./quick/28-rewrite-fork-guide-md-to-reflect-current/) |
+| 29 | Reorder FORK-GUIDE features: concurrent milestones and dashboard to top | 2026-03-10 | — | Complete | [29-reorder-fork-guide-features-list-concurr](./quick/29-reorder-fork-guide-features-list-concurr/) |
 
 ## Session Continuity
 
-Last activity: 2026-03-10 — Completed quick task 28: rewrote FORK-GUIDE.md to reflect v6.0-era project state
+Last activity: 2026-03-10 — Completed quick task 29: Reorder FORK-GUIDE features list
 Resume file: .planning/milestones/v6.0/phases/23-preference-tracking/23-CONTEXT.md
 Next step: Define requirements for v6.0
