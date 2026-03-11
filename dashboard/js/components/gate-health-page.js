@@ -20,6 +20,10 @@ export function GateHealthPage() {
     fetch('/api/gate-health')
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const ct = r.headers.get('content-type') || '';
+        if (!ct.includes('application/json')) {
+          throw new Error('Server returned non-JSON response');
+        }
         return r.json();
       })
       .then((d) => {
