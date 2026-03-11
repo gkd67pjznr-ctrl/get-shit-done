@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: "Plan 26-03 complete (collaborative skill refinement workflow in /gsd:suggest, ANLY-02, ANLY-03, commit abf37cb)"
-last_updated: "2026-03-11T13:17:04.171Z"
+stopped_at: "Plan 27-01 complete (cross-project preference promotion library, PREF-03, commit 25e987f)"
+last_updated: "2026-03-11T10:55:00.000Z"
 progress:
   total_phases: 5
   completed_phases: 4
-  total_plans: 6
-  completed_plans: 6
-  percent: 60
+  total_plans: 7
+  completed_plans: 7
+  percent: 65
 ---
 
 # Project State -- Milestone v6.0
@@ -20,13 +20,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-10)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts -- enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 26 - Enhanced Digest and Skill Refinement (IN PROGRESS)
+**Current focus:** Phase 27 - Cross-Project Inheritance and Skill Loading (IN PROGRESS)
 
 ## Current Position
 
-Phase: 26 (5 of 6 in v6.0) (Enhanced Digest and Skill Refinement) -- IN PROGRESS
-Plan: 3 of ? in phase 26 (26-01 complete, 26-02 complete, 26-03 complete)
-Status: Phase 26 plan 03 complete -- collaborative skill refinement workflow in /gsd:suggest (ANLY-02, ANLY-03)
+Phase: 27 (6 of 6 in v6.0) (Cross-Project Inheritance and Skill Loading) -- IN PROGRESS
+Plan: 1 of ? in phase 27 (27-01 complete)
+Status: Phase 27 plan 01 complete -- cross-project preference promotion library (PREF-03)
 
 Progress: [##########] 60%
 
@@ -90,6 +90,10 @@ Recent decisions affecting current work:
 - **26-03:** suggest.md Accept branch now runs full 10-step refinement workflow inline — retirement only fires after confirmed skill write, not at acceptance time
 - **26-03:** Skill not found (type: new_skill_needed or missing dir) skips refinement silently — no retirement, suggestion stays accepted for future phase
 - **26-03:** 20% guardrail measured by line count (changed_lines / original_lines); modify loop re-enters threshold check
+- **27-01:** Project ID = `path.basename(cwd)` — simple, matches dashboard convention, machine-dependent limitation accepted for v6.0
+- **27-01:** `require('./promote-preference.cjs')` is inside try/catch in `checkAndPromote` — prevents module load errors from propagating
+- **27-01:** User-level store uses JSON (not JSONL) — read-heavy aggregated file; project-level stays JSONL for append-heavy writes
+- **27-01:** GSD_HOME env var resolves gsd home at call time via `getGsdHome()` — module is stateless, tests set env before calling
 
 ### Pending Todos
 
@@ -102,6 +106,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-11
-Stopped at: Plan 26-03 complete (collaborative skill refinement workflow in /gsd:suggest, ANLY-02, ANLY-03, commit abf37cb)
+Stopped at: Plan 27-01 complete (cross-project preference promotion library, PREF-03, commit 25e987f)
 Resume file: None
-Next: Phase 26 review or next phase
+Next: Phase 27 plan 02 (LOAD-01: workflow learned context loading) or phase 27 plan 03 (LOAD-02: agent skill inheritance)
