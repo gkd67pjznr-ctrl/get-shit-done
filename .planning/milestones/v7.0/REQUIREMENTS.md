@@ -16,11 +16,11 @@ Requirements for quality enforcement observability. Each maps to roadmap phases.
 
 ### Dashboard — Gate Health Page
 
-- [ ] **DASH-01**: Dedicated Gate Health page (standalone page like patterns page) with full gate metrics
-- [ ] **DASH-02**: Gate outcome distribution visualization (passed/warned/blocked/skipped rates)
-- [ ] **DASH-03**: Quality level usage distribution across sessions
-- [ ] **DASH-04**: Per-gate firing rates and warn rates
-- [ ] **DASH-05**: Context7 utilization metrics (calls, token usage, cap hits)
+- [x] **DASH-01**: Dedicated Gate Health page (standalone page like patterns page) with full gate metrics
+- [x] **DASH-02**: Gate outcome distribution visualization (passed/warned/blocked/skipped rates)
+- [x] **DASH-03**: Quality level usage distribution across sessions
+- [x] **DASH-04**: Per-gate firing rates and warn rates
+- [x] **DASH-05**: Context7 utilization metrics (calls, token usage, cap hits)
 
 ### Dashboard — Overview Integration
 
@@ -60,11 +60,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GATE-02 | Phase 28 | Complete |
 | GATE-03 | Phase 28 | Complete |
 | GATE-04 | Phase 29 | Complete |
-| DASH-01 | Phase 30 | Pending |
-| DASH-02 | Phase 30 | Pending |
-| DASH-03 | Phase 30 | Pending |
-| DASH-04 | Phase 30 | Pending |
-| DASH-05 | Phase 30 | Pending |
+| DASH-01 | Phase 30 | Complete |
+| DASH-02 | Phase 30 | Complete |
+| DASH-03 | Phase 30 | Complete |
+| DASH-04 | Phase 30 | Complete |
+| DASH-05 | Phase 30 | Complete |
 | DASH-06 | Phase 31 | Pending |
 | DASH-07 | Phase 31 | Pending |
 | DASH-08 | Phase 31 | Pending |

@@ -135,9 +135,26 @@ export function GateHealthPage() {
         </div>
       </section>
 
-      <!-- Section 2: Gate Outcome Bars — one per sentinel step (DASH-02, DASH-04) -->
+      <!-- Section 2a: Global Outcome Distribution (DASH-02) -->
       <section style="margin-bottom:32px;">
-        <h3 style="font-size:16px; font-weight:600; margin-bottom:12px;">Gate Outcome Distribution</h3>
+        <h3 style="font-size:16px; font-weight:600; margin-bottom:8px;">Overall Outcome Distribution</h3>
+        <div style="display:flex; height:12px; border-radius:6px; overflow:hidden; background:var(--bg-card, #1a1a1a); margin-bottom:8px;">
+          <div style="width:${outcomePct('passed')}%; background:${OUTCOME_COLORS.passed};" title="Passed: ${outcomePct('passed')}%" />
+          <div style="width:${outcomePct('warned')}%; background:${OUTCOME_COLORS.warned};" title="Warned: ${outcomePct('warned')}%" />
+          <div style="width:${outcomePct('blocked')}%; background:${OUTCOME_COLORS.blocked};" title="Blocked: ${outcomePct('blocked')}%" />
+          <div style="width:${outcomePct('skipped')}%; background:${OUTCOME_COLORS.skipped};" title="Skipped: ${outcomePct('skipped')}%" />
+        </div>
+        <div style="display:flex; gap:20px; font-size:14px; color:var(--text-secondary);">
+          <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${OUTCOME_COLORS.passed}; margin-right:4px;"></span>Passed ${outcomePct('passed')}%</span>
+          <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${OUTCOME_COLORS.warned}; margin-right:4px;"></span>Warned ${outcomePct('warned')}%</span>
+          <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${OUTCOME_COLORS.blocked}; margin-right:4px;"></span>Blocked ${outcomePct('blocked')}%</span>
+          <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${OUTCOME_COLORS.skipped}; margin-right:4px;"></span>Skipped ${outcomePct('skipped')}%</span>
+        </div>
+      </section>
+
+      <!-- Section 2b: Per-Gate Outcome Bars (DASH-04) -->
+      <section style="margin-bottom:32px;">
+        <h3 style="font-size:16px; font-weight:600; margin-bottom:12px;">Per-Gate Outcome Breakdown</h3>
         ${gateNames.map((gateName) => {
           const g = data.gates[gateName];
           const gTotal = g ? g.total : 0;
