@@ -33,6 +33,20 @@ Follow the same monitoring scan process described in `/gsd:session-start` Step 1
 
 If the scan produces new observations, they will be included in the subsequent session data analysis.
 
+## Step 1.7: Run Observer Analysis
+
+Run the pattern observer to aggregate correction patterns and generate/update skill refinement suggestions:
+
+```bash
+node .claude/hooks/lib/analyze-patterns.cjs "$(pwd)"
+```
+
+- If the command exits 0, proceed.
+- If the command fails (non-zero exit or DEBUG_OBSERVER output shows `analyzed: false`), log a note but continue — observer failure must not block the digest.
+- The result is written to `.planning/patterns/suggestions.json`.
+
+If new suggestions were written, they will be surfaced in Step 5 (Recommendations). If the observer was suppressed by guardrails (cooldown, threshold), that is normal — the `skipped_suggestions` log in suggestions.json captures the reason.
+
 ## Step 2: Load session data
 
 ### 2a. Load current project sessions
