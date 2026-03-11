@@ -525,6 +525,122 @@ function aggregatePatterns(registry) {
     }));
 }
 
+/**
+ * Aggregates gate execution and Context7 call data across all registered projects.
+ *
+ * Data sources per project:
+ *   .planning/observations/gate-executions.jsonl
+ *   .planning/observations/context7-calls.jsonl
+ *
+ * @param {Array<{name: string, path: string}>} registry
+ * @returns {object} Aggregated gate health data
+ */
+function aggregateGateHealth(registry) {
+  const VALID_GATES = ['codebase_scan', 'context7_lookup', 'test_baseline', 'test_gate', 'diff_review'];
+  const VALID_OUTCOMES = ['passed', 'warned', 'blocked', 'skipped'];
+
+  // Initialize accumulators
+  const outcomes = { passed: 0, warned: 0, blocked: 0, skipped: 0 };
+  const qualityLevels = { standard: 0, strict: 0, fast: 0 };
+  const gates = {};
+  for (const gate of VALID_GATES) {
+    gates[gate] = { total: 0, passed: 0, warned: 0, blocked: 0, skipped: 0 };
+  }
+  let totalExecutions = 0;
+  let reportingCount = 0;
+
+  // Context7 accumulators
+  let c7TotalCalls = 0;
+  let c7TotalTokens = 0;
+  let c7CapHits = 0;
+  let c7UsedCount = 0;
+
+  for (const project of registry) {
+    const obsDir = path.join(project.path, '.planning', 'observations');
+    let projectHasData = false;
+
+    // --- gate-executions.jsonl ---
+    const gateFile = path.join(obsDir, 'gate-executions.jsonl');
+    let gateLines;
+    try {
+      gateLines = fs.readFileSync(gateFile, 'utf-8').trim().split('\n').filter(Boolean);
+    } catch {
+      gateLines = [];
+    }
+
+    for (const line of gateLines) {
+      let entry;
+      try {
+        entry = JSON.parse(line);
+      } catch {
+        continue; // skip malformed lines
+      }
+
+      const gate = entry.gate;
+      const outcome = entry.outcome;
+      const ql = entry.quality_level;
+
+      // Only count valid entries
+      if (!VALID_GATES.includes(gate) || !VALID_OUTCOMES.includes(outcome)) continue;
+
+      outcomes[outcome]++;
+      if (ql === 'standard' || ql === 'strict') {
+        qualityLevels[ql]++;
+      }
+      gates[gate].total++;
+      gates[gate][outcome]++;
+      totalExecutions++;
+      projectHasData = true;
+    }
+
+    // --- context7-calls.jsonl ---
+    const c7File = path.join(obsDir, 'context7-calls.jsonl');
+    let c7Lines;
+    try {
+      c7Lines = fs.readFileSync(c7File, 'utf-8').trim().split('\n').filter(Boolean);
+    } catch {
+      c7Lines = [];
+    }
+
+    for (const line of c7Lines) {
+      let entry;
+      try {
+        entry = JSON.parse(line);
+      } catch {
+        continue;
+      }
+      const tokensRequested = typeof entry.tokens_requested === 'number' ? entry.tokens_requested : 0;
+      const tokenCap = typeof entry.token_cap === 'number' ? entry.token_cap : Infinity;
+
+      c7TotalCalls++;
+      c7TotalTokens += tokensRequested;
+      if (tokensRequested >= tokenCap) c7CapHits++;
+      if (entry.used === true) c7UsedCount++;
+      projectHasData = true;
+    }
+
+    if (projectHasData) reportingCount++;
+  }
+
+  const hasData = totalExecutions > 0 || c7TotalCalls > 0;
+
+  return {
+    projectCount: registry.length,
+    reportingCount,
+    totalExecutions,
+    outcomes,
+    qualityLevels,
+    gates,
+    context7: {
+      totalCalls: c7TotalCalls,
+      avgTokensRequested: c7TotalCalls > 0 ? Math.round(c7TotalTokens / c7TotalCalls) : 0,
+      capHitRate: c7TotalCalls > 0 ? c7CapHits / c7TotalCalls : 0,
+      usedInCodeRate: c7TotalCalls > 0 ? c7UsedCount / c7TotalCalls : 0,
+    },
+    hasData,
+  };
+}
+
 // ─── Core data aggregation ────────────────────────────────────────────────────
 
 function parseProjectData(project, tmuxCache) {
@@ -1443,6 +1559,7 @@ module.exports = {
   parseProjectData,
   parseAllMilestones,
   aggregatePatterns,
+  aggregateGateHealth,
   formatSSE,
   broadcast,
   _parseTmuxOutput: parseTmuxOutput,
