@@ -69,7 +69,9 @@ Transform the observation system from a passive event logger into an intelligent
   2. When correction patterns cross the min_occurrences threshold, suggestion candidates appear in suggestions.json for /gsd:suggest
   3. All 6 bounded learning guardrails are enforced (20% max change, 3 corrections min, 7-day cooldown, user confirmation, permission checks, 5+ co-activations)
   4. The observer runs as a lightweight bounded operation, not a full subagent spawn
-**Plans**: TBD
+**Plans**:
+  - [x] Plan 25-01: analyze-patterns.cjs Observer Engine
+  - [x] Plan 25-02: Observer Wrapper, /gsd:suggest Command, and Digest Integration
 
 ### Phase 26: Enhanced Digest and Skill Refinement
 **Goal**: Users can see their correction trends and collaboratively refine skills when corrections consistently contradict them
