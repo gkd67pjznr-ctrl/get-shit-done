@@ -12,7 +12,7 @@ Requirements for quality enforcement observability. Each maps to roadmap phases.
 - [x] **GATE-01**: Gate execution events written to `gate-executions.jsonl` during every executor run (5 sentinel steps persisted)
 - [x] **GATE-02**: Quality level field added to correction entries in `corrections.jsonl`
 - [x] **GATE-03**: Context7 invocations logged to `context7-calls.jsonl` with library, tokens requested vs cap, and usage flag
-- [ ] **GATE-04**: Research and evaluate additional MCP servers, tools, or libraries for quality gating beyond Context7
+- [x] **GATE-04**: Research and evaluate additional MCP servers, tools, or libraries for quality gating beyond Context7
 
 ### Dashboard — Gate Health Page
 
@@ -59,7 +59,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GATE-01 | Phase 28 | Complete |
 | GATE-02 | Phase 28 | Complete |
 | GATE-03 | Phase 28 | Complete |
-| GATE-04 | Phase 29 | Pending |
+| GATE-04 | Phase 29 | Complete |
 | DASH-01 | Phase 30 | Pending |
 | DASH-02 | Phase 30 | Pending |
 | DASH-03 | Phase 30 | Pending |
