@@ -17,6 +17,8 @@
     "js/components/progress-bar.js",
     "js/components/empty-state.js",
     "js/components/gate-health-page.js",
+    "js/components/pattern-page.js",
+    "js/components/terminal-modal.js",
     "css/tokens.css",
     "css/layout.css",
     "css/cards.css",
