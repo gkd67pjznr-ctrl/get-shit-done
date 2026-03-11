@@ -187,6 +187,55 @@ If any diffs show `scope_change` other than "on_track", highlight them:
 
 If no scan entries exist, display: "No plan-vs-summary diffs available. Run `/gsd:session-start` to capture a baseline scan."
 
+### 3g. Correction analysis
+
+Read `.planning/patterns/corrections.jsonl` using the Read tool. Also read all archive correction files matching `.planning/patterns/corrections-*.jsonl` (use Glob to find them).
+
+Parse each line as JSON. Collect entries where `retired_at` is falsy (null, undefined, or empty string). These are the active corrections.
+
+If no active corrections exist, display:
+> No correction data available.
+
+Otherwise, group by `diagnosis_category`. For each category compute:
+- `count` — number of active corrections in this category
+- `last_seen` — the maximum `timestamp` value across corrections in this category (display as date only, e.g. "Mar 10")
+- `target_skill` — look up in this map:
+
+```
+code.wrong_pattern → typescript-patterns
+code.missing_context → code-review
+code.stale_knowledge → typescript-patterns
+code.over_engineering → code-review
+code.under_engineering → code-review
+code.style_mismatch → typescript-patterns
+code.scope_drift → gsd-workflow
+process.planning_error → gsd-workflow
+process.research_gap → gsd-workflow
+process.implementation_bug → code-review
+process.integration_miss → code-review
+process.convention_violation → session-awareness
+process.requirement_misread → gsd-workflow
+process.regression → code-review
+```
+
+If a category is not in the map, display "—" for target_skill.
+
+Display as a table sorted by count descending:
+
+```
+### Correction Analysis
+| Category | Count | Last Seen | Target Skill |
+|----------|-------|-----------|--------------|
+| **code.style_mismatch** | **5** | Mar 10 | **typescript-patterns** |
+| code.missing_context | 2 | Mar 09 | code-review |
+```
+
+Bold the entire row (category, count, last_seen, target_skill) for categories where count >= 3. After the table, if any category has count >= 3, add a callout on its own line:
+
+> **3+ corrections detected** — run `/gsd:suggest` to review skill refinement suggestions.
+
+This section shows corrections only. Preference data is not included here (preferences are visible in session-start recall).
+
 ## Step 4: Activation history
 
 Read `.planning/patterns/budget-history.jsonl` using the Read tool.
@@ -253,4 +302,5 @@ _Run `/gsd:session-start` for session briefing | `/gsd:digest` again for updated
 - Recommendations reference specific phases, numbers, and thresholds
 - Config is read from .planning/config.json under the adaptive_learning key (retention_days, thresholds)
 - Footer links to related commands (/gsd:session-start, /gsd:digest)
+- Correction analysis section (Step 3g) appears with category grouping table, sorted by count descending, with bold rows and callout for categories >= 3 corrections
 </success_criteria>
