@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 31-01-PLAN.md — Dashboard Overview Integration; Phase 31 plan 01 complete
-last_updated: "2026-03-11T04:44:53.713Z"
-last_activity: 2026-03-10 — 31-01 completed (DASH-06, DASH-07, DASH-08)
+stopped_at: Completed 32-01-PLAN.md — Gate-to-Correction Attribution Script; Phase 32 plan 01 complete
+last_updated: "2026-03-11T09:53:00.000Z"
+last_activity: 2026-03-11 — 32-01 completed (ANLZ-01, ANLZ-02)
 progress:
   total_phases: 5
-  completed_phases: 4
-  total_plans: 6
-  completed_plans: 6
-  percent: 60
+  completed_phases: 5
+  total_plans: 7
+  completed_plans: 7
+  percent: 100
 ---
 
 # Project State — Milestone v7.0
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-10)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts -- enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 31: Dashboard Overview Integration — Plan 01 COMPLETE
+**Current focus:** Phase 32: Gate-to-Correction Attribution — Plan 01 COMPLETE (milestone v7.0 DONE)
 
 ## Current Position
 
-Phase: 31 (4 of 5) — Dashboard Overview Integration
+Phase: 32 (5 of 5) — Gate-to-Correction Attribution
 Plan: 1 of 1 in current phase — COMPLETE
-Status: Phase 31 plan 01 done (Overview integration: getProjectGateHealth, gateHealth in parseProjectData, quality badge, milestone gate summary, tmux gate activity)
-Last activity: 2026-03-10 — 31-01 completed (DASH-06, DASH-07, DASH-08)
+Status: Phase 32 plan 01 done (attribute-gates.cjs: CATEGORY_GATE_MAP, CONFIDENCE_MAP, attributeGates(), gate-attribution.jsonl output)
+Last activity: 2026-03-11 — 32-01 completed (ANLZ-01, ANLZ-02)
 
-Progress: [######....] ~60%
+Progress: [##########] 100%
 
 ## Performance Metrics
 
@@ -47,6 +47,7 @@ Progress: [######....] ~60%
 | 29 | 1 | 8 min | 8 min |
 | 30 | 1 | 15 min | 15 min |
 | 31 | 1 | 12 min | 12 min |
+| 32 | 1 | 15 min | 15 min |
 
 **Recent Trend:**
 - Last 5 plans: 15 min, 12 min, 8 min, 15 min, 12 min
@@ -61,6 +62,7 @@ Progress: [######....] ~60%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- 32-01: CATEGORY_GATE_MAP and CONFIDENCE_MAP are plain constants (not config-driven); .claude/ is gitignored so force-add is required for all new lib files
 - 29-01: ESLint MCP (@eslint/mcp) is IMPLEMENT recommendation — production-ready, Node.js-native, enhances diff_review gate as `lint_check`
 - 29-01: Semgrep MCP deferred to v7.1+ — Python runtime dependency + beta status; proposed as `security_scan` gate
 - 29-01: GitHub MCP, NPM Security Audit MCP, Code Analysis MCP Server all DO NOT IMPLEMENT with specific rationale
@@ -80,6 +82,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-10
-Stopped at: Completed 31-01-PLAN.md — Dashboard Overview Integration; Phase 31 plan 01 complete
+Last session: 2026-03-11
+Stopped at: Completed 32-01-PLAN.md — Gate-to-Correction Attribution Script; Phase 32 plan 01 complete; milestone v7.0 DONE
 Resume file: None

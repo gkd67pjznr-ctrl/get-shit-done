@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 29: Quality Gating Research** - Evaluate additional MCP servers, tools, and libraries for quality gating beyond Context7 (completed 2026-03-10)
 - [x] **Phase 30: Dashboard Gate Health Page** - Dedicated page with gate outcome distribution, quality level usage, per-gate firing rates, and Context7 metrics (completed 2026-03-11)
 - [x] **Phase 31: Dashboard Overview Integration** - Surface quality level, gate firing rates, and gate metrics in overview page project headers, milestone lines, and tmux cards (completed 2026-03-10)
-- [ ] **Phase 32: Gate-to-Correction Attribution** - Heuristic analysis mapping corrections to originating gates with structured output
+- [x] **Phase 32: Gate-to-Correction Attribution** - Heuristic analysis mapping corrections to originating gates with structured output (completed 2026-03-11)
 
 ## Phase Details
 
@@ -71,7 +71,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. An attribution analysis script reads gate-executions.jsonl and corrections.jsonl and produces heuristic mappings from correction categories to originating gates
   2. Attribution results are written to gate-attribution.jsonl with structured entries linking correction types to gate names with confidence scores
   3. Running the attribution script with no data produces an empty result (not an error)
-**Plans**: TBD
+**Plans**: 32-01 (attribute-gates.cjs: CATEGORY_GATE_MAP, CONFIDENCE_MAP, attributeGates(), gate-attribution.jsonl) — COMPLETE 2026-03-11
 
 ## Progress
 
@@ -84,4 +84,4 @@ Phases execute in numeric order: 28 -> 29 -> 30 -> 31 -> 32
 | 29. Quality Gating Research | 1/1 | Complete    | 2026-03-11 |
 | 30. Dashboard Gate Health Page | 1/1 | Complete    | 2026-03-11 |
 | 31. Dashboard Overview Integration | 0/? | Complete    | 2026-03-11 |
-| 32. Gate-to-Correction Attribution | 0/? | Not started | - |
+| 32. Gate-to-Correction Attribution | 1/1 | Complete    | 2026-03-11 |
