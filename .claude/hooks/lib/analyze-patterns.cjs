@@ -135,15 +135,25 @@ function checkGuardrails(category, suggestionsDoc, config) {
   const cooldownMs = config.cooldownDays * 24 * 60 * 60 * 1000;
   const cutoff = Date.now() - cooldownMs;
 
-  // Find most recent accepted suggestion for this target_skill within cooldown window
-  const recentAccepted = suggestionsDoc.suggestions
-    .filter(s => s.target_skill === targetSkill && s.status === 'accepted' && s.accepted_at)
-    .map(s => new Date(s.accepted_at).getTime())
+  // Find most recent accepted or refined suggestion for this target_skill within cooldown window
+  const recentTerminal = suggestionsDoc.suggestions
+    .filter(s => {
+      if (s.target_skill !== targetSkill) return false;
+      if (s.status === 'accepted' && s.accepted_at) return true;
+      if (s.status === 'refined' && s.refined_at) return true;
+      return false;
+    })
+    .map(s => {
+      const ts = s.status === 'refined'
+        ? new Date(s.refined_at).getTime()
+        : new Date(s.accepted_at).getTime();
+      return ts;
+    })
     .filter(ts => !isNaN(ts) && ts > cutoff);
 
-  if (recentAccepted.length > 0) {
-    const latestAcceptedTs = Math.max(...recentAccepted);
-    const cooldownExpires = new Date(latestAcceptedTs + cooldownMs).toISOString();
+  if (recentTerminal.length > 0) {
+    const latestTs = Math.max(...recentTerminal);
+    const cooldownExpires = new Date(latestTs + cooldownMs).toISOString();
     return { pass: false, reason: 'cooldown_active', cooldown_expires: cooldownExpires };
   }
 

@@ -438,6 +438,42 @@ describe('analyzePatterns — guardrails', () => {
     expect(result.suggestions_written).toBe(0);
   });
 
+  it('enforces 7-day cooldown after suggestion is refined (refined_at)', () => {
+    writeNCorrections(tmpDir, 3, { diagnosis_category: 'code.style_mismatch' });
+
+    // Pre-write a suggestions.json with a REFINED suggestion for 'typescript-patterns'
+    // refined today = within cooldown
+    const patternsDir = path.join(tmpDir, '.planning', 'patterns');
+    fs.mkdirSync(patternsDir, { recursive: true });
+    const recentRefined = new Date().toISOString();
+    const existingDoc = {
+      metadata: { last_analyzed_at: null, version: 1, skipped_suggestions: [] },
+      suggestions: [
+        {
+          id: 'sug-0000000001-001',
+          type: 'refine_skill',
+          target_skill: 'typescript-patterns',
+          category: 'code.style_mismatch',
+          scope_summary: '1 scope: file:src/foo.ts',
+          correction_count: 3,
+          sample_corrections: [],
+          status: 'refined',
+          created_at: recentRefined,
+          accepted_at: recentRefined,
+          dismissed_at: null,
+          refined_at: recentRefined,
+        },
+      ],
+    };
+    fs.writeFileSync(
+      path.join(patternsDir, 'suggestions.json'),
+      JSON.stringify(existingDoc, null, 2)
+    );
+
+    const result = analyzePatterns({ cwd: tmpDir });
+    expect(result.suggestions_written).toBe(0);
+  });
+
   it('logs skipped_suggestions in metadata when guardrail blocks a suggestion', () => {
     writeNCorrections(tmpDir, 3, { diagnosis_category: 'code.style_mismatch' });
 
