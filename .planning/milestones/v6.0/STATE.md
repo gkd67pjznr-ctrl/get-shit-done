@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: "Plan 27-01 complete (cross-project preference promotion library, PREF-03, commit 25e987f)"
-last_updated: "2026-03-11T10:55:00.000Z"
+stopped_at: "Plan 27-02 complete (learned context loading in GSD workflow commands, LOAD-01, commit ee16a34)"
+last_updated: "2026-03-11T11:20:00.000Z"
 progress:
   total_phases: 5
   completed_phases: 4
@@ -25,8 +25,8 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 ## Current Position
 
 Phase: 27 (6 of 6 in v6.0) (Cross-Project Inheritance and Skill Loading) -- IN PROGRESS
-Plan: 1 of ? in phase 27 (27-01 complete)
-Status: Phase 27 plan 01 complete -- cross-project preference promotion library (PREF-03)
+Plan: 2 of ? in phase 27 (27-01, 27-02 complete)
+Status: Phase 27 plan 02 complete -- learned context loading in GSD workflow commands (LOAD-01)
 
 Progress: [##########] 60%
 
@@ -94,6 +94,8 @@ Recent decisions affecting current work:
 - **27-01:** `require('./promote-preference.cjs')` is inside try/catch in `checkAndPromote` — prevents module load errors from propagating
 - **27-01:** User-level store uses JSON (not JSONL) — read-heavy aggregated file; project-level stays JSONL for append-heavy writes
 - **27-01:** GSD_HOME env var resolves gsd home at call time via `getGsdHome()` — module is stateless, tests set env before calling
+- **27-02:** Decimal step numbers used for insertion (e.g., `1.5`, `2.5`) to avoid renumbering all downstream steps — matches existing file convention of `3.5`, `5.5`, `7.5`, `13.5`
+- **27-02:** `session-start.md` does not exist in this project; plan spec says "skip if missing" — skipped and documented
 
 ### Pending Todos
 
@@ -106,6 +108,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-11
-Stopped at: Plan 27-01 complete (cross-project preference promotion library, PREF-03, commit 25e987f)
+Stopped at: Plan 27-02 complete (learned context loading in GSD workflow commands, LOAD-01, commit ee16a34)
 Resume file: None
-Next: Phase 27 plan 02 (LOAD-01: workflow learned context loading) or phase 27 plan 03 (LOAD-02: agent skill inheritance)
+Next: Phase 27 plan 03 (LOAD-02: agent skill inheritance)
