@@ -436,6 +436,7 @@ Task(
 - {phase_dir}/{phase_num}-UAT.md (UAT with diagnoses)
 - .planning/STATE.md (Project State)
 - .planning/ROADMAP.md (Roadmap)
+- .planning/patterns/preferences.jsonl (Learned preferences, if exists — apply active preferences during verification)
 </files_to_read>
 
 </planning_context>

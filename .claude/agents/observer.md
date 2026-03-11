@@ -8,6 +8,11 @@ tools: Read, Bash
 
 The observer is a **deterministic CJS library**, not an autonomous agent. It counts correction patterns, applies bounded learning guardrails, and writes skill refinement suggestions to `.planning/patterns/suggestions.json`.
 
+## Startup
+
+Read on invocation (if exists):
+- `.planning/patterns/preferences.jsonl` (Learned preferences — read if exists; use as baseline when generating new suggestions to avoid redundancy)
+
 ## Invocation
 
 Run the observer on-demand (called by `/gsd:digest`):

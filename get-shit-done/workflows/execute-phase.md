@@ -162,6 +162,7 @@ Execute each wave in sequence. Within a wave: parallel if `PARALLELIZATION=true`
        - .planning/config.json (Config, if exists)
        - ./CLAUDE.md (Project instructions, if exists — follow project-specific guidelines and coding conventions)
        - .claude/skills/ or .agents/skills/ (Project skills, if either exists — list skills, read SKILL.md for each, follow relevant rules during implementation)
+       - .planning/patterns/preferences.jsonl (Learned preferences, if exists — apply active preferences during implementation)
        </files_to_read>
 
        <success_criteria>
