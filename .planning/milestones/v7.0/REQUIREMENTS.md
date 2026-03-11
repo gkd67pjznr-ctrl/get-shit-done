@@ -24,9 +24,9 @@ Requirements for quality enforcement observability. Each maps to roadmap phases.
 
 ### Dashboard — Overview Integration
 
-- [ ] **DASH-06**: Quality level indicator on each project header in overview page
-- [ ] **DASH-07**: Gate firing rates shown in milestone line items
-- [ ] **DASH-08**: Gate metrics summary in tmux terminal session cards
+- [x] **DASH-06**: Quality level indicator on each project header in overview page
+- [x] **DASH-07**: Gate firing rates shown in milestone line items
+- [x] **DASH-08**: Gate metrics summary in tmux terminal session cards
 
 ### Analytics
 
@@ -65,9 +65,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DASH-03 | Phase 30 | Complete |
 | DASH-04 | Phase 30 | Complete |
 | DASH-05 | Phase 30 | Complete |
-| DASH-06 | Phase 31 | Pending |
-| DASH-07 | Phase 31 | Pending |
-| DASH-08 | Phase 31 | Pending |
+| DASH-06 | Phase 31 | Complete |
+| DASH-07 | Phase 31 | Complete |
+| DASH-08 | Phase 31 | Complete |
 | ANLZ-01 | Phase 32 | Pending |
 | ANLZ-02 | Phase 32 | Pending |
 
