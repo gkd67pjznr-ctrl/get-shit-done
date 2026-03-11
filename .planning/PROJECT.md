@@ -78,22 +78,23 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 - ✓ /wrap:* and /sc:* commands removed — GSD commands natively skill-aware — v4.0
 - ✓ gsd-skill-creator deprecated as standalone package — v4.0
 
+- ✓ Gate execution persistence — 5 sentinel steps recorded to gate-executions.jsonl with quality-level filtering — v7.0
+- ✓ Correction quality context — quality_level field on all correction entries — v7.0
+- ✓ Context7 call logging — library lookups persisted to context7-calls.jsonl with token budgets — v7.0
+- ✓ Quality gating research — evaluated 5 MCP servers/tools, ESLint MCP recommended — v7.0
+- ✓ Dashboard Gate Health page — outcome distribution, quality level usage, per-gate firing rates, Context7 metrics — v7.0
+- ✓ Overview integration — quality badges on project cards, gate summaries on milestone lines and tmux cards — v7.0
+- ✓ Gate-to-correction attribution — heuristic mapping from correction categories to gates with confidence scores — v7.0
+
 ### Active
 
-(See v6.0 and v7.0 milestone requirements)
+(See v6.0 milestone requirements)
 
 ## Current Milestones
 
-### v7.0 Quality Enforcement Observability
+### v7.0 Quality Enforcement Observability — SHIPPED 2026-03-11
 
-**Goal:** Make quality gate enforcement fully observable — every gate execution persisted to disk, every correction tagged with enforcement context, dashboard shows real gate health metrics grounded in actual session data.
-
-**Target features:**
-- Gate execution persistence (gate-executions.jsonl via write-gate-execution.cjs)
-- Quality context on corrections (quality_level field on correction entries)
-- Context7 invocation logging (context7-calls.jsonl with library, tokens, usage)
-- Dashboard gate health panel (gate firing rates, outcome distribution, quality level usage)
-- Gate-to-correction attribution analysis (heuristic mapping from corrections to gates)
+**Delivered:** Quality gate enforcement made fully observable — every gate execution, correction, and Context7 call persisted to disk, surfaced in the dashboard, and linked through gate-to-correction attribution analytics. 5 phases, 7 plans, 14/14 requirements satisfied.
 
 ### v6.0 Adaptive Observation & Learning Loop
 
@@ -146,7 +147,7 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 
 ## Context
 
-Shipped v4.0 with ~52K LOC across 12 CJS source modules + 23 test suites, plus workflow/agent Markdown specifications, 16 skills, 4 teams, and a TypeScript dashboard.
+Shipped v7.0 with ~63K LOC across 12 CJS source modules + 23 test suites, plus workflow/agent Markdown specifications, 16 skills, 4 teams, and a TypeScript dashboard with Gate Health page.
 Tech stack: Node.js, CJS modules, TypeScript (dashboard), Markdown agent specifications, Context7 MCP.
 Tests passing across 23+ test suites.
 
@@ -156,11 +157,15 @@ Tests passing across 23+ test suites.
 
 **Tech debt system** (v3.0): DEBT.md with 10-field schema, `debt log/list/resolve` CLI commands, executor/verifier auto-logging gated by quality level, `/gsd:fix-debt` skill for on-demand resolution.
 
-**Legacy strip** (v3.1): Milestone-scoped is now the only supported layout. `detectLayoutStyle()`, `migrate.cjs`, and all layout branching removed. All test infrastructure rewritten. Net reduction of ~14K lines.
+**Legacy strip** (v3.1): Milestone-scoped is now the only supported layout. All layout branching removed. Net reduction of ~14K lines.
 
-**Adaptive learning** (v4.0): gsd-skill-creator merged into core. Single installer delivers skills, teams, hooks, and CLAUDE.md. Native observation in all 7 workflow commands. 13 standalone commands ported to /gsd:* namespace. Agent extensions merged inline.
+**Adaptive learning** (v4.0): gsd-skill-creator merged into core. Single installer delivers skills, teams, hooks, and CLAUDE.md. Native observation in all 7 workflow commands.
 
-**Known tech debt:** `cmdStateUpdateProgress` uses flat `.planning/phases/` path (MISS-01, medium). Analysis commands (gsd:suggest, gsd:digest) read data files with no writers yet. See `.planning/DEBT.md` and MILESTONES.md.
+**Device-wide dashboard** (v5.0): Multi-project command center with live terminal integration, session monitoring, cross-project metrics.
+
+**Quality observability** (v7.0): Gate execution persistence to JSONL, correction quality context, Context7 call logging, dedicated Gate Health dashboard page, overview integration (quality badges, gate summaries), gate-to-correction attribution analytics.
+
+**Known tech debt:** `cmdStateUpdateProgress` uses flat `.planning/phases/` path (MISS-01, medium). See `.planning/DEBT.md` and MILESTONES.md.
 
 ## Constraints
 
@@ -203,4 +208,4 @@ Tests passing across 23+ test suites.
 | No --milestone on migrate | Operates on project-level .planning/, not milestone workspaces | ✓ Good — migration is project-scoped, not milestone-scoped |
 
 ---
-*Last updated: 2026-03-10 after v6.0 milestone start*
+*Last updated: 2026-03-11 after v7.0 milestone completion*
