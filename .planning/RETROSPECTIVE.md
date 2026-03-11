@@ -279,6 +279,60 @@
 
 ---
 
+## Milestone: v6.0 — Adaptive Observation & Learning Loop
+
+**Shipped:** 2026-03-11
+**Phases:** 6 | **Plans:** 17 | **Sessions:** ~6
+
+### What Was Built
+- Hook-based correction capture — PostToolUse hook detects edits, reverts, self-reports; writes structured JSONL with 14-category two-tier taxonomy and auto-rotation at 1000 entries
+- Preference tracking — repeated corrections (3+) auto-promote to durable preferences.jsonl with confidence scoring and scope tagging (file/filetype/phase/project/global)
+- Live recall injection — session-start hook surfaces ≤10 relevant corrections/preferences (≤3K tokens); within-session cross-referencing via session-awareness skill
+- Observer agent — pattern aggregation engine replacing stub; generates suggestion candidates when correction patterns cross threshold
+- Suggestion pipeline — `/gsd:suggest` interactive command with accept/dismiss/defer workflow and 7-day cooldown
+- Enhanced digest — `/gsd:digest` groups corrections by category with trends; collaborative skill refinement when 3+ corrections contradict a skill
+- Skill refinement retirement — source corrections/preferences retired from active recall after baking into skills
+- Cross-project inheritance — preferences appearing in 3+ projects promoted to `~/.gsd/preferences.json`
+- Learned skill loading — all 7 GSD workflow commands and all subagents inherit learned preferences in execution context
+
+### What Worked
+- TDD scaffolding (Phase 22-01, 23-01, 24-01) — writing test stubs first with `it.todo` caught real integration issues early; tests passed green before implementation existed
+- Silent failure pattern — wrapping all hook code in try/catch with exit 0 prevented correction pipeline from ever breaking user workflow
+- Layered dependency chain (22→23→24→25→26→27) — each phase produced a coherent, testable capability that the next built on cleanly
+- JSONL-based storage aligned with GSD file-based philosophy — human-readable, git-friendly, simple rotation
+- Milestone audit caught real issues (recall-injection dedup separator, suggest.md shell injection risk, missing REQUIREMENTS.md content) and triggered remediation before completion
+- 6 bounded learning guardrails enforced safety constraints without excessive complexity
+
+### What Was Inefficient
+- Phase 25 Plan count in ROADMAP.md shows "1/2" despite both plans being complete — progress table wasn't updated after second plan
+- Phase 26 and 27 ROADMAP.md details section still says "Plans: TBD" despite plans being fully executed — late phases got less documentation attention
+- CATEGORY_SKILL_MAP duplicated in digest.md prose and analyze-patterns.cjs code — drift risk between the two sources
+- retireByCategory early-returns on missing patternsDir, silently skipping preferences.jsonl and suggestions.json retirement
+- Some SUMMARY.md files used inconsistent frontmatter schemas (Phase 22-01 used `key-files` YAML, 22-02 used simple prose) — no enforced schema
+
+### Patterns Established
+- Correction entry schema: 8 fields (correction_from, correction_to, diagnosis_category, diagnosis_text, scope, phase, source, timestamp)
+- Preference entry schema: confidence scoring (0.0-1.0), scope tagging, retired_at for baked preferences
+- Recall token budget pattern: ≤10 entries, ≤3K tokens, with dedup by category+scope key
+- Observer bounded learning: 6 guardrails (3 corrections min, 7-day cooldown, user confirmation, 20% max change, guardrail logging, 5+ co-activations)
+- Learned context injection: `inject_learned_context` block pattern for workflow commands and subagent prompts
+- Cross-project promotion: project-count threshold (3+) before elevating to user-level store
+
+### Key Lessons
+1. Silent failure in hooks is non-negotiable — any hook that can crash the user's workflow is worse than no hook at all
+2. JSONL rotation with dated archives is the right persistence pattern for append-heavy event streams — simple, debuggable, and naturally bounded
+3. Bounded learning guardrails should be designed upfront, not retrofitted — the 6-guardrail framework kept the entire pipeline safe from runaway auto-modification
+4. Cross-project inheritance needs a high threshold (3+ projects) — project-specific quirks shouldn't pollute the global store
+5. Recall exclusion for baked preferences prevents double-surfacing — skills are the durable layer, recall is the staging area
+6. Test scaffolding phases (stubs with it.todo) are worth the investment — they catch import/require issues and provide green baselines before implementation
+
+### Cost Observations
+- Model mix: ~65% sonnet (executor), ~25% haiku (plan-checker, researchers), ~10% opus (orchestration)
+- Sessions: ~6
+- Notable: 17 plans in 2 days; correction capture pipeline (Phases 22-24) was fastest at ~15 min/plan average
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -291,6 +345,7 @@
 | v3.0 Tech Debt System | ~3 | 6 | Structured debt tracking, agent auto-logging, migration tool, fix-debt skill |
 | v3.1 Legacy Strip & README | ~8 | 7 | Eliminated dual-layout support, milestone-scoped only, test infra rewrite |
 | v4.0 Adaptive Learning | ~6 | 7 | Merged skill-creator into core, native observation, command consolidation |
+| v6.0 Adaptive Observation | ~6 | 6 | Correction capture, preference learning, recall injection, observer agent, skill refinement |
 | v7.0 Quality Observability | ~4 | 5 | Gate persistence, dashboard Gate Health page, attribution analytics |
 
 ### Cumulative Quality
@@ -303,6 +358,7 @@
 | v3.0 | 266 | 90%+ on debt/migrate modules | 34 new tests (debt, migrate, milestone-scoped) |
 | v3.1 | 716 | N/A (strip milestone) | Rewrote 16 test files for milestone-scoped; net -14K lines |
 | v4.0 | 716+ | N/A | 15 plans; +42K lines (skills, teams, dashboard, observation, commands) |
+| v6.0 | 960+ | N/A | 17 plans; +17.8K lines (correction capture, preferences, recall, observer, digest, skill loading) |
 | v7.0 | 960+ | N/A | 7 plans; +10.5K lines (JSONL writers, Gate Health page, attribution) |
 
 ### Top Lessons (Verified Across Milestones)
@@ -318,3 +374,6 @@
 9. Copy-and-verify beats rewrite for large working codebases — verified in v4.0 (15K LOC dashboard worked with minimal adaptation)
 10. Established patterns compound across milestones — verified in v7.0 (Gate Health page took 15 min by reusing v5.0 dashboard component pattern)
 11. Parallel research phases add value without blocking execution — verified in v7.0 (Phase 29 research ran alongside Phase 28 implementation)
+12. Silent failure in hooks is non-negotiable for user-facing pipelines — verified in v6.0 (correction capture wraps all code in try/catch, never crashes user workflow)
+13. Test scaffolding phases (stubs with it.todo) catch import issues early and provide green baselines — verified in v6.0 (Phases 22-01, 23-01, 24-01)
+14. Bounded learning guardrails should be designed upfront, not retrofitted — verified in v6.0 (6-guardrail framework kept entire pipeline safe)

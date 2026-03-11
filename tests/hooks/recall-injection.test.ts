@@ -231,15 +231,15 @@ describe('dedup — promoted corrections excluded (PREF-04)', () => {
       makeValidEntry({ diagnosis_category: 'code.missing_context', scope: 'file' }),
     ];
 
-    // Build dedup Set from preferences (key: category+scope)
+    // Build dedup Set from preferences (key: category:scope — must match production hook separator)
     const promotedKeys = new Set(
-      preferences.map((p: Record<string, unknown>) => `${p.category}+${p.scope}`)
+      preferences.map((p: Record<string, unknown>) => `${p.category}:${p.scope}`)
     );
 
-    // Filter corrections: exclude those whose diagnosis_category+scope is in promotedKeys
+    // Filter corrections: exclude those whose diagnosis_category:scope is in promotedKeys
     const filtered = corrections.filter(
       (c: Record<string, unknown>) =>
-        !promotedKeys.has(`${c.diagnosis_category}+${c.scope}`)
+        !promotedKeys.has(`${c.diagnosis_category}:${c.scope}`)
     );
 
     expect(filtered).toHaveLength(1);

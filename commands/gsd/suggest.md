@@ -131,11 +131,11 @@ For each suggestion the user responds to:
 
 10. **If user says confirm:**
     a. Write the edited SKILL.md using the Write tool.
-    b. Retire the source corrections and preferences by running:
+    b. Retire the source corrections and preferences by running the following bash command from the project root. Replace `{category}` and `{suggestion_id}` with the actual values from the suggestion object, ensuring both values are properly escaped for shell safety (no unquoted special characters):
        ```bash
-       node -e "require('./.claude/hooks/lib/retire.cjs').retireByCategory('CATEGORY', 'SUGGESTION_ID', { cwd: process.cwd() })"
+       node -e "const r = require('./.claude/hooks/lib/retire.cjs'); r.retireByCategory(process.argv[1], process.argv[2], { cwd: process.cwd() })" -- "{category}" "{suggestion_id}"
        ```
-       Replace `CATEGORY` with the suggestion's `category` value and `SUGGESTION_ID` with the suggestion's `id`. Run this bash command from the project root.
+       This passes values as command-line arguments rather than string interpolation, avoiding shell injection and quoting issues.
     c. Update the suggestion: set `status = "refined"` and `refined_at = <current ISO 8601 timestamp>`.
     d. Display:
        ```

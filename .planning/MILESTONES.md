@@ -1,5 +1,35 @@
 # Milestones
 
+## v6.0 Adaptive Observation & Learning Loop (Shipped: 2026-03-11)
+
+**Delivered:** Transformed the observation system from a passive event logger into an intelligent correction-capture and preference-learning pipeline that feeds back into skill refinement — Claude learns from its mistakes and adapts to user expectations.
+
+**Phases:** 6 phases (22-27), 17 plans
+**Code:** 131 files changed (+17,820 / -422)
+**Timeline:** 2 days (2026-03-10 → 2026-03-11)
+**Git range:** 36e34f5 → 41e38dc
+**Requirements:** 19/19 satisfied
+**Commits:** 133
+
+**Key accomplishments:**
+1. Hook-based correction capture — PostToolUse hook detects edits, reverts, and self-reports; writes structured JSONL with 14-category taxonomy and auto-rotation
+2. Preference tracking — repeated corrections (3+) auto-promote to durable preferences with confidence scoring and scope tagging
+3. Live recall injection — session-start hook surfaces relevant corrections/preferences (≤10 entries, ≤3K tokens), within-session cross-referencing catches repeat mistakes
+4. Observer agent and suggestion pipeline — pattern aggregation engine with 6 bounded learning guardrails and `/gsd:suggest` interactive refinement command
+5. Enhanced digest with skill refinement — `/gsd:digest` groups corrections by category with trends; collaborative skill refinement workflow retires source data after baking
+6. Cross-project inheritance and skill loading — user-level preference promotion across 3+ projects, all 7 GSD commands and all subagents inherit learned context
+
+**Tech Debt (8 minor items from audit):**
+- Phase 22: Test fixture uses `phase: '22'` (string) instead of integer
+- Phase 25: suggest.md atomic write uses Write tool, not true shell rename
+- Phase 25: Watermark comparison uses string comparison (assumes UTC-only timestamps)
+- Phase 26: retireByCategory early-returns on missing patternsDir
+- Phase 26: CATEGORY_SKILL_MAP duplicated in digest.md vs analyze-patterns.cjs
+- Phase 26: Dual-write pattern in suggest.md relies on prose re-read instruction
+- Deployment: Workflow/command changes in source only (expected for dev project)
+
+---
+
 ## v7.0 Quality Enforcement Observability (Shipped: 2026-03-11)
 
 **Delivered:** Quality gate enforcement made fully observable — every gate execution, correction, and Context7 call persisted to disk, surfaced in the dashboard, and linked through gate-to-correction attribution analytics.
@@ -185,9 +215,3 @@
 **Phase:** 21 | **Plan:** 6 | **Status:** Complete
 **Progress:** 6/6 plans (100%)
 **Updated:** 2026-03-09
-
-## v6.0
-
-**Phase:** 27 | **Plan:** 27-03 | **Status:** In Progress
-**Progress:** 3/3 plans (100%)
-**Updated:** 2026-03-11

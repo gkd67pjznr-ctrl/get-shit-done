@@ -86,9 +86,22 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 - ✓ Overview integration — quality badges on project cards, gate summaries on milestone lines and tmux cards — v7.0
 - ✓ Gate-to-correction attribution — heuristic mapping from correction categories to gates with confidence scores — v7.0
 
+- ✓ Hook-based correction capture with structured JSONL storage, 14-category taxonomy, and auto-rotation — v6.0
+- ✓ Auto self-diagnosis on corrections with root cause categorization — v6.0
+- ✓ Preference tracking promoting 3+ repeated corrections to durable preferences with confidence scoring — v6.0
+- ✓ Scope-aware preferences (file/filetype/phase/project/global) — v6.0
+- ✓ Live recall injection at session start and within-session cross-referencing — v6.0
+- ✓ Recall exclusion for preferences baked into skill refinements — v6.0
+- ✓ Observer agent with pattern aggregation and suggestion generation — v6.0
+- ✓ 6 bounded learning guardrails enforced (3 corrections min, 7-day cooldown, user confirmation, 20% max change, guardrail logging) — v6.0
+- ✓ Enhanced `/gsd:digest` with correction analysis and skill contradiction detection — v6.0
+- ✓ Collaborative skill refinement workflow via `/gsd:suggest` — v6.0
+- ✓ Cross-project preference inheritance to `~/.gsd/preferences.json` — v6.0
+- ✓ All GSD workflow commands and subagents inherit learned skills in execution context — v6.0
+
 ### Active
 
-(See v6.0 milestone requirements)
+(No active milestone — start next with `/gsd:new-milestone`)
 
 ## Current Milestones
 
@@ -96,18 +109,9 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 
 **Delivered:** Quality gate enforcement made fully observable — every gate execution, correction, and Context7 call persisted to disk, surfaced in the dashboard, and linked through gate-to-correction attribution analytics. 5 phases, 7 plans, 14/14 requirements satisfied.
 
-### v6.0 Adaptive Observation & Learning Loop
+### v6.0 Adaptive Observation & Learning Loop — SHIPPED 2026-03-11
 
-**Goal:** Transform the observation system from a passive event logger into an intelligent correction-capture and preference-learning pipeline that feeds back into skill refinement — so Claude learns from its mistakes and adapts to user expectations.
-
-**Target features:**
-- Hook-based real-time correction and mistake capture during sessions
-- Auto self-diagnosis when Claude is corrected (root cause analysis)
-- Preference tracking as durable, referenceable patterns
-- Live recall of corrections within current session + at session start
-- Observer agent implementation (session boundary analysis, pattern aggregation)
-- Suggestion pipeline writer (generate candidates for `/gsd:suggest`)
-- Enhanced `/gsd:digest` with correction analysis and collaborative skill refinement
+**Delivered:** Intelligent correction-capture and preference-learning pipeline — hook-based correction detection, auto self-diagnosis, preference promotion, live recall injection, observer agent with suggestion pipeline, enhanced digest with collaborative skill refinement, and cross-project inheritance with learned skill loading in all GSD commands.
 
 ### v4.0 Adaptive Learning Integration — SHIPPED 2026-03-09
 
@@ -147,7 +151,7 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 
 ## Context
 
-Shipped v7.0 with ~63K LOC across 12 CJS source modules + 23 test suites, plus workflow/agent Markdown specifications, 16 skills, 4 teams, and a TypeScript dashboard with Gate Health page.
+Shipped v6.0 with ~81K LOC across 12 CJS source modules + 23 test suites, plus workflow/agent Markdown specifications, 16 skills, 4 teams, a TypeScript dashboard with Gate Health page, and adaptive learning pipeline (correction capture, preference tracking, observer, recall injection).
 Tech stack: Node.js, CJS modules, TypeScript (dashboard), Markdown agent specifications, Context7 MCP.
 Tests passing across 23+ test suites.
 
@@ -164,6 +168,8 @@ Tests passing across 23+ test suites.
 **Device-wide dashboard** (v5.0): Multi-project command center with live terminal integration, session monitoring, cross-project metrics.
 
 **Quality observability** (v7.0): Gate execution persistence to JSONL, correction quality context, Context7 call logging, dedicated Gate Health dashboard page, overview integration (quality badges, gate summaries), gate-to-correction attribution analytics.
+
+**Adaptive observation** (v6.0): Hook-based correction capture with 14-category taxonomy, preference tracking with confidence scoring, live recall injection (session-start + within-session), observer agent with suggestion pipeline and 6 bounded learning guardrails, enhanced digest with collaborative skill refinement, cross-project preference inheritance, learned skill loading in all GSD commands and subagents.
 
 **Known tech debt:** `cmdStateUpdateProgress` uses flat `.planning/phases/` path (MISS-01, medium). See `.planning/DEBT.md` and MILESTONES.md.
 
@@ -206,6 +212,13 @@ Tests passing across 23+ test suites.
 | Inline mini-plan for fix-debt | Executor spawned directly, bypasses ROADMAP lookup | ✓ Good — fast path for debt fixes without full phase overhead |
 | Rich-description skip path in yolo | Auto-logged debt entries already actionable, skip diagnosis | ✓ Good — reduces friction for well-described debt |
 | No --milestone on migrate | Operates on project-level .planning/, not milestone workspaces | ✓ Good — migration is project-scoped, not milestone-scoped |
+| 14-category two-tier correction taxonomy | Broad enough to cover all correction types, narrow enough to be actionable | ✓ Good — consistent categorization across capture, analysis, and digest |
+| Silent failure in all hook utilities | Hooks must never break user workflow; always exit 0 | ✓ Good — zero user-facing failures from correction pipeline |
+| JSONL over SQLite for corrections | File-based aligns with GSD philosophy; no binary dependencies | ✓ Good — human-readable, git-friendly, rotation-based lifecycle |
+| 3-correction threshold for preference promotion | Low enough to learn quickly, high enough to filter noise | ✓ Good — balances responsiveness with false-positive prevention |
+| 6 bounded learning guardrails | Prevents runaway auto-modification of skills | ✓ Good — user always in control of skill changes |
+| Recall exclusion for baked preferences | Skills are the durable layer; recall is staging | ✓ Good — prevents double-surfacing of already-incorporated learnings |
+| Cross-project promotion at 3+ projects | Ensures preferences are truly universal before elevating | ✓ Good — project-specific quirks don't pollute global store |
 
 ---
-*Last updated: 2026-03-11 after v7.0 milestone completion*
+*Last updated: 2026-03-11 after v6.0 milestone completion*
