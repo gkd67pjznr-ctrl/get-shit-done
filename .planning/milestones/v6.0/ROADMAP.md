@@ -15,7 +15,7 @@ Transform the observation system from a passive event logger into an intelligent
 - [x] **Phase 24: Live Recall and Session Injection** - Surfacing corrections and preferences at session start and during active work (completed 2026-03-10)
 - [x] **Phase 25: Observer Agent and Suggestion Pipeline** - Pattern aggregation and suggestion generation with guardrail enforcement (completed 2026-03-11)
 - [x] **Phase 26: Enhanced Digest and Skill Refinement** - Correction analysis in digest with collaborative skill refinement workflow (completed 2026-03-11)
-- [ ] **Phase 27: Cross-Project Inheritance and Skill Loading** - User-level preference promotion and learned skill injection into all GSD commands
+- [x] **Phase 27: Cross-Project Inheritance and Skill Loading** - User-level preference promotion and learned skill injection into all GSD commands (completed 2026-03-11)
 
 ## Phase Details
 
@@ -105,4 +105,4 @@ Phases execute in numeric order: 22 -> 23 -> 24 -> 25 -> 26 -> 27
 | 24. Live Recall and Session Injection | 3/3 | Complete    | 2026-03-10 |
 | 25. Observer Agent and Suggestion Pipeline | 1/2 | Complete    | 2026-03-11 |
 | 26. Enhanced Digest and Skill Refinement | 3/3 | Complete    | 2026-03-11 |
-| 27. Cross-Project Inheritance and Skill Loading | 2/3 | In Progress|  |
+| 27. Cross-Project Inheritance and Skill Loading | 3/3 | Complete   | 2026-03-11 |
