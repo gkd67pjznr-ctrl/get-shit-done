@@ -11,6 +11,7 @@ import { ProjectCard } from './components/project-card.js';
 import { ProjectDetail } from './components/project-detail.js';
 import { EmptyState } from './components/empty-state.js';
 import { PatternPage } from './components/pattern-page.js';
+import { GateHealthPage } from './components/gate-health-page.js';
 import { TerminalModal } from './components/terminal-modal.js';
 import { fmtCost } from './utils/format.js';
 
@@ -74,17 +75,20 @@ function App() {
     <${Header} onToggleSidebar=${() => setSidebarOpen(!sidebarOpen)} />
     <nav class="subnav">
       <a href="#/" style="color:var(--text-muted); text-decoration:none; margin-right:16px;">Overview</a>
-      <a href="#/patterns" style="color:var(--text-muted); text-decoration:none;">Patterns</a>
+      <a href="#/patterns" style="color:var(--text-muted); text-decoration:none; margin-right:16px;">Patterns</a>
+      <a href="#/gate-health" style="color:var(--text-muted); text-decoration:none; margin-right:16px;">Gate Health</a>
       <${TotalCost} />
     </nav>
     <div class="page-layout">
       <${Sidebar} class=${sidebarOpen ? 'open' : ''} onClose=${() => setSidebarOpen(false)} onOpenTerminal=${setOpenTerminalSession} />
       <main class="main-content">
-        ${r.page === 'patterns'
-          ? html`<${PatternPage} />`
-          : r.page === 'detail'
-            ? html`<${ProjectDetail} name=${r.name} milestone=${r.milestone} />`
-            : html`<${Overview} onOpenTerminal=${setOpenTerminalSession} />`
+        ${r.page === 'gate-health'
+          ? html`<${GateHealthPage} />`
+          : r.page === 'patterns'
+            ? html`<${PatternPage} />`
+            : r.page === 'detail'
+              ? html`<${ProjectDetail} name=${r.name} milestone=${r.milestone} />`
+              : html`<${Overview} onOpenTerminal=${setOpenTerminalSession} />`
         }
       </main>
     </div>
