@@ -128,3 +128,168 @@ describe('setupTerminalWebSocket integration', () => {
     });
   });
 });
+
+// ─── aggregateGateHealth unit tests (DASH-02 through DASH-05) ────────────────
+
+const fs2 = require('node:fs');
+const os2 = require('node:os');
+const path2 = require('node:path');
+
+function makeTempProject(entries) {
+  const dir = fs2.mkdtempSync(path2.join(os2.tmpdir(), 'gsd-gate-test-'));
+  const obsDir = path2.join(dir, '.planning', 'observations');
+  fs2.mkdirSync(obsDir, { recursive: true });
+  if (entries.gateExecs) {
+    fs2.writeFileSync(
+      path2.join(obsDir, 'gate-executions.jsonl'),
+      entries.gateExecs.map(e => JSON.stringify(e)).join('\n') + '\n',
+      'utf-8',
+    );
+  }
+  if (entries.context7) {
+    fs2.writeFileSync(
+      path2.join(obsDir, 'context7-calls.jsonl'),
+      entries.context7.map(e => JSON.stringify(e)).join('\n') + '\n',
+      'utf-8',
+    );
+  }
+  return dir;
+}
+
+describe('aggregateGateHealth', () => {
+  const { aggregateGateHealth } = require('../get-shit-done/bin/lib/server.cjs');
+
+  it('returns hasData:false for empty registry', () => {
+    const result = aggregateGateHealth([]);
+    assert.equal(result.hasData, false);
+    assert.equal(result.totalExecutions, 0);
+    assert.equal(result.projectCount, 0);
+    assert.equal(result.reportingCount, 0);
+  });
+
+  it('returns hasData:false when no JSONL files exist', () => {
+    const dir = fs2.mkdtempSync(path2.join(os2.tmpdir(), 'gsd-gate-empty-'));
+    const result = aggregateGateHealth([{ name: 'proj', path: dir }]);
+    assert.equal(result.hasData, false);
+    assert.equal(result.totalExecutions, 0);
+    fs2.rmSync(dir, { recursive: true });
+  });
+
+  it('DASH-02: counts outcome distribution correctly', () => {
+    const dir = makeTempProject({
+      gateExecs: [
+        { gate: 'codebase_scan', outcome: 'passed', quality_level: 'standard', timestamp: '2026-03-10T12:00:00.000Z' },
+        { gate: 'test_gate',     outcome: 'warned',  quality_level: 'standard', timestamp: '2026-03-10T12:01:00.000Z' },
+        { gate: 'diff_review',   outcome: 'blocked', quality_level: 'strict',   timestamp: '2026-03-10T12:02:00.000Z' },
+        { gate: 'test_baseline', outcome: 'skipped', quality_level: 'standard', timestamp: '2026-03-10T12:03:00.000Z' },
+      ],
+    });
+    const result = aggregateGateHealth([{ name: 'proj', path: dir }]);
+    assert.equal(result.outcomes.passed, 1);
+    assert.equal(result.outcomes.warned, 1);
+    assert.equal(result.outcomes.blocked, 1);
+    assert.equal(result.outcomes.skipped, 1);
+    assert.equal(result.totalExecutions, 4);
+    assert.equal(result.hasData, true);
+    fs2.rmSync(dir, { recursive: true });
+  });
+
+  it('DASH-03: counts quality level distribution correctly', () => {
+    const dir = makeTempProject({
+      gateExecs: [
+        { gate: 'codebase_scan', outcome: 'passed', quality_level: 'standard', timestamp: '2026-03-10T12:00:00.000Z' },
+        { gate: 'codebase_scan', outcome: 'passed', quality_level: 'standard', timestamp: '2026-03-10T12:01:00.000Z' },
+        { gate: 'test_gate',     outcome: 'passed', quality_level: 'strict',   timestamp: '2026-03-10T12:02:00.000Z' },
+      ],
+    });
+    const result = aggregateGateHealth([{ name: 'proj', path: dir }]);
+    assert.equal(result.qualityLevels.standard, 2);
+    assert.equal(result.qualityLevels.strict, 1);
+    assert.equal(result.qualityLevels.fast, 0);
+    fs2.rmSync(dir, { recursive: true });
+  });
+
+  it('DASH-04: aggregates per-gate firing rates', () => {
+    const dir = makeTempProject({
+      gateExecs: [
+        { gate: 'codebase_scan', outcome: 'passed', quality_level: 'standard', timestamp: '2026-03-10T12:00:00.000Z' },
+        { gate: 'codebase_scan', outcome: 'warned',  quality_level: 'standard', timestamp: '2026-03-10T12:01:00.000Z' },
+        { gate: 'test_gate',     outcome: 'blocked', quality_level: 'strict',   timestamp: '2026-03-10T12:02:00.000Z' },
+      ],
+    });
+    const result = aggregateGateHealth([{ name: 'proj', path: dir }]);
+    assert.equal(result.gates.codebase_scan.total, 2);
+    assert.equal(result.gates.codebase_scan.passed, 1);
+    assert.equal(result.gates.codebase_scan.warned, 1);
+    assert.equal(result.gates.test_gate.total, 1);
+    assert.equal(result.gates.test_gate.blocked, 1);
+    // Untouched gates have zero counts
+    assert.equal(result.gates.diff_review.total, 0);
+    fs2.rmSync(dir, { recursive: true });
+  });
+
+  it('DASH-05: aggregates Context7 metrics', () => {
+    const dir = makeTempProject({
+      context7: [
+        { library: '/vercel/next.js', tokens_requested: 2000, token_cap: 2000, used: true,  quality_level: 'standard', timestamp: '2026-03-10T12:00:00.000Z' },
+        { library: '/tailwindlabs/tailwindcss', tokens_requested: 1500, token_cap: 2000, used: false, quality_level: 'standard', timestamp: '2026-03-10T12:01:00.000Z' },
+      ],
+    });
+    const result = aggregateGateHealth([{ name: 'proj', path: dir }]);
+    assert.equal(result.context7.totalCalls, 2);
+    assert.equal(result.context7.avgTokensRequested, 1750);
+    // 1 of 2 hit cap (tokens_requested >= token_cap)
+    assert.ok(Math.abs(result.context7.capHitRate - 0.5) < 0.001);
+    // 1 of 2 used in code
+    assert.ok(Math.abs(result.context7.usedInCodeRate - 0.5) < 0.001);
+    fs2.rmSync(dir, { recursive: true });
+  });
+
+  it('skips malformed JSONL lines without throwing', () => {
+    const dir = fs2.mkdtempSync(path2.join(os2.tmpdir(), 'gsd-gate-malformed-'));
+    const obsDir = path2.join(dir, '.planning', 'observations');
+    fs2.mkdirSync(obsDir, { recursive: true });
+    fs2.writeFileSync(
+      path2.join(obsDir, 'gate-executions.jsonl'),
+      '{ NOT VALID JSON }\n{"gate":"codebase_scan","outcome":"passed","quality_level":"standard","timestamp":"2026-03-10T12:00:00.000Z"}\n',
+      'utf-8',
+    );
+    const result = aggregateGateHealth([{ name: 'proj', path: dir }]);
+    assert.equal(result.totalExecutions, 1); // malformed line skipped, valid line counted
+    assert.equal(result.hasData, true);
+    fs2.rmSync(dir, { recursive: true });
+  });
+
+  it('guards against division by zero when no data', () => {
+    const dir = makeTempProject({ context7: [] });
+    const result = aggregateGateHealth([{ name: 'proj', path: dir }]);
+    assert.equal(result.context7.capHitRate, 0);
+    assert.equal(result.context7.usedInCodeRate, 0);
+    assert.equal(result.context7.avgTokensRequested, 0);
+    fs2.rmSync(dir, { recursive: true });
+  });
+
+  it('aggregates across multiple projects', () => {
+    const dirA = makeTempProject({
+      gateExecs: [
+        { gate: 'codebase_scan', outcome: 'passed', quality_level: 'standard', timestamp: '2026-03-10T12:00:00.000Z' },
+      ],
+    });
+    const dirB = makeTempProject({
+      gateExecs: [
+        { gate: 'test_gate', outcome: 'warned', quality_level: 'strict', timestamp: '2026-03-10T12:00:00.000Z' },
+      ],
+    });
+    const result = aggregateGateHealth([
+      { name: 'proj-a', path: dirA },
+      { name: 'proj-b', path: dirB },
+    ]);
+    assert.equal(result.projectCount, 2);
+    assert.equal(result.reportingCount, 2);
+    assert.equal(result.totalExecutions, 2);
+    assert.equal(result.outcomes.passed, 1);
+    assert.equal(result.outcomes.warned, 1);
+    fs2.rmSync(dirA, { recursive: true });
+    fs2.rmSync(dirB, { recursive: true });
+  });
+});
