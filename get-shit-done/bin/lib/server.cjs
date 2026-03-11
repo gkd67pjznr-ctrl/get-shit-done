@@ -526,6 +526,58 @@ function aggregatePatterns(registry) {
 }
 
 /**
+ * Returns gate health metrics for a single project.
+ *
+ * Reads .planning/observations/gate-executions.jsonl and returns compact
+ * metrics for use in overview card rendering (DASH-06, DASH-07, DASH-08).
+ *
+ * @param {string} projectPath - Absolute path to the project root
+ * @returns {object} Per-project gate health data
+ */
+function getProjectGateHealth(projectPath) {
+  const VALID_GATES = ['codebase_scan', 'context7_lookup', 'test_baseline', 'test_gate', 'diff_review'];
+  const VALID_OUTCOMES = ['passed', 'warned', 'blocked', 'skipped'];
+  const obsDir = path.join(projectPath, '.planning', 'observations');
+  const gateFile = path.join(obsDir, 'gate-executions.jsonl');
+  let lines;
+  try {
+    lines = fs.readFileSync(gateFile, 'utf-8').trim().split('\n').filter(Boolean);
+  } catch {
+    return { hasData: false, qualityLevel: null, totalFires: 0, warnCount: 0, warnPct: 0, blockedCount: 0, recentFires: 0 };
+  }
+
+  let totalFires = 0, warnCount = 0, blockedCount = 0, recentFires = 0;
+  let latestQualityLevel = null;
+  let latestTimestamp = '';
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+  for (const line of lines) {
+    let entry;
+    try { entry = JSON.parse(line); } catch { continue; }
+    if (!VALID_GATES.includes(entry.gate) || !VALID_OUTCOMES.includes(entry.outcome)) continue;
+
+    totalFires++;
+    if (entry.outcome === 'warned') warnCount++;
+    if (entry.outcome === 'blocked') blockedCount++;
+    if (entry.timestamp && entry.timestamp > oneDayAgo) recentFires++;
+    if (entry.timestamp && entry.timestamp > latestTimestamp) {
+      latestTimestamp = entry.timestamp;
+      latestQualityLevel = entry.quality_level || null;
+    }
+  }
+
+  return {
+    hasData: totalFires > 0,
+    qualityLevel: latestQualityLevel,
+    totalFires,
+    warnCount,
+    warnPct: totalFires > 0 ? Math.round((warnCount / totalFires) * 100) : 0,
+    blockedCount,
+    recentFires,
+  };
+}
+
+/**
  * Aggregates gate execution and Context7 call data across all registered projects.
  *
  * Data sources per project:
@@ -734,6 +786,7 @@ function parseProjectData(project, tmuxCache) {
     tmux,
     tracking,
     costLog,
+    gateHealth: getProjectGateHealth(project.path),
   };
 }
 
@@ -1571,6 +1624,7 @@ module.exports = {
   parseProjectData,
   parseAllMilestones,
   aggregatePatterns,
+  getProjectGateHealth,
   aggregateGateHealth,
   formatSSE,
   broadcast,
