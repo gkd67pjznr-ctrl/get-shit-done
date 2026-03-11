@@ -116,9 +116,9 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
           >[${isPaused ? 'resume' : 'pause'}]</button>
         ` : null}
 
-        ${quality ? html`
+        ${(project.gateHealth && project.gateHealth.hasData ? project.gateHealth.qualityLevel : quality) ? html`
           <${Sep} />
-          <span class="quality-badge">${quality}</span>
+          <span class="quality-badge">${project.gateHealth && project.gateHealth.hasData ? project.gateHealth.qualityLevel : quality}</span>
         ` : null}
 
         ${project.path ? html`
@@ -148,6 +148,11 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
                 <span class="card-ms-name" style="color:var(--term-cyan)">${ms.name}</span>
                 <span class="card-ms-phase" style="color:var(--text-secondary)">${state.current_phase || ''}</span>
                 <span class="card-ms-bar"><${ProgressBar} value=${pct} shimmerClass=${shimClass} /></span>
+                ${msIdx === 0 && project.gateHealth && project.gateHealth.hasData ? html`
+                  <span class="card-ms-meta" style="font-size:13px; color:var(--text-muted)">
+                    ${project.gateHealth.totalFires} fires${project.gateHealth.warnPct > 0 ? html`, <span style="color:var(--signal-warning)">${project.gateHealth.warnPct}% warn</span>` : ''}
+                  </span>
+                ` : null}
               </div>
               ${msPanes.map(pane => {
                 const now = Date.now();
@@ -173,7 +178,7 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
                     <span style="color:var(--color-testing);font-size:14px">${fmtIdleDuration(pane.lastActivity)}</span>
                     <span class="card-ms-meta">${hasSessionData ? html`
                       ${pane.sessionLinesAdded || pane.sessionLinesRemoved ? html`<span style="color:var(--signal-success)">+${pane.sessionLinesAdded || 0}</span>/<span style="color:var(--signal-error)">-${pane.sessionLinesRemoved || 0}</span> ` : ''}${pane.sessionCost ? html`<span style="color:${pane.sessionCost < 1 ? 'var(--signal-success)' : pane.sessionCost < 5 ? 'var(--signal-warning)' : 'var(--signal-error)'}">$${pane.sessionCost.toFixed(2)}</span> ` : ''}${pane.sessionDurationMs ? html`<span style="color:var(--color-testing)">${fmtSessionDuration(pane.sessionDurationMs)}</span>` : ''}
-                    ` : ''}</span>
+                    ` : ''}${project.gateHealth && project.gateHealth.recentFires > 0 ? html` <span style="font-size:13px; color:var(--text-secondary); font-family:var(--font-data)">${project.gateHealth.recentFires} gates/24h</span>` : ''}</span>
                   </div>
                 `;
               })}
