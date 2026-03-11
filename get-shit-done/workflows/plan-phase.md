@@ -35,6 +35,27 @@ if [ -n "$MILESTONE_SCOPE" ]; then
 fi
 ```
 
+## 1.5. Load Learned Context
+
+Read `.planning/patterns/preferences.jsonl` (if exists) and `~/.gsd/preferences.json` (if exists) using the Read tool.
+
+Parse active project-level preferences: entries where `retired_at` is null.
+Parse user-level preferences: entries where `promoted_at` is not null.
+
+Merge, applying conflict resolution: if same `category+scope` appears in both, keep only the project-level entry.
+Take the top 10 by `confidence` (descending).
+
+If any preferences remain after filtering, display:
+
+### Learned Context
+
+| Source | Category | Guidance |
+|--------|----------|----------|
+| project | {category} | {preference_text, truncated to 60 chars} |
+| user | {category} | {preference_text, truncated to 60 chars} |
+
+If no preferences exist in either file, skip this section silently (no output).
+
 ## 2. Parse and Normalize Arguments
 
 Extract from $ARGUMENTS: phase number (integer or decimal like `2.1`), flags (`--research`, `--skip-research`, `--gaps`, `--skip-verify`, `--prd <filepath>`).
