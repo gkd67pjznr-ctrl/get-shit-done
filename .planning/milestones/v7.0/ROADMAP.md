@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 28: Gate Execution Persistence** - Persist all gate events, correction quality context, and Context7 calls to structured JSONL files (completed 2026-03-10)
 - [x] **Phase 29: Quality Gating Research** - Evaluate additional MCP servers, tools, and libraries for quality gating beyond Context7 (completed 2026-03-10)
 - [x] **Phase 30: Dashboard Gate Health Page** - Dedicated page with gate outcome distribution, quality level usage, per-gate firing rates, and Context7 metrics (completed 2026-03-11)
-- [ ] **Phase 31: Dashboard Overview Integration** - Surface quality level, gate firing rates, and gate metrics in overview page project headers, milestone lines, and tmux cards
+- [x] **Phase 31: Dashboard Overview Integration** - Surface quality level, gate firing rates, and gate metrics in overview page project headers, milestone lines, and tmux cards (completed 2026-03-10)
 - [ ] **Phase 32: Gate-to-Correction Attribution** - Heuristic analysis mapping corrections to originating gates with structured output
 
 ## Phase Details
@@ -61,7 +61,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. Each project header on the overview page shows the project's active quality level (fast/standard/strict)
   2. Milestone line items display gate firing rate summaries (e.g., total fires, warn percentage)
   3. Tmux terminal session cards include a gate metrics summary (recent gate activity for that session's project)
-**Plans**: TBD
+**Plans**: 31-01 (getProjectGateHealth, gateHealth in parseProjectData, quality badge DASH-06, milestone gate summary DASH-07, tmux gate activity DASH-08) — COMPLETE 2026-03-10
 
 ### Phase 32: Gate-to-Correction Attribution
 **Goal**: Users can understand which gates are catching which categories of corrections

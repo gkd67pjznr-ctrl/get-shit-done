@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 30-01-PLAN.md — Dashboard Gate Health Page; Phase 30 complete
-last_updated: "2026-03-11T04:21:03.780Z"
-last_activity: 2026-03-11 — 30-01 completed (DASH-01 through DASH-05)
+stopped_at: Completed 31-01-PLAN.md — Dashboard Overview Integration; Phase 31 plan 01 complete
+last_updated: "2026-03-10T22:38:00.000Z"
+last_activity: 2026-03-10 — 31-01 completed (DASH-06, DASH-07, DASH-08)
 progress:
   total_phases: 5
   completed_phases: 3
-  total_plans: 5
-  completed_plans: 5
-  percent: 60
+  total_plans: 6
+  completed_plans: 6
+  percent: 72
 ---
 
 # Project State — Milestone v7.0
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-10)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts -- enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 30: Dashboard Gate Health Page — COMPLETE
+**Current focus:** Phase 31: Dashboard Overview Integration — Plan 01 COMPLETE
 
 ## Current Position
 
-Phase: 30 (3 of 5) — Dashboard Gate Health Page
-Plan: 1 of 1 in current phase — ALL PLANS COMPLETE
-Status: Phase 30 complete — 30-01 done (Gate Health page: aggregateGateHealth, /api/gate-health, GateHealthPage component, router/app wiring)
-Last activity: 2026-03-11 — 30-01 completed (DASH-01 through DASH-05)
+Phase: 31 (4 of 5) — Dashboard Overview Integration
+Plan: 1 of 1 in current phase — COMPLETE
+Status: Phase 31 plan 01 done (Overview integration: getProjectGateHealth, gateHealth in parseProjectData, quality badge, milestone gate summary, tmux gate activity)
+Last activity: 2026-03-10 — 31-01 completed (DASH-06, DASH-07, DASH-08)
 
 Progress: [######....] ~60%
 
@@ -46,9 +46,10 @@ Progress: [######....] ~60%
 | 28 | 3 | 33 min | 11 min |
 | 29 | 1 | 8 min | 8 min |
 | 30 | 1 | 15 min | 15 min |
+| 31 | 1 | 12 min | 12 min |
 
 **Recent Trend:**
-- Last 5 plans: 6 min, 15 min, 12 min, 8 min, 15 min
+- Last 5 plans: 15 min, 12 min, 8 min, 15 min, 12 min
 - Trend: stable
 
 *Updated after each plan completion*
@@ -79,6 +80,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-11
-Stopped at: Completed 30-01-PLAN.md — Dashboard Gate Health Page; Phase 30 complete
+Last session: 2026-03-10
+Stopped at: Completed 31-01-PLAN.md — Dashboard Overview Integration; Phase 31 plan 01 complete
 Resume file: None
