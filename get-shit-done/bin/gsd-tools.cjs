@@ -765,10 +765,20 @@ async function main() {
             }
             port = parsed;
           }
+          // Parse --host flag
+          let host = 'localhost';
+          const hostIdx = args.indexOf('--host');
+          if (hostIdx !== -1) {
+            const hostVal = args[hostIdx + 1];
+            if (!hostVal || hostVal.startsWith('-')) {
+              error('--host requires a value. Usage: gsd dashboard serve [--port PORT] [--host HOST]');
+            }
+            host = hostVal;
+          }
           // Delegate to server module (long-running foreground process)
           const { startDashboardServer } = require('./lib/server.cjs');
-          startDashboardServer(port);
-          const url = `http://localhost:${port}`;
+          startDashboardServer(port, { host });
+          const url = `http://${host}:${port}`;
           const { exec } = require('child_process');
           const platform = process.platform;
           setTimeout(() => {

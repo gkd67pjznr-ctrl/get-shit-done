@@ -1378,7 +1378,7 @@ function watchRegistry(cache, watchers, clients, debounceTimers, opts = {}, tmux
 
 // ─── Port conflict detection and takeover ─────────────────────────────────────
 
-function tryTakeoverPort(port, server, cache, clients, watchers, debounceTimers) {
+function tryTakeoverPort(port, server, cache, clients, watchers, debounceTimers, host) {
   // Try GET /api/projects on the port to detect if it's another gsd-server
   const req = http.get(`http://localhost:${port}/api/projects`, (res) => {
     let body = '';
@@ -1411,8 +1411,8 @@ function tryTakeoverPort(port, server, cache, clients, watchers, debounceTimers)
         }
         // Wait 500ms and retry listen
         setTimeout(() => {
-          server.listen(port, 'localhost', () => {
-            console.log(`[gsd-server] Dashboard server running at http://localhost:${port}`);
+          server.listen(port, host, () => {
+            console.log(`[gsd-server] Dashboard server running at http://${host}:${port}`);
           });
         }, 500);
       } else {
@@ -1442,6 +1442,8 @@ function startDashboardServer(port, opts = {}) {
   if (opts.gsdHome) {
     process.env.GSD_HOME = opts.gsdHome;
   }
+
+  const host = opts.host || 'localhost';
 
   const clients = new Set();
   const cache = new Map();
@@ -1541,15 +1543,15 @@ function startDashboardServer(port, opts = {}) {
 
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
-      tryTakeoverPort(port, server, cache, clients, watchers, debounceTimers);
+      tryTakeoverPort(port, server, cache, clients, watchers, debounceTimers, host);
     } else {
       console.error('[gsd-server] Fatal error:', err.message);
       process.exit(1);
     }
   });
 
-  server.listen(port, 'localhost', () => {
-    console.log('[gsd-server] Dashboard server running at http://localhost:' + port);
+  server.listen(port, host, () => {
+    console.log('[gsd-server] Dashboard server running at http://' + host + ':' + port);
   });
 
   // SIGINT handler — graceful shutdown
