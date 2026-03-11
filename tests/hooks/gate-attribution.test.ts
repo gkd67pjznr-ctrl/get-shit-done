@@ -64,9 +64,16 @@ function readAttribution(dir: string): object[] {
 }
 
 let tmpDir: string;
+let attributeGates: (opts?: { cwd?: string }) => { analyzed: boolean; attributions?: number; reason?: string; error?: string };
 
 beforeEach(() => {
   tmpDir = createTempDir();
+  try {
+    const mod = require(LIBRARY_PATH);
+    attributeGates = mod.attributeGates;
+  } catch {
+    attributeGates = () => ({ analyzed: false, reason: 'module_not_found' });
+  }
 });
 
 afterEach(() => {
@@ -81,7 +88,9 @@ afterEach(() => {
 
 describe('attributeGates — basic', () => {
   it('returns { analyzed: true, attributions: 0 } when no corrections exist', () => {
-    expect(true).toBe(true);
+    const result = attributeGates({ cwd: tmpDir });
+    expect(result.analyzed).toBe(true);
+    expect(result.attributions).toBe(0);
   });
 });
 
@@ -89,7 +98,15 @@ describe('attributeGates — basic', () => {
 
 describe('attributeGates — produces attributions', () => {
   it('produces attributions from matched correction categories', () => {
-    expect(true).toBe(true);
+    writeCorrections(tmpDir, [
+      makeCorrection({ diagnosis_category: 'code.stale_knowledge', diagnosis_text: 'Used stale knowledge' }),
+      makeCorrection({ diagnosis_category: 'code.stale_knowledge', diagnosis_text: 'Outdated API usage' }),
+      makeCorrection({ diagnosis_category: 'code.stale_knowledge', diagnosis_text: 'Deprecated pattern' }),
+    ]);
+    const result = attributeGates({ cwd: tmpDir });
+    expect(result.analyzed).toBe(true);
+    expect(result.attributions).toBeGreaterThanOrEqual(1);
+    expect(readAttribution(tmpDir).length).toBeGreaterThanOrEqual(1);
   });
 });
 
@@ -97,7 +114,35 @@ describe('attributeGates — produces attributions', () => {
 
 describe('attributeGates — maps all categories', () => {
   it('maps all 14 correction categories to a gate', () => {
-    expect(true).toBe(true);
+    const allCategories = [
+      'code.wrong_pattern',
+      'code.missing_context',
+      'code.stale_knowledge',
+      'code.over_engineering',
+      'code.under_engineering',
+      'code.style_mismatch',
+      'code.scope_drift',
+      'process.planning_error',
+      'process.research_gap',
+      'process.implementation_bug',
+      'process.integration_miss',
+      'process.convention_violation',
+      'process.requirement_misread',
+      'process.regression',
+    ];
+
+    writeCorrections(
+      tmpDir,
+      allCategories.map(cat => makeCorrection({ diagnosis_category: cat, diagnosis_text: `Correction for ${cat}` }))
+    );
+
+    attributeGates({ cwd: tmpDir });
+    const entries = readAttribution(tmpDir) as Array<Record<string, unknown>>;
+
+    const outputCategories = new Set(entries.map(e => e.correction_category));
+    for (const cat of allCategories) {
+      expect(outputCategories.has(cat), `Category ${cat} should appear in output`).toBe(true);
+    }
   });
 });
 
@@ -105,15 +150,36 @@ describe('attributeGates — maps all categories', () => {
 
 describe('attributeGates — confidence', () => {
   it('assigns confidence 1.0 to direct causal mappings', () => {
-    expect(true).toBe(true);
+    writeCorrections(tmpDir, [
+      makeCorrection({ diagnosis_category: 'code.stale_knowledge', diagnosis_text: 'Stale knowledge issue' }),
+    ]);
+    attributeGates({ cwd: tmpDir });
+    const entries = readAttribution(tmpDir) as Array<Record<string, unknown>>;
+    const entry = entries.find(e => e.correction_category === 'code.stale_knowledge');
+    expect(entry).toBeDefined();
+    expect(entry!.confidence).toBe(1.0);
   });
 
   it('assigns confidence 0.7 to strong correlation mappings', () => {
-    expect(true).toBe(true);
+    writeCorrections(tmpDir, [
+      makeCorrection({ diagnosis_category: 'code.wrong_pattern', diagnosis_text: 'Wrong pattern used' }),
+    ]);
+    attributeGates({ cwd: tmpDir });
+    const entries = readAttribution(tmpDir) as Array<Record<string, unknown>>;
+    const entry = entries.find(e => e.correction_category === 'code.wrong_pattern');
+    expect(entry).toBeDefined();
+    expect(entry!.confidence).toBe(0.7);
   });
 
   it('assigns confidence 0.4 to indirect mappings', () => {
-    expect(true).toBe(true);
+    writeCorrections(tmpDir, [
+      makeCorrection({ diagnosis_category: 'code.over_engineering', diagnosis_text: 'Over-engineered solution' }),
+    ]);
+    attributeGates({ cwd: tmpDir });
+    const entries = readAttribution(tmpDir) as Array<Record<string, unknown>>;
+    const entry = entries.find(e => e.correction_category === 'code.over_engineering');
+    expect(entry).toBeDefined();
+    expect(entry!.confidence).toBe(0.4);
   });
 });
 
@@ -121,11 +187,33 @@ describe('attributeGates — confidence', () => {
 
 describe('attributeGates — writes output', () => {
   it('writes gate-attribution.jsonl to .planning/observations/', () => {
-    expect(true).toBe(true);
+    writeCorrections(tmpDir, [
+      makeCorrection({ diagnosis_category: 'code.wrong_pattern', diagnosis_text: 'Wrong pattern' }),
+    ]);
+    attributeGates({ cwd: tmpDir });
+    const filePath = path.join(tmpDir, '.planning', 'observations', 'gate-attribution.jsonl');
+    expect(fs.existsSync(filePath)).toBe(true);
   });
 
   it('overwrites gate-attribution.jsonl on each run', () => {
-    expect(true).toBe(true);
+    // First run: 1 correction
+    writeCorrections(tmpDir, [
+      makeCorrection({ diagnosis_category: 'code.wrong_pattern', diagnosis_text: 'First run correction' }),
+    ]);
+    attributeGates({ cwd: tmpDir });
+    const afterFirst = readAttribution(tmpDir).length;
+
+    // Second run: 2 corrections with different category
+    writeCorrections(tmpDir, [
+      makeCorrection({ diagnosis_category: 'process.regression', diagnosis_text: 'Regression found' }),
+      makeCorrection({ diagnosis_category: 'process.research_gap', diagnosis_text: 'Research gap' }),
+    ]);
+    attributeGates({ cwd: tmpDir });
+    const afterSecond = readAttribution(tmpDir).length;
+
+    // Second run should not accumulate first run's results
+    expect(afterSecond).toBe(2);
+    expect(afterFirst).toBe(1);
   });
 });
 
@@ -133,7 +221,25 @@ describe('attributeGates — writes output', () => {
 
 describe('attributeGates — structured entries', () => {
   it('each entry has correction_category, gate, confidence, correction_count, gate_outcome_distribution, phases_observed, sample_corrections, timestamp', () => {
-    expect(true).toBe(true);
+    writeGateEntries(tmpDir, [
+      makeGateEntry({ gate: 'codebase_scan', outcome: 'passed', phase: '28' }),
+    ]);
+    writeCorrections(tmpDir, [
+      makeCorrection({ diagnosis_category: 'code.wrong_pattern', diagnosis_text: 'Wrong pattern', phase: '28' }),
+    ]);
+    attributeGates({ cwd: tmpDir });
+    const entries = readAttribution(tmpDir) as Array<Record<string, unknown>>;
+    expect(entries.length).toBeGreaterThanOrEqual(1);
+
+    const entry = entries[0];
+    expect(entry).toHaveProperty('correction_category');
+    expect(entry).toHaveProperty('gate');
+    expect(entry).toHaveProperty('confidence');
+    expect(entry).toHaveProperty('correction_count');
+    expect(entry).toHaveProperty('gate_outcome_distribution');
+    expect(entry).toHaveProperty('phases_observed');
+    expect(entry).toHaveProperty('sample_corrections');
+    expect(entry).toHaveProperty('timestamp');
   });
 });
 
@@ -141,14 +247,23 @@ describe('attributeGates — structured entries', () => {
 
 describe('attributeGates — empty', () => {
   it('empty corrections returns { analyzed: true, attributions: 0 }', () => {
-    expect(true).toBe(true);
+    writeCorrections(tmpDir, []);
+    const result = attributeGates({ cwd: tmpDir });
+    expect(result.analyzed).toBe(true);
+    expect(result.attributions).toBe(0);
   });
 
   it('empty corrections writes an empty gate-attribution.jsonl', () => {
-    expect(true).toBe(true);
+    writeCorrections(tmpDir, []);
+    attributeGates({ cwd: tmpDir });
+    const filePath = path.join(tmpDir, '.planning', 'observations', 'gate-attribution.jsonl');
+    expect(fs.existsSync(filePath)).toBe(true);
+    expect(readAttribution(tmpDir).length).toBe(0);
   });
 
   it('never throws on empty data', () => {
-    expect(true).toBe(true);
+    expect(() => {
+      attributeGates({ cwd: tmpDir });
+    }).not.toThrow();
   });
 });
