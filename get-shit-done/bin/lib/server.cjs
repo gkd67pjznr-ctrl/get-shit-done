@@ -857,6 +857,13 @@ function serveStatic(req, res, dashboardDir) {
 
   if (pathname === '/') pathname = '/index.html';
 
+  // API routes must not fall through to SPA fallback — return 404 JSON
+  if (pathname.startsWith('/api/')) {
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Not found' }));
+    return;
+  }
+
   const resolved = path.resolve(path.join(dashboardDir, pathname));
   const dashboardResolved = path.resolve(dashboardDir);
 
