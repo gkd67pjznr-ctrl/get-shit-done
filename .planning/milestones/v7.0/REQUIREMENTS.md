@@ -30,8 +30,8 @@ Requirements for quality enforcement observability. Each maps to roadmap phases.
 
 ### Analytics
 
-- [ ] **ANLZ-01**: Gate-to-correction attribution analysis script (heuristic mapping from correction categories to gates)
-- [ ] **ANLZ-02**: Attribution summary output to `gate-attribution.jsonl`
+- [x] **ANLZ-01**: Gate-to-correction attribution analysis script (heuristic mapping from correction categories to gates)
+- [x] **ANLZ-02**: Attribution summary output to `gate-attribution.jsonl`
 
 ## Future Requirements
 
@@ -68,8 +68,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DASH-06 | Phase 31 | Complete |
 | DASH-07 | Phase 31 | Complete |
 | DASH-08 | Phase 31 | Complete |
-| ANLZ-01 | Phase 32 | Pending |
-| ANLZ-02 | Phase 32 | Pending |
+| ANLZ-01 | Phase 32 | Complete |
+| ANLZ-02 | Phase 32 | Complete |
 
 **Coverage:**
 - v7.0 requirements: 14 total
