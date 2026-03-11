@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 28: Gate Execution Persistence** - Persist all gate events, correction quality context, and Context7 calls to structured JSONL files (completed 2026-03-10)
 - [x] **Phase 29: Quality Gating Research** - Evaluate additional MCP servers, tools, and libraries for quality gating beyond Context7 (completed 2026-03-10)
-- [ ] **Phase 30: Dashboard Gate Health Page** - Dedicated page with gate outcome distribution, quality level usage, per-gate firing rates, and Context7 metrics
+- [x] **Phase 30: Dashboard Gate Health Page** - Dedicated page with gate outcome distribution, quality level usage, per-gate firing rates, and Context7 metrics (completed 2026-03-11)
 - [ ] **Phase 31: Dashboard Overview Integration** - Surface quality level, gate firing rates, and gate metrics in overview page project headers, milestone lines, and tmux cards
 - [ ] **Phase 32: Gate-to-Correction Attribution** - Heuristic analysis mapping corrections to originating gates with structured output
 
@@ -51,7 +51,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Quality level usage distribution across sessions is visible (how often fast vs standard vs strict)
   4. Per-gate firing rates and warn rates are displayed for each of the 5 sentinel steps
   5. Context7 utilization metrics show call count, token usage, and cap-hit frequency
-**Plans**: TBD
+**Plans**: 30-01 (Gate Health page: aggregateGateHealth, /api/gate-health, GateHealthPage component) — COMPLETE 2026-03-11
 
 ### Phase 31: Dashboard Overview Integration
 **Goal**: Quality gate health is visible at a glance from the overview page without navigating to the dedicated page
@@ -82,6 +82,6 @@ Phases execute in numeric order: 28 -> 29 -> 30 -> 31 -> 32
 |-------|----------------|--------|-----------|
 | 28. Gate Execution Persistence | 3/3 | Complete    | 2026-03-10 |
 | 29. Quality Gating Research | 1/1 | Complete    | 2026-03-11 |
-| 30. Dashboard Gate Health Page | 0/? | Not started | - |
+| 30. Dashboard Gate Health Page | 1/1 | Complete    | 2026-03-11 |
 | 31. Dashboard Overview Integration | 0/? | Not started | - |
 | 32. Gate-to-Correction Attribution | 0/? | Not started | - |
