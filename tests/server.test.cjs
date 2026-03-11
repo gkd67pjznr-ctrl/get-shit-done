@@ -293,3 +293,94 @@ describe('aggregateGateHealth', () => {
     fs2.rmSync(dirB, { recursive: true });
   });
 });
+
+// ─── getProjectGateHealth unit tests (DASH-06, DASH-07, DASH-08) ─────────────
+
+describe('getProjectGateHealth', () => {
+  const { getProjectGateHealth } = require('../get-shit-done/bin/lib/server.cjs');
+
+  it('returns hasData:false when no gate-executions.jsonl exists', () => {
+    const dir = fs2.mkdtempSync(path2.join(os2.tmpdir(), 'gsd-pgh-test-'));
+    const obsDir = path2.join(dir, '.planning', 'observations');
+    fs2.mkdirSync(obsDir, { recursive: true });
+    // No gate-executions.jsonl file created
+    const result = getProjectGateHealth(dir);
+    assert.equal(result.hasData, false);
+    assert.equal(result.totalFires, 0);
+    assert.equal(result.qualityLevel, null);
+    assert.equal(result.recentFires, 0);
+    fs2.rmSync(dir, { recursive: true });
+  });
+
+  it('DASH-06: returns qualityLevel from most recent entry by timestamp', () => {
+    const dir = makeTempProject({
+      gateExecs: [
+        { gate: 'codebase_scan', outcome: 'passed', quality_level: 'standard', timestamp: '2026-03-10T12:00:00.000Z' },
+        { gate: 'test_gate',     outcome: 'passed', quality_level: 'strict',   timestamp: '2026-03-10T13:00:00.000Z' },
+      ],
+    });
+    const result = getProjectGateHealth(dir);
+    assert.equal(result.qualityLevel, 'strict');
+    fs2.rmSync(dir, { recursive: true });
+  });
+
+  it('DASH-07: counts totalFires, warnCount, and warnPct correctly', () => {
+    const dir = makeTempProject({
+      gateExecs: [
+        { gate: 'codebase_scan', outcome: 'passed',  quality_level: 'standard', timestamp: '2026-03-10T12:00:00.000Z' },
+        { gate: 'test_gate',     outcome: 'passed',  quality_level: 'standard', timestamp: '2026-03-10T12:01:00.000Z' },
+        { gate: 'diff_review',   outcome: 'warned',  quality_level: 'standard', timestamp: '2026-03-10T12:02:00.000Z' },
+        { gate: 'test_baseline', outcome: 'blocked', quality_level: 'standard', timestamp: '2026-03-10T12:03:00.000Z' },
+      ],
+    });
+    const result = getProjectGateHealth(dir);
+    assert.equal(result.totalFires, 4);
+    assert.equal(result.warnCount, 1);
+    assert.equal(result.warnPct, 25);
+    assert.equal(result.blockedCount, 1);
+    fs2.rmSync(dir, { recursive: true });
+  });
+
+  it('DASH-07: warnPct is 0 when totalFires is 0 (no division by zero)', () => {
+    const dir = fs2.mkdtempSync(path2.join(os2.tmpdir(), 'gsd-pgh-malformed-'));
+    const obsDir = path2.join(dir, '.planning', 'observations');
+    fs2.mkdirSync(obsDir, { recursive: true });
+    fs2.writeFileSync(
+      path2.join(obsDir, 'gate-executions.jsonl'),
+      '{ NOT VALID JSON }\n{ ALSO NOT VALID }\n',
+      'utf-8',
+    );
+    const result = getProjectGateHealth(dir);
+    assert.equal(result.totalFires, 0);
+    assert.equal(result.warnPct, 0);
+    assert.equal(result.hasData, false);
+    fs2.rmSync(dir, { recursive: true });
+  });
+
+  it('DASH-08: counts recentFires only within 24-hour window', () => {
+    const recentTs = new Date().toISOString();
+    const dir = makeTempProject({
+      gateExecs: [
+        { gate: 'codebase_scan', outcome: 'passed', quality_level: 'standard', timestamp: recentTs },
+        { gate: 'test_gate',     outcome: 'passed', quality_level: 'standard', timestamp: recentTs },
+        { gate: 'diff_review',   outcome: 'passed', quality_level: 'standard', timestamp: '2020-01-01T00:00:00.000Z' },
+      ],
+    });
+    const result = getProjectGateHealth(dir);
+    assert.equal(result.recentFires, 2);
+    assert.equal(result.totalFires, 3);
+    fs2.rmSync(dir, { recursive: true });
+  });
+
+  it('skips entries with invalid gate or outcome values', () => {
+    const dir = makeTempProject({
+      gateExecs: [
+        { gate: 'codebase_scan', outcome: 'passed', quality_level: 'standard', timestamp: '2026-03-10T12:00:00.000Z' },
+        { gate: 'fake_gate',     outcome: 'passed', quality_level: 'standard', timestamp: '2026-03-10T12:01:00.000Z' },
+      ],
+    });
+    const result = getProjectGateHealth(dir);
+    assert.equal(result.totalFires, 1);
+    fs2.rmSync(dir, { recursive: true });
+  });
+});
