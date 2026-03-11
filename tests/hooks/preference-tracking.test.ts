@@ -653,3 +653,80 @@ describe('checkAndPromote — integration', () => {
     expect(prefs[0].retired_at).toBeNull();
   });
 });
+
+// ─── Suite: cross-project wiring ───────────────────────────────────────────────
+
+describe('checkAndPromote cross-project wiring', () => {
+  let checkAndPromote: Function;
+  let gsdHomeDir: string;
+
+  beforeEach(() => {
+    gsdHomeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-home-test-'));
+    process.env.GSD_HOME = gsdHomeDir;
+    try {
+      const mod = require(LIBRARY_PATH);
+      checkAndPromote = mod.checkAndPromote;
+    } catch {
+      checkAndPromote = () => ({ promoted: false, reason: 'module_not_found' });
+    }
+  });
+
+  afterEach(() => {
+    try {
+      fs.rmSync(gsdHomeDir, { recursive: true, force: true });
+    } catch {
+      // Ignore cleanup errors
+    }
+    delete process.env.GSD_HOME;
+  });
+
+  it('calls promoteToUserLevel after successful promotion', () => {
+    // Setup: write 3 corrections in tmpDir to trigger project-level promotion
+    writeNCorrections(tmpDir, 3, {
+      diagnosis_category: 'code.style_mismatch',
+      scope: 'file',
+      correction_to: 'use const',
+    });
+
+    const entry = makeValidEntry({ diagnosis_category: 'code.style_mismatch', scope: 'file' });
+    const result = checkAndPromote(entry, { cwd: tmpDir });
+
+    // Project-level promotion should have succeeded
+    expect(result.promoted).toBe(true);
+
+    // User-level preferences file should have been written to GSD_HOME
+    const userPrefsPath = path.join(gsdHomeDir, 'preferences.json');
+    expect(fs.existsSync(userPrefsPath)).toBe(true);
+
+    const userDoc = JSON.parse(fs.readFileSync(userPrefsPath, 'utf-8'));
+    expect(userDoc.preferences.length).toBe(1);
+    expect(userDoc.preferences[0].category).toBe('code.style_mismatch');
+    expect(userDoc.preferences[0].scope).toBe('file');
+
+    // source_projects should contain the project ID (basename of tmpDir)
+    const expectedProjectId = path.basename(tmpDir);
+    expect(userDoc.preferences[0].source_projects).toContain(expectedProjectId);
+  });
+
+  it('checkAndPromote succeeds even if promote-preference.cjs throws', () => {
+    // Force a write error by setting GSD_HOME to a path that cannot be written
+    // Using /dev/null as a directory -- attempts to write to /dev/null/preferences.json will fail
+    process.env.GSD_HOME = '/dev/null';
+
+    writeNCorrections(tmpDir, 3, {
+      diagnosis_category: 'code.style_mismatch',
+      scope: 'file',
+    });
+
+    const entry = makeValidEntry({ diagnosis_category: 'code.style_mismatch', scope: 'file' });
+    const result = checkAndPromote(entry, { cwd: tmpDir });
+
+    // Project-level promotion should succeed despite cross-project failure
+    expect(result.promoted).toBe(true);
+    expect(result.count).toBe(3);
+
+    // Project-level preferences.jsonl should still exist
+    const projPrefsPath = path.join(tmpDir, '.planning', 'patterns', 'preferences.jsonl');
+    expect(fs.existsSync(projPrefsPath)).toBe(true);
+  });
+});

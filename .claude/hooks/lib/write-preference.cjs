@@ -178,6 +178,15 @@ function checkAndPromote(entry, options) {
 
     upsertPreference(patternsDir, preference);
 
+    // Cross-project promotion (non-critical -- silent failure)
+    try {
+      const { promoteToUserLevel } = require('./promote-preference.cjs');
+      const projectId = path.basename(cwd);
+      promoteToUserLevel(preference, { projectId });
+    } catch (e) {
+      // Silent failure -- cross-project promotion must never break project-level writes
+    }
+
     return { promoted: true, count, confidence: preference.confidence };
   } catch (e) {
     return { promoted: false, reason: 'error', error: e.message };
