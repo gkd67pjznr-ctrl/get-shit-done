@@ -19,6 +19,9 @@ function parseHash() {
   if (parts[0] === 'patterns') {
     return { page: 'patterns' };
   }
+  if (parts[0] === 'gate-health') {
+    return { page: 'gate-health' };
+  }
   return { page: 'overview' };
 }
 
