@@ -1186,6 +1186,18 @@ function createHttpServer(port, cache, clients, dashboardDir, tmuxCache) {
       return;
     }
 
+    if (req.method === 'GET' && pathname === '/api/gate-health') {
+      const registry = loadRegistry();
+      const gateHealth = aggregateGateHealth(registry);
+      res.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'no-cache',
+      });
+      res.end(JSON.stringify(gateHealth));
+      return;
+    }
+
     if (req.method === 'GET' && pathname === '/api/events') {
       handleSSE(req, res, clients);
       return;
