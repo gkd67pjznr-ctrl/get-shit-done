@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Plan 24-03 complete (session-awareness Correction Recall section, commit 4d12dd9)
-last_updated: "2026-03-10T18:53:32.561Z"
+status: in_progress
+stopped_at: Plan 25-01 complete (analyze-patterns.cjs observer engine, commit 44c7885)
+last_updated: "2026-03-10T21:45:00.000Z"
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 4
-  completed_plans: 3
-  percent: 38
+  total_plans: 5
+  completed_plans: 4
+  percent: 45
 ---
 
 # Project State -- Milestone v6.0
@@ -20,22 +20,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-10)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts -- enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 24 - Live Recall and Session Injection (COMPLETE)
+**Current focus:** Phase 25 - Observer Agent and Suggestion Pipeline (IN PROGRESS)
 
 ## Current Position
 
-Phase: 24 (3 of 6 in v6.0) (Live Recall and Session Injection) -- COMPLETE
-Plan: 3 of 3 in phase 24 (24-01, 24-02, 24-03 complete)
-Status: Phase 24 complete -- all RECL-01, RECL-02, RECL-03, PREF-04 requirements satisfied
+Phase: 25 (4 of 6 in v6.0) (Observer Agent and Suggestion Pipeline) -- IN PROGRESS
+Plan: 1 of ? in phase 25 (25-01 complete)
+Status: Phase 25 plan 01 complete -- OBSV-01, OBSV-02, OBSV-03 requirements satisfied
 
 Progress: [#######...] 38%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
+- Total plans completed: 7
 - Average duration: ~15 min
-- Total execution time: ~1.48 hours
+- Total execution time: ~1.73 hours
 
 **By Phase:**
 
@@ -44,9 +44,10 @@ Progress: [#######...] 38%
 | 22 | 3 | 50 min | ~17 min |
 | 23 | 3 | 38 min | ~13 min |
 | 24 | 3/3 | ~38 min | ~13 min |
+| 25 | 1/? | ~15 min | ~15 min |
 
 **Recent Trend:**
-- Last 5 plans: 20 min, ~15 min, 8 min, ~15 min, ~15 min
+- Last 5 plans: ~15 min, 8 min, ~15 min, ~15 min, ~15 min
 - Trend: stable
 
 *Updated after each plan completion*
@@ -75,6 +76,11 @@ Recent decisions affecting current work:
 - **24-01:** `countMatchingCorrections` is in `write-preference.cjs`, not `write-correction.cjs` -- the file-gathering loop template was reused from there
 - **24-02:** Dedup key uses colon separator (`category + ':' + scope`) in hook's Set; integration tests use `spawnSync(process.execPath, [HOOK_PATH], { cwd: tmpDir })` so hook resolves `.planning/patterns/` relative to tmpDir
 - **24-02:** writePreferencesFile helper added to test file for symmetric test setup alongside writeCorrectionsFile
+- **25-01:** Cross-scope aggregation groups corrections by diagnosis_category only (scope ignored) — 3 corrections in 3 different scopes still trigger a single suggestion
+- **25-01:** require() for write-correction.cjs and write-preference.cjs placed inside main analyzePatterns() function body (not module top level) — allows isolated unit testing without crashes
+- **25-01:** Retired preferences (retired_at truthy) do NOT block suggestion generation — only active preferences (retired_at === null) are in the dedup set
+- **25-01:** generateSuggestionId uses epoch seconds + zero-padded counter loop to guarantee uniqueness within document on the same second
+- **25-01:** suggestions.json document shape: { metadata: { last_analyzed_at, version, skipped_suggestions[] }, suggestions[] }
 
 ### Pending Todos
 
@@ -87,6 +93,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-10
-Stopped at: Plan 24-03 complete (session-awareness Correction Recall section, commit 4d12dd9)
+Stopped at: Plan 25-01 complete (analyze-patterns.cjs observer engine, commit 44c7885)
 Resume file: None
-Next: Phase 25 (or milestone review if no further phases planned)
+Next: Phase 25 plan 02 (if planned) or phase review
