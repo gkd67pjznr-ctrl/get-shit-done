@@ -11,7 +11,7 @@ allowed-tools:
 # /gsd:suggest — Review Skill Refinement Suggestions
 
 <objective>
-Present pending skill refinement suggestions from the observer pipeline and let the user accept or dismiss each one. Accepted suggestions are recorded with a timestamp for Phase 26's collaborative skill refinement workflow. Dismissed suggestions are retained for audit but never resurfaced.
+Present pending skill refinement suggestions from the observer pipeline and let the user accept or dismiss each one. When the user accepts a suggestion, immediately run the collaborative skill refinement workflow: read the target skill, propose specific edits based on correction patterns, show a before/after diff, get user confirmation, write the edited skill, and retire the source corrections and preferences.
 </objective>
 
 <process>
@@ -34,6 +34,7 @@ Filter `suggestions` array for entries where `status === "pending"`.
   **Summary:**
   - Accepted: [count of accepted]
   - Dismissed: [count of dismissed]
+  - Refined: [count of refined]
   - Auto-expired: [count with dismiss_reason === 'auto_expired']
 
   Run `/gsd:digest` to re-analyze patterns and generate new suggestions.
@@ -65,7 +66,7 @@ Then ask the user using AskUserQuestion:
 ```
 What would you like to do with this suggestion?
 Options:
-  accept — Mark as accepted (queued for skill refinement in /gsd:digest)
+  accept — Accept and begin skill refinement workflow
   dismiss — Dismiss and archive (won't be shown again)
   skip — Leave as pending and move to next
 ```
@@ -74,18 +75,82 @@ Options:
 
 For each suggestion the user responds to:
 
-**Accept:**
-- Set `status = "accepted"`
-- Set `accepted_at = <current ISO 8601 timestamp>`
-- Leave `dismissed_at` as null
-- Note: accepting does NOT modify any skill file — that is Phase 26 work
+### Accept
 
-**Dismiss:**
+1. Set `status = "accepted"` and `accepted_at = <current ISO 8601 timestamp>`.
+
+2. **Check if skill exists.** The target skill path is `.claude/skills/{target_skill}/SKILL.md`. Use the Read tool to attempt reading this file.
+   - If the file does not exist (suggestion has `type: "new_skill_needed"` or skill directory is missing), display:
+     ```
+     Skill file not found at .claude/skills/{target_skill}/SKILL.md.
+     A new skill would need to be created. Marking as accepted — use /gsd:plan-phase
+     to create the new skill file in a future phase.
+     ```
+     Then continue to the next suggestion without running the refinement workflow. Do not retire anything.
+
+3. **Read active corrections for this category.** Read `.planning/patterns/corrections.jsonl` and any archive files matching `.planning/patterns/corrections-*.jsonl`. Collect all entries where `diagnosis_category === suggestion.category` and `retired_at` is falsy.
+
+4. **Draft SKILL.md edits.** Analyze the active corrections and the sample_corrections from the suggestion. Identify the specific pattern or behavior that keeps causing corrections. Draft targeted edits to the SKILL.md content that would prevent the pattern from recurring. Keep edits focused — change the minimum necessary to address the pattern.
+
+5. **Compute the 20% change threshold.** Count lines in the original SKILL.md (`original_lines`). Count lines that differ between the original and proposed version (`changed_lines` = lines added + lines removed + lines modified, where modified = old line and new line both counted). If `changed_lines / original_lines > 0.20`:
+   - Display a warning:
+     ```
+     Warning: The proposed edits change [N]% of the skill file ([changed_lines] of [original_lines] lines).
+     This exceeds the 20% change guardrail for skill stability.
+     ```
+   - Ask using AskUserQuestion: "The proposed edits are large. Proceed anyway, or would you like to reduce the scope of the changes? (proceed / reduce)"
+   - If user says reduce: re-draft the edits with a narrower scope and re-check the threshold.
+   - If user says proceed: continue with the confirmation step.
+
+6. **Show before/after diff.** Display the original SKILL.md content and the proposed SKILL.md content side-by-side or as a diff block:
+   ```
+   ### Proposed SKILL.md Changes
+   **File:** .claude/skills/{target_skill}/SKILL.md
+
+   **Original:**
+   [original content]
+
+   **Proposed:**
+   [proposed content]
+
+   **Summary of changes:** [brief plain-English description of what changed and why]
+   ```
+
+7. **Ask for confirmation** using AskUserQuestion:
+   ```
+   Confirm skill refinement for {target_skill}?
+   Options:
+     confirm — Write the edited skill and retire source corrections
+     reject — Cancel refinement (suggestion stays accepted, no changes made)
+     modify — I want to change the proposed edits (describe what to change)
+   ```
+
+8. **If user says modify:** Incorporate the user's requested changes into the proposed SKILL.md. Go back to step 5 (threshold check) with the updated proposal. Keep re-presenting until the user confirms or rejects.
+
+9. **If user says reject:** Leave the suggestion at `status = "accepted"`. No skill file changes. No retirement. Display: "Refinement cancelled. The suggestion remains accepted and will appear next time."
+
+10. **If user says confirm:**
+    a. Write the edited SKILL.md using the Write tool.
+    b. Retire the source corrections and preferences by running:
+       ```bash
+       node -e "require('./.claude/hooks/lib/retire.cjs').retireByCategory('CATEGORY', 'SUGGESTION_ID', { cwd: process.cwd() })"
+       ```
+       Replace `CATEGORY` with the suggestion's `category` value and `SUGGESTION_ID` with the suggestion's `id`. Run this bash command from the project root.
+    c. Update the suggestion: set `status = "refined"` and `refined_at = <current ISO 8601 timestamp>`.
+    d. Display:
+       ```
+       Skill {target_skill} updated. Source corrections retired.
+       The skill refinement pipeline is complete for this suggestion.
+       ```
+
+### Dismiss
+
 - Set `status = "dismissed"`
 - Set `dismissed_at = <current ISO 8601 timestamp>`
 - Leave `accepted_at` as null
 
-**Skip:**
+### Skip
+
 - No changes to this suggestion entry
 - Continue to next pending suggestion
 
@@ -95,6 +160,8 @@ After processing all pending suggestions (or when user is done), write the updat
 
 Use atomic write: write to `.planning/patterns/suggestions.json.tmp` first, then rename to `.planning/patterns/suggestions.json`.
 
+Note: the `retireByCategory` call in Step 4 also writes to suggestions.json. Always re-read suggestions.json before writing it in this step to incorporate those changes.
+
 ## Step 6: Display summary
 
 Display a summary of actions taken in this session:
@@ -102,11 +169,11 @@ Display a summary of actions taken in this session:
 ```
 ## Suggestions Session Complete
 
-- Accepted: [N]
+- Refined (skill updated + sources retired): [N]
+- Accepted (skill not found — future work): [N]
 - Dismissed: [N]
 - Skipped (still pending): [N]
 
-Accepted suggestions will be used by `/gsd:digest` for collaborative skill refinement (Phase 26).
 Run `/gsd:digest` to re-analyze patterns and check for new suggestions.
 ```
 
@@ -115,10 +182,14 @@ Run `/gsd:digest` to re-analyze patterns and check for new suggestions.
 <success_criteria>
 - Command reads suggestions.json and handles missing/empty file gracefully with informative messages
 - All pending suggestions are presented with full detail before asking for user decision
-- Accept marks status accepted with accepted_at timestamp
+- Accept triggers the collaborative refinement workflow: read skill, draft edits, show diff, confirm, write, retire
+- The 20% change guardrail warns users when proposed edits exceed 20% of the skill file by line count
+- Retirement only happens after the skill edit is confirmed and written — not at acceptance time
+- retireByCategory is called via bash node -e after the skill write succeeds
+- Suggestion status becomes 'refined' with refined_at timestamp after successful pipeline completion
+- If skill file does not exist, user is notified and refinement is skipped (no retirement)
 - Dismiss marks status dismissed with dismissed_at timestamp
 - Skip leaves the suggestion unchanged
 - suggestions.json is written atomically after all decisions are made
-- No skill files are modified (skill modification is Phase 26)
-- Summary is displayed at end of session
+- Summary at end of session shows refined count separately from accepted-only count
 </success_criteria>
