@@ -26,7 +26,7 @@ Last activity: 2026-03-11 - Completed quick task 32: Fix status line showing sam
 | Milestone | Status | Workspace |
 |-----------|--------|-----------|
 | v7.0 Quality Enforcement Observability | Defining requirements | `.planning/milestones/v7.0/` |
-| v6.0 Adaptive Observation & Learning Loop | In progress (38%) | `.planning/milestones/v6.0/` |
+| v6.0 Adaptive Observation & Learning Loop | In progress (50%) | `.planning/milestones/v6.0/` |
 
 ## Completed Milestones
 
@@ -73,6 +73,6 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 
 ## Session Continuity
 
-Last activity: 2026-03-11 — Completed quick task 32: Add --host flag to dashboard server for phone/LAN access
+Last activity: 2026-03-11 — Completed v6.0 phase 26-02: correction analysis section in /gsd:digest (ANLY-01, commit 58475a5)
 Resume file: None
-Next step: Execute v6.0 phase 26-02 (if planned) or v7.0 phase 32
+Next step: Execute v6.0 phase 26-03 (if planned) or v7.0 phase work
