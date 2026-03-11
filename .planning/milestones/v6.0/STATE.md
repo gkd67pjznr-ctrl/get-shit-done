@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: "Plan 25-02 complete (observer wrapper, /gsd:suggest command, digest integration, commit 901aab8)"
-last_updated: "2026-03-11T03:44:21.439Z"
+stopped_at: "Plan 26-01 complete (retireByCategory, refined-status cooldown fix, commit e8ad134)"
+last_updated: "2026-03-11T07:09:00.000Z"
 progress:
   total_phases: 5
   completed_phases: 3
-  total_plans: 5
-  completed_plans: 5
-  percent: 38
+  total_plans: 6
+  completed_plans: 6
+  percent: 45
 ---
 
 # Project State -- Milestone v6.0
@@ -20,15 +20,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-10)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts -- enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 25 - Observer Agent and Suggestion Pipeline (IN PROGRESS)
+**Current focus:** Phase 26 - Enhanced Digest and Skill Refinement (IN PROGRESS)
 
 ## Current Position
 
-Phase: 25 (4 of 6 in v6.0) (Observer Agent and Suggestion Pipeline) -- IN PROGRESS
-Plan: 2 of ? in phase 25 (25-02 complete)
-Status: Phase 25 plan 02 complete -- observer wrapper, /gsd:suggest command, digest integration
+Phase: 26 (5 of 6 in v6.0) (Enhanced Digest and Skill Refinement) -- IN PROGRESS
+Plan: 1 of ? in phase 26 (26-01 complete)
+Status: Phase 26 plan 01 complete -- retireByCategory library and refined-status cooldown fix (ANLY-03)
 
-Progress: [#######...] 38%
+Progress: [########..] 45%
 
 ## Performance Metrics
 
@@ -45,6 +45,7 @@ Progress: [#######...] 38%
 | 23 | 3 | 38 min | ~13 min |
 | 24 | 3/3 | ~38 min | ~13 min |
 | 25 | 2/? | ~25 min | ~12 min |
+| 26 | 1/? | ~10 min | ~10 min |
 
 **Recent Trend:**
 - Last 5 plans: ~15 min, 8 min, ~15 min, ~15 min, ~15 min
@@ -83,6 +84,9 @@ Recent decisions affecting current work:
 - **25-01:** suggestions.json document shape: { metadata: { last_analyzed_at, version, skipped_suggestions[] }, suggestions[] }
 - **25-02:** suggest.md existing file had different structure (cross-project loading, defer/stop actions) — replaced entirely with plan-specified content matching must_have truths
 - **25-02:** Step 5 in digest.md already referenced /gsd:suggest — no change needed there; Step 1.7 inserted non-blocking between Step 1.5 and Step 2
+- **26-01:** retire.cjs uses `git add -f` (gitignored .claude/ dir) — same pattern as other hook libraries
+- **26-01:** retireByCategory reads patternsDir listing first — if dir missing, returns early (no-op); corrections file missing is also silently skipped per file-level catch
+- **26-01:** checkGuardrails `recentTerminal` replaces `recentAccepted` — both `accepted` (uses accepted_at) and `refined` (uses refined_at) statuses block new suggestions within cooldown window
 
 ### Pending Todos
 
@@ -94,7 +98,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-10
-Stopped at: Plan 25-02 complete (observer wrapper, /gsd:suggest command, digest integration, commit 901aab8)
+Last session: 2026-03-11
+Stopped at: Plan 26-01 complete (retireByCategory library, refined-status cooldown fix, commits efc3163/9d5ee7b/e8ad134)
 Resume file: None
-Next: Phase 25 plan 03 (if planned) or phase review
+Next: Phase 26 plan 02 (if planned) or phase review
