@@ -69,10 +69,10 @@ See: .planning/PROJECT.md (updated 2026-03-10)
 | 29 | Reorder FORK-GUIDE features: concurrent milestones and dashboard to top | 2026-03-10 | a2bc506 | Complete | [29-reorder-fork-guide-features-list-concurr](./quick/29-reorder-fork-guide-features-list-concurr/) |
 | 30 | Move untagged sessions from overview to sidebar grouped by project | 2026-03-10 | 7195fb4 | Verified | [30-move-untagged-sessions-to-sidebar-sectio](./quick/30-move-untagged-sessions-to-sidebar-sectio/) |
 | 31 | Quality gating metrics research and scope — v7.0 milestone brief | 2026-03-10 | 9f240df | Verified | [31-quality-gating-metrics-research-and-scop](./quick/31-quality-gating-metrics-research-and-scop/) |
-| 32 | Fix status line showing same data across all tmux panes per project | 2026-03-11 | — | Complete | [32-fix-status-line-showing-same-data-across](./quick/32-fix-status-line-showing-same-data-across/) |
+| 32 | Add --host flag to dashboard server for phone/LAN access | 2026-03-10 | ba8ab25 | Complete | [32-make-dashboard-accessible-from-phone-via](./quick/32-make-dashboard-accessible-from-phone-via/) |
 
 ## Session Continuity
 
-Last activity: 2026-03-10 — Completed v7.0 phase 31 plan 01: Dashboard Overview Integration (DASH-06, DASH-07, DASH-08)
+Last activity: 2026-03-10 — Completed quick task 32: Add --host flag to dashboard server for phone/LAN access
 Resume file: None
 Next step: Execute v7.0 phase 32 (Gate-to-Correction Attribution) or v6.0 24-03
