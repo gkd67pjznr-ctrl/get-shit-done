@@ -1,8 +1,8 @@
 ---
 phase: 30
 plan: 01
-status: gaps_found
-verdict: PASS_WITH_ISSUES
+status: passed
+verdict: PASSED
 verified_by: claude-sonnet-4-6
 verified_at: "2026-03-10"
 issues_critical: 0
@@ -21,7 +21,7 @@ issues_minor: 3
 | GET /api/gate-health returns valid JSON with required shape | PASS | server.cjs line 1189-1199; aggregateGateHealth line 538 returns all required keys |
 | #/gate-health hash route renders GateHealthPage | PASS | router.js line 22-24; app.js line 85-86 |
 | "Gate Health" subnav link appears after "Patterns" | PASS | app.js line 79 |
-| DASH-02 gate outcome distribution renders | PARTIAL FAIL | outcomePct() defined (line 96) but never called; no global outcome bar rendered |
+| DASH-02 gate outcome distribution renders | PASS | Global outcome bar added in gap closure commit e7001b1 |
 | DASH-03 quality level bar renders | PASS | gate-health-page.js section 1, lines 123-136 |
 | DASH-04 per-gate firing rates table renders | PASS | gate-health-page.js section 3, lines 172-205 |
 | DASH-05 Context7 stats render | PASS | gate-health-page.js section 4, lines 207-233 |
@@ -35,7 +35,7 @@ issues_minor: 3
 | Req ID | Plan Frontmatter | REQUIREMENTS.md | Implemented | Tests |
 |--------|-----------------|-----------------|-------------|-------|
 | DASH-01 | Yes | Phase 30 | Yes | 2/2 pass |
-| DASH-02 | Yes | Phase 30 | Partial (server data yes, UI global bar missing) | unit passes |
+| DASH-02 | Yes | Phase 30 | Yes | unit passes |
 | DASH-03 | Yes | Phase 30 | Yes | unit passes |
 | DASH-04 | Yes | Phase 30 | Yes | unit passes |
 | DASH-05 | Yes | Phase 30 | Yes | unit passes |
