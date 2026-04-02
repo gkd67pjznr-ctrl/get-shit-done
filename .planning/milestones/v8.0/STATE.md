@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: completed
-stopped_at: Plan 34-02 complete — full skill refinement loop verified end-to-end; Phase 34 fully complete
-last_updated: "2026-04-02T16:33:11.349Z"
-last_activity: 2026-04-02 — Plan 34-02 complete, skill refinement loop verified end-to-end
+milestone: v8.0
+milestone_name: Close the Loop
+status: in_progress
+stopped_at: Plan 35-01 complete — hook-based gate enforcement mechanism implemented; GATE-01 and GATE-02 satisfied
+last_updated: "2026-04-02T17:00:00.000Z"
+last_activity: 2026-04-02 — Plan 35-01 complete, gate runner library and PostToolUse hook wired
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
-  percent: 50
+  total_plans: 6
+  completed_plans: 5
+  percent: 63
 ---
 
 # Project State — Milestone v8.0
@@ -21,32 +21,34 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-02)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 35 — Gate Enforcement
+**Current focus:** Phase 35 — Gate Enforcement (Plan 35-02 next)
 
 ## Current Position
 
-Phase: 34 of 36 (Skill Refinement) — COMPLETE
-Plan: 2 of 2 in current phase (34-02 complete)
-Status: Phase complete
-Last activity: 2026-04-02 — Plan 34-02 complete, skill refinement loop verified end-to-end
+Phase: 35 of 36 (Gate Enforcement) — IN PROGRESS
+Plan: 1 of 2 in current phase (35-01 complete)
+Status: Plan 35-01 complete
+Last activity: 2026-04-02 — Plan 35-01 complete, hook-based gate enforcement implemented
 
-Progress: [█████░░░░░] 50%
+Progress: [██████░░░░] 63%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
+- Total plans completed: 5
 - Average duration: < 25 min
-- Total execution time: < 1 hour
+- Total execution time: < 2 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 33 | 2 | < 45 min | < 25 min |
+| 34 | 2 | < 30 min | < 15 min |
+| 35 | 1 | < 20 min | < 20 min |
 
 **Recent Trend:**
-- Last 5 plans: 33-01, 33-02, 34-01
+- Last 5 plans: 33-01, 33-02, 34-01, 34-02, 35-01
 - Trend: On track
 
 *Updated after each plan completion*
@@ -55,21 +57,26 @@ Progress: [█████░░░░░] 50%
 
 ### Decisions
 
-Key decisions from MILESTONE-CONTEXT.md to carry forward:
+Key decisions from this milestone:
 
-- Gate enforcement: choose from hooks (deterministic, can't skip), orchestrator wrapper (reliable), simplified protocol, or hybrid — decision deferred to Phase 35 planning
-- Skill loop: `analyze-patterns.cjs` exists and works, just needs a trigger — preference is SessionStart hook to reuse existing hook infrastructure
+- Gate enforcement: **decided in 35-01** — hooks approach (PostToolUse on Bash and Write). Documented in `GATE-ENFORCEMENT-DECISION.md`. Hooks fire without executor cooperation and are the only truly deterministic mechanism.
+- `test_gate` fires on `npm test`, `vitest`, `node --test`, `npx vitest` via PostToolUse[Bash]
+- `diff_review` fires on `.ts/.tsx/.js/.cjs/.mjs` writes via PostToolUse[Write]
+- `codebase_scan` and `context7_lookup` deferred (require session-level state tracking)
+- Quality level `standard` → test failures are recorded as `warned` (not blocked); `strict` → `blocked`; `fast` → skipped entirely
+- Skill loop: `analyze-patterns.cjs` wired to SessionEnd hook (Phase 33); skill refinement flow implemented (Phase 34)
 
 ### Pending Todos
 
-- Execute Phase 35 (Gate Enforcement — approach TBD in plan-phase)
+- Execute Phase 35 Plan 35-02: Wire write-gate-execution.cjs into the enforcement path so real gate outcomes persist with quality-level filtering
+- Execute Phase 36: Gate Observability — dashboard integration and end-to-end smoke test
 
 ### Blockers/Concerns
 
-- Gate enforcement approach not yet decided — Phase 35 plan-phase must assess feasibility of each option before committing.
+- None. Gate enforcement approach is decided and implemented. 35-02 will complete the wiring.
 
 ## Session Continuity
 
 Last session: 2026-04-02
-Stopped at: Plan 34-02 complete — full skill refinement loop verified end-to-end; Phase 34 fully complete
+Stopped at: Plan 35-01 complete — hook-based gate enforcement mechanism implemented; GATE-01 and GATE-02 satisfied
 Resume file: None

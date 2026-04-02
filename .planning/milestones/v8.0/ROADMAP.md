@@ -58,7 +58,7 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 35-01: Decide gate enforcement approach and implement the mechanism (hooks, wrapper, or hybrid)
+- [x] 35-01: Decide gate enforcement approach and implement the mechanism (hooks, wrapper, or hybrid)
 - [ ] 35-02: Wire write-gate-execution.cjs into the enforcement path so real gate outcomes are persisted with quality-level filtering
 
 ### Phase 36: Gate Observability
@@ -81,5 +81,5 @@ Plans:
 |-------|----------------|--------|-----------|
 | 33. Skill Loop Wiring | 2/2 | Complete    | 2026-04-02 |
 | 34. Skill Refinement | 2/2 | Complete    | 2026-04-02 |
-| 35. Gate Enforcement | 0/2 | Not started | - |
+| 35. Gate Enforcement | 1/2 | In progress | - |
 | 36. Gate Observability | 0/2 | Not started | - |
