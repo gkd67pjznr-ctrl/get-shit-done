@@ -5,6 +5,7 @@
 // Silent on errors -- never blocks session start.
 
 const path = require('path');
+const fs = require('fs');
 
 try {
   const { readCorrections } = require('./lib/write-correction.cjs');
@@ -32,8 +33,26 @@ try {
   const remainingSlots = MAX_ENTRIES - selectedPrefs.length;
   const selectedCorrs = filteredCorrections.slice(0, remainingSlots);
 
+  // Load pending suggestions if suggest_on_session_start is enabled
+  let pendingSuggestions = [];
+  try {
+    const configPath = path.join(cwd, '.planning', 'config.json');
+    const configRaw = fs.readFileSync(configPath, 'utf-8');
+    const config = JSON.parse(configRaw);
+    const suggestOnStart = ((config.adaptive_learning || {}).integration || {}).suggest_on_session_start;
+
+    if (suggestOnStart) {
+      const suggestionsPath = path.join(cwd, '.planning', 'patterns', 'suggestions.json');
+      const sugRaw = fs.readFileSync(suggestionsPath, 'utf-8');
+      const sugDoc = JSON.parse(sugRaw);
+      pendingSuggestions = (sugDoc.suggestions || []).filter(s => s.status === 'pending');
+    }
+  } catch (e) {
+    // Silent failure -- suggestions are optional
+  }
+
   // Exit silently if nothing to show
-  if (selectedPrefs.length === 0 && selectedCorrs.length === 0) {
+  if (selectedPrefs.length === 0 && selectedCorrs.length === 0 && pendingSuggestions.length === 0) {
     process.exit(0);
   }
 
@@ -72,10 +91,31 @@ try {
     tokenCount += cost;
   }
 
+  // Append pending suggestions section if any
+  let sugLines = [];
+  if (pendingSuggestions.length > 0) {
+    const MAX_SUGGESTIONS = 5;
+    for (const sug of pendingSuggestions.slice(0, MAX_SUGGESTIONS)) {
+      const skillLabel = sug.target_skill || 'unknown skill';
+      const changeHint = (sug.sample_corrections && sug.sample_corrections[0])
+        ? sug.sample_corrections[0]
+        : '(no sample available)';
+      const countLabel = sug.correction_count ? ` (${sug.correction_count} occurrences)` : '';
+      sugLines.push(`- [${sug.category}] Skill: ${skillLabel}${countLabel} — "${changeHint}"`);
+    }
+    if (pendingSuggestions.length > MAX_SUGGESTIONS) {
+      sugLines.push(`(+${pendingSuggestions.length - MAX_SUGGESTIONS} more pending suggestions -- see suggestions.json)`);
+    }
+  }
+
   // Build final output
   let body = headerText + '\n' + prefLines.join('\n') + corrHeader + '\n' + corrLines.join('\n');
   if (skipped > 0) {
     body += '\n\n(+' + skipped + ' more corrections not shown -- see corrections.jsonl)';
+  }
+  if (sugLines.length > 0) {
+    body += '\n\n## Pending Skill Suggestions\n\n' + sugLines.join('\n');
+    body += '\n\nRun `/gsd:refine-skill <skill-name>` to accept or dismiss.';
   }
   body += '\n</system-reminder>';
 
