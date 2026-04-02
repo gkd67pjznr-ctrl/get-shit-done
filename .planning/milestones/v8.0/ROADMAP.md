@@ -8,7 +8,7 @@ Two systems are built but not working: the skill observation feedback loop (capt
 
 ## Phases
 
-- [ ] **Phase 33: Skill Loop Wiring** - Trigger pattern analysis automatically and surface pending suggestions at session start
+- [x] **Phase 33: Skill Loop Wiring** - Trigger pattern analysis automatically and surface pending suggestions at session start
 - [ ] **Phase 34: Skill Refinement** - Implement the suggestion-to-SKILL.md modification flow and verify the full feedback loop
 - [ ] **Phase 35: Gate Enforcement** - Move quality gates from agent instructions to deterministic hooks/wrappers that fire and persist real data
 - [ ] **Phase 36: Gate Observability** - Confirm real gate data flows to the dashboard and the full gate cycle is verifiable
@@ -28,7 +28,7 @@ Two systems are built but not working: the skill observation feedback loop (capt
 
 Plans:
 - [x] 33-01: Wire analyze-patterns.cjs to SessionStart hook (or phase boundary trigger) and populate scan-state.json
-- [ ] 33-02: Add suggestion surfacing to recall hook — read suggestions.json and present pending items when suggest_on_session_start is true
+- [x] 33-02: Add suggestion surfacing to recall hook — read suggestions.json and present pending items when suggest_on_session_start is true
 
 ### Phase 34: Skill Refinement
 **Goal**: Accepted suggestions modify the target SKILL.md and are committed; the full correction-to-skill loop is verified end-to-end
@@ -79,7 +79,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 33. Skill Loop Wiring | 0/2 | Not started | - |
+| 33. Skill Loop Wiring | 2/2 | Complete | 2026-04-02 |
 | 34. Skill Refinement | 0/2 | Not started | - |
 | 35. Gate Enforcement | 0/2 | Not started | - |
 | 36. Gate Observability | 0/2 | Not started | - |

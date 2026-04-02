@@ -10,27 +10,27 @@ See: .planning/PROJECT.md (updated 2026-04-02)
 ## Current Position
 
 Phase: 33 of 36 (Skill Loop Wiring)
-Plan: 1 of 2 in current phase (33-01 complete)
+Plan: 2 of 2 in current phase (33-02 complete — phase complete)
 Status: In progress
-Last activity: 2026-04-02 — Plan 33-01 complete, SessionEnd hook wired
+Last activity: 2026-04-02 — Plan 33-02 complete, suggestion surfacing wired to session-start hook
 
 Progress: [█░░░░░░░░░] 5%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: < 30 min
-- Total execution time: < 0.5 hours
+- Total plans completed: 2
+- Average duration: < 25 min
+- Total execution time: < 1 hour
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 33 | 1 | < 30 min | < 30 min |
+| 33 | 2 | < 45 min | < 25 min |
 
 **Recent Trend:**
-- Last 5 plans: 33-01
+- Last 5 plans: 33-01, 33-02
 - Trend: On track
 
 *Updated after each plan completion*
@@ -46,7 +46,7 @@ Key decisions from MILESTONE-CONTEXT.md to carry forward:
 
 ### Pending Todos
 
-- Execute plan 33-02 (SessionStart hook for suggestion surfacing)
+- Execute Phase 34 (skill gate enforcement — approach TBD in plan-phase)
 
 ### Blockers/Concerns
 
@@ -56,5 +56,5 @@ Key decisions from MILESTONE-CONTEXT.md to carry forward:
 ## Session Continuity
 
 Last session: 2026-04-02
-Stopped at: Plan 33-01 complete — SessionEnd hook wired, scan-state.json watermark confirmed
+Stopped at: Plan 33-02 complete — suggestion surfacing added to session-start recall hook; Phase 33 fully complete
 Resume file: None
