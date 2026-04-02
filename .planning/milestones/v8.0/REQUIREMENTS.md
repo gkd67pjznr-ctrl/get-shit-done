@@ -41,24 +41,24 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SKILL-01 | — | Pending |
-| SKILL-02 | — | Pending |
-| SKILL-03 | — | Pending |
-| SKILL-04 | — | Pending |
-| SKILL-05 | — | Pending |
-| SKILL-06 | — | Pending |
-| GATE-01 | — | Pending |
-| GATE-02 | — | Pending |
-| GATE-03 | — | Pending |
-| GATE-04 | — | Pending |
-| GATE-05 | — | Pending |
-| GATE-06 | — | Pending |
+| SKILL-01 | Phase 33 | Pending |
+| SKILL-02 | Phase 33 | Pending |
+| SKILL-03 | Phase 33 | Pending |
+| SKILL-04 | Phase 34 | Pending |
+| SKILL-05 | Phase 34 | Pending |
+| SKILL-06 | Phase 34 | Pending |
+| GATE-01 | Phase 35 | Pending |
+| GATE-02 | Phase 35 | Pending |
+| GATE-03 | Phase 35 | Pending |
+| GATE-04 | Phase 35 | Pending |
+| GATE-05 | Phase 36 | Pending |
+| GATE-06 | Phase 36 | Pending |
 
 **Coverage:**
 - v8.0 requirements: 12 total
-- Mapped to phases: 0
-- Unmapped: 12 ⚠️
+- Mapped to phases: 12
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-02*
-*Last updated: 2026-04-02 after initial definition*
+*Last updated: 2026-04-02 after roadmap creation*

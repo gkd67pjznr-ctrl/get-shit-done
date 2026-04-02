@@ -13,6 +13,7 @@ This project uses **milestone-scoped layout**. Each milestone has its own ROADMA
 - ✅ **v5.0 Device-Wide Dashboard** — Phases 17-21 (shipped 2026-03-09)
 - ✅ **v6.0 Adaptive Observation & Learning Loop** — Phases 22-27 (shipped 2026-03-11)
 - ✅ **v7.0 Quality Enforcement Observability** — Phases 28-32 (shipped 2026-03-11)
+- 🔨 **v8.0 Close the Loop** — Phases 33-36
 
 ## Completed Milestones
 
