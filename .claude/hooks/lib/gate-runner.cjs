@@ -193,7 +193,7 @@ function evaluateGate(toolName, toolInput, toolResponse, options) {
         : JSON.stringify(toolResponse || '');
 
       const failurePatterns = [
-        /failing/i,
+        /[1-9]\d*\s+failing/i,    // "5 failing" but not "0 failing"
         / fail[^i]/i,
         /FAIL\b/,
         /Error:/,
