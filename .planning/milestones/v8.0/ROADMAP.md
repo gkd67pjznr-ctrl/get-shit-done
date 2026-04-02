@@ -27,7 +27,7 @@ Two systems are built but not working: the skill observation feedback loop (capt
 **Plans**: TBD
 
 Plans:
-- [ ] 33-01: Wire analyze-patterns.cjs to SessionStart hook (or phase boundary trigger) and populate scan-state.json
+- [x] 33-01: Wire analyze-patterns.cjs to SessionStart hook (or phase boundary trigger) and populate scan-state.json
 - [ ] 33-02: Add suggestion surfacing to recall hook — read suggestions.json and present pending items when suggest_on_session_start is true
 
 ### Phase 34: Skill Refinement
