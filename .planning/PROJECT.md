@@ -101,9 +101,27 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 
 ### Active
 
-(No active milestone — start next with `/gsd:new-milestone`)
+<!-- Current scope for v8.0 Close the Loop -->
 
-## Current Milestones
+- [ ] Wire `analyze-patterns.cjs` to run automatically (SessionStart hook or phase boundary trigger)
+- [ ] Surface pending skill suggestions at session start when configured
+- [ ] Implement skill refinement flow so accepted suggestions modify SKILL.md files
+- [ ] Verify full skill feedback loop end-to-end (correction → pattern → suggestion → refinement → loaded)
+- [ ] Move quality sentinel gates from agent instructions to deterministic hooks/wrappers
+- [ ] Quality gates fire during real execution and persist to `gate-executions.jsonl`
+- [ ] Gate data flows to dashboard Gate Health page
+- [ ] Both systems verifiable by running a quick task and confirming data appears
+
+## Current Milestone: v8.0 Close the Loop
+
+**Goal:** Fix the two systems that are built but not working: the skill observation feedback loop (captures data but never refines skills) and the quality sentinel gates (documented but never fire during execution). Close the gap between "built" and "working."
+
+**Target features:**
+- Skill feedback loop wired end-to-end: analysis triggers → suggestion surfacing → skill refinement
+- Quality sentinel gates moved from agent instructions to deterministic hooks/wrappers
+- Both systems verifiable by running a task and confirming data flows
+
+## Completed Milestones
 
 ### v7.0 Quality Enforcement Observability — SHIPPED 2026-03-11
 
@@ -221,4 +239,4 @@ Tests passing across 23+ test suites.
 | Cross-project promotion at 3+ projects | Ensures preferences are truly universal before elevating | ✓ Good — project-specific quirks don't pollute global store |
 
 ---
-*Last updated: 2026-03-11 after v6.0 milestone completion*
+*Last updated: 2026-04-02 after v8.0 milestone start*

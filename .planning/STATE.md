@@ -1,29 +1,30 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: Between milestones
-last_updated: "2026-03-11T18:00:00.000Z"
-last_activity: "2026-03-11 — Completed v6.0 milestone archive (6 phases, 17 plans, 19/19 requirements)"
+milestone: v8.0
+milestone_name: Close the Loop
+status: Defining requirements
+last_updated: "2026-04-02"
+last_activity: "2026-04-02 — Milestone v8.0 started"
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 17
-  completed_plans: 17
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State — Coordinator
 
 ## Current Position
 
-Phase: —
+Phase: Not started (defining requirements)
 Plan: —
-Status: v6.0 and v7.0 archived, no active milestone
-Last activity: 2026-03-11 — Completed v6.0 milestone archive
+Status: Defining requirements
+Last activity: 2026-04-02 — Milestone v8.0 started
 
 ## Active Milestones
 
-(None — start next with `/gsd:new-milestone`)
+### v8.0 Close the Loop — Skill Learning & Quality Gates
+Status: Defining requirements
 
 ## Completed Milestones
 
@@ -69,6 +70,7 @@ See: .planning/PROJECT.md (updated 2026-03-11)
 | 30 | Move untagged sessions from overview to sidebar grouped by project | 2026-03-10 | 7195fb4 | Verified | [30-move-untagged-sessions-to-sidebar-sectio](./quick/30-move-untagged-sessions-to-sidebar-sectio/) |
 | 31 | Quality gating metrics research and scope — v7.0 milestone brief | 2026-03-10 | 9f240df | Verified | [31-quality-gating-metrics-research-and-scop](./quick/31-quality-gating-metrics-research-and-scop/) |
 | 32 | Add --host flag to dashboard server for phone/LAN access | 2026-03-11 | ba8ab25 | Verified | [32-make-dashboard-accessible-from-phone-via](./quick/32-make-dashboard-accessible-from-phone-via/) |
+| 33 | Fix Gate Health dashboard page to load: guard /api/* routes + Content-Type check | 2026-03-11 | 438a2ef | Verified | [33-fix-gate-health-dashboard-page-to-load-a](./quick/33-fix-gate-health-dashboard-page-to-load-a/) |
 
 ## Session Continuity
 
