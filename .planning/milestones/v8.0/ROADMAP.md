@@ -11,7 +11,7 @@ Two systems are built but not working: the skill observation feedback loop (capt
 - [x] **Phase 33: Skill Loop Wiring** - Trigger pattern analysis automatically and surface pending suggestions at session start
 - [x] **Phase 34: Skill Refinement** - Implement the suggestion-to-SKILL.md modification flow and verify the full feedback loop
 - [x] **Phase 35: Gate Enforcement** - Move quality gates from agent instructions to deterministic hooks/wrappers that fire and persist real data
-- [ ] **Phase 36: Gate Observability** - Confirm real gate data flows to the dashboard and the full gate cycle is verifiable
+- [x] **Phase 36: Gate Observability** - Confirm real gate data flows to the dashboard and the full gate cycle is verifiable
 
 ## Phase Details
 
@@ -72,8 +72,8 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 36-01: Verify dashboard Gate Health page reads from and correctly displays real gate-executions.jsonl data
-- [ ] 36-02: End-to-end smoke test — run /gsd:quick, confirm gate entries written, confirm dashboard reflects them
+- [x] 36-01: Verify dashboard Gate Health page reads from and correctly displays real gate-executions.jsonl data
+- [x] 36-02: End-to-end smoke test — run /gsd:quick, confirm gate entries written, confirm dashboard reflects them
 
 ## Progress
 
@@ -82,4 +82,4 @@ Plans:
 | 33. Skill Loop Wiring | 2/2 | Complete    | 2026-04-02 |
 | 34. Skill Refinement | 2/2 | Complete    | 2026-04-02 |
 | 35. Gate Enforcement | 2/2 | Complete    | 2026-04-03 |
-| 36. Gate Observability | 0/2 | Not started | - |
+| 36. Gate Observability | 2/2 | Complete   | 2026-04-02 |
