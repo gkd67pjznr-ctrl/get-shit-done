@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-This is a forked version of GSD (Get Shit Done) that adds quality enforcement, concurrent milestone workspaces, structured tech debt tracking, an adaptive learning layer (skills, agents, hooks, correction capture, preference tracking), and a device-wide project dashboard. It is designed for solo developers using Claude Code who want stronger guarantees about code quality and an AI assistant that improves over time by learning from corrections.
+This is a forked version of GSD (Get Shit Done) that adds quality enforcement, concurrent milestone workspaces, structured tech debt tracking, an adaptive learning layer (skills, agents, hooks, correction capture, preference tracking, skill refinement), a device-wide project dashboard, and deterministic quality gate enforcement via hooks. It is designed for solo developers using Claude Code who want stronger guarantees about code quality and an AI assistant that improves over time by learning from its mistakes.
 
 All additions are additive and config-gated — the default quality level (`fast`) produces zero behavioral change from upstream GSD.
 
@@ -59,14 +59,18 @@ All changes are additive. Existing projects with no `quality` key in `config.jso
 
 **v3.1 Legacy Strip & README (2026-03-05):** Cleanup pass, README overhaul.
 
-**v4.0 Adaptive Learning Integration (2026-03-09):** Skills system (`.claude/skills/` — 17 skills), hooks system (`.claude/hooks/` — 13 hook files), native observation, correction capture, GSD dashboard command, adaptive agents.
+**v4.0 Adaptive Learning Integration (2026-03-09):** Skills system (`.claude/skills/` — 17 skills), hooks system (`.claude/hooks/` — 12 hook files), native observation, correction capture, GSD dashboard command, adaptive agents.
 
-**v6.0 Adaptive Observation & Learning Loop (in progress):** Correction capture pipeline, preference tracking and promotion.
+**v6.0 Adaptive Observation & Learning Loop (2026-03-11):** Correction capture pipeline, preference tracking and promotion, live recall injection, observer agent with suggestion pipeline, bounded learning guardrails.
+
+**v7.0 Quality Enforcement Observability (2026-03-11):** Gate execution persistence to JSONL, correction quality context, Context7 call logging, dashboard Gate Health page, gate-to-correction attribution.
+
+**v8.0 Close the Loop (2026-04-03):** Skill feedback loop wired end-to-end (analysis auto-triggers, suggestions surfaced at session start, `/gsd:refine-skill` accepts/dismisses into SKILL.md). Quality gates moved from agent instructions to deterministic PostToolUse hooks that fire without executor cooperation.
 
 **Current file counts:**
 - 35 workflow files (`get-shit-done/workflows/`)
 - 15 lib modules (`get-shit-done/bin/lib/`)
-- 35 test files, 958 tests across 195 suites
+- 36 test files, 982 tests across 200 suites
 
 ---
 
@@ -323,20 +327,47 @@ The fork ships **17 skills** covering:
 
 ### Hooks
 
-Hooks live in `.claude/hooks/`. **13 hook files** handle:
+Hooks live in `.claude/hooks/`. **12 hook files** handle:
 
 | Hook | Purpose |
 |------|---------|
 | `validate-commit.sh` | Enforces Conventional Commits format |
 | `session-state.sh` | Saves/restores session state |
 | `phase-boundary-check.sh` | Guards phase transitions |
+| `gsd-analyze-patterns.cjs` | SessionEnd: runs pattern analysis, populates scan-state.json |
+| `gsd-recall-corrections.cjs` | SessionStart: surfaces corrections, preferences, and pending skill suggestions |
+| `gsd-run-gates.cjs` | PostToolUse: fires quality gates on Bash test commands and Write code files |
 | Work state hooks | Save/restore across context resets |
-| Correction capture hooks | Log corrections as learning signals |
 | Statusline hooks | Update terminal status display |
 
-### Correction capture *(v6.0, in progress)*
+### Correction Capture & Skill Refinement (v6.0 + v8.0)
 
-When you correct Claude's output, the correction is captured as a learning signal. Repeated corrections become preferences that are auto-promoted to skill rules. The system literally gets better the more you use it.
+When you correct Claude's output, the correction is captured as a structured learning signal with a 14-category taxonomy. The full pipeline:
+
+1. **Capture** — PostToolUse hook detects edits and reverts, writes to `corrections.jsonl`
+2. **Analysis** — `analyze-patterns.cjs` runs at session end, detects repeated patterns
+3. **Suggestion** — Patterns crossing threshold generate skill improvement suggestions
+4. **Surfacing** — Pending suggestions presented at next session start
+5. **Refinement** — `/gsd:refine-skill` accepts (modifies SKILL.md, commits) or dismisses
+6. **Loading** — Updated skill auto-loads in all future sessions
+
+Repeated corrections (3+) auto-promote to durable preferences with confidence scoring and scope tagging (file/filetype/phase/project/global). Preferences appearing in 3+ projects promote to `~/.gsd/preferences.json` for cross-project inheritance.
+
+### Quality Gate Enforcement (v8.0)
+
+Quality gates fire **deterministically via PostToolUse hooks** — not as agent instructions that can be skipped:
+
+| Gate | Trigger | What It Does |
+|------|---------|--------------|
+| `test_gate` | Bash commands containing `npm test`, `vitest`, `node --test` | Checks test output for failures |
+| `diff_review` | Write to `.ts/.tsx/.js/.cjs/.mjs` files | Reviews code changes for quality issues |
+
+Gate behavior by quality level:
+- **fast** — Skip entirely (zero overhead)
+- **standard** — Record outcomes as `passed` or `warned`
+- **strict** — Block on failures
+
+All gate executions persist to `gate-executions.jsonl` and flow to the dashboard Gate Health page.
 
 > Skills and hooks are installed to `~/.claude/` via the standard deploy process (Section 2).
 
@@ -384,8 +415,10 @@ node --test tests/*.test.cjs
 | Feature | Configuration | Default |
 |---------|--------------|---------|
 | **Quality level** | `quality.level` in `.planning/config.json` | `fast` (vanilla behavior) |
+| **Quality gates** | PostToolUse hooks (automatic) | Respect quality level |
 | **Tech debt auto-logging** | Automatic at `standard`/`strict` | Off at `fast` |
 | **Concurrent milestones** | `concurrent: true` in config | Off (single-milestone) |
+| **Skill suggestions** | `suggest_on_session_start` in config | `true` |
 | **Skills and hooks** | `.claude/skills/` and `.claude/hooks/` | Installed via deploy |
 
 ---
@@ -396,9 +429,9 @@ node --test tests/*.test.cjs
 node --test tests/*.test.cjs
 ```
 
-**958 tests** across **195 suites** (35 test files). Uses Node.js built-in test runner — no test framework dependencies required.
+**982 tests** across **200 suites** (36 test files). Uses Node.js built-in test runner — no test framework dependencies required.
 
-> **Expected:** All 958 tests passing. Requires Node.js 18+ and `npm install`.
+> **Expected:** 979/982 tests passing (3 pre-existing failures in config, foundation, tmux-server tests — unrelated to fork changes). Requires Node.js 18+ and `npm install`.
 
 ---
 
@@ -414,7 +447,6 @@ get-shit-done/
       roadmap.cjs              ROADMAP.md parsing and updates
       milestone.cjs            Milestone workspace management
       debt.cjs                 Tech debt CRUD
-      migrate.cjs              Planning layout migration
       state.cjs                STATE.md management
       init.cjs                 Project initialization
       dashboard.cjs            Dashboard aggregation
@@ -430,21 +462,24 @@ dashboard/
   js/
     app.js                     Dashboard app entry point
     components/                UI components (sidebar, project-card, project-detail,
-                               terminal-modal, pattern-page, progress-bar, etc.)
+                               terminal-modal, pattern-page, gate-health-page,
+                               progress-bar, etc.)
     lib/                       API client, router, state, SSE
   css/                         Dashboard styles
 
 .claude/
-  hooks/                       13 hook files (commit validation, session state,
-                               phase boundary, work state, correction capture, statusline)
+  hooks/                       12 hook files (commit validation, session state,
+                               phase boundary, work state, correction capture,
+                               pattern analysis, recall injection, gate enforcement)
   skills/                      17 skills (gsd-workflow, session-awareness,
                                beautiful-commits, correction-capture, and others)
 
-tests/                         35 test suites (958 tests)
+tests/                         36 test suites (982 tests)
 
 .planning/                     This project's own planning documents
   STATE.md                     Coordinator state
-  milestones/                  Per-milestone workspaces (v1.0 through v6.0)
+  observations/                Gate executions, corrections, context7 calls (JSONL)
+  milestones/                  Per-milestone workspaces (v1.0 through v8.0)
     <version>/
       STATE.md
       ROADMAP.md

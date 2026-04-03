@@ -1,12 +1,12 @@
 # GSD Enhanced Fork
 
-**Quality enforcement + concurrent milestones + tech debt tracking on top of vanilla GSD.**
+**Quality enforcement + concurrent milestones + adaptive learning + device-wide dashboard on top of vanilla GSD.**
 
 ## What This Fork Is
 
-This is a forked version of [GSD (Get Shit Done)](https://github.com/gsd-build/get-shit-done) that adds three major systems: a quality enforcement framework that makes Claude behave like a senior engineer, concurrent milestone workspaces for running multiple work streams in parallel, and structured tech debt tracking from discovery through resolution.
+This is a forked version of [GSD (Get Shit Done)](https://github.com/gsd-build/get-shit-done) that adds quality enforcement, concurrent milestone workspaces, structured tech debt tracking, an adaptive learning layer that improves from corrections, and a device-wide project dashboard. It is designed for solo developers using Claude Code who want stronger guarantees about code quality and an AI assistant that learns from its mistakes.
 
-It is fully compatible with vanilla GSD. The default quality level is `fast`, which produces zero behavioral change from the upstream version. You get all the additions when you opt in.
+All additions are additive and config-gated — the default quality level (`fast`) produces zero behavioral change from upstream GSD.
 
 See [UPGRADES.md](UPGRADES.md) for the full milestone-by-milestone breakdown.
 See [FORK-GUIDE.md](FORK-GUIDE.md) for installation and usage instructions.
@@ -15,22 +15,31 @@ See [FORK-GUIDE.md](FORK-GUIDE.md) for installation and usage instructions.
 
 | System | Version | What It Adds |
 |--------|---------|--------------|
-| Quality Enforcement | v1.0-v1.1 | Quality Sentinel in executor, Context7 library lookup before coding, mandatory tests for new logic, config-gated levels (fast/standard/strict), `/gsd:set-quality` command |
-| Concurrent Milestones | v2.0 | Isolated workspaces per milestone, lock-free dashboard, advisory conflict detection, `--milestone` flag throughout all 7 workflows |
-| Tech Debt System | v3.0 | DEBT.md with TD-NNN entries, `debt log/list/resolve` CLI commands, executor/verifier auto-logging, `/gsd:fix-debt` skill |
+| Quality Enforcement | v1.0-v1.1 | Quality Sentinel in executor, Context7 library lookup, mandatory tests, config-gated levels (fast/standard/strict) |
+| Concurrent Milestones | v2.0 | Isolated workspaces per milestone, lock-free dashboard, advisory conflict detection |
+| Tech Debt System | v3.0 | DEBT.md with TD-NNN entries, `debt log/list/resolve` CLI, executor/verifier auto-logging |
+| Legacy Strip | v3.1 | Milestone-scoped is the only layout, net -14K lines removed |
+| Adaptive Learning | v4.0 | 17 skills, 12 hooks, native observation in all workflow commands |
+| Device-Wide Dashboard | v5.0 | Multi-project command center with live terminals and cross-project metrics |
+| Adaptive Observation | v6.0 | Correction capture, preference learning, recall injection, observer agent, skill refinement pipeline |
+| Quality Observability | v7.0 | Gate execution persistence (JSONL), dashboard Gate Health page, gate-to-correction attribution |
+| Close the Loop | v8.0 | Skill feedback loop wired E2E, quality gates via deterministic PostToolUse hooks |
 
 ## Quick Stats
 
 | Dimension | Value |
 |-----------|-------|
-| Milestones shipped | 4 (v1.0 through v3.0) |
-| Tests passing | 710 across 21 suites |
-| Source modules | 12 lib modules |
-| Validated requirements | 85+ |
+| Milestones shipped | 10 (v1.0 through v8.0) |
+| Tests passing | 979 across 200 suites (36 test files) |
+| Source modules | 15 lib modules (~9K LOC) |
+| Validated requirements | 180+ |
+| Skills | 17 auto-loading SKILL.md files |
+| Hooks | 12 deterministic hook files |
+| Workflows | 35 orchestrator definitions |
 
 ## Getting Started
 
-- Install: see [FORK-GUIDE.md](FORK-GUIDE.md) for the 3-step deploy process
+- Install: see [FORK-GUIDE.md](FORK-GUIDE.md) for the deploy process
 - Full milestone documentation: [UPGRADES.md](UPGRADES.md)
 - Enable quality enforcement: `/gsd:set-quality standard`
 

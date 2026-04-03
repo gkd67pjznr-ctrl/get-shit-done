@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a forked, upgraded version of the [GSD (Get Shit Done)](https://github.com/anthropics/gsd) framework for Claude Code. It adds three major systems on top of vanilla GSD: quality enforcement, concurrent milestone execution, and structured tech debt management.
+This is a forked, upgraded version of the [GSD (Get Shit Done)](https://github.com/anthropics/gsd) framework for Claude Code. It adds quality enforcement, concurrent milestone execution, structured tech debt management, an adaptive learning layer with skill refinement, a device-wide dashboard, and deterministic quality gate enforcement.
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
 
@@ -11,16 +11,17 @@ This is a forked, upgraded version of the [GSD (Get Shit Done)](https://github.c
 | Dimension | Value |
 |-----------|-------|
 | Fork started | 2026-02-23 |
-| Milestones shipped | 4 (v1.0 through v3.0) |
-| Total duration | 4 days |
-| Phases | 20 |
-| Plans | 34 |
-| Validated requirements | 85+ |
-| Files changed | 208 commits across 187 files |
-| Lines added/removed | +34,553 / -509 |
-| Tests passing | 298 across 14 suites |
-| Source modules | 13 lib modules (6,537 LOC) |
-| Test files | 14 files (6,305 LOC) |
+| Milestones shipped | 10 (v1.0 through v8.0) |
+| Total duration | ~6 weeks |
+| Phases | 52 |
+| Plans | 108 |
+| Validated requirements | 180+ |
+| Commits | 1,600+ |
+| Tests passing | 979/982 across 200 suites (36 test files) |
+| Source modules | 15 lib modules (~9K LOC) |
+| Skills | 17 auto-loading SKILL.md files |
+| Hooks | 12 deterministic hook files |
+| Workflows | 35 orchestrator definitions |
 
 ---
 
@@ -30,13 +31,25 @@ Vanilla GSD gives Claude structure: phases, plans, wave-based execution, verific
 
 The gap: Claude can skip writing tests, ignore existing patterns in the codebase, hand-roll utilities that already exist, and produce "slop" — code that passes verification because verification only checks requirements, not code quality.
 
-This fork closes that gap with three systems:
+This fork closes that gap with eight milestone iterations:
 
-1. **Quality enforcement** (v1.0–v1.1): A Quality Sentinel embedded in the executor, Context7 library lookup before implementation, mandatory tests for new logic, and quality dimensions in the verifier. Config-gated so existing projects are unaffected.
+1. **Quality enforcement** (v1.0–v1.1): Quality Sentinel in executor, Context7 library lookup, mandatory tests, quality dimensions in verifier. Config-gated.
 
-2. **Concurrent milestones** (v2.0): Isolated workspaces per milestone, a lock-free dashboard, advisory conflict detection, and `--milestone` flag threading through all 7 workflows. Old-style projects auto-detected with zero migration required.
+2. **Concurrent milestones** (v2.0): Isolated workspaces per milestone, lock-free dashboard, advisory conflict detection, `--milestone` flag throughout.
 
-3. **Tech debt system** (v3.0): Structured `DEBT.md` tracking with TD-NNN IDs, `debt log/list/resolve` CLI commands, executor/verifier auto-logging gated by quality level, a migration tool for upgrading existing `.planning/` layouts, and a `/gsd:fix-debt` resolution skill.
+3. **Tech debt system** (v3.0): DEBT.md with TD-NNN entries, `debt log/list/resolve` CLI, auto-logging gated by quality level, `/gsd:fix-debt` skill.
+
+4. **Legacy strip** (v3.1): Milestone-scoped is the only layout. All legacy branching removed. Net -14K lines.
+
+5. **Adaptive learning** (v4.0): gsd-skill-creator merged into core. 17 skills, 12 hooks, native observation in all 7 workflow commands.
+
+6. **Device-wide dashboard** (v5.0): Multi-project command center with live terminals, session monitoring, cross-project metrics.
+
+7. **Adaptive observation** (v6.0): Correction capture with 14-category taxonomy, preference learning, recall injection, observer agent, bounded learning guardrails.
+
+8. **Quality observability** (v7.0): Gate execution persistence to JSONL, dashboard Gate Health page, gate-to-correction attribution analytics.
+
+9. **Close the loop** (v8.0): Skill feedback loop wired end-to-end (corrections → analysis → suggestions → skill refinement). Quality gates moved from agent instructions to deterministic PostToolUse hooks.
 
 All changes are additive. Existing GSD behavior is preserved. The default quality level (`fast`) produces zero behavioral change from vanilla GSD.
 
@@ -489,15 +502,15 @@ Tests use Node.js built-in test runner (`node:test`, `node:assert`). No test fra
 
 ## Known Limitations
 
-These are accepted tech debt items from v3.0. Tracked in `.planning/DEBT.md`.
+Tracked in `.planning/DEBT.md` and `.planning/MILESTONES.md`.
 
-| ID | Issue | Impact |
-|----|-------|--------|
-| FLOW-02 | `cmdMilestoneComplete` has `phasesDir` hardcoded to `.planning/phases/` | Broken for milestone-scoped layouts when completing a milestone |
-| FLOW-01 | `execute-plan.md` doesn't pass `--milestone` flag to `roadmap update-plan-progress` | Progress tracking gaps in milestone-scoped execution |
-| CLI-01 | CLI help text incomplete | `migrate`, `debt`, `milestone` commands not listed in `--help` output |
-| ARCH-01 | Agent files (`gsd-executor.md`, `gsd-verifier.md`) live outside git repo | Cannot track agent changes via git history |
-| MAINT-01 | Dual-file maintenance for `fix-debt.md` | Repo copy and installed copy can diverge after updates |
+| Area | Issue | Impact |
+|------|-------|--------|
+| State | `cmdStateUpdateProgress` uses flat `.planning/phases/` path (MISS-01) | Medium — broken for milestone-scoped layouts |
+| Gates | `/FAIL\b/` regex doesn't match "FAILED" | Low — Vitest uses "FAIL" not "FAILED" |
+| Gates | `test_baseline` gate not implemented | Deferred — documented in GATE-ENFORCEMENT-DECISION.md |
+| Documentation | SUMMARY.md frontmatter and REQUIREMENTS.md checkboxes drift | Systemic — cosmetic, all requirements verified PASS |
+| Tests | 3 pre-existing failures in config, foundation, tmux-server tests | Pre-existing — unrelated to fork changes |
 
 ---
 
@@ -505,8 +518,8 @@ These are accepted tech debt items from v3.0. Tracked in `.planning/DEBT.md`.
 
 - `.planning/MILESTONES.md` — detailed per-milestone accomplishments, stats, and accepted gaps
 - `.planning/PROJECT.md` — project context, requirements list, all key decisions with rationale
+- `.planning/RETROSPECTIVE.md` — per-milestone retrospective with cross-milestone trends
 - `.planning/DEBT.md` — current open tech debt entries with TD-NNN IDs
 - `.planning/STATE.md` — milestone completion dates and quick task history
-- `docs/USER-GUIDE.md` — full command reference (planned; not yet created)
 - `get-shit-done/bin/gsd-tools.cjs` — CLI entry point
-- `tests/*.test.cjs` — 14 test files covering all modules
+- `tests/*.test.cjs` — 36 test files covering all modules
