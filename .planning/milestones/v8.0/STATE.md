@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v8.0
 milestone_name: Close the Loop
 status: in_progress
-stopped_at: Plan 35-01 complete — hook-based gate enforcement mechanism implemented; GATE-01 and GATE-02 satisfied
-last_updated: "2026-04-02T17:00:00.000Z"
-last_activity: 2026-04-02 — Plan 35-01 complete, gate runner library and PostToolUse hook wired
+stopped_at: Plan 35-02 complete — write-gate-execution wired into enforcement path; real entries in gate-executions.jsonl; GATE-03 and GATE-04 satisfied
+last_updated: "2026-04-02T23:59:00.000Z"
+last_activity: 2026-04-02 — Plan 35-02 complete, gate executions persisted with quality-level filtering verified
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 6
-  completed_plans: 5
-  percent: 63
+  completed_plans: 6
+  percent: 75
 ---
 
 # Project State — Milestone v8.0
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-02)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 35 — Gate Enforcement (Plan 35-02 next)
+**Current focus:** Phase 36 — Gate Observability (next)
 
 ## Current Position
 
-Phase: 35 of 36 (Gate Enforcement) — IN PROGRESS
-Plan: 1 of 2 in current phase (35-01 complete)
-Status: Plan 35-01 complete
-Last activity: 2026-04-02 — Plan 35-01 complete, hook-based gate enforcement implemented
+Phase: 35 of 36 (Gate Enforcement) — COMPLETE
+Plan: 2 of 2 in current phase (35-02 complete)
+Status: Phase 35 complete — all 2 plans done
+Last activity: 2026-04-02 — Plan 35-02 complete, write path verified, real entries in gate-executions.jsonl
 
-Progress: [██████░░░░] 63%
+Progress: [███████░░░] 75%
 
 ## Performance Metrics
 
@@ -45,10 +45,10 @@ Progress: [██████░░░░] 63%
 |-------|-------|-------|----------|
 | 33 | 2 | < 45 min | < 25 min |
 | 34 | 2 | < 30 min | < 15 min |
-| 35 | 1 | < 20 min | < 20 min |
+| 35 | 2 | < 35 min | < 20 min |
 
 **Recent Trend:**
-- Last 5 plans: 33-01, 33-02, 34-01, 34-02, 35-01
+- Last 6 plans: 33-01, 33-02, 34-01, 34-02, 35-01, 35-02
 - Trend: On track
 
 *Updated after each plan completion*
@@ -68,15 +68,19 @@ Key decisions from this milestone:
 
 ### Pending Todos
 
-- Execute Phase 35 Plan 35-02: Wire write-gate-execution.cjs into the enforcement path so real gate outcomes persist with quality-level filtering
 - Execute Phase 36: Gate Observability — dashboard integration and end-to-end smoke test
+
+### Decisions
+
+- **35-02 fix**: `/failing/i` pattern in gate-runner.cjs was too broad — it matched "0 failing" in Vitest summaries. Fixed to `/[1-9]\d*\s+failing/i` to require non-zero count before "failing". All other patterns unaffected.
+- Gate-executions.jsonl is gitignored (under .planning/) but committed with `git add -f` for verification artifact preservation.
 
 ### Blockers/Concerns
 
-- None. Gate enforcement approach is decided and implemented. 35-02 will complete the wiring.
+- None. Phase 35 complete. Phase 36 (Gate Observability) is next.
 
 ## Session Continuity
 
 Last session: 2026-04-02
-Stopped at: Plan 35-01 complete — hook-based gate enforcement mechanism implemented; GATE-01 and GATE-02 satisfied
+Stopped at: Plan 35-02 complete — write-gate-execution wired into enforcement path; GATE-03 and GATE-04 satisfied
 Resume file: None

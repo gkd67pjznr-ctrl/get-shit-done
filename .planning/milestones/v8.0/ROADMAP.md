@@ -10,7 +10,7 @@ Two systems are built but not working: the skill observation feedback loop (capt
 
 - [x] **Phase 33: Skill Loop Wiring** - Trigger pattern analysis automatically and surface pending suggestions at session start
 - [x] **Phase 34: Skill Refinement** - Implement the suggestion-to-SKILL.md modification flow and verify the full feedback loop
-- [ ] **Phase 35: Gate Enforcement** - Move quality gates from agent instructions to deterministic hooks/wrappers that fire and persist real data
+- [x] **Phase 35: Gate Enforcement** - Move quality gates from agent instructions to deterministic hooks/wrappers that fire and persist real data
 - [ ] **Phase 36: Gate Observability** - Confirm real gate data flows to the dashboard and the full gate cycle is verifiable
 
 ## Phase Details
@@ -59,7 +59,7 @@ Plans:
 
 Plans:
 - [x] 35-01: Decide gate enforcement approach and implement the mechanism (hooks, wrapper, or hybrid)
-- [ ] 35-02: Wire write-gate-execution.cjs into the enforcement path so real gate outcomes are persisted with quality-level filtering
+- [x] 35-02: Wire write-gate-execution.cjs into the enforcement path so real gate outcomes are persisted with quality-level filtering
 
 ### Phase 36: Gate Observability
 **Goal**: Real gate execution data flows to the dashboard Gate Health page and running a quick task produces verifiable gate entries
@@ -81,5 +81,5 @@ Plans:
 |-------|----------------|--------|-----------|
 | 33. Skill Loop Wiring | 2/2 | Complete    | 2026-04-02 |
 | 34. Skill Refinement | 2/2 | Complete    | 2026-04-02 |
-| 35. Gate Enforcement | 1/2 | In progress | - |
+| 35. Gate Enforcement | 2/2 | Complete    | 2026-04-02 |
 | 36. Gate Observability | 0/2 | Not started | - |
