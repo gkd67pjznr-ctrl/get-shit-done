@@ -99,29 +99,26 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 - ✓ Cross-project preference inheritance to `~/.gsd/preferences.json` — v6.0
 - ✓ All GSD workflow commands and subagents inherit learned skills in execution context — v6.0
 
+- ✓ analyze-patterns.cjs runs automatically via SessionEnd hook, populates scan-state.json watermark — v8.0
+- ✓ Pending skill suggestions surfaced at session start when suggest_on_session_start is true — v8.0
+- ✓ Skill refinement flow: accepted suggestions modify SKILL.md files and commit; dismissed suggestions removed — v8.0
+- ✓ Full skill feedback loop verified E2E (correction → pattern → suggestion → refinement → loaded) — v8.0
+- ✓ Quality sentinel gates moved from agent instructions to deterministic PostToolUse hooks — v8.0
+- ✓ Quality gates fire during real execution and persist to gate-executions.jsonl — v8.0
+- ✓ Gate data flows to dashboard Gate Health page with live metrics — v8.0
+- ✓ Both systems verifiable by running a quick task and confirming data appears — v8.0
+
 ### Active
 
-<!-- Current scope for v8.0 Close the Loop -->
+<!-- Next milestone scope TBD -->
 
-- [ ] Wire `analyze-patterns.cjs` to run automatically (SessionStart hook or phase boundary trigger)
-- [ ] Surface pending skill suggestions at session start when configured
-- [ ] Implement skill refinement flow so accepted suggestions modify SKILL.md files
-- [ ] Verify full skill feedback loop end-to-end (correction → pattern → suggestion → refinement → loaded)
-- [ ] Move quality sentinel gates from agent instructions to deterministic hooks/wrappers
-- [ ] Quality gates fire during real execution and persist to `gate-executions.jsonl`
-- [ ] Gate data flows to dashboard Gate Health page
-- [ ] Both systems verifiable by running a quick task and confirming data appears
-
-## Current Milestone: v8.0 Close the Loop
-
-**Goal:** Fix the two systems that are built but not working: the skill observation feedback loop (captures data but never refines skills) and the quality sentinel gates (documented but never fire during execution). Close the gap between "built" and "working."
-
-**Target features:**
-- Skill feedback loop wired end-to-end: analysis triggers → suggestion surfacing → skill refinement
-- Quality sentinel gates moved from agent instructions to deterministic hooks/wrappers
-- Both systems verifiable by running a task and confirming data flows
+(None — next milestone not yet defined. Run `/gsd:new-milestone` to start.)
 
 ## Completed Milestones
+
+### v8.0 Close the Loop — SHIPPED 2026-04-03
+
+**Delivered:** Closed the gap between "built" and "working" — skill feedback loop runs end-to-end (corrections → analysis → suggestions → refinement → loaded), quality gates fire deterministically via PostToolUse hooks with real data flowing to the dashboard. 4 phases, 8 plans, 12/12 requirements satisfied.
 
 ### v7.0 Quality Enforcement Observability — SHIPPED 2026-03-11
 
@@ -134,22 +131,6 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 ### v4.0 Adaptive Learning Integration — SHIPPED 2026-03-09
 
 **Delivered:** Merged gsd-skill-creator into GSD core — one package, one install, native skill awareness with observation baked into every workflow command. 7 phases, 15 plans, 39/39 requirements satisfied.
-
-### v5.0 Device-Wide Dashboard
-
-**Goal:** Transform the GSD dashboard from a single-project HTML generator into a device-wide multi-project command center with live terminal integration, session monitoring, and cross-project metrics.
-
-**Target features:**
-- Global dashboard server (`gsd dashboard serve`) running on localhost, accessible from any project
-- Multi-project registry via CLI (`gsd dashboard add/remove/list`)
-- Unified view of all registered GSD projects — milestones, phases, progress, requirements
-- Cross-project metrics aggregation (velocity, commit feeds, quality scores)
-- Tmux session monitoring — session count, active/idle status, last activity per project
-- Embedded interactive terminals via xterm.js + websocket-to-tmux bridge
-- Two-tier terminal UX: metadata cards in overview, click-to-expand into live terminal
-- SSE-based live refresh across all project data
-- Project detail drill-down with full per-project dashboard (existing 5-page dashboard)
-- Persistent tmux session management per project
 
 ### Out of Scope
 
@@ -169,7 +150,7 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 
 ## Context
 
-Shipped v6.0 with ~81K LOC across 12 CJS source modules + 23 test suites, plus workflow/agent Markdown specifications, 16 skills, 4 teams, a TypeScript dashboard with Gate Health page, and adaptive learning pipeline (correction capture, preference tracking, observer, recall injection).
+Shipped v8.0 with ~84K LOC across 12 CJS source modules + 23 test suites, plus workflow/agent Markdown specifications, 16 skills, 4 teams, a TypeScript dashboard with Gate Health page, adaptive learning pipeline, and fully wired skill feedback loop and gate enforcement hooks.
 Tech stack: Node.js, CJS modules, TypeScript (dashboard), Markdown agent specifications, Context7 MCP.
 Tests passing across 23+ test suites.
 
@@ -188,6 +169,10 @@ Tests passing across 23+ test suites.
 **Quality observability** (v7.0): Gate execution persistence to JSONL, correction quality context, Context7 call logging, dedicated Gate Health dashboard page, overview integration (quality badges, gate summaries), gate-to-correction attribution analytics.
 
 **Adaptive observation** (v6.0): Hook-based correction capture with 14-category taxonomy, preference tracking with confidence scoring, live recall injection (session-start + within-session), observer agent with suggestion pipeline and 6 bounded learning guardrails, enhanced digest with collaborative skill refinement, cross-project preference inheritance, learned skill loading in all GSD commands and subagents.
+
+**Skill feedback loop** (v8.0): analyze-patterns.cjs auto-triggers via SessionEnd hook, suggestions surfaced at session start, /gsd:refine-skill accepts/dismisses suggestions into SKILL.md files. Full loop verified E2E.
+
+**Gate enforcement** (v8.0): Quality sentinel gates moved from agent prose instructions to deterministic PostToolUse hooks. test_gate fires on test commands, diff_review fires on code file writes. Real entries persist to gate-executions.jsonl and flow to dashboard Gate Health page.
 
 **Known tech debt:** `cmdStateUpdateProgress` uses flat `.planning/phases/` path (MISS-01, medium). See `.planning/DEBT.md` and MILESTONES.md.
 
@@ -239,4 +224,4 @@ Tests passing across 23+ test suites.
 | Cross-project promotion at 3+ projects | Ensures preferences are truly universal before elevating | ✓ Good — project-specific quirks don't pollute global store |
 
 ---
-*Last updated: 2026-04-02 after v8.0 milestone start*
+*Last updated: 2026-04-03 after v8.0 milestone completion*

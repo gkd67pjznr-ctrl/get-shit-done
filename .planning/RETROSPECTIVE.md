@@ -333,6 +333,50 @@
 
 ---
 
+## Milestone: v8.0 — Close the Loop
+
+**Shipped:** 2026-04-03
+**Phases:** 4 | **Plans:** 8 | **Sessions:** ~4
+
+### What Was Built
+- Skill loop auto-trigger — analyze-patterns.cjs wired to SessionEnd hook, populates scan-state.json watermark
+- Suggestion surfacing — pending skill suggestions presented at session start via recall hook with configurable gate
+- Skill refinement flow — /gsd:refine-skill accepts/dismisses suggestions, modifies SKILL.md files and commits
+- Full skill feedback loop verified E2E — correction → pattern → suggestion → skill refinement → loaded
+- Hook-based gate enforcement — PostToolUse hooks fire test_gate on Bash test commands, diff_review on Write code files
+- Gate observability pipeline — real entries flow to gate-executions.jsonl, dashboard reads and displays live data
+
+### What Worked
+- Hooks-based gate enforcement was the right call — PostToolUse hooks fire without executor agent cooperation, making gates truly deterministic
+- Real data verification approach — using actual suggestions and gate entries (not synthetic) for E2E validation caught real schema issues
+- Small focused milestone — 4 phases, 8 plans, all completed in ~1 day; tight scope prevented feature creep
+- Existing infrastructure reuse — aggregateGateHealth(), write-gate-execution.cjs, and recall hook all worked correctly without modification
+- GATE-ENFORCEMENT-DECISION.md documented the approach rationale so future maintainers understand why hooks over agent instructions
+
+### What Was Inefficient
+- REQUIREMENTS.md checkboxes not updated during execution (again) — 10/12 still unchecked despite all passing VERIFICATION.md
+- 8/12 SUMMARY.md files missing requirements-completed frontmatter (same pattern as v4.0, v7.0)
+- Co-Authored-By header had wrong model name in 2 commits (Sonnet instead of Opus)
+- Nyquist VALIDATION.md files missing for all 4 phases — validation should be generated during execution
+
+### Patterns Established
+- Gate enforcement via PostToolUse hooks — deterministic, no agent cooperation needed, quality-level-aware filtering
+- Skill refinement flow — refine-skill.cjs library with accept/dismiss paths, suggestion retirement after baking
+- Dual-system verification — both skill loop and gate pipeline verified independently, then E2E smoke tested
+
+### Key Lessons
+1. PostToolUse hooks are the only truly deterministic enforcement mechanism — agent instructions are suggestions, hooks are guarantees
+2. Documentation debt (checkboxes, frontmatter, VALIDATION.md) continues to accumulate despite being called out in every retrospective — this is a systemic issue, not a per-milestone one
+3. Real data E2E verification is more valuable than synthetic tests — the smoke test that counted 34→37 entries proved the full pipeline works
+4. Small, focused milestones (4 phases) execute faster and cleaner than large ones (7+ phases)
+
+### Cost Observations
+- Model mix: ~70% sonnet (executor), ~20% haiku (plan-checker), ~10% opus (orchestration)
+- Sessions: ~4
+- Notable: 8 plans completed in ~1 day; smallest milestone by LOC (+3,050) but highest verification confidence
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -347,6 +391,7 @@
 | v4.0 Adaptive Learning | ~6 | 7 | Merged skill-creator into core, native observation, command consolidation |
 | v6.0 Adaptive Observation | ~6 | 6 | Correction capture, preference learning, recall injection, observer agent, skill refinement |
 | v7.0 Quality Observability | ~4 | 5 | Gate persistence, dashboard Gate Health page, attribution analytics |
+| v8.0 Close the Loop | ~4 | 4 | Skill loop wired E2E, gate enforcement via hooks, both systems verified |
 
 ### Cumulative Quality
 
@@ -360,6 +405,7 @@
 | v4.0 | 716+ | N/A | 15 plans; +42K lines (skills, teams, dashboard, observation, commands) |
 | v6.0 | 960+ | N/A | 17 plans; +17.8K lines (correction capture, preferences, recall, observer, digest, skill loading) |
 | v7.0 | 960+ | N/A | 7 plans; +10.5K lines (JSONL writers, Gate Health page, attribution) |
+| v8.0 | 960+ | N/A | 8 plans; +3.0K lines (SessionEnd hook, recall surfacing, refine-skill, gate hooks, E2E verification) |
 
 ### Top Lessons (Verified Across Milestones)
 
@@ -377,3 +423,5 @@
 12. Silent failure in hooks is non-negotiable for user-facing pipelines — verified in v6.0 (correction capture wraps all code in try/catch, never crashes user workflow)
 13. Test scaffolding phases (stubs with it.todo) catch import issues early and provide green baselines — verified in v6.0 (Phases 22-01, 23-01, 24-01)
 14. Bounded learning guardrails should be designed upfront, not retrofitted — verified in v6.0 (6-guardrail framework kept entire pipeline safe)
+15. Documentation debt (REQUIREMENTS.md checkboxes, SUMMARY frontmatter, VALIDATION.md) is systemic — called out in v4.0, v7.0, v8.0 retrospectives; needs a process fix, not per-milestone vigilance
+16. PostToolUse hooks are the only truly deterministic enforcement mechanism for quality gates — verified in v8.0 (agent instructions are suggestions, hooks are guarantees)

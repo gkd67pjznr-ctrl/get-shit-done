@@ -1,5 +1,33 @@
 # Milestones
 
+## v8.0 Close the Loop (Shipped: 2026-04-03)
+
+**Delivered:** Closed the gap between "built" and "working" for two core systems — the skill observation feedback loop now runs end-to-end (correction capture → pattern analysis → suggestion surfacing → skill refinement → loaded in next session), and quality sentinel gates now fire deterministically via PostToolUse hooks with real data flowing to the dashboard.
+
+**Phases:** 4 phases (33-36), 8 plans
+**Code:** 32 files changed (+3,050 / -17)
+**Timeline:** 1 day (2026-04-02)
+**Git range:** 0be7fa2 → 9e67170
+**Requirements:** 12/12 satisfied
+**Commits:** 27
+
+**Key accomplishments:**
+1. Skill loop auto-trigger — analyze-patterns.cjs wired to SessionEnd hook, populates scan-state.json watermark after every session
+2. Suggestion surfacing — pending skill suggestions presented at session start via recall hook with configurable suggest_on_session_start gate
+3. Skill refinement flow — /gsd:refine-skill command accepts/dismisses suggestions, modifies SKILL.md files and commits changes
+4. Full skill feedback loop verified E2E — correction → pattern detected → suggestion generated → surfaced → skill refined → loaded in next session
+5. Hook-based gate enforcement — quality gates fire deterministically via PostToolUse hooks on Bash test runs and Write code files (not dependent on agent instructions)
+6. Gate observability pipeline — real gate entries flow to gate-executions.jsonl, dashboard Gate Health page displays live data, smoke test confirmed 34→37 entry increase
+
+**Tech Debt (from audit):**
+- `/FAIL\b/` regex doesn't match "FAILED" (low impact — Vitest uses "FAIL")
+- `test_baseline` gate deferred (documented in GATE-ENFORCEMENT-DECISION.md)
+- 10/12 REQUIREMENTS.md checkboxes unchecked (cosmetic — all verified PASS)
+- 8/12 SUMMARY.md files missing requirements-completed frontmatter (cosmetic)
+- 3 pre-existing test failures unrelated to v8.0
+
+---
+
 ## v6.0 Adaptive Observation & Learning Loop (Shipped: 2026-03-11)
 
 **Delivered:** Transformed the observation system from a passive event logger into an intelligent correction-capture and preference-learning pipeline that feeds back into skill refinement — Claude learns from its mistakes and adapts to user expectations.
@@ -210,8 +238,3 @@
 
 ---
 
-## v5.0
-
-**Phase:** 21 | **Plan:** 6 | **Status:** Complete
-**Progress:** 6/6 plans (100%)
-**Updated:** 2026-03-09
