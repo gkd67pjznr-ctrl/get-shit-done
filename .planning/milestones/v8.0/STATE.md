@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Plan 36-02 complete — end-to-end smoke test verified, GATE-05 and GATE-06 satisfied, Phase 36 closed
-last_updated: "2026-04-02T03:20:00.000Z"
-last_activity: 2026-04-02 — Plan 36-02 complete, full gate cycle verified (hook fires, entry written, API reflects count)
+status: verifying
+stopped_at: Plan 36-02 complete — full gate cycle verified, GATE-05 and GATE-06 satisfied, Phase 36 closed
+last_updated: "2026-04-03T03:23:03.036Z"
+last_activity: 2026-04-02 — Plan 36-02 complete, totalExecutions went from 34 to 37 after hook fires
 progress:
   total_phases: 4
   completed_phases: 4

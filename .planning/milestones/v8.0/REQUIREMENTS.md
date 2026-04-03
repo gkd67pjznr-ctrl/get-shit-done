@@ -20,8 +20,8 @@
 - [ ] **GATE-02**: Gate execution approach decided and implemented (hooks, orchestrator wrapper, or hybrid)
 - [ ] **GATE-03**: Gate outcomes persist to `gate-executions.jsonl` with real execution data
 - [ ] **GATE-04**: Gate execution respects quality level config (fast=skip, standard=warn, strict=block)
-- [ ] **GATE-05**: Dashboard Gate Health page displays real gate execution data
-- [ ] **GATE-06**: Running `/gsd:quick` produces verifiable gate execution entries
+- [x] **GATE-05**: Dashboard Gate Health page displays real gate execution data
+- [x] **GATE-06**: Running `/gsd:quick` produces verifiable gate execution entries
 
 ## Future Requirements
 
@@ -51,8 +51,8 @@
 | GATE-02 | Phase 35 | Pending |
 | GATE-03 | Phase 35 | Pending |
 | GATE-04 | Phase 35 | Pending |
-| GATE-05 | Phase 36 | Pending |
-| GATE-06 | Phase 36 | Pending |
+| GATE-05 | Phase 36 | Complete |
+| GATE-06 | Phase 36 | Complete |
 
 **Coverage:**
 - v8.0 requirements: 12 total
