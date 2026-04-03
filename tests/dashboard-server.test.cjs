@@ -516,3 +516,162 @@ describe('static file serving', () => {
     }
   });
 });
+
+// ─── Gate health aggregation ──────────────────────────────────────────────────
+
+describe('aggregateGateHealth() with real entry data', () => {
+  it('returns hasData:false for empty registry', () => {
+    const serverModule = require(path.join(__dirname, '..', 'get-shit-done', 'bin', 'lib', 'server.cjs'));
+    const result = serverModule.aggregateGateHealth([]);
+    assert.strictEqual(result.hasData, false);
+    assert.strictEqual(result.totalExecutions, 0);
+  });
+
+  it('returns hasData:false for project with no gate-executions.jsonl', () => {
+    const { projectDir, gsdHome } = createRegistryProject();
+    try {
+      const serverModule = require(path.join(__dirname, '..', 'get-shit-done', 'bin', 'lib', 'server.cjs'));
+      const result = serverModule.aggregateGateHealth([{ name: 'test', path: projectDir }]);
+      assert.strictEqual(result.hasData, false);
+      assert.strictEqual(result.totalExecutions, 0);
+    } finally {
+      cleanup(projectDir);
+      cleanup(gsdHome);
+    }
+  });
+
+  it('returns hasData:true and correct counts when gate-executions.jsonl has valid entries', () => {
+    const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-gate-test-'));
+    try {
+      const obsDir = path.join(projectDir, '.planning', 'observations');
+      fs.mkdirSync(obsDir, { recursive: true });
+      const entries = [
+        { gate: 'test_gate', task: 0, outcome: 'passed', quality_level: 'standard', phase: 35, plan: '1', timestamp: new Date().toISOString(), detail: 'test run detected' },
+        { gate: 'test_gate', task: 0, outcome: 'warned', quality_level: 'standard', phase: 35, plan: '1', timestamp: new Date().toISOString(), detail: 'test run detected' },
+        { gate: 'diff_review', task: 0, outcome: 'passed', quality_level: 'standard', phase: 35, plan: '1', timestamp: new Date().toISOString(), detail: 'code file written' },
+      ];
+      fs.writeFileSync(path.join(obsDir, 'gate-executions.jsonl'), entries.map(e => JSON.stringify(e)).join('\n') + '\n', 'utf-8');
+
+      const serverModule = require(path.join(__dirname, '..', 'get-shit-done', 'bin', 'lib', 'server.cjs'));
+      const result = serverModule.aggregateGateHealth([{ name: 'test', path: projectDir }]);
+
+      assert.strictEqual(result.hasData, true);
+      assert.strictEqual(result.totalExecutions, 3);
+      assert.strictEqual(result.outcomes.passed, 2);
+      assert.strictEqual(result.outcomes.warned, 1);
+      assert.strictEqual(result.gates.test_gate.total, 2);
+      assert.strictEqual(result.gates.diff_review.total, 1);
+      assert.strictEqual(result.qualityLevels.standard, 3);
+    } finally {
+      cleanup(projectDir);
+    }
+  });
+
+  it('skips malformed JSONL lines without throwing', () => {
+    const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-gate-malformed-'));
+    try {
+      const obsDir = path.join(projectDir, '.planning', 'observations');
+      fs.mkdirSync(obsDir, { recursive: true });
+      const content = [
+        'not-valid-json',
+        JSON.stringify({ gate: 'test_gate', task: 0, outcome: 'passed', quality_level: 'standard', phase: 1, plan: '1', timestamp: new Date().toISOString(), detail: '' }),
+        '{broken',
+      ].join('\n') + '\n';
+      fs.writeFileSync(path.join(obsDir, 'gate-executions.jsonl'), content, 'utf-8');
+
+      const serverModule = require(path.join(__dirname, '..', 'get-shit-done', 'bin', 'lib', 'server.cjs'));
+      const result = serverModule.aggregateGateHealth([{ name: 'test', path: projectDir }]);
+
+      assert.strictEqual(result.hasData, true);
+      assert.strictEqual(result.totalExecutions, 1, 'Only the valid entry should be counted');
+    } finally {
+      cleanup(projectDir);
+    }
+  });
+
+  it('response shape matches gate-health-page.js component contract', () => {
+    const serverModule = require(path.join(__dirname, '..', 'get-shit-done', 'bin', 'lib', 'server.cjs'));
+    const result = serverModule.aggregateGateHealth([]);
+    // Component accesses these fields — all must exist with correct types
+    assert.strictEqual(typeof result.hasData, 'boolean');
+    assert.strictEqual(typeof result.totalExecutions, 'number');
+    assert.strictEqual(typeof result.projectCount, 'number');
+    assert.ok(result.outcomes && typeof result.outcomes.passed === 'number');
+    assert.ok(result.outcomes && typeof result.outcomes.warned === 'number');
+    assert.ok(result.qualityLevels && typeof result.qualityLevels.standard === 'number');
+    assert.ok(result.gates && typeof result.gates.test_gate === 'object');
+    assert.ok(result.gates && typeof result.gates.test_gate.total === 'number');
+    assert.ok(result.context7 && typeof result.context7.totalCalls === 'number');
+    assert.ok(result.context7 && typeof result.context7.avgTokensRequested === 'number');
+    assert.ok(result.context7 && typeof result.context7.capHitRate === 'number');
+    assert.ok(result.context7 && typeof result.context7.usedInCodeRate === 'number');
+  });
+});
+
+describe('GET /api/gate-health endpoint', () => {
+  it('returns 200 with JSON and hasData field', async () => {
+    const port = randomPort();
+    const { projectDir, gsdHome } = createRegistryProject();
+    writeRegistry(gsdHome, [
+      { name: 'test-proj', display_name: 'Test Project', path: projectDir, added: new Date().toISOString() },
+    ]);
+
+    const handle = startTestServer(port, { gsdHome: path.join(gsdHome, '.gsd') });
+    await waitForServerReady(port);
+
+    try {
+      const res = await httpGet(port, '/api/gate-health');
+      assert.strictEqual(res.status, 200, 'Expected HTTP 200');
+      assert.ok(res.headers['content-type'] && res.headers['content-type'].includes('application/json'), 'Expected JSON content-type');
+      const body = JSON.parse(res.body);
+      assert.ok('hasData' in body, 'Response must have hasData field');
+      assert.ok('totalExecutions' in body, 'Response must have totalExecutions field');
+      assert.ok('gates' in body, 'Response must have gates field');
+      assert.ok('context7' in body, 'Response must have context7 field');
+    } finally {
+      await handle.close();
+      cleanup(projectDir);
+      cleanup(gsdHome);
+    }
+  });
+
+  it('reflects real gate entries when gate-executions.jsonl exists in registered project', async () => {
+    const port = randomPort();
+    const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-gate-api-test-'));
+    const gsdHome = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-gate-api-home-'));
+
+    // Create minimal .planning/ structure
+    fs.mkdirSync(path.join(projectDir, '.planning'), { recursive: true });
+    fs.writeFileSync(path.join(projectDir, '.planning', 'config.json'), JSON.stringify({ mode: 'yolo' }), 'utf-8');
+
+    // Write real gate entries
+    const obsDir = path.join(projectDir, '.planning', 'observations');
+    fs.mkdirSync(obsDir, { recursive: true });
+    const entries = [
+      { gate: 'test_gate', task: 0, outcome: 'passed', quality_level: 'standard', phase: 1, plan: '1', timestamp: new Date().toISOString(), detail: 'test run detected' },
+      { gate: 'diff_review', task: 0, outcome: 'passed', quality_level: 'standard', phase: 1, plan: '1', timestamp: new Date().toISOString(), detail: 'code file written' },
+    ];
+    fs.writeFileSync(path.join(obsDir, 'gate-executions.jsonl'), entries.map(e => JSON.stringify(e)).join('\n') + '\n', 'utf-8');
+
+    writeRegistry(gsdHome, [
+      { name: 'gate-proj', display_name: 'Gate Project', path: projectDir, added: new Date().toISOString() },
+    ]);
+
+    const handle = startTestServer(port, { gsdHome: path.join(gsdHome, '.gsd') });
+    await waitForServerReady(port);
+
+    try {
+      const res = await httpGet(port, '/api/gate-health');
+      assert.strictEqual(res.status, 200);
+      const body = JSON.parse(res.body);
+      assert.strictEqual(body.hasData, true, 'hasData must be true when entries exist');
+      assert.strictEqual(body.totalExecutions, 2, 'totalExecutions must reflect written entries');
+      assert.strictEqual(body.gates.test_gate.total, 1, 'test_gate total must be 1');
+      assert.strictEqual(body.gates.diff_review.total, 1, 'diff_review total must be 1');
+    } finally {
+      await handle.close();
+      cleanup(projectDir);
+      cleanup(gsdHome);
+    }
+  });
+});
