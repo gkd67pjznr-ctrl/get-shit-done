@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Plan 35-02 complete — write-gate-execution wired into enforcement path; GATE-03 and GATE-04 satisfied
-last_updated: "2026-04-03T00:07:10.467Z"
-last_activity: 2026-04-02 — Plan 35-02 complete, write path verified, real entries in gate-executions.jsonl
+stopped_at: Plan 36-01 complete — aggregateGateHealth verified, 7 tests added to dashboard-server.test.cjs; GATE-05 satisfied
+last_updated: "2026-04-02T00:27:00.000Z"
+last_activity: 2026-04-02 — Plan 36-01 complete, gate health data flow confirmed, contract tests passing
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 6
-  completed_plans: 6
-  percent: 75
+  total_plans: 7
+  completed_plans: 7
+  percent: 87
 ---
 
 # Project State — Milestone v8.0
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-04-02)
 
 ## Current Position
 
-Phase: 35 of 36 (Gate Enforcement) — COMPLETE
-Plan: 2 of 2 in current phase (35-02 complete)
-Status: Phase 35 complete — all 2 plans done
-Last activity: 2026-04-02 — Plan 35-02 complete, write path verified, real entries in gate-executions.jsonl
+Phase: 36 of 36 (Gate Observability) — IN PROGRESS
+Plan: 1 of 2 in current phase (36-01 complete)
+Status: Plan 36-01 complete — gate health data flow verified, 7 tests added
+Last activity: 2026-04-02 — Plan 36-01 complete, aggregateGateHealth confirmed working with real JSONL data
 
 Progress: [███████░░░] 75%
 
@@ -68,19 +68,24 @@ Key decisions from this milestone:
 
 ### Pending Todos
 
-- Execute Phase 36: Gate Observability — dashboard integration and end-to-end smoke test
+- Execute Phase 36 Plan 36-02: Gate Observability — remaining verification or smoke test
 
 ### Decisions
 
 - **35-02 fix**: `/failing/i` pattern in gate-runner.cjs was too broad — it matched "0 failing" in Vitest summaries. Fixed to `/[1-9]\d*\s+failing/i` to require non-zero count before "failing". All other patterns unaffected.
 - Gate-executions.jsonl is gitignored (under .planning/) but committed with `git add -f` for verification artifact preservation.
 
+### Decisions
+
+- **36-01 observation**: aggregateGateHealth() already correctly handles malformed JSONL (try/catch in parse loop), invalid gate names (VALID_GATES whitelist), and missing files (try/catch on readFileSync). No code changes were needed.
+- **36-01 test pattern**: Direct require() of server module for unit tests, live HTTP server for endpoint contract tests.
+
 ### Blockers/Concerns
 
-- None. Phase 35 complete. Phase 36 (Gate Observability) is next.
+- None. Plan 36-01 complete. Plan 36-02 is next.
 
 ## Session Continuity
 
 Last session: 2026-04-02
-Stopped at: Plan 35-02 complete — write-gate-execution wired into enforcement path; GATE-03 and GATE-04 satisfied
+Stopped at: Plan 36-01 complete — aggregateGateHealth verified with real data; GATE-05 satisfied
 Resume file: None
