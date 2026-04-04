@@ -10,6 +10,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 
 // ---------------------------------------------------------------------------
 // Type definitions (JSDoc)
@@ -292,4 +293,229 @@ function parseSinglePlan(planFilePath) {
   return parsePlanFile(planFilePath, relPath);
 }
 
-module.exports = { parseDoneCriteria, parseSinglePlan };
+// ---------------------------------------------------------------------------
+// Verification engine
+// ---------------------------------------------------------------------------
+
+/**
+ * @typedef {Object} AssertionResult
+ * @property {'pass'|'fail'|'needs-human'} outcome
+ * @property {string} raw           - Original bullet text
+ * @property {AssertionType} type   - Assertion type
+ * @property {string} taskId
+ * @property {string} taskTitle
+ * @property {string} planFile
+ * @property {string} [detail]      - Failure reason or needs-human explanation
+ */
+
+/**
+ * Verify a file-exists assertion.
+ * @param {Assertion} assertion
+ * @param {string} cwd
+ * @returns {AssertionResult}
+ */
+function verifyFileExists(assertion, cwd) {
+  const { filePath, raw, taskId, taskTitle, planFile } = assertion;
+
+  if (!filePath) {
+    return {
+      outcome: 'needs-human',
+      raw,
+      type: 'file-exists',
+      taskId,
+      taskTitle,
+      planFile,
+      detail: 'no file path extracted from criterion',
+    };
+  }
+
+  const absPath = path.isAbsolute(filePath)
+    ? filePath
+    : path.resolve(cwd, filePath);
+
+  const exists = fs.existsSync(absPath);
+  return {
+    outcome: exists ? 'pass' : 'fail',
+    raw,
+    type: 'file-exists',
+    taskId,
+    taskTitle,
+    planFile,
+    detail: exists ? undefined : `file not found: ${filePath}`,
+  };
+}
+
+/**
+ * Verify a grep-for-export assertion.
+ * @param {Assertion} assertion
+ * @param {string} cwd
+ * @returns {AssertionResult}
+ */
+function verifyGrepForExport(assertion, cwd) {
+  const { filePath, pattern, raw, taskId, taskTitle, planFile } = assertion;
+
+  if (!filePath || !pattern) {
+    return {
+      outcome: 'needs-human',
+      raw,
+      type: 'grep-for-export',
+      taskId,
+      taskTitle,
+      planFile,
+      detail: `could not extract ${!filePath ? 'file path' : 'search pattern'} from criterion`,
+    };
+  }
+
+  const absPath = path.isAbsolute(filePath)
+    ? filePath
+    : path.resolve(cwd, filePath);
+
+  let content;
+  try {
+    content = fs.readFileSync(absPath, 'utf-8');
+  } catch (e) {
+    return {
+      outcome: 'fail',
+      raw,
+      type: 'grep-for-export',
+      taskId,
+      taskTitle,
+      planFile,
+      detail: `file not found: ${filePath}`,
+    };
+  }
+
+  const found = content.includes(pattern);
+  return {
+    outcome: found ? 'pass' : 'fail',
+    raw,
+    type: 'grep-for-export',
+    taskId,
+    taskTitle,
+    planFile,
+    detail: found ? undefined : `pattern not found in ${filePath}: ${pattern}`,
+  };
+}
+
+/**
+ * Verify a test-passes assertion.
+ * When runTests=false (default), all test-passes assertions become needs-human.
+ * When runTests=true, attempts to find and run the relevant test file.
+ *
+ * @param {Assertion} assertion
+ * @param {string} cwd
+ * @param {boolean} runTests
+ * @returns {AssertionResult}
+ */
+function verifyTestPasses(assertion, cwd, runTests) {
+  const { raw, taskId, taskTitle, planFile } = assertion;
+
+  if (!runTests) {
+    return {
+      outcome: 'needs-human',
+      raw,
+      type: 'test-passes',
+      taskId,
+      taskTitle,
+      planFile,
+      detail: 'test execution skipped (runTests=false); verify manually',
+    };
+  }
+
+  // Attempt to identify a test file from the raw criterion or task title
+  // Pattern: look for a backtick-quoted token ending in .test.cjs or .test.ts
+  const testFileMatch = raw.match(/`([^`]*\.test\.[a-z]+)`/);
+  if (!testFileMatch) {
+    return {
+      outcome: 'needs-human',
+      raw,
+      type: 'test-passes',
+      taskId,
+      taskTitle,
+      planFile,
+      detail: 'no test file identified in criterion; verify manually',
+    };
+  }
+
+  const testFile = testFileMatch[1];
+  const absTestPath = path.isAbsolute(testFile)
+    ? testFile
+    : path.resolve(cwd, testFile);
+
+  if (!fs.existsSync(absTestPath)) {
+    return {
+      outcome: 'fail',
+      raw,
+      type: 'test-passes',
+      taskId,
+      taskTitle,
+      planFile,
+      detail: `test file not found: ${testFile}`,
+    };
+  }
+
+  const result = spawnSync('node', ['--test', absTestPath], {
+    cwd,
+    encoding: 'utf-8',
+    timeout: 60000,
+  });
+
+  const passed = result.status === 0;
+  return {
+    outcome: passed ? 'pass' : 'fail',
+    raw,
+    type: 'test-passes',
+    taskId,
+    taskTitle,
+    planFile,
+    detail: passed ? undefined : `test run failed (exit ${result.status})`,
+  };
+}
+
+/**
+ * Verify all assertions in the array against the codebase at cwd.
+ *
+ * @param {Assertion[]} assertions
+ * @param {string} cwd             - Project root directory
+ * @param {object} [options]
+ * @param {boolean} [options.runTests=false] - Whether to execute test-passes assertions
+ * @returns {AssertionResult[]}
+ */
+function verifyAssertions(assertions, cwd, options) {
+  const runTests = (options && options.runTests) === true;
+  const results = [];
+
+  for (const assertion of assertions) {
+    let result;
+
+    switch (assertion.type) {
+      case 'file-exists':
+        result = verifyFileExists(assertion, cwd);
+        break;
+      case 'grep-for-export':
+        result = verifyGrepForExport(assertion, cwd);
+        break;
+      case 'test-passes':
+        result = verifyTestPasses(assertion, cwd, runTests);
+        break;
+      case 'human-check':
+      default:
+        result = {
+          outcome: 'needs-human',
+          raw: assertion.raw,
+          type: assertion.type,
+          taskId: assertion.taskId,
+          taskTitle: assertion.taskTitle,
+          planFile: assertion.planFile,
+          detail: 'requires human judgment',
+        };
+        break;
+    }
+
+    results.push(result);
+  }
+
+  return results;
+}
+
+module.exports = { parseDoneCriteria, parseSinglePlan, verifyAssertions };

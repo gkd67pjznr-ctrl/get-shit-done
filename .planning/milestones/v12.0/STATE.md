@@ -1,3 +1,19 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: completed
+stopped_at: Plan 51-01 complete (DONE criteria parser — parseDoneCriteria and parseSinglePlan, 17 tests passing)
+last_updated: "2026-04-04T18:20:00.000Z"
+last_activity: 2026-04-04 — Plan 51-01 executed
+progress:
+  total_phases: 4
+  completed_phases: 0
+  total_plans: 2
+  completed_plans: 0
+  percent: 20
+---
+
 # Project State — Milestone v12.0
 
 ## Project Reference
@@ -10,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-04-04)
 ## Current Position
 
 Phase: 51 of 3 (Transition Guards)
-Plan: 0 of 3 in current phase
-Status: Phase 50 complete — ready for 51-01
-Last activity: 2026-04-04 — Plan 50-02 executed
+Plan: 1 of 3 in current phase
+Status: Plan 51-01 complete — ready for 51-02 (verification engine)
+Last activity: 2026-04-04 — Plan 51-01 executed
 
 Progress: [██░░░░░░░░] 20%
 
@@ -52,10 +68,11 @@ None yet.
 
 - Phase 50: ESLint MCP server must be available in the user environment — graceful degradation required
 - Phase 51: DONE criteria format in `<done>` tags must be consistent enough to parse — parser handles partial assertions only
+- Plan 51-01: test-passes regex requires `all\s+tests?\s+.*pass` (not `all\s+tests?\s+pass`) to handle intervening words like "in the file"
 
 ## Session Continuity
 
 Last session: 2026-04-04
-Stopped at: Plan 50-02 complete (Phase 50 complete — eslint_gate end-to-end verified, dashboard VALID_GATES fixed)
-Resume at: Plan 51-01
+Stopped at: Plan 51-01 complete (DONE criteria parser — parseDoneCriteria and parseSinglePlan, 17 tests passing)
+Resume at: Plan 51-02 (verification engine that consumes parseDoneCriteria output)
 Resume file: None
