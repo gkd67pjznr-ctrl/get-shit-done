@@ -12,7 +12,7 @@ Close the gap between "captures data" and "acts on it." This milestone delivers 
 - Integer phases (80-83): Planned milestone work
 
 - [x] **Phase 80: Auto-Apply Safety Engine** - Core auto-apply logic with all safety guardrails (confidence gate, rate limiting, high-performer skip, audit log)
-- [ ] **Phase 81: Auto-Apply User Control** - Revert command and manual fallback surface for failed auto-apply checks
+- [x] **Phase 81: Auto-Apply User Control** - Revert command and manual fallback surface for failed auto-apply checks (completed 2026-04-04)
 - [ ] **Phase 82: Adaptive Review Profiles** - Per-project review profile generation, storage, and code-review skill integration
 - [ ] **Phase 83: Decision Audit Trail** - Decision tension detection via Jaccard matching and digest surfacing
 
@@ -84,6 +84,6 @@ Phases execute in numeric order: 80 → 81 → 82 → 83
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 80. Auto-Apply Safety Engine | 2/2 | Complete    | 2026-04-04 |
-| 81. Auto-Apply User Control | 0/1 | Not started | - |
+| 81. Auto-Apply User Control | 1/1 | Complete   | 2026-04-04 |
 | 82. Adaptive Review Profiles | 0/2 | Not started | - |
 | 83. Decision Audit Trail | 0/2 | Not started | - |
