@@ -14,7 +14,7 @@ Close the gap between "captures data" and "acts on it." This milestone delivers 
 - [x] **Phase 80: Auto-Apply Safety Engine** - Core auto-apply logic with all safety guardrails (confidence gate, rate limiting, high-performer skip, audit log)
 - [x] **Phase 81: Auto-Apply User Control** - Revert command and manual fallback surface for failed auto-apply checks (completed 2026-04-04)
 - [x] **Phase 82: Adaptive Review Profiles** - Per-project review profile generation, storage, and code-review skill integration (completed 2026-04-04)
-- [ ] **Phase 83: Decision Audit Trail** - Decision tension detection via Jaccard matching and digest surfacing
+- [x] **Phase 83: Decision Audit Trail** - Decision tension detection via Jaccard matching and digest surfacing (completed 2026-04-04)
 
 ## Phase Details
 
@@ -74,7 +74,7 @@ Plans:
 
 Plans:
 - [x] 83-01: Implement decision parser (PROJECT.md Key Decisions table) and Jaccard correction matcher with 3-correction threshold
-- [ ] 83-02: Surface decision tensions in /gsd:digest with evidence formatting
+- [x] 83-02: Surface decision tensions in /gsd:digest with evidence formatting
 
 ## Progress
 
@@ -86,4 +86,4 @@ Phases execute in numeric order: 80 → 81 → 82 → 83
 | 80. Auto-Apply Safety Engine | 2/2 | Complete    | 2026-04-04 |
 | 81. Auto-Apply User Control | 1/1 | Complete    | 2026-04-04 |
 | 82. Adaptive Review Profiles | 2/2 | Complete    | 2026-04-04 |
-| 83. Decision Audit Trail | 1/2 | In progress | - |
+| 83. Decision Audit Trail | 2/2 | Complete    | 2026-04-04 |

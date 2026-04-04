@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Plan 83-01 complete — decision-audit.cjs (3 exports) + 13 tests committed at 5ca44cc
-last_updated: "2026-04-04T15:00:00.000Z"
-last_activity: "2026-04-04 — Plan 83-01 executed: parseDecisions, matchCorrectionsToDecision, detectTensions in decision-audit.cjs; 13 tests pass; 35 decisions parsed from live PROJECT.md"
+stopped_at: Plan 83-02 complete — Step 3j + Step 5 rule in digest.md + 8 tests committed at 158b54b
+last_updated: "2026-04-04T15:30:00.000Z"
+last_activity: "2026-04-04 — Plan 83-02 executed: Step 3j Decision Tensions in digest.md, Step 5 recommendation rule, updated success_criteria; 8 integration tests pass; 21 total across both audit test files"
 progress:
   total_phases: 0
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
-  percent: 75
+  percent: 100
 ---
 
 # Project State — Milestone v15.0 Autonomous Learning
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-04-04)
 
 ## Current Position
 
-Phase: 83 of 4 (Decision Audit Trail — IN PROGRESS)
-Plan: 83-01 done (plan 1 of 2 complete)
-Status: Plan 83-01 complete — decision-audit.cjs implemented and tested; ready for 83-02
-Last activity: 2026-04-04 — Plan 83-01 executed: parseDecisions, matchCorrectionsToDecision, detectTensions in decision-audit.cjs; 13 tests pass; 35 decisions parsed from live PROJECT.md
+Phase: 83 of 4 (Decision Audit Trail — COMPLETE)
+Plan: 83-02 done (plan 2 of 2 complete) — Phase 83 fully delivered
+Status: Plan 83-02 complete — Step 3j in digest.md, 8 integration tests; Phase 83 done
+Last activity: 2026-04-04 — Plan 83-02 executed: Step 3j Decision Tensions in digest.md, Step 5 recommendation rule, updated success_criteria; 8 integration tests pass; 21 total across both audit test files
 
 Progress: [███████░░░] 75%
 
@@ -72,6 +72,8 @@ Recent decisions affecting current work:
 - Plan 82-02: Integration tests use execSync with { cwd: tmp } — hook's process.cwd() resolves to fixture dir, no CLI flag needed
 - Plan 83-01: .claude/ is in .gitignore — new hook lib files require `git add -f`; existing tracked files set the precedent
 - Plan 83-01: detectTensions returned 1 real tension against live project data (35 decisions, active corrections present) — system working correctly
+- Plan 83-02: afterEach cleanup uses shared tmpDirs array (one tmp per test max) — safe and consistent with decision-audit.test.cjs pattern
+- Plan 83-02: makeCorrection uses Date.now() + Math.random() for id to prevent collisions in multi-correction tension fixture
 
 ### Pending Todos
 
@@ -84,6 +86,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-04
-Stopped at: Plan 83-01 complete — decision-audit.cjs (3 exports) + 13 tests committed at 5ca44cc
+Stopped at: Plan 83-02 complete — Step 3j + Step 5 rule in digest.md + 8 tests committed at 158b54b
 Resume file: None
-Next: Plan 83-02 — surface decision tensions in /gsd:digest with evidence formatting
+Next: Phase 83 complete. v15.0 Autonomous Learning milestone fully delivered (all 4 phases: 80-83).
