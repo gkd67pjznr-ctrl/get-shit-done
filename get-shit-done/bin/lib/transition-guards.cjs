@@ -161,7 +161,7 @@ function classifyBullet(bullet, taskId, taskTitle, planFile) {
 
   // --- test-passes ---
   if (
-    /zero\s+test\s+fail|all\s+tests?\s+pass|tests?\s+pass|no\s+test\s+fail|pass(es|ing)?\s+all|test\s+suite\s+pass/.test(lower)
+    /zero\s+test\s+fail|all\s+tests?\s+.*pass|tests?\s+pass|no\s+test\s+fail|pass(es|ing)?\s+all|test\s+suite\s+pass/.test(lower)
   ) {
     return { type: 'test-passes', raw: bullet, taskId, taskTitle, planFile };
   }
