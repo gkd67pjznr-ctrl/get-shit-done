@@ -354,10 +354,19 @@ OBS_FILE=".planning/patterns/sessions.jsonl"
 OBS_MILESTONE="${MILESTONE_SCOPE:-none}"
 OBS_OUTCOME=$( [ "${issues:-0}" -eq 0 ] && echo "success" || echo "partial" )
 
+# Capture skill directory names from .claude/skills/
+SKILLS_JSON="[]"
+if [ -d ".claude/skills" ]; then
+  SKILL_LIST=$(ls -d .claude/skills/*/ 2>/dev/null | xargs -I{} basename {} | tr '\n' ',' | sed 's/,$//')
+  if [ -n "$SKILL_LIST" ]; then
+    SKILLS_JSON="[\"$(echo "$SKILL_LIST" | sed 's/,/","/g')\"]"
+  fi
+fi
+
 if [ ! -d ".planning/patterns" ]; then
   echo "Observation skipped: .planning/patterns/ not found. Fix: mkdir -p .planning/patterns"
 else
-  echo "{\"timestamp\":\"${OBS_TIMESTAMP}\",\"type\":\"workflow\",\"source\":\"workflow\",\"command\":\"verify\",\"phase\":\"${phase_number}\",\"milestone\":\"${OBS_MILESTONE}\",\"duration\":null,\"outcome\":\"${OBS_OUTCOME}\",\"skills_loaded\":[],\"details\":{\"tests_total\":${total:-0},\"tests_passed\":${passed:-0},\"tests_failed\":${issues:-0},\"gaps_count\":${issues:-0}}}" >> "$OBS_FILE" 2>/dev/null \
+  echo "{\"timestamp\":\"${OBS_TIMESTAMP}\",\"type\":\"workflow\",\"source\":\"workflow\",\"command\":\"verify\",\"phase\":\"${phase_number}\",\"milestone\":\"${OBS_MILESTONE}\",\"duration\":null,\"outcome\":\"${OBS_OUTCOME}\",\"skills_loaded\":${SKILLS_JSON},\"details\":{\"tests_total\":${total:-0},\"tests_passed\":${passed:-0},\"tests_failed\":${issues:-0},\"gaps_count\":${issues:-0}}}" >> "$OBS_FILE" 2>/dev/null \
     || echo "Observation failed: could not write to $OBS_FILE. Fix: touch $OBS_FILE"
 fi
 ```

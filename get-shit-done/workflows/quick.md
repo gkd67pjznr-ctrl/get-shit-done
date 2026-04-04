@@ -570,10 +570,19 @@ OBS_MILESTONE="${MILESTONE_SCOPE:-none}"
 OBS_FULL=$( [ "${FULL_MODE}" = "true" ] && echo "true" || echo "false" )
 OBS_DISCUSS=$( [ "${DISCUSS_MODE}" = "true" ] && echo "true" || echo "false" )
 
+# Capture skill directory names from .claude/skills/
+SKILLS_JSON="[]"
+if [ -d ".claude/skills" ]; then
+  SKILL_LIST=$(ls -d .claude/skills/*/ 2>/dev/null | xargs -I{} basename {} | tr '\n' ',' | sed 's/,$//')
+  if [ -n "$SKILL_LIST" ]; then
+    SKILLS_JSON="[\"$(echo "$SKILL_LIST" | sed 's/,/","/g')\"]"
+  fi
+fi
+
 if [ ! -d ".planning/patterns" ]; then
   echo "Observation skipped: .planning/patterns/ not found. Fix: mkdir -p .planning/patterns"
 else
-  echo "{\"timestamp\":\"${OBS_TIMESTAMP}\",\"type\":\"workflow\",\"source\":\"workflow\",\"command\":\"quick\",\"phase\":\"${next_num}\",\"milestone\":\"${OBS_MILESTONE}\",\"duration\":null,\"outcome\":\"success\",\"skills_loaded\":[],\"details\":{\"description\":\"quick-task\",\"full_mode\":${OBS_FULL},\"discuss_mode\":${OBS_DISCUSS}}}" >> "$OBS_FILE" 2>/dev/null \
+  echo "{\"timestamp\":\"${OBS_TIMESTAMP}\",\"type\":\"workflow\",\"source\":\"workflow\",\"command\":\"quick\",\"phase\":\"${next_num}\",\"milestone\":\"${OBS_MILESTONE}\",\"duration\":null,\"outcome\":\"success\",\"skills_loaded\":${SKILLS_JSON},\"details\":{\"description\":\"quick-task\",\"full_mode\":${OBS_FULL},\"discuss_mode\":${OBS_DISCUSS}}}" >> "$OBS_FILE" 2>/dev/null \
     || echo "Observation failed: could not write to $OBS_FILE. Fix: touch $OBS_FILE"
 fi
 ```
