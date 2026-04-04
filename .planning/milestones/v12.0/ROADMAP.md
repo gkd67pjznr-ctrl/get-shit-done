@@ -10,7 +10,7 @@ Three targeted quality enforcement additions: a deterministic ESLint MCP gate th
 
 - [x] **Phase 50: ESLint Gate** - Wire ESLint MCP as a PostToolUse quality gate on .ts/.js/.cjs writes
 - [x] **Phase 51: Transition Guards** - Parse and mechanically verify DONE criteria before phase completion
-- [ ] **Phase 52: Test Trending** - Track test count per plan and surface delta in progress/digest
+- [x] **Phase 52: Test Trending** - Track test count per plan and surface delta in progress/digest
 
 ## Phase Details
 
@@ -60,7 +60,7 @@ Plans:
 
 Plans:
 - [x] 52-01: Test count extraction at plan completion and phase-benchmarks.jsonl field additions
-- [ ] 52-02: Surface test count delta in /gsd:progress and /gsd:digest
+- [x] 52-02: Surface test count delta in /gsd:progress and /gsd:digest
 
 ## Progress
 
@@ -68,4 +68,4 @@ Plans:
 |-------|----------------|--------|-----------|
 | 50. ESLint Gate | 2/2 | Complete    | 2026-04-04 |
 | 51. Transition Guards | 3/3 | Complete    | 2026-04-04 |
-| 52. Test Trending | 1/2 | In Progress | - |
+| 52. Test Trending | 2/2 | Complete    | 2026-04-04 |
