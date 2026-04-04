@@ -184,3 +184,43 @@ export interface TopologyCollectorOptions extends CollectorOptions {
   /** Path to teams directory (default: .claude/teams). */
   teamsDir?: string;
 }
+
+// ============================================================================
+// Skill Loads Collector Types
+// ============================================================================
+
+/** Single entry from skill-loads.jsonl. */
+export interface SkillLoadEntry {
+  /** ISO 8601 timestamp. */
+  ts: string;
+  /** Skill name (e.g. "gsd-workflow"). */
+  skill: string;
+  /** Session ID. */
+  session: string;
+  /** Working directory at load time. */
+  cwd: string;
+}
+
+/** Aggregated per-skill summary. */
+export interface SkillLoadSummary {
+  /** Skill name. */
+  skill: string;
+  /** Total load count across all sessions. */
+  count: number;
+  /** ISO timestamp of most recent load. */
+  lastSeen: string;
+}
+
+/** Result from skill-loads collector. */
+export interface SkillLoadsCollectorResult {
+  /** Top skills sorted by load count descending. */
+  skills: SkillLoadSummary[];
+  /** Total number of load events across all skills. */
+  totalLoads: number;
+}
+
+/** Options for the skill-loads collector. */
+export interface SkillLoadsCollectorOptions {
+  /** Path to skill-loads.jsonl (default: .planning/patterns/skill-loads.jsonl). */
+  loadsPath?: string;
+}
