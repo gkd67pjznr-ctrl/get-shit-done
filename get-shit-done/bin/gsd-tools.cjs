@@ -158,7 +158,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { error, resolveActiveMilestone } = require('./lib/core.cjs');
+const { error, output, resolveActiveMilestone } = require('./lib/core.cjs');
 const state = require('./lib/state.cjs');
 const phase = require('./lib/phase.cjs');
 const roadmap = require('./lib/roadmap.cjs');
@@ -170,6 +170,7 @@ const commands = require('./lib/commands.cjs');
 const init = require('./lib/init.cjs');
 const frontmatter = require('./lib/frontmatter.cjs');
 const debt = require('./lib/debt.cjs');
+const brainstorm = require('./lib/brainstorm.cjs');
 const migrate = require('./lib/migrate.cjs');
 const benchmark = require('./lib/benchmark.cjs');
 const sessionReport = require('./lib/session-report.cjs');
@@ -593,6 +594,59 @@ async function main() {
         debt.cmdDebtImpact(cwd, {}, raw);
       } else {
         error('Unknown debt subcommand. Available: log, list, resolve, impact');
+      }
+      break;
+    }
+
+    case 'brainstorm': {
+      const subcommand = args[1];
+      if (subcommand === 'check-eval') {
+        const text = args[2] || '';
+        const wildMode = args.includes('--wild');
+        output(brainstorm.cmdBrainstormCheckEval(text, wildMode), raw);
+      } else if (subcommand === 'append-idea') {
+        const sessionDir = args[2];
+        const contentIdx = args.indexOf('--content');
+        const techniqueIdx = args.indexOf('--technique');
+        const lensIdx = args.indexOf('--lens');
+        const perspectiveIdx = args.indexOf('--perspective');
+        const idea = {
+          content: contentIdx !== -1 ? args[contentIdx + 1] : '',
+          source_technique: techniqueIdx !== -1 ? args[techniqueIdx + 1] : 'freeform',
+          scamper_lens: lensIdx !== -1 ? args[lensIdx + 1] : '',
+          perspective: perspectiveIdx !== -1 ? args[perspectiveIdx + 1] : '',
+        };
+        output(brainstorm.cmdBrainstormAppendIdea(sessionDir, idea), raw);
+      } else if (subcommand === 'read-ideas') {
+        const sessionDir = args[2];
+        output(brainstorm.cmdBrainstormReadIdeas(sessionDir), raw);
+      } else if (subcommand === 'scamper-lens') {
+        const lensIndex = parseInt(args[2], 10);
+        output(brainstorm.cmdBrainstormGetScamperLens(lensIndex), raw);
+      } else if (subcommand === 'scamper-complete') {
+        const sessionDir = args[2];
+        output(brainstorm.cmdBrainstormScamperComplete(sessionDir), raw);
+      } else if (subcommand === 'check-floor') {
+        const technique = args[2];
+        const currentCount = parseInt(args[3], 10);
+        const wildMode = args.includes('--wild');
+        output(brainstorm.cmdBrainstormCheckFloor(technique, currentCount, wildMode), raw);
+      } else if (subcommand === 'get-perspective') {
+        const perspectiveId = args[2];
+        output(brainstorm.cmdBrainstormGetPerspective(perspectiveId), raw);
+      } else if (subcommand === 'random-perspectives') {
+        const count = parseInt(args[2], 10);
+        output(brainstorm.cmdBrainstormRandomPerspectives(count), raw);
+      } else if (subcommand === 'check-saturation') {
+        const sessionDir = args[2];
+        const windowIdx = args.indexOf('--window');
+        const windowArg = windowIdx !== -1 ? args[windowIdx + 1] : null;
+        output(brainstorm.cmdBrainstormCheckSaturation(sessionDir, parseInt(windowArg) || 10), raw);
+      } else if (subcommand === 'build-seed-brief') {
+        const planningRoot = args[2];
+        output(brainstorm.cmdBrainstormBuildSeedBrief(planningRoot), raw);
+      } else {
+        error('Unknown brainstorm subcommand. Available: check-eval, append-idea, read-ideas, scamper-lens, scamper-complete, check-floor, get-perspective, random-perspectives, check-saturation, build-seed-brief');
       }
       break;
     }
