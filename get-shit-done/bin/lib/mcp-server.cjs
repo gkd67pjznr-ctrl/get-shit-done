@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
 const { StreamableHTTPServerTransport } = require('@modelcontextprotocol/sdk/server/streamableHttp.js');
 const { z } = require('zod');
@@ -403,7 +404,44 @@ function registerGsdTools(server, cache, loadRegistry) {
     'get-git-status',
     'Return current branch, dirty files, and recent commits for a project',
     { name: z.string().describe('Project name') },
-    async () => ({ content: [{ type: 'text', text: 'TODO' }] })
+    async ({ name }) => {
+      const project = cache.get(name);
+      if (!project) {
+        const available = Array.from(cache.keys()).sort();
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({ error: 'Project not found', code: 'NOT_FOUND', available_projects: available }),
+          }],
+        };
+      }
+
+      const opts = { cwd: project.path, encoding: 'utf-8', timeout: 5000, stdio: ['pipe', 'pipe', 'pipe'] };
+      let branch = null;
+      let dirty = [];
+      let recentCommits = [];
+
+      try {
+        branch = execSync('git rev-parse --abbrev-ref HEAD', opts).trim();
+      } catch { branch = null; }
+
+      try {
+        const statusOut = execSync('git status --porcelain', opts).trim();
+        dirty = statusOut ? statusOut.split('\n').filter(Boolean).map(l => l.trim()) : [];
+      } catch { dirty = []; }
+
+      try {
+        const logOut = execSync('git log --oneline -5', opts).trim();
+        recentCommits = logOut ? logOut.split('\n').filter(Boolean) : [];
+      } catch { recentCommits = []; }
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({ name, path: project.path, branch, dirtyFiles: dirty, recentCommits }),
+        }],
+      };
+    }
   );
 }
 
