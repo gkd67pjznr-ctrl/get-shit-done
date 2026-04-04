@@ -84,6 +84,6 @@ Phases execute in numeric order: 80 → 81 → 82 → 83
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 80. Auto-Apply Safety Engine | 2/2 | Complete    | 2026-04-04 |
-| 81. Auto-Apply User Control | 1/1 | Complete   | 2026-04-04 |
+| 81. Auto-Apply User Control | 1/1 | Complete    | 2026-04-04 |
 | 82. Adaptive Review Profiles | 0/2 | Not started | - |
 | 83. Decision Audit Trail | 0/2 | Not started | - |
