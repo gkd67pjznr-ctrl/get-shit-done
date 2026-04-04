@@ -8,7 +8,7 @@ v16.0 delivers `/gsd:multi-milestone` — a single-session command that accepts 
 
 ## Phases
 
-- [ ] **Phase 87: Synthesizer Foundation** - Build `gsd-roadmap-synthesizer` agent and roadmapper proposal mode
+- [x] **Phase 87: Synthesizer Foundation** - Build `gsd-roadmap-synthesizer` agent and roadmapper proposal mode (completed 2026-04-04)
 - [ ] **Phase 88: Batch Workflow Stages 0-3** - Feature intake, workspace creation, conflict check, session tracking, and per-milestone research + requirements scoping
 - [ ] **Phase 89: Synthesis, Review, and Resume** - Synthesizer writes all artifacts, root file updates, user approval loop, and `--resume` capability
 
@@ -64,6 +64,6 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 87. Synthesizer Foundation | 1/1 | In progress | - |
+| 87. Synthesizer Foundation | 1/1 | Complete   | 2026-04-04 |
 | 88. Batch Workflow Stages 0-3 | 0/3 | Not started | - |
 | 89. Synthesis, Review, and Resume | 0/2 | Not started | - |
