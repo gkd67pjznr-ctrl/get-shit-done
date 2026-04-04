@@ -3,7 +3,7 @@ phase: 40
 plan: 01
 status: complete
 completed_at: "2026-04-04"
-requirements_delivered:
+requirements_completed:
   - SRPT-01
   - SRPT-02
   - SRPT-03

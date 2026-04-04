@@ -8,6 +8,10 @@ duration_estimate: "~45 minutes"
 tasks_completed: 5
 tasks_total: 5
 deviations: 0
+requirements_completed:
+  - DIMP-01
+  - DIMP-02
+  - DIMP-03
 ---
 
 # Phase 39 Plan 03 Summary: Debt Impact Analysis
