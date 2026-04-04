@@ -139,4 +139,86 @@ describe('benchmark-plan CLI subcommand', () => {
 
     assert.strictEqual(entry.gate_fire_count, 2, 'Should count exactly 2 matching gate entries');
   });
+
+  describe('test_count and test_delta fields', () => {
+    test('test_count and test_delta are null when --test-count is omitted', () => {
+      const result = runGsdTools(
+        ['state', 'benchmark-plan',
+          '--phase', '39', '--plan', '01',
+          '--type', 'implementation', '--quality-level', 'standard'],
+        tmpDir
+      );
+      assert.strictEqual(result.success, true, `Expected success but got: ${result.error}`);
+
+      const filePath = path.join(tmpDir, '.planning', 'patterns', 'phase-benchmarks.jsonl');
+      const lines = fs.readFileSync(filePath, 'utf-8').trim().split('\n').filter(Boolean);
+      const entry = JSON.parse(lines[0]);
+
+      assert.strictEqual(entry.test_count, null, 'test_count should be null when --test-count omitted');
+      assert.strictEqual(entry.test_delta, null, 'test_delta should be null when --test-count omitted');
+    });
+
+    test('test_count is set and test_delta is null when no prior entry exists', () => {
+      const result = runGsdTools(
+        ['state', 'benchmark-plan',
+          '--phase', '39', '--plan', '01',
+          '--type', 'implementation', '--quality-level', 'standard',
+          '--test-count', '100'],
+        tmpDir
+      );
+      assert.strictEqual(result.success, true, `Expected success but got: ${result.error}`);
+
+      const filePath = path.join(tmpDir, '.planning', 'patterns', 'phase-benchmarks.jsonl');
+      const lines = fs.readFileSync(filePath, 'utf-8').trim().split('\n').filter(Boolean);
+      const entry = JSON.parse(lines[0]);
+
+      assert.strictEqual(entry.test_count, 100, 'test_count should be 100');
+      assert.strictEqual(entry.test_delta, null, 'test_delta should be null when no prior entry');
+    });
+
+    test('test_delta is computed from most recent prior non-null entry', () => {
+      writePatternsFile(tmpDir, 'patterns', 'phase-benchmarks.jsonl', [
+        { phase: '38', plan: '01', test_count: 80, test_delta: null },
+      ]);
+
+      const result = runGsdTools(
+        ['state', 'benchmark-plan',
+          '--phase', '39', '--plan', '01',
+          '--type', 'implementation', '--quality-level', 'standard',
+          '--test-count', '85'],
+        tmpDir
+      );
+      assert.strictEqual(result.success, true, `Expected success but got: ${result.error}`);
+
+      const filePath = path.join(tmpDir, '.planning', 'patterns', 'phase-benchmarks.jsonl');
+      const lines = fs.readFileSync(filePath, 'utf-8').trim().split('\n').filter(Boolean);
+      const entry = JSON.parse(lines[lines.length - 1]);
+
+      assert.strictEqual(entry.test_count, 85, 'test_count should be 85');
+      assert.strictEqual(entry.test_delta, 5, 'test_delta should be 5 (85 - 80)');
+    });
+
+    test('test_delta skips prior entries where test_count is null', () => {
+      writePatternsFile(tmpDir, 'patterns', 'phase-benchmarks.jsonl', [
+        { phase: '37', plan: '01', test_count: 70, test_delta: null },
+        { phase: '38', plan: '01', test_count: null, test_delta: null },
+      ]);
+
+      const result = runGsdTools(
+        ['state', 'benchmark-plan',
+          '--phase', '39', '--plan', '01',
+          '--type', 'implementation', '--quality-level', 'standard',
+          '--test-count', '75'],
+        tmpDir
+      );
+      assert.strictEqual(result.success, true, `Expected success but got: ${result.error}`);
+
+      const filePath = path.join(tmpDir, '.planning', 'patterns', 'phase-benchmarks.jsonl');
+      const lines = fs.readFileSync(filePath, 'utf-8').trim().split('\n').filter(Boolean);
+      const entry = JSON.parse(lines[lines.length - 1]);
+
+      assert.strictEqual(entry.test_count, 75, 'test_count should be 75');
+      assert.strictEqual(entry.test_delta, 5, 'test_delta should be 5 (75 - 70), skipping null entry');
+    });
+  });
 });
