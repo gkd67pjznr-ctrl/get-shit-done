@@ -236,6 +236,42 @@ Bold the entire row (category, count, last_seen, target_skill) for categories wh
 
 This section shows corrections only. Preference data is not included here (preferences are visible in session-start recall).
 
+### 3h. Plan benchmark trends
+
+Read `.planning/patterns/phase-benchmarks.jsonl` using the Read tool.
+
+- If the file does not exist or is empty, display: "No benchmark data available. Benchmark entries are written after plan completion."
+- Parse each line as JSON. Count total entries (`N`).
+- If `N < 5`, display: "Insufficient benchmark data (N={N}). Trends available after 5+ plan completions."
+- If `N >= 5`, compute and display:
+
+  **Averages (over all entries):**
+  - Average correction count per plan
+  - Average gate fire count per plan
+  - Most common phase_type
+
+  **By phase_type breakdown** (group entries by phase_type, compute avg corrections and avg gates for each type):
+
+  ```
+  ### Plan Benchmark Trends (N=12)
+  | Phase Type     | Plans | Avg Corrections | Avg Gate Fires |
+  |----------------|-------|-----------------|----------------|
+  | implementation | 7     | 2.4             | 3.1            |
+  | fix            | 3     | 1.0             | 1.3            |
+  | research       | 2     | 0.5             | 0.0            |
+  ```
+
+  **By quality_level breakdown:**
+
+  ```
+  | Quality Level | Plans | Avg Corrections | Avg Gate Fires |
+  |---------------|-------|-----------------|----------------|
+  | standard      | 10    | 2.1             | 2.8            |
+  | strict        | 2     | 3.5             | 4.5            |
+  ```
+
+  If any phase_type has average corrections > 3, add a callout: "> High correction rate for [type] phases. Consider TDD approach."
+
 ## Step 4: Activation history
 
 Read `.planning/patterns/budget-history.jsonl` using the Read tool.
@@ -303,4 +339,5 @@ _Run `/gsd:session-start` for session briefing | `/gsd:digest` again for updated
 - Config is read from .planning/config.json under the adaptive_learning key (retention_days, thresholds)
 - Footer links to related commands (/gsd:session-start, /gsd:digest)
 - Correction analysis section (Step 3g) appears with category grouping table, sorted by count descending, with bold rows and callout for categories >= 3 corrections
+- Benchmark trends present (or 'insufficient data' message shown) in Step 3h after correction analysis
 </success_criteria>

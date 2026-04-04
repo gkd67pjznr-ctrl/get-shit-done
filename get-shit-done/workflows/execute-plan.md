@@ -47,6 +47,9 @@ Find first PLAN without matching SUMMARY. Decimal phases supported (`01.1-hotfix
 ```bash
 PHASE=$(echo "$PLAN_PATH" | grep -oE '[0-9]+(\.[0-9]+)?-[0-9]+')
 # config settings can be fetched via gsd-tools config-get if needed
+
+# Extract phase_type from PLAN.md frontmatter for benchmark
+PLAN_TYPE=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" frontmatter get "${PLAN_PATH}" --field type --raw 2>/dev/null || echo "unknown")
 ```
 
 <if mode="yolo">
@@ -382,6 +385,17 @@ node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" state update-progress
 node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" state record-metric \
   --phase "${PHASE}" --plan "${PLAN}" --duration "${DURATION}" \
   --tasks "${TASK_COUNT}" --files "${FILE_COUNT}"
+
+# Record plan benchmark metrics for /gsd:digest trends (BNCH-01/02)
+# PLAN_TYPE is sourced from PLAN.md frontmatter type: field (extracted in identify_plan step)
+# QUALITY_LEVEL is sourced from config.json quality.level
+QUALITY_LEVEL=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" config-get quality.level 2>/dev/null || echo "standard")
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" state benchmark-plan \
+  --phase "${PHASE}" --plan "${PLAN}" \
+  --type "${PLAN_TYPE:-unknown}" \
+  --quality-level "${QUALITY_LEVEL:-standard}" \
+  --duration "${DURATION_MIN}" \
+  ${MILESTONE_FLAG}
 ```
 </step>
 
