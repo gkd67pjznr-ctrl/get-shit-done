@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: active
-stopped_at: Plan 39-02 complete — benchmark.cjs, state benchmark-plan CLI, execute-plan.md update_current_position, /gsd:digest step 3h
-last_updated: "2026-04-04T05:35:00.000Z"
-last_activity: "2026-04-04 — Plan 39-02 complete: phase benchmarking with JSONL append, correction/gate counts, digest trends"
+status: completed
+stopped_at: "Plan 40-01 complete — session-report.cjs module, CLI subcommand, /gsd:session-report slash command"
+last_updated: "2026-04-04T00:00:00.000Z"
+last_activity: "2026-04-04 — Plan 40-01 complete: session analytics with correction_count, gate_fire_count, skills, benchmark_trends"
 progress:
   total_phases: 6
-  completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
-  percent: 25
+  completed_phases: 4
+  total_plans: 6
+  completed_plans: 6
+  percent: 60
 ---
 
 # Project State — Milestone v9.0 Signal Intelligence
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 39 — Data Capture Triad (all 3 plans complete)
+**Current focus:** Phase 40 — Session Report (plan 01 complete)
 
 ## Current Position
 
-Phase: 39 of 42 (data-capture-triad)
-Plan: 3 of 3 in current phase
-Status: All plans complete (01, 02, 03)
-Last activity: 2026-04-04 — Plan 39-02 complete: phase benchmarking with JSONL append, correction/gate counts, digest trends
+Phase: 40 of 42 (session-report)
+Plan: 1 of 1 in current phase
+Status: Plan 01 complete
+Last activity: 2026-04-04 — Plan 40-01 complete: session-report.cjs, CLI subcommand, /gsd:session-report slash command
 
-Progress: [████░░░░░░] 50% (4/8 plans)
+Progress: [██████░░░░] 60% (6/10 plans)
 
 ## Performance Metrics
 
@@ -70,6 +70,9 @@ Progress: [████░░░░░░] 50% (4/8 plans)
 - Plan 39-02: benchmark-plan call placed in update_current_position (not inside quality-gate conditional per BNCH-03 pitfall)
 - Plan 39-02: PLAN_TYPE extracted via frontmatter get --field type --raw in identify_plan step; QUALITY_LEVEL via config-get at call time
 - Plan 39-02: gsd-tools.cjs benchmark require and handler were already staged from session start — committed atomically with other files
+- Plan 40-01: parseJsonlFile is a local copy in session-report.cjs (not imported from benchmark.cjs) to keep modules independent
+- Plan 40-01: gate_fire_count in buildSessionRow uses phase-level matching (not plan-level) to aggregate all gate fires for the phase
+- Plan 40-01: loadCorrections uses same two-path fallback as benchmark.cjs (milestone-scoped path first, then flat patterns fallback)
 
 ### Blockers/Concerns
 
@@ -78,6 +81,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-04
-Stopped at: Plan 39-02 complete — benchmark.cjs, state benchmark-plan CLI, execute-plan.md update_current_position, /gsd:digest step 3h
+Stopped at: Plan 40-01 complete — session-report.cjs module, CLI subcommand, /gsd:session-report slash command
 Resume file: None
-Next step: Phase 39 complete — proceed to Phase 40
+Next step: Phase 40 complete — proceed to Phase 41
