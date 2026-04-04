@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Plan 38-01 complete — readSkillNames helper, SKILLS_JSON snippet in 6 workflow files, 3 unit tests pass
-last_updated: "2026-04-04T04:41:07.230Z"
-last_activity: "2026-04-03 — Plan 38-01 complete: skills_loaded and skills_active observability fields"
+status: active
+stopped_at: Plan 39-01 complete — appendSkillHistory() with 50-entry rotation, SKILL-HISTORY.md in skill dir, .gitattributes merge=union
+last_updated: "2026-04-03T05:15:00.000Z"
+last_activity: "2026-04-03 — Plan 39-01 complete: SKILL-HISTORY.md append and rotation after acceptSuggestion()"
 progress:
   total_phases: 6
   completed_phases: 2
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 38 — Skill Call Tracking (plan 01 complete)
+**Current focus:** Phase 39 — Data Capture Triad (plan 01 complete)
 
 ## Current Position
 
-Phase: 38 of 42 (skill-call-tracking)
-Plan: 1 of 1 in current phase
+Phase: 39 of 42 (data-capture-triad)
+Plan: 1 of 3 in current phase
 Status: Plan 01 complete
-Last activity: 2026-04-03 — Plan 38-01 complete: skills_loaded and skills_active observability fields
+Last activity: 2026-04-03 — Plan 39-01 complete: SKILL-HISTORY.md append and rotation after acceptSuggestion()
 
-Progress: [█░░░░░░░░░] 12% (1/8 plans)
+Progress: [██░░░░░░░░] 25% (2/8 plans)
 
 ## Performance Metrics
 
@@ -61,6 +61,9 @@ Progress: [█░░░░░░░░░] 12% (1/8 plans)
 - Plan 38-01: createTempProject() omits config.json — gate tests must write standard quality config explicitly
 - Plan 38-01: diagnose-issues.md is 6th workflow file with skills_loaded (plan correctly lists 6 files)
 - Plan 38-01: skills_active only populates entries written after Phase 38 deployment; historical entries remain without field
+- Plan 39-01: appendSkillHistory placed after git commit so git diff HEAD~1 captures exact accepted change
+- Plan 39-01: rotation uses header-count (## Entry \d+) not line-count — avoids false triggers on multi-line diffs
+- Plan 39-01: .claude/ is in .gitignore — git add -f required for hooks/lib/refine-skill.cjs (consistent with prior phases)
 
 ### Blockers/Concerns
 
@@ -69,6 +72,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-03
-Stopped at: Plan 38-01 complete — readSkillNames helper, SKILLS_JSON snippet in 6 workflow files, 3 unit tests pass
+Stopped at: Plan 39-01 complete — appendSkillHistory() with 50-entry rotation, .gitattributes configured
 Resume file: None
-Next step: Phase 38 complete — proceed to Phase 39 (SHST/BNCH/DIMP consolidation)
+Next step: Phase 39 Plan 02 (BNCH benchmarking) or Plan 03 (DIMP dashboard import) — both independent
