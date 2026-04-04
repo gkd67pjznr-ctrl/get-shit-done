@@ -272,6 +272,34 @@ Read `.planning/patterns/phase-benchmarks.jsonl` using the Read tool.
 
   If any phase_type has average corrections > 3, add a callout: "> High correction rate for [type] phases. Consider TDD approach."
 
+### 3i. Skill quality metrics
+
+Run the skill metrics compute command to refresh data:
+
+```bash
+node get-shit-done/bin/gsd-tools.cjs skill-metrics compute
+```
+
+Then read `.planning/patterns/skill-metrics.json` using the Read tool.
+
+- If the file does not exist, display: "No skill metrics data. Run `gsd-tools skill-metrics compute` to generate."
+- If it exists, parse and display a skill quality table sorted by correction_count descending:
+
+```
+### Skill Quality Metrics
+| Skill | Corrections | Sessions | Rate | Confidence |
+|-------|-------------|----------|------|------------|
+| session-awareness | 82 | 0 | — | low |
+| gsd-workflow | 1 | 19 | 5.3% | medium |
+| code-review | 1 | 8 | 12.5% | medium |
+```
+
+Display rules:
+- Show Rate as `—` when session_count is 0 (not "0%" — that implies a valid measurement)
+- Include the Confidence column — do not hide low-confidence entries
+- Note: `attribution_confidence: low` means insufficient session data, not that the skill is defective
+- Include metadata context: "Computed at {metadata.computed_at}. Total active corrections: {metadata.total_active_corrections}. Unmapped: {metadata.unmapped_correction_count}."
+
 ## Step 4: Activation history
 
 Read `.planning/patterns/budget-history.jsonl` using the Read tool.

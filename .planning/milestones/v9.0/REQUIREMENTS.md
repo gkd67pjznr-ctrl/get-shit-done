@@ -45,9 +45,9 @@ Requirements for Signal Intelligence milestone. Each maps to roadmap phases.
 
 ### Skill Quality
 
-- [ ] **SQLQ-01**: Per-skill correction rate computed using CATEGORY_SKILL_MAP attribution (not raw co-presence)
-- [ ] **SQLQ-02**: Skill metrics stored in .planning/patterns/skill-metrics.json with attribution_confidence field
-- [ ] **SQLQ-03**: /gsd:digest surfaces per-skill correction rates with absolute counts alongside rates
+- [x] **SQLQ-01**: Per-skill correction rate computed using CATEGORY_SKILL_MAP attribution (not raw co-presence)
+- [x] **SQLQ-02**: Skill metrics stored in .planning/patterns/skill-metrics.json with attribution_confidence field
+- [x] **SQLQ-03**: /gsd:digest surfaces per-skill correction rates with absolute counts alongside rates
 
 ### Skill Relevance
 
@@ -99,9 +99,9 @@ Requirements for Signal Intelligence milestone. Each maps to roadmap phases.
 | SRPT-01 | Phase 40 | Complete |
 | SRPT-02 | Phase 40 | Complete |
 | SRPT-03 | Phase 40 | Complete |
-| SQLQ-01 | Phase 41 | Pending |
-| SQLQ-02 | Phase 41 | Pending |
-| SQLQ-03 | Phase 41 | Pending |
+| SQLQ-01 | Phase 41 | Complete |
+| SQLQ-02 | Phase 41 | Complete |
+| SQLQ-03 | Phase 41 | Complete |
 | SREL-01 | Phase 42 | Pending |
 | SREL-02 | Phase 42 | Pending |
 | SREL-03 | Phase 42 | Pending |
