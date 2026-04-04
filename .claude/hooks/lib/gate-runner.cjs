@@ -8,6 +8,28 @@ const fs = require('fs');
 const path = require('path');
 
 /**
+ * Reads subdirectory names from .claude/skills/ as the active skill list.
+ * Returns [] on any error or if the directory does not exist.
+ *
+ * @param {string} cwd - Project root directory
+ * @returns {string[]}
+ */
+function readSkillNames(cwd) {
+  try {
+    const skillsDir = path.join(cwd, '.claude', 'skills');
+    return fs.readdirSync(skillsDir).filter(name => {
+      try {
+        return fs.statSync(path.join(skillsDir, name)).isDirectory();
+      } catch (e) {
+        return false;
+      }
+    });
+  } catch (e) {
+    return [];
+  }
+}
+
+/**
  * Reads quality.level from .planning/config.json.
  * Returns 'fast' on any error.
  *
@@ -219,6 +241,7 @@ function evaluateGate(toolName, toolInput, toolResponse, options) {
       plan: phaseAndPlan.plan,
       timestamp: new Date().toISOString(),
       detail: detection.detail || '',
+      skills_active: readSkillNames(cwd),
     };
 
     return { evaluated: true, gate: detection.gate, outcome, entry };
