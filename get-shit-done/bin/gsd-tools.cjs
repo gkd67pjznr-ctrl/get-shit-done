@@ -175,6 +175,7 @@ const brainstorm = require('./lib/brainstorm.cjs');
 const migrate = require('./lib/migrate.cjs');
 const benchmark = require('./lib/benchmark.cjs');
 const sessionReport = require('./lib/session-report.cjs');
+const eventJournal = require('./lib/event-journal.cjs');
 const skillMetrics = require('./lib/skill-metrics.cjs');
 const skillScorer = require('./lib/skill-scorer.cjs');
 const dashboard = require('./lib/dashboard.cjs');
@@ -989,6 +990,44 @@ async function main() {
         default:
           error(`Unknown dashboard subcommand: ${subAction || '(none)'}. Usage: gsd1 dashboard add|remove|list|serve`);
       }
+      break;
+    }
+
+    case 'journal-emit': {
+      const jType = args[1] || '';
+      const jPhaseIdx = args.indexOf('--phase');
+      const jPlanIdx = args.indexOf('--plan');
+      const jTaskIdx = args.indexOf('--task');
+      const jSessionIdx = args.indexOf('--session-id');
+      const jDataIdx = args.indexOf('--data');
+      eventJournal.cmdJournalEmit(cwd, {
+        type: jType,
+        phase: jPhaseIdx !== -1 ? args[jPhaseIdx + 1] : undefined,
+        plan: jPlanIdx !== -1 ? args[jPlanIdx + 1] : undefined,
+        task: jTaskIdx !== -1 ? args[jTaskIdx + 1] : undefined,
+        session_id: jSessionIdx !== -1 ? args[jSessionIdx + 1] : undefined,
+        data: jDataIdx !== -1 ? args[jDataIdx + 1] : undefined,
+      }, raw);
+      break;
+    }
+
+    case 'journal-query': {
+      const qPhaseIdx = args.indexOf('--phase');
+      const qPlanIdx = args.indexOf('--plan');
+      const qTypeIdx = args.indexOf('--type');
+      const qSessionIdx = args.indexOf('--session-id');
+      const qFromIdx = args.indexOf('--from');
+      const qToIdx = args.indexOf('--to');
+      const qCountIdx = args.indexOf('--count');
+      eventJournal.cmdJournalQuery(cwd, {
+        phase: qPhaseIdx !== -1 ? args[qPhaseIdx + 1] : undefined,
+        plan: qPlanIdx !== -1 ? args[qPlanIdx + 1] : undefined,
+        type: qTypeIdx !== -1 ? args[qTypeIdx + 1] : undefined,
+        session_id: qSessionIdx !== -1 ? args[qSessionIdx + 1] : undefined,
+        from: qFromIdx !== -1 ? args[qFromIdx + 1] : undefined,
+        to: qToIdx !== -1 ? args[qToIdx + 1] : undefined,
+        count: qCountIdx !== -1 ? parseInt(args[qCountIdx + 1], 10) : undefined,
+      }, raw);
       break;
     }
 
