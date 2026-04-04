@@ -721,6 +721,154 @@ function cmdBrainstormFormatResults(clusters, scores, finalists, sessionDir, out
   return { files_written: filesWritten };
 }
 
+/**
+ * Appends a completed session's metadata to the persistent session index.
+ * @param {string} planningRoot - Path to .planning directory
+ * @param {Object} metadata - { topic, date, flags, idea_count, output_path }
+ * @returns {{ logged: boolean, session_count: number }}
+ */
+function cmdBrainstormLogSession(planningRoot, metadata) {
+  const indexPath = path.join(planningRoot, 'brainstorm-sessions.jsonl');
+  const entry = JSON.stringify({
+    topic: metadata.topic || '',
+    date: metadata.date || new Date().toISOString().slice(0, 10),
+    flags: metadata.flags || '',
+    idea_count: typeof metadata.idea_count === 'number' ? metadata.idea_count : 0,
+    output_path: metadata.output_path || '',
+    logged_at: new Date().toISOString(),
+  });
+  fs.appendFileSync(indexPath, entry + '\n', 'utf-8');
+  const lines = fs.readFileSync(indexPath, 'utf-8').trim().split('\n').filter(Boolean);
+  return { logged: true, session_count: lines.length };
+}
+
+/**
+ * Reads the session index and returns all logged sessions.
+ * @param {string} planningRoot - Path to .planning directory
+ * @returns {{ sessions: Object[], count: number }}
+ */
+function cmdBrainstormListSessions(planningRoot) {
+  const indexPath = path.join(planningRoot, 'brainstorm-sessions.jsonl');
+  if (!fs.existsSync(indexPath)) {
+    return { sessions: [], count: 0 };
+  }
+  const lines = fs.readFileSync(indexPath, 'utf-8').trim().split('\n').filter(Boolean);
+  const sessions = lines.map(line => {
+    try { return JSON.parse(line); } catch { return null; }
+  }).filter(Boolean);
+  return { sessions, count: sessions.length };
+}
+
+/**
+ * Tags an idea in FEATURE-IDEAS.md as implemented in a given phase.
+ * @param {string} outputDir - Brainstorm output directory containing FEATURE-IDEAS.md
+ * @param {string} ideaId - Idea identifier (e.g. "IDEA-003" or freeform string)
+ * @param {number|string} phaseNumber - Phase that implemented the idea
+ * @returns {{ tagged: boolean, idea_id: string, phase: string|number }}
+ */
+function cmdBrainstormTagIdea(outputDir, ideaId, phaseNumber) {
+  const ideasPath = path.join(outputDir, 'FEATURE-IDEAS.md');
+  if (!fs.existsSync(ideasPath)) {
+    throw new Error(`FEATURE-IDEAS.md not found in ${outputDir}`);
+  }
+  let content = fs.readFileSync(ideasPath, 'utf-8');
+  const SECTION_HEADER = '## Implemented';
+  const entryLine = `- **${ideaId}** → Phase ${phaseNumber}`;
+
+  if (!content.includes(SECTION_HEADER)) {
+    // Append section
+    content = content.trimEnd() + '\n\n' + SECTION_HEADER + '\n\n' + entryLine + '\n';
+  } else {
+    const sectionStart = content.indexOf(SECTION_HEADER);
+    const sectionContent = content.slice(sectionStart);
+    const ideaPattern = new RegExp(`^- \\*\\*${ideaId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\*\\*.*$`, 'm');
+    if (ideaPattern.test(sectionContent)) {
+      // Update existing entry
+      const updatedSection = sectionContent.replace(ideaPattern, entryLine);
+      content = content.slice(0, sectionStart) + updatedSection;
+    } else {
+      // Append to existing section
+      content = content.trimEnd() + '\n' + entryLine + '\n';
+    }
+  }
+
+  fs.writeFileSync(ideasPath, content, 'utf-8');
+  return { tagged: true, idea_id: ideaId, phase: phaseNumber };
+}
+
+/**
+ * Scans all brainstorm output dirs for ideas tagged as implemented.
+ * @param {string} planningRoot - Path to .planning directory
+ * @returns {{ implemented: Object[], count: number }}
+ */
+function cmdBrainstormListImplemented(planningRoot) {
+  const quickDir = path.join(planningRoot, 'quick');
+  const implemented = [];
+
+  if (!fs.existsSync(quickDir)) {
+    return { implemented: [], count: 0 };
+  }
+
+  const entries = fs.readdirSync(quickDir, { withFileTypes: true })
+    .filter(e => e.isDirectory())
+    .map(e => e.name);
+
+  for (const dirName of entries) {
+    const ideasPath = path.join(quickDir, dirName, 'FEATURE-IDEAS.md');
+    if (!fs.existsSync(ideasPath)) continue;
+    const content = fs.readFileSync(ideasPath, 'utf-8');
+    const SECTION_HEADER = '## Implemented';
+    if (!content.includes(SECTION_HEADER)) continue;
+
+    const sectionStart = content.indexOf(SECTION_HEADER) + SECTION_HEADER.length;
+    const sectionContent = content.slice(sectionStart);
+    const entryPattern = /^- \*\*(.+?)\*\* → Phase (.+)$/gm;
+    let match;
+    while ((match = entryPattern.exec(sectionContent)) !== null) {
+      implemented.push({
+        idea_id: match[1],
+        phase: match[2],
+        topic: dirName,
+        output_path: path.join(quickDir, dirName),
+      });
+    }
+  }
+
+  return { implemented, count: implemented.length };
+}
+
+/**
+ * Finds FEATURE-IDEAS.md files modified within the given day window.
+ * @param {string} planningRoot - Path to .planning directory
+ * @param {number} [dayWindow=7] - Number of days to look back
+ * @returns {{ files: string[], count: number }}
+ */
+function cmdBrainstormRecentIdeas(planningRoot, dayWindow) {
+  const days = typeof dayWindow === 'number' ? dayWindow : 7;
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+  const quickDir = path.join(planningRoot, 'quick');
+  const files = [];
+
+  if (!fs.existsSync(quickDir)) {
+    return { files: [], count: 0 };
+  }
+
+  const entries = fs.readdirSync(quickDir, { withFileTypes: true })
+    .filter(e => e.isDirectory())
+    .map(e => e.name);
+
+  for (const dirName of entries) {
+    const ideasPath = path.join(quickDir, dirName, 'FEATURE-IDEAS.md');
+    if (!fs.existsSync(ideasPath)) continue;
+    const stat = fs.statSync(ideasPath);
+    if (stat.mtimeMs >= cutoff) {
+      files.push(ideasPath);
+    }
+  }
+
+  return { files, count: files.length };
+}
+
 module.exports = {
   cmdBrainstormCheckEval,
   cmdBrainstormAppendIdea,
@@ -737,4 +885,9 @@ module.exports = {
   cmdBrainstormSelectFinalists,
   cmdBrainstormCreateOutputDir,
   cmdBrainstormFormatResults,
+  cmdBrainstormLogSession,
+  cmdBrainstormListSessions,
+  cmdBrainstormTagIdea,
+  cmdBrainstormListImplemented,
+  cmdBrainstormRecentIdeas,
 };
