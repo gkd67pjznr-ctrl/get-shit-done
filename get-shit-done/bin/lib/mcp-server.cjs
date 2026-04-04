@@ -80,14 +80,37 @@ function registerGsdTools(server, cache, loadRegistry) {
     'list-projects',
     'Return all registered GSD projects with health and state summary',
     {},
-    async () => ({ content: [{ type: 'text', text: 'TODO' }] })
+    async () => {
+      const projects = Array.from(cache.values()).map(p => ({
+        name: p.name,
+        path: p.path,
+        health: p.health ?? null,
+        tracking: p.tracking !== false,
+        current_phase: p.state?.current_phase ?? null,
+        status: p.state?.status ?? null,
+        milestone_count: Array.isArray(p.milestones) ? p.milestones.length : 0,
+      }));
+      return { content: [{ type: 'text', text: JSON.stringify(projects, null, 2) }] };
+    }
   );
 
   server.tool(
     'get-project-state',
     'Return STATE.md data and project detail for a named project',
     { name: z.string().describe('Project name as registered in the dashboard') },
-    async () => ({ content: [{ type: 'text', text: 'TODO' }] })
+    async ({ name }) => {
+      const project = cache.get(name);
+      if (!project) {
+        const available = Array.from(cache.keys()).sort();
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({ error: 'Project not found', code: 'NOT_FOUND', available_projects: available }),
+          }],
+        };
+      }
+      return { content: [{ type: 'text', text: JSON.stringify(project, null, 2) }] };
+    }
   );
 
   server.tool(
