@@ -13,7 +13,7 @@ v9.0 extracts actionable signals from existing observability data. Six phases fo
 - [x] **Phase 39: Data Capture Triad** - Skill iteration history, phase benchmarking, and debt impact analysis (3 independent plans) (completed 2026-04-04)
 - [x] **Phase 40: Session Report** - /gsd:session-report command surfacing per-session analytics across all observability data (completed 2026-04-04)
 - [x] **Phase 41: Skill Quality Metrics** - Per-skill correction rate scoring using CATEGORY_SKILL_MAP attribution (completed 2026-04-04)
-- [ ] **Phase 42: Skill Relevance Scoring** - Context budget optimization via keyword-based skill relevance scoring
+- [x] **Phase 42: Skill Relevance Scoring** - Context budget optimization via keyword-based skill relevance scoring (completed 2026-04-04)
 
 ## Phase Details
 
@@ -108,4 +108,4 @@ Plans:
 | 39. Data Capture Triad | 3/3 | Complete    | 2026-04-04 |
 | 40. Session Report | 0/1 | Complete    | 2026-04-04 |
 | 41. Skill Quality Metrics | 0/1 | Complete    | 2026-04-04 |
-| 42. Skill Relevance Scoring | 0/1 | Not started | - |
+| 42. Skill Relevance Scoring | 0/1 | Complete    | 2026-04-04 |
