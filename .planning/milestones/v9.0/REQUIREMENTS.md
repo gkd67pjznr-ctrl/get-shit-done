@@ -9,33 +9,33 @@ Requirements for Signal Intelligence milestone. Each maps to roadmap phases.
 
 ### Debt Fix
 
-- [ ] **DEBT-01**: cmdStateUpdateProgress resolves phase directory via planningRoot() instead of hardcoded .planning/phases/
-- [ ] **DEBT-02**: cmdStateUpdateProgress resolves state path via planningRoot() for milestone-scoped projects
-- [ ] **DEBT-03**: Milestone-scoped progress tracking verified with test covering milestone workspace invocation
+- [x] **DEBT-01**: cmdStateUpdateProgress resolves phase directory via planningRoot() instead of hardcoded .planning/phases/
+- [x] **DEBT-02**: cmdStateUpdateProgress resolves state path via planningRoot() for milestone-scoped projects
+- [x] **DEBT-03**: Milestone-scoped progress tracking verified with test covering milestone workspace invocation
 
 ### Skill Tracking
 
-- [ ] **STRK-01**: Workflow observe steps populate skills_loaded with actual skill directory names from .claude/skills/
-- [ ] **STRK-02**: Gate execution entries include skills_active field listing skills loaded at gate fire time
-- [ ] **STRK-03**: Skill call data persists across sessions in sessions.jsonl for downstream analytics consumption
+- [x] **STRK-01**: Workflow observe steps populate skills_loaded with actual skill directory names from .claude/skills/
+- [x] **STRK-02**: Gate execution entries include skills_active field listing skills loaded at gate fire time
+- [x] **STRK-03**: Skill call data persists across sessions in sessions.jsonl for downstream analytics consumption
 
 ### Skill History
 
-- [ ] **SHST-01**: Skill refinement appends unified diff and rationale to SKILL-HISTORY.md in the skill directory
-- [ ] **SHST-02**: SKILL-HISTORY.md rotates at 50 entries with archive to SKILL-HISTORY-YYYY-MM.md
-- [ ] **SHST-03**: .gitattributes configured with merge=union for SKILL-HISTORY.md files
+- [x] **SHST-01**: Skill refinement appends unified diff and rationale to SKILL-HISTORY.md in the skill directory
+- [x] **SHST-02**: SKILL-HISTORY.md rotates at 50 entries with archive to SKILL-HISTORY-YYYY-MM.md
+- [x] **SHST-03**: .gitattributes configured with merge=union for SKILL-HISTORY.md files
 
 ### Benchmarking
 
-- [ ] **BNCH-01**: Plan completion writes execution metrics (correction count, gate fire count, quality level) to phase-benchmarks.jsonl
-- [ ] **BNCH-02**: Benchmark entries segmented by phase type and quality level before aggregation
-- [ ] **BNCH-03**: /gsd:digest surfaces recent plan benchmark trends with N >= 5 minimum sample guard
+- [x] **BNCH-01**: Plan completion writes execution metrics (correction count, gate fire count, quality level) to phase-benchmarks.jsonl
+- [x] **BNCH-02**: Benchmark entries segmented by phase type and quality level before aggregation
+- [x] **BNCH-03**: /gsd:digest surfaces recent plan benchmark trends with N >= 5 minimum sample guard
 
 ### Debt Impact
 
-- [ ] **DIMP-01**: debt impact CLI subcommand joins DEBT.md entries with corrections.jsonl by component-to-category mapping
-- [ ] **DIMP-02**: Debt entries ranked by associated correction count with link_confidence field (high/medium/low)
-- [ ] **DIMP-03**: /gsd:fix-debt surfaces correction-linked impact data when selecting debt items to resolve
+- [x] **DIMP-01**: debt impact CLI subcommand joins DEBT.md entries with corrections.jsonl by component-to-category mapping
+- [x] **DIMP-02**: Debt entries ranked by associated correction count with link_confidence field (high/medium/low)
+- [x] **DIMP-03**: /gsd:fix-debt surfaces correction-linked impact data when selecting debt items to resolve
 
 ### Session Report
 
@@ -81,21 +81,21 @@ Requirements for Signal Intelligence milestone. Each maps to roadmap phases.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DEBT-01 | Phase 37 | Pending |
-| DEBT-02 | Phase 37 | Pending |
-| DEBT-03 | Phase 37 | Pending |
-| STRK-01 | Phase 38 | Pending |
-| STRK-02 | Phase 38 | Pending |
-| STRK-03 | Phase 38 | Pending |
-| SHST-01 | Phase 39 | Pending |
-| SHST-02 | Phase 39 | Pending |
-| SHST-03 | Phase 39 | Pending |
-| BNCH-01 | Phase 39 | Pending |
-| BNCH-02 | Phase 39 | Pending |
-| BNCH-03 | Phase 39 | Pending |
-| DIMP-01 | Phase 39 | Pending |
-| DIMP-02 | Phase 39 | Pending |
-| DIMP-03 | Phase 39 | Pending |
+| DEBT-01 | Phase 37 | Complete |
+| DEBT-02 | Phase 37 | Complete |
+| DEBT-03 | Phase 37 | Complete |
+| STRK-01 | Phase 38 | Complete |
+| STRK-02 | Phase 38 | Complete |
+| STRK-03 | Phase 38 | Complete |
+| SHST-01 | Phase 39 | Complete |
+| SHST-02 | Phase 39 | Complete |
+| SHST-03 | Phase 39 | Complete |
+| BNCH-01 | Phase 39 | Complete |
+| BNCH-02 | Phase 39 | Complete |
+| BNCH-03 | Phase 39 | Complete |
+| DIMP-01 | Phase 39 | Complete |
+| DIMP-02 | Phase 39 | Complete |
+| DIMP-03 | Phase 39 | Complete |
 | SRPT-01 | Phase 40 | Complete |
 | SRPT-02 | Phase 40 | Complete |
 | SRPT-03 | Phase 40 | Complete |
