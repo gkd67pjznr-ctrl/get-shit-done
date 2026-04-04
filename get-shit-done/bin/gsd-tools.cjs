@@ -180,6 +180,7 @@ const skillMetrics = require('./lib/skill-metrics.cjs');
 const skillScorer = require('./lib/skill-scorer.cjs');
 const dashboard = require('./lib/dashboard.cjs');
 const contextBudget = require('./lib/context-budget.cjs');
+const mcpClassifier = require('./lib/mcp-classifier.cjs');
 
 // ─── CLI Router ───────────────────────────────────────────────────────────────
 
@@ -366,6 +367,22 @@ async function main() {
         console.error('Unknown skill-budget subcommand. Available: measure, aggregate');
         process.exit(1);
       }
+      break;
+    }
+
+    case 'mcp-classify': {
+      const taskIdx = args.indexOf('--task');
+      const taskDescription = taskIdx !== -1 ? args[taskIdx + 1] : '';
+      if (!taskDescription) {
+        console.error('Usage: mcp-classify --task "<description>" [--ext .tsx,.ts] [--raw]');
+        process.exit(1);
+      }
+      // Parse optional --ext comma-separated extensions
+      const extIdx = args.indexOf('--ext');
+      const fileExtensions = extIdx !== -1
+        ? (args[extIdx + 1] || '').split(',').map(e => e.trim()).filter(Boolean)
+        : [];
+      mcpClassifier.cmdMcpClassify(cwd, taskDescription, fileExtensions, raw);
       break;
     }
 
