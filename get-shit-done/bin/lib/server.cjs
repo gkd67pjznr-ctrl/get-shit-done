@@ -10,6 +10,7 @@ const { WebSocketServer } = require('ws');
 
 const { resolveActiveMilestone, planningRoot, compareVersions } = require('./core.cjs');
 const { loadRegistry, getDashboardPath } = require('./dashboard.cjs');
+const { handleMcpRequest } = require('./mcp-server.cjs');
 
 const DASHBOARD_DIR = path.join(__dirname, '..', '..', '..', 'dashboard');
 
@@ -1149,7 +1150,8 @@ const CORS_HEADERS = {
 };
 
 function createHttpServer(port, cache, clients, dashboardDir, tmuxCache) {
-  const server = http.createServer((req, res) => {
+  const server = http.createServer(async (req, res) => {
+    try {
     // CORS preflight
     if (req.method === 'OPTIONS') {
       res.writeHead(204, CORS_HEADERS);
@@ -1265,7 +1267,18 @@ function createHttpServer(port, cache, clients, dashboardDir, tmuxCache) {
       return;
     }
 
+    if (pathname === '/mcp') {
+      await handleMcpRequest(req, res, cache, loadRegistry);
+      return;
+    }
+
     serveStatic(req, res, dashboardDir || DASHBOARD_DIR);
+    } catch (err) {
+      if (!res.headersSent) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Internal server error' }));
+      }
+    }
   });
 
   return server;
