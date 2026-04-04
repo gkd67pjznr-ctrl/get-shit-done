@@ -272,6 +272,24 @@ Read `.planning/patterns/phase-benchmarks.jsonl` using the Read tool.
 
   If any phase_type has average corrections > 3, add a callout: "> High correction rate for [type] phases. Consider TDD approach."
 
+  **Test Count Trend** (plans with non-null test_count, ascending by timestamp):
+
+  Filter entries to only those where `test_count` is not null. Sort ascending by timestamp. Display as:
+
+  ```
+  | Phase-Plan | Test Count | Delta | Timestamp |
+  |------------|------------|-------|-----------|
+  | 50-01      | 20580      | —     | Apr 04    |
+  | 50-02      | 20600      | +20   | Apr 04    |
+  | 51-01      | 20605      | +5    | Apr 04    |
+  ```
+
+  Display rules:
+  - Phase-Plan: combine `entry.phase + "-" + entry.plan`.
+  - Delta column: show `—` when `test_delta` is null, `+N` when positive, `-N` when negative, `0` when zero.
+  - Timestamp: display as `Mon DD` (e.g., "Apr 04") extracted from the entry's timestamp field.
+  - If no entries have non-null test_count, display: "No test count data available. Test count is captured at plan completion when the test suite runs."
+
 ### 3i. Skill quality metrics
 
 Run the skill metrics compute command to refresh data:
