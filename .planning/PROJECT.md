@@ -108,13 +108,22 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 - ✓ Gate data flows to dashboard Gate Health page with live metrics — v8.0
 - ✓ Both systems verifiable by running a quick task and confirming data appears — v8.0
 
+- ✓ cmdStateUpdateProgress resolves via planningRoot() for milestone-scoped progress tracking — v9.0
+- ✓ skills_loaded populated in sessions.jsonl and skills_active in gate-executions.jsonl across all workflows — v9.0
+- ✓ SKILL-HISTORY.md audit trail with unified diffs, 50-entry rotation, merge=union gitattributes — v9.0
+- ✓ Phase benchmarking with correction count, gate fire count, quality level per plan to phase-benchmarks.jsonl — v9.0
+- ✓ Debt impact analysis linking DEBT.md entries to corrections.jsonl with link_confidence scoring — v9.0
+- ✓ /gsd:session-report command surfacing per-session analytics (corrections, gates, skills, benchmark trends) — v9.0
+- ✓ Per-skill correction rate metrics via CATEGORY_SKILL_MAP attribution with confidence tiers — v9.0
+- ✓ Skill relevance scoring with Jaccard keyword overlap, cold-start floor, dormancy decay, content-hash cache — v9.0
+
 ### Active
 
-<!-- Next milestone scope TBD -->
-
-(None — next milestone not yet defined. Run `/gsd:new-milestone` to start.)
-
 ## Completed Milestones
+
+### v9.0 Signal Intelligence — SHIPPED 2026-04-04
+
+**Delivered:** Actionable signals extracted from existing observability data — fixed milestone-scoped progress tracking, populated skill call data in sessions and gate executions, added skill history audit trails, phase benchmarking, debt impact analysis, session analytics reporting, per-skill quality metrics with attribution, and keyword-based skill relevance scoring for context budget optimization. 6 phases, 8 plans, 25/25 requirements satisfied.
 
 ### v8.0 Close the Loop — SHIPPED 2026-04-03
 
@@ -150,7 +159,7 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 
 ## Context
 
-Shipped v8.0 with ~84K LOC across 12 CJS source modules + 23 test suites, plus workflow/agent Markdown specifications, 16 skills, 4 teams, a TypeScript dashboard with Gate Health page, adaptive learning pipeline, and fully wired skill feedback loop and gate enforcement hooks.
+Shipped v9.0 with ~89K LOC across 17 CJS source modules + 23 test suites, plus workflow/agent Markdown specifications, 16 skills, 4 teams, a TypeScript dashboard with Gate Health page, adaptive learning pipeline, skill feedback loop, gate enforcement hooks, and signal intelligence analytics (session reports, skill metrics, skill relevance scoring, phase benchmarks, debt impact analysis).
 Tech stack: Node.js, CJS modules, TypeScript (dashboard), Markdown agent specifications, Context7 MCP.
 Tests passing across 23+ test suites.
 
@@ -174,7 +183,7 @@ Tests passing across 23+ test suites.
 
 **Gate enforcement** (v8.0): Quality sentinel gates moved from agent prose instructions to deterministic PostToolUse hooks. test_gate fires on test commands, diff_review fires on code file writes. Real entries persist to gate-executions.jsonl and flow to dashboard Gate Health page.
 
-**Known tech debt:** `cmdStateUpdateProgress` uses flat `.planning/phases/` path (MISS-01, medium). See `.planning/DEBT.md` and MILESTONES.md.
+**Known tech debt:** MISS-01 resolved in v9.0. See `.planning/DEBT.md` and MILESTONES.md for remaining items.
 
 ## Constraints
 
@@ -224,4 +233,4 @@ Tests passing across 23+ test suites.
 | Cross-project promotion at 3+ projects | Ensures preferences are truly universal before elevating | ✓ Good — project-specific quirks don't pollute global store |
 
 ---
-*Last updated: 2026-04-03 after v8.0 milestone completion*
+*Last updated: 2026-04-04 after v9.0 milestone completion*

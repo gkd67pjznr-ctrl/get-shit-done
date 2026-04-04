@@ -377,6 +377,53 @@
 
 ---
 
+## Milestone: v9.0 — Signal Intelligence
+
+**Shipped:** 2026-04-04
+**Phases:** 6 | **Plans:** 8 | **Sessions:** ~2
+
+### What Was Built
+- Progress tracking fix — cmdStateUpdateProgress resolves via planningRoot() for milestone-scoped projects (MISS-01 debt resolved)
+- Skill call tracking — skills_loaded populated in sessions.jsonl, skills_active in gate-executions.jsonl across all 6 workflow files
+- Data capture triad — SKILL-HISTORY.md with unified diffs and 50-entry rotation, phase-benchmarks.jsonl with per-plan metrics, debt-to-correction impact analysis with link_confidence
+- Session analytics — /gsd:session-report surfaces per-session correction density, gate fires, skills loaded, and benchmark trends
+- Skill quality metrics — per-skill correction rates via CATEGORY_SKILL_MAP attribution with confidence tiers
+- Skill relevance scoring — Jaccard keyword overlap with cold-start floor, dormancy decay, MD5 content-hash caching
+
+### What Worked
+- Single-day milestone execution — 6 phases, 8 plans, all completed in ~8 hours wall clock time
+- Linear dependency chain (37→38→39→40→41→42) executed cleanly with no circular dependencies or rework
+- Phase 39 (3 independent plans) leveraged parallel wave execution correctly — benchmarking, skill history, and debt impact built concurrently
+- Immediate tech debt cleanup during audit reduced audit status from tech_debt to passed — no gap closure phases needed
+- MISS-01 fix as opening phase unblocked accurate tracking for all subsequent phases
+
+### What Was Inefficient
+- REQUIREMENTS.md checkboxes not updated for phases 37-39 (15 stale entries) — same systemic issue from v4.0/v7.0/v8.0
+- 4 of 8 SUMMARY.md files missing requirements_completed frontmatter — continues the pattern
+- 40-01 used wrong key name (requirements_delivered vs requirements_completed) — inconsistent schema
+- Co-Authored-By trailer used Sonnet in phase 42 commits — executor model attribution leaked into commit messages
+- VALIDATION.md files all left in draft status despite tests passing — Nyquist compliance was retroactive
+
+### Patterns Established
+- Jaccard token overlap for keyword scoring — simple, effective, no ML dependencies
+- Cold-start floor pattern: `Math.max(score, COLD_START_FLOOR)` applied after all adjustments
+- Dormancy decay from session history: `Math.pow(0.9, weeks)` with zero-penalty for untracked skills
+- Content-hash cache invalidation: MD5 of SKILL.md content per skill, task_hash in metadata for full invalidation
+- CATEGORY_SKILL_MAP attribution: consistent mapping from correction categories to skill ownership across modules
+
+### Key Lessons
+1. Documentation debt cleanup should happen inline during plan execution, not at audit — this is the 5th milestone calling this out; it's a process gap in the executor workflow
+2. SUMMARY.md frontmatter schema should be enforced by the executor, not left optional — requirements_completed vs requirements_delivered inconsistency was avoidable
+3. Single-day milestones with linear dependencies are highly efficient — no cross-session context loss, no stale state
+4. Opening with a debt fix (MISS-01) that unblocks accurate tracking is high-value — progress visibility improved for all subsequent phases
+
+### Cost Observations
+- Model mix: ~75% sonnet (executor, verifier), ~5% haiku (plan-checker), ~20% opus (orchestration)
+- Sessions: ~2
+- Notable: 8 plans in ~8 hours; fastest milestone by wall clock time; +4.7K lines across 64 files
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -392,6 +439,7 @@
 | v6.0 Adaptive Observation | ~6 | 6 | Correction capture, preference learning, recall injection, observer agent, skill refinement |
 | v7.0 Quality Observability | ~4 | 5 | Gate persistence, dashboard Gate Health page, attribution analytics |
 | v8.0 Close the Loop | ~4 | 4 | Skill loop wired E2E, gate enforcement via hooks, both systems verified |
+| v9.0 Signal Intelligence | ~2 | 6 | Skill analytics pipeline, relevance scoring, session reports, benchmarking |
 
 ### Cumulative Quality
 
@@ -406,6 +454,7 @@
 | v6.0 | 960+ | N/A | 17 plans; +17.8K lines (correction capture, preferences, recall, observer, digest, skill loading) |
 | v7.0 | 960+ | N/A | 7 plans; +10.5K lines (JSONL writers, Gate Health page, attribution) |
 | v8.0 | 960+ | N/A | 8 plans; +3.0K lines (SessionEnd hook, recall surfacing, refine-skill, gate hooks, E2E verification) |
+| v9.0 | 1028+ | N/A | 8 plans; +4.7K lines (skill-scorer, skill-metrics, session-report, benchmark, debt-impact, state fix) |
 
 ### Top Lessons (Verified Across Milestones)
 
@@ -425,3 +474,5 @@
 14. Bounded learning guardrails should be designed upfront, not retrofitted — verified in v6.0 (6-guardrail framework kept entire pipeline safe)
 15. Documentation debt (REQUIREMENTS.md checkboxes, SUMMARY frontmatter, VALIDATION.md) is systemic — called out in v4.0, v7.0, v8.0 retrospectives; needs a process fix, not per-milestone vigilance
 16. PostToolUse hooks are the only truly deterministic enforcement mechanism for quality gates — verified in v8.0 (agent instructions are suggestions, hooks are guarantees)
+17. Single-day milestones with linear dependencies are highly efficient — verified in v9.0 (6 phases, 8 plans in ~8 hours with no cross-session context loss)
+18. Opening a milestone with a blocking debt fix maximizes tracking accuracy for all subsequent work — verified in v9.0 (MISS-01 fix enabled accurate progress visibility)

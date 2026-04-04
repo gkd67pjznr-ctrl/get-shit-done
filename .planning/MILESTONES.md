@@ -1,5 +1,14 @@
 # Milestones
 
+## v9.0 Signal Intelligence (Shipped: 2026-04-04)
+
+**Phases completed:** 6 phases, 8 plans, 0 tasks
+
+**Key accomplishments:**
+- (none recorded)
+
+---
+
 ## v8.0 Close the Loop (Shipped: 2026-04-03)
 
 **Delivered:** Closed the gap between "built" and "working" for two core systems — the skill observation feedback loop now runs end-to-end (correction capture → pattern analysis → suggestion surfacing → skill refinement → loaded in next session), and quality sentinel gates now fire deterministically via PostToolUse hooks with real data flowing to the dashboard.
@@ -238,3 +247,23 @@
 
 ---
 
+## v9.0 Signal Intelligence (Shipped: 2026-04-04)
+
+**Delivered:** Actionable signals extracted from existing observability data — fixed milestone-scoped progress tracking (MISS-01), populated skill call data across all workflows, added skill history audit trails, phase benchmarking, debt impact analysis, session analytics reporting, per-skill quality metrics with CATEGORY_SKILL_MAP attribution, and keyword-based skill relevance scoring for context budget optimization.
+
+**Phases:** 6 phases (37-42), 8 plans
+**Code:** 64 files changed (+4,669 / -38)
+**Timeline:** 1 day (2026-04-03 → 2026-04-04)
+**Commits:** 32
+**Requirements:** 25/25 satisfied
+
+**Key accomplishments:**
+1. Progress tracking fix — cmdStateUpdateProgress resolves via planningRoot() for milestone-scoped projects (MISS-01 debt resolved)
+2. Skill call tracking — skills_loaded populated in sessions.jsonl and skills_active in gate-executions.jsonl across all 6 workflow files
+3. Data capture triad — SKILL-HISTORY.md with unified diffs and 50-entry rotation, phase-benchmarks.jsonl with per-plan metrics, debt-to-correction impact analysis with link_confidence
+4. Session analytics — /gsd:session-report surfaces per-session correction density, gate fires, skills loaded, and benchmark trends
+5. Skill quality metrics — per-skill correction rates via CATEGORY_SKILL_MAP attribution with confidence tiers, surfaced in /gsd:digest
+6. Skill relevance scoring — Jaccard keyword overlap with cold-start floor (0.3 for <14 days), dormancy decay (10%/week), and MD5 content-hash caching
+
+**Tech Debt (1 cosmetic item from audit):**
+- Phase 42: Co-Authored-By trailer uses Sonnet instead of Opus in 3 commits (committed history)
