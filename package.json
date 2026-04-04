@@ -48,7 +48,6 @@
   },
   "scripts": {
     "build:hooks": "node scripts/build-hooks.js",
-    "build:dashboard": "esbuild src/dashboard/cli.ts --bundle --platform=node --target=node18 --outfile=dist/dashboard.cjs --format=cjs --external:node:*",
     "prepublishOnly": "npm run build:hooks",
     "test": "node scripts/run-tests.cjs",
     "test:coverage": "c8 --check-coverage --lines 70 --reporter text --include 'get-shit-done/bin/lib/*.cjs' --exclude 'tests/**' --all node scripts/run-tests.cjs"

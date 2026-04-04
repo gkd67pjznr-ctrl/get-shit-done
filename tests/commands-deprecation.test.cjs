@@ -98,7 +98,6 @@ const STANDALONE_COMMANDS = [
   { file: 'preflight.md', name: 'gsd:preflight' },
   { file: 'onboard.md', name: 'gsd:onboard' },
   { file: 'trace.md', name: 'gsd:trace' },
-  { file: 'dashboard.md', name: 'gsd:dashboard' },
   { file: 'typescript-patterns.md', name: 'gsd:typescript-patterns' },
   { file: 'api-design.md', name: 'gsd:api-design' },
   { file: 'env-setup.md', name: 'gsd:env-setup' },
