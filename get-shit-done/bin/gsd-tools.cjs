@@ -62,6 +62,8 @@
  *   debt resolve                       Transition a debt entry's status
  *     --id <TD-NNN>
  *     --status <open|in-progress|resolved|deferred>
+ *   debt impact                        List debt entries ranked by correction count
+ *                                      with link_confidence field
  *
  * Migration:
  *   migrate --dry-run [--version <v>]  Preview legacy→milestone conversion
@@ -122,6 +124,12 @@
  *   state record-metric --phase N      Record execution metrics
  *     --plan M --duration Xmin
  *     [--tasks N] [--files N]
+ *   state benchmark-plan               Write benchmark entry to phase-benchmarks.jsonl
+ *     --phase N --plan M
+ *     --type <phase_type>
+ *     --quality-level <level>
+ *     [--duration Xmin]
+ *     [--milestone <version>]
  *   state update-progress              Recalculate progress bar
  *   state add-decision --summary "..."  Add decision to STATE.md
  *     [--phase N] [--rationale "..."]
@@ -163,6 +171,7 @@ const init = require('./lib/init.cjs');
 const frontmatter = require('./lib/frontmatter.cjs');
 const debt = require('./lib/debt.cjs');
 const migrate = require('./lib/migrate.cjs');
+const benchmark = require('./lib/benchmark.cjs');
 const dashboard = require('./lib/dashboard.cjs');
 
 // ─── CLI Router ───────────────────────────────────────────────────────────────
@@ -285,6 +294,21 @@ async function main() {
         state.cmdStateRecordSession(cwd, {
           stopped_at: stoppedIdx !== -1 ? args[stoppedIdx + 1] : null,
           resume_file: resumeIdx !== -1 ? args[resumeIdx + 1] : 'None',
+        }, raw);
+      } else if (subcommand === 'benchmark-plan') {
+        const phaseIdx = args.indexOf('--phase');
+        const planIdx = args.indexOf('--plan');
+        const typeIdx = args.indexOf('--type');
+        const qualityIdx = args.indexOf('--quality-level');
+        const durationIdx = args.indexOf('--duration');
+        const milestoneIdx = args.indexOf('--milestone');
+        benchmark.cmdBenchmarkPlan(cwd, {
+          phase: phaseIdx !== -1 ? args[phaseIdx + 1] : null,
+          plan: planIdx !== -1 ? args[planIdx + 1] : null,
+          phase_type: typeIdx !== -1 ? args[typeIdx + 1] : null,
+          quality_level: qualityIdx !== -1 ? args[qualityIdx + 1] : null,
+          duration_min: durationIdx !== -1 ? args[durationIdx + 1] : null,
+          milestone_scope: milestoneIdx !== -1 ? args[milestoneIdx + 1] : (milestoneScope || null),
         }, raw);
       } else {
         state.cmdStateLoad(cwd, raw);
@@ -526,8 +550,10 @@ async function main() {
           id: idIdx !== -1 ? args[idIdx + 1] : null,
           status: statusIdx !== -1 ? args[statusIdx + 1] : null,
         }, raw);
+      } else if (subcommand === 'impact') {
+        debt.cmdDebtImpact(cwd, {}, raw);
       } else {
-        error('Unknown debt subcommand. Available: log, list, resolve');
+        error('Unknown debt subcommand. Available: log, list, resolve, impact');
       }
       break;
     }
@@ -757,7 +783,7 @@ async function main() {
           if (portIdx !== -1) {
             const portVal = args[portIdx + 1];
             if (!portVal || portVal.startsWith('-')) {
-              error('--port requires a value. Usage: gsd dashboard serve [--port PORT]');
+              error('--port requires a value. Usage: gsd1 dashboard serve [--port PORT]');
             }
             const parsed = parseInt(portVal, 10);
             if (isNaN(parsed) || parsed < 1 || parsed > 65535) {
@@ -771,7 +797,7 @@ async function main() {
           if (hostIdx !== -1) {
             const hostVal = args[hostIdx + 1];
             if (!hostVal || hostVal.startsWith('-')) {
-              error('--host requires a value. Usage: gsd dashboard serve [--port PORT] [--host HOST]');
+              error('--host requires a value. Usage: gsd1 dashboard serve [--port PORT] [--host HOST]');
             }
             host = hostVal;
           }
@@ -796,7 +822,7 @@ async function main() {
           break;
         }
         default:
-          error(`Unknown dashboard subcommand: ${subAction || '(none)'}. Usage: gsd dashboard add|remove|list|serve`);
+          error(`Unknown dashboard subcommand: ${subAction || '(none)'}. Usage: gsd1 dashboard add|remove|list|serve`);
       }
       break;
     }
