@@ -119,6 +119,34 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 
 ### Active
 
+## Current Milestone: v10.0 Shared MCP Dashboard
+
+**Goal:** Mount MCP tool endpoints on the existing dashboard server so every Claude Code session can query cross-project data (phases, gates, skills, corrections, sessions) via StreamableHTTP transport.
+
+**Target features:**
+- MCP server scaffolding on existing dashboard server (StreamableHTTP transport at `/mcp`)
+- Cross-project query tools (list-projects, get-project-state, get-gate-health, get-observations, get-sessions, get-skill-metrics)
+- Auto-configuration via installer (`install.js` wires MCP connection with `--no-mcp` opt-out)
+- Read-only tools for safety (write tools deferred)
+
+## Current Milestone: v12.0 Quality Enforcement Evolution
+
+**Goal:** Close remaining quality enforcement gaps — static analysis via ESLint MCP gate, mechanical DONE verification at phase transitions, and test coverage trending across milestones.
+
+**Target features:**
+- ESLint MCP gate integration (PostToolUse hook on .ts/.js/.cjs writes, quality-level gated)
+- State machine guards for phase transitions (verify DONE criteria mechanically before completion)
+- Test coverage trending (track test count per plan, surface delta in progress/digest)
+
+## Current Milestone: v15.0 Autonomous Learning
+
+**Goal:** Close the gap between "captures data" and "acts on it" — auto-apply high-confidence skill refinements, shift code review focus per-project based on correction history, and surface when correction patterns contradict recorded decisions.
+
+**Target features:**
+- Learning loop automation (auto-apply high-confidence skill refinements with safety guardrails)
+- Adaptive code review profiles (per-project review focus based on correction history)
+- Decision audit trail (surface correction-decision tensions in /gsd:digest)
+
 ## Completed Milestones
 
 ### v9.0 Signal Intelligence — SHIPPED 2026-04-04
@@ -233,4 +261,4 @@ Tests passing across 23+ test suites.
 | Cross-project promotion at 3+ projects | Ensures preferences are truly universal before elevating | ✓ Good — project-specific quirks don't pollute global store |
 
 ---
-*Last updated: 2026-04-04 after v9.0 milestone completion*
+*Last updated: 2026-04-04 after v15.0 milestone start*

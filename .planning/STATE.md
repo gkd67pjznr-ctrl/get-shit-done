@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v9.0
-milestone_name: Signal Intelligence
-status: ready_to_plan
-last_updated: "2026-04-04T08:43:07.759Z"
-last_activity: "2026-04-04 — Completed quick task 37: Deep subsystem analysis of gsd-skill-creator (12 files + RECOMMENDATIONS.md)"
+milestone: v15.0
+milestone_name: Autonomous Learning
+status: defining_requirements
+last_updated: "2026-04-04T18:00:00.000Z"
+last_activity: "2026-04-04 — Milestone v15.0 started"
 progress:
-  total_phases: 6
+  total_phases: 0
   completed_phases: 0
-  total_plans: 8
+  total_plans: 0
   completed_plans: 0
 ---
 
@@ -16,16 +16,18 @@ progress:
 
 ## Current Position
 
-Phase: 37 of 42 (MISS-01 Fix)
-Plan: 0 of 1 in current phase
-Status: Ready to plan
-Last activity: 2026-04-04 - Completed quick task 37: Deep analysis of gsd-skill-creator subsystems
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-04-04 — Milestone v15.0 started
 
 ## Active Milestones
 
 | Milestone | Status | Phases |
 |-----------|--------|--------|
-| v9.0 Signal Intelligence | Ready to plan | 37-42 |
+| v10.0 Shared MCP Dashboard | Defining requirements | TBD |
+| v12.0 Quality Enforcement Evolution | Defining requirements | TBD |
+| v15.0 Autonomous Learning | Defining requirements | TBD |
 
 ## Completed Milestones
 
@@ -58,7 +60,7 @@ Each milestone has its own workspace under `.planning/milestones/<version>/` con
 See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** v9.0 Signal Intelligence — Phase 37 MISS-01 Fix
+**Current focus:** v15.0 Autonomous Learning — Defining requirements
 
 ### Quick Tasks Completed
 

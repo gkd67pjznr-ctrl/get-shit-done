@@ -1,269 +1,256 @@
-# Feature Research
+# Feature Research — v10.0 Shared MCP Dashboard
 
-**Domain:** Adaptive Observation and Learning Loop (GSD v6.0)
-**Researched:** 2026-03-10
-**Confidence:** MEDIUM (internal architecture well-understood; external adaptive learning patterns from multiple sources but few exact precedents for file-based AI coding assistant learning loops)
+**Domain:** MCP tool endpoints on an existing project-management dashboard server
+**Researched:** 2026-04-04
+**Confidence:** HIGH — all SDK claims verified against published `@modelcontextprotocol/sdk@1.29.0`
+docs and CJS compatibility confirmed. Feature scope derived from existing `server.cjs` functions and
+`.planning/` data inventory.
 
 ---
 
-## Context: What GSD Already Has (Baseline for v6.0)
+## Context
 
-v6.0 layers ON TOP of the existing observation infrastructure shipped in v4.0. Nothing below duplicates completed work.
+v10.0 adds MCP (Model Context Protocol) tool endpoints to the existing GSD dashboard server
+(`get-shit-done/bin/lib/server.cjs`). The server is a long-running shared Node.js process that
+already: discovers all registered GSD projects, maintains an in-memory cache of project state,
+watches `.planning/` directories for changes, and exposes an HTTP API at `/api/*`.
 
-| Existing Feature | Where | v6.0 Relevance |
-|-----------------|-------|----------------|
-| sessions.jsonl logging from 7 workflow commands | Observation step in each workflow (plan, execute, verify, discuss, quick, fix-debt, diagnose) | v6.0 adds new entry types (corrections, preferences) and new writers (hooks, observer agent) |
-| JSONL schema with type/signal_strength/context fields | `skills/skill-integration/references/observation-patterns.md` | v6.0 extends schema with `correction_from`/`correction_to` fields and preference entries |
-| `/gsd:session-start` with recent activity display | `commands/gsd/session-start.md` | v6.0 enhances with correction recall at session start |
-| `/gsd:digest` with commit analysis and correction rate | `commands/gsd/digest.md` | v6.0 adds correction analysis, collaborative skill refinement recommendations |
-| `/gsd:suggest` with interactive review (reader only) | `commands/gsd/suggest.md` | v6.0 adds the writer side: suggestion generation pipeline |
-| Observer agent stub | `.claude/agents/observer.md` | v6.0 implements the full observer agent |
-| Skill-integration skill with bounded learning guardrails | `skills/skill-integration/SKILL.md` | v6.0 depends on these guardrails (20% max change, 3 correction minimum, 7-day cooldown) |
-| Post-commit hook writing session entries | `hooks/gsd-snapshot-session.js` | v6.0 adds correction-capture hooks (PreToolUse/PostToolUse or equivalent) |
-| Dashboard pattern display | `dashboard/js/components/pattern-page.js` | v6.0 feeds richer data (correction patterns, preference trends) |
-| suggestions.json structure (pending/accepted/dismissed/deferred) | Used by `/gsd:suggest` reader | v6.0 builds the writer that populates this file |
+The MCP route (`/mcp`) is one more handler on the same server. Every Claude Code session that
+connects gets access to cross-project data via tool calls — without spawning a new process or
+reading foreign project files directly.
 
-**The gap:** GSD can observe session events (commits, phase outcomes) but cannot capture the highest-signal data: user corrections and preferences. The observation system is passive event logging -- it records what happened but not what went wrong or what the user prefers. There is no writer for suggestions.json, no correction-capture mechanism, no preference store, no self-diagnosis when corrected, and no live recall of past mistakes within sessions. The observer agent is a stub.
+**Data inventory already available in `server.cjs` or `.planning/` directories:**
+
+| Data source | File/function | Used by |
+|---|---|---|
+| Project registry | `loadRegistry()` / `dashboard.json` | All tools |
+| Project state | `parseProjectData()` cache | `get-project-state` |
+| Gate health | `aggregateGateHealth()` / `getProjectGateHealth()` | `get-gate-health` |
+| Sessions (patterns) | `aggregatePatterns()` / `patterns/sessions.jsonl` | `get-sessions` |
+| Gate executions | `observations/gate-executions.jsonl` | `get-gate-health` |
+| Context7 calls | `observations/context7-calls.jsonl` | `get-gate-health` |
+| Corrections | `patterns/corrections.jsonl` | `get-observations` |
+| Preferences | `patterns/preferences.jsonl` | `get-observations` |
+| Skill metrics | `patterns/skill-metrics.json` | `get-skill-metrics` |
+| Skill scores | `patterns/skill-scores.json` | `get-skill-metrics` |
+| Phase benchmarks | `patterns/phase-benchmarks.jsonl` | `get-observations` |
+| Suggestions | `patterns/suggestions.json` | `get-observations` |
 
 ---
 
 ## Feature Landscape
 
-### Table Stakes (Users Expect These)
+### Table Stakes (Claude Code sessions expect these to work)
 
-Features that an adaptive learning system must have to deliver on "learns from its mistakes." Missing any of these means v6.0 does not close the loop.
+These are the minimum tools that make the MCP server worth connecting to. Missing any one of them
+breaks the core use case: cross-session, cross-project data access.
 
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| Hook-based correction capture | The observation-patterns.md spec ranks user corrections as HIGHEST signal. Currently no mechanism captures them -- corrections are lost when the session ends. Any "learning" system that cannot capture corrections is fundamentally broken. Windsurf's Cascade Memories and Claude Code's own MEMORY.md auto-memory both capture corrections as their primary learning signal. | MEDIUM | Hook on user messages that follow Claude output. Detect correction patterns: "no, use X instead of Y", "that's wrong", undo/revert sequences, re-instructions. Write structured entries to sessions.jsonl with `type: "correction"`, `correction_from`, `correction_to` fields. The JSONL schema already defines these fields -- they just have no writer. |
-| Preference tracking as durable patterns | When a user corrects the same thing 3+ times, that is a preference (not a one-off correction). Preferences must persist across sessions and be referenceable by skills and agents. Without durable preferences, the system "forgets" learned knowledge every session. Claude Code's MEMORY.md serves this role for general knowledge; GSD needs domain-specific preference storage for coding patterns. | MEDIUM | Preferences stored in `.planning/patterns/preferences.json` -- a structured file distinct from sessions.jsonl (which is append-only event log). Each preference has: id, category (naming, style, tooling, architecture, testing), pattern description, source corrections (IDs from sessions.jsonl), confidence (occurrence count), created/updated timestamps. Bounded guardrails apply: 3+ corrections before promotion to preference. |
-| Live recall of corrections within current session | If Claude makes a mistake that was corrected earlier in this session, it should recall the correction before repeating the error. Without intra-session recall, the system makes the same mistake twice in one conversation -- the worst user experience for a "learning" system. | LOW | At the start of each session and after each correction capture, load relevant corrections into active context. Implementation: skill-integration already checks for pending suggestions at session start; extend to also surface recent corrections. Within-session: corrections are in conversation context already, but cross-referencing with historical corrections from sessions.jsonl adds value. |
-| Correction recall at session start | Sessions start fresh with no memory of past mistakes. `/gsd:session-start` already shows recent activity and pending suggestions, but does not surface past corrections relevant to the current phase/plan. Without this, every new session repeats previously corrected mistakes. | LOW | Extend `/gsd:session-start` Step 3 (Recent Activity) to filter and highlight correction entries from sessions.jsonl. Show: "Previous corrections relevant to Phase N: [list]". Filter by: current phase context, recency (last 30 days per retention config), signal strength. Depends on: correction capture writing entries to sessions.jsonl. |
-| Suggestion pipeline writer | `/gsd:suggest` exists as a reader but has no writer -- suggestions.json is always empty. The entire suggest flow is dead code without a writer. This is documented tech debt (analysis commands read data files with no writers). The writer aggregates patterns from sessions.jsonl and promotes them to suggestion candidates when they cross the min_occurrences threshold. | MEDIUM | Runs as part of the observer agent or as a standalone aggregation step in `/gsd:digest`. Reads sessions.jsonl, groups by pattern similarity, counts occurrences, and writes to suggestions.json when threshold is met. Must respect bounded guardrails: min 3 occurrences, cross-session repetition weighted higher. Output format matches existing suggestions.json schema (candidate.id, candidate.description, candidate.occurrences, state, createdAt). |
-| Observer agent implementation | The observer agent at `.claude/agents/observer.md` is a stub with a TODO. It was designed to do session boundary analysis and pattern aggregation. Without it, pattern detection is manual (run `/gsd:digest` and read the output yourself). The observer closes the loop: observe -> detect patterns -> generate suggestions -> user reviews via `/gsd:suggest`. | HIGH | Full agent implementation: (1) Session boundary analysis -- detect when a session starts/ends, capture session-level metadata. (2) Pattern aggregation -- group similar corrections, tool sequences, file patterns across sessions. (3) Suggestion generation -- write to suggestions.json when patterns cross threshold. (4) Skill refinement proposals -- when corrections consistently contradict an existing skill's guidance, propose a refinement (gated by bounded guardrails: 3+ corrections, 20% max change, user confirmation required). |
+| Feature | Why Expected | Complexity | Dependencies on server.cjs |
+|---|---|---|---|
+| `list-projects` tool | Entry point for all other tools. A session must be able to discover what projects exist before querying them. | LOW | `cache.values()` — same data as `handleListProjects()`. Returns name, path, health score, active milestone. |
+| `get-project-state` tool | Sessions need to query another project's current phase, status, roadmap progress, and requirements without switching directories. | LOW | `cache.get(name)` returns `parseProjectData()` output including `state`, `roadmap`, `requirements`, `phases_summary`. Already fully computed. |
+| `get-gate-health` tool | Gate health is the primary quality signal. A session running in project A should be able to check if project B's gates are passing. | LOW | `getProjectGateHealth(path)` for per-project; `aggregateGateHealth(registry)` for cross-project. Both functions exist. |
+| `get-observations` tool | Corrections, preferences, and skill suggestions are the learning loop outputs. Sessions must be able to read another project's patterns without directly accessing its `.planning/` directory. | MEDIUM | No existing aggregator — requires direct JSONL file reads from project paths in registry. Parameterized by `type` (corrections/preferences/suggestions/benchmarks). |
+| `get-sessions` tool | Sessions need to know what other sessions recently accomplished — phase completed, plans executed, skills loaded. | MEDIUM | `aggregatePatterns()` gives cross-project session patterns. Per-project sessions require `patterns/sessions.jsonl` reads. |
+| `get-skill-metrics` tool | Skill correction rates are actionable cross-project signals — if a skill underperforms in two projects, it needs refinement. | LOW | `patterns/skill-metrics.json` and `patterns/skill-scores.json` exist per project. No aggregation function yet; requires file reads from registered project paths. |
+| StreamableHTTP transport at `/mcp` | The transport that enables multiple Claude Code sessions to share one server. Without it, tools can't be reached. | MEDIUM | Requires `@modelcontextprotocol/sdk@1.29.0` (CJS-compatible v1 stable). `StreamableHTTPServerTransport.handleRequest(req, res)` mounts on existing `http.createServer`. |
+| CORS headers for MCP | MCP client sends POST and DELETE with `mcp-session-id` header. Current CORS only allows GET and PATCH. | LOW | `CORS_HEADERS` in `createHttpServer()` must add POST, DELETE, and `mcp-session-id` to allowed methods/headers. |
+| Auto-configuration via installer | Sessions shouldn't need manual `claude mcp add` commands. The installer should wire the MCP connection when the dashboard is detected. | MEDIUM | `bin/install.js` currently writes to `~/.claude/`. Needs new capability: write to Claude Code MCP config (`~/.claude/mcp.json` or equivalent). |
 
-### Differentiators (Competitive Advantage)
+### Differentiators (What Makes This MCP Server Genuinely Useful)
 
-Features that distinguish GSD's adaptive learning from Claude Code's built-in MEMORY.md or competitor approaches (Windsurf Cascade Memories, Cursor rules).
+Features that go beyond "data is accessible" to "data is actionable."
 
 | Feature | Value Proposition | Complexity | Notes |
-|---------|-------------------|------------|-------|
-| Auto self-diagnosis on correction | When Claude is corrected, most systems just note the correction. GSD can go further: automatically analyze *why* the mistake happened (wrong assumption? outdated pattern? missing context? skill guidance was wrong?) and record the root cause alongside the correction. This makes the correction actionable -- the system does not just know "X was wrong" but "X was wrong *because* Y." Agentic RCA patterns (Cleric, Algomox) show that automated root-cause analysis significantly improves fix quality vs. surface-level correction logging. | MEDIUM | On correction capture, trigger a lightweight diagnosis step: (1) What did Claude do? (2) What should Claude have done? (3) Why the divergence? Categories: stale-knowledge (training data wrong), missing-context (didn't read enough codebase), skill-conflict (two skills gave contradictory guidance), preference-gap (user preference not recorded), scope-error (did more or less than asked). Record diagnosis in the correction entry. This does NOT spawn a subagent -- it is inline analysis by the current agent, kept lightweight (~500 tokens). |
-| Enhanced `/gsd:digest` with correction analysis | Current digest shows commit type distribution and fix/feat correction rates (proxy metric). v6.0 adds actual correction analysis: what categories of mistakes are most common, which skills are being contradicted, which phases generate the most corrections. This turns the digest from "what commits happened" into "what is Claude getting wrong and how is it improving." | LOW | Extend digest Step 3 with a new section 3g: Correction Analysis. Group correction entries by diagnosis category. Show trends: "Preference-gap corrections decreased from 8 to 2 over last 3 phases (preferences are working)." Link corrections to skills when diagnosis indicates skill-conflict. Depends on: correction capture with diagnosis data. |
-| Collaborative skill refinement via digest | When `/gsd:digest` identifies a skill that is consistently contradicted by corrections (3+ corrections with diagnosis "skill-conflict" pointing to the same skill), it proposes a specific refinement. This is not auto-applied -- it creates a refinement proposal that the user reviews, following the bounded guardrails (20% max change, user confirmation). The insight is that digest analysis can *drive* skill evolution, not just report on it. | MEDIUM | In digest Step 5 (Recommendations), add a new recommendation type: "Skill refinement proposed." When corrections consistently point to a specific skill, generate a diff-style proposal: "In skill X, change guidance from 'always use Y' to 'prefer Z when condition C'." Write proposal to a new `skill-refinements/` directory or append to suggestions.json with type "refinement". User reviews via `/gsd:suggest`. |
-| Cross-session preference inheritance | Preferences learned in one project can inform behavior in other registered projects (via `~/.gsd/dashboard.json` project registry). If a user always prefers `const` over `let` in TypeScript, that preference should apply everywhere -- not be re-learned per project. `/gsd:digest` already reads cross-project sessions; preferences should follow the same pattern. | LOW | Preferences stored at two levels: project-level (`.planning/patterns/preferences.json`) and user-level (`~/.gsd/preferences.json`). Project-level preferences override user-level (matching skill loading precedence). Cross-project promotion: when a preference appears in 3+ projects, promote to user-level. User-level preferences loaded at session start alongside project-level. |
+|---|---|---|---|
+| Filtered `get-observations` by time window | `since: "7d"` param on corrections/sessions limits results to relevant recent data. Without filtering, long-running projects return thousands of JSONL entries — too large for context window. | LOW | Parse ISO timestamps in JSONL loop, filter by `since` cutoff. No new infrastructure. |
+| Aggregated cross-project skill metrics | `get-skill-metrics` with no `name` param returns a merged view across all projects — skills performing poorly everywhere are the highest-priority refinement targets. | MEDIUM | No aggregation function exists. Requires merging `skill-metrics.json` across all registered project paths, deduplicating by skill name, summing correction counts. |
+| `--no-mcp` opt-out flag on installer | Power users who don't want Claude Code sessions auto-connecting to the dashboard get a clean opt-out. Without this, the installer becomes a footgun for users with multiple machine profiles or custom MCP configs. | LOW | Conditional branch in `bin/install.js` based on `hasNoMcp` flag. One-time config write. |
+| Structured error responses | When a project name is invalid, a JSONL file is missing, or a registry is empty, the tool returns a JSON object with `{ error, code, available_projects }` rather than a bare error string. This lets the calling session handle errors gracefully without prompt-level confusion. | LOW | Standard JSON error shape. No new infrastructure. |
+| Tool result pagination or `limit` param | `get-observations` and `get-sessions` accept a `limit: 50` param. Sessions should request only what they need; returning full JSONL dumps wastes context and may exceed MCP payload limits. | LOW | Integer cap on JSONL lines read. Return most-recent N entries (read file, take tail). |
+| Phase benchmark comparison tool | `get-benchmarks` returns plan execution durations and correction counts per phase, enabling a session to compare "is this plan taking longer than expected based on similar historical plans?" | MEDIUM | Reads `patterns/phase-benchmarks.jsonl`. No server.cjs function exists yet — requires new file read logic. Lower priority than the 6 core tools. |
 
-### Anti-Features (Things to Deliberately NOT Build)
+### Anti-Features (Avoid These)
 
-Features that seem natural for an adaptive learning system but violate GSD's design constraints or create more problems than they solve.
-
-| Anti-Feature | Why Requested | Why Problematic | Alternative |
-|--------------|---------------|-----------------|-------------|
-| Auto-apply corrections to skills | "If Claude keeps getting corrected on the same thing, just update the skill automatically" sounds like true autonomy. | Violates the core bounded learning guardrail: "All refinements require user confirmation." Auto-modifying skills without review accumulates drift -- skills diverge from intent through accumulated micro-changes. The skill-integration SKILL.md is explicit: "Never auto-apply suggestions. Always require explicit user confirmation." This is a NON-NEGOTIABLE constraint. | Surface refinement proposals via `/gsd:suggest`. User reviews, accepts or dismisses. The human stays in the loop for all skill mutations. |
-| Real-time continuous observation via background agent | "Run an observer agent in the background that watches everything Claude does" sounds like comprehensive coverage. | GSD has no daemon process -- it is file-based, Claude Code-embedded. A persistent background observer would require: an always-on process, IPC between Claude Code and the observer, and would burn context budget continuously. The v5.0 dashboard solved a similar problem with SSE polling, not persistent agents. Claude Code hooks (PreToolUse/PostToolUse) provide event-driven observation without a daemon. | Use Claude Code hooks for real-time correction capture (event-driven, zero overhead when no correction occurs). Run observer agent on-demand at session boundaries (start/end) for aggregation. No daemon. |
-| Fine-grained token-level correction tracking | "Track exactly which tokens Claude got wrong in each correction" sounds like it enables precise learning. | Token-level diffs between Claude's output and the user's correction are noisy, expensive to compute, and rarely actionable. The meaningful signal is semantic: "used `var` instead of `const`", not "changed character 47 on line 3." Token-level tracking would generate massive sessions.jsonl entries and make pattern detection harder, not easier. | Capture corrections at the semantic level: `correction_from` (what Claude did) and `correction_to` (what user wanted), both as human-readable descriptions. Pattern detection operates on these descriptions, not raw diffs. |
-| ML model training from correction data | "Use the corrections to fine-tune a model" sounds like the ultimate learning loop. | GSD runs inside Claude Code -- it cannot fine-tune the underlying model. Training requires API access, compute infrastructure, and model hosting that is entirely outside GSD's scope. GSD is a *prompt-engineering* and *skill-management* framework, not a model training pipeline. | Skills and preferences are the "model" -- they modify Claude's behavior through prompt context, not weight updates. This is by design: prompt-level adaptation is inspectable, reversible, and human-reviewable. Model fine-tuning is opaque and irreversible. |
-| Correction capture from implicit signals (hesitation, edits, undos) | "Track when the user pauses, edits Claude's output, or undoes changes -- these are implicit corrections." | Claude Code hooks provide tool-level events (PreToolUse, PostToolUse, Notification), not keystroke-level events. Detecting "hesitation" requires timing data that is not available. Edit detection would require diffing every file after every user action -- expensive and noisy. The existing observation taxonomy correctly classifies implicit signals (file touch patterns, post-failure commands) as MEDIUM or LOW signal. | Capture explicit corrections only: when the user directly tells Claude something was wrong. The JSONL schema's `correction_from`/`correction_to` fields are designed for explicit corrections. Implicit signals (file patterns, tool sequences) are already captured by the existing workflow observation steps. |
-| Preference conflict resolution engine | "When two preferences contradict, automatically resolve the conflict" sounds like smart preference management. | Preferences can legitimately conflict in different contexts (e.g., "prefer short variable names" in scripts vs. "prefer descriptive names" in library code). Automated resolution would pick one and discard the other, losing context-specific nuance. This is the same reasoning behind GSD's advisory-only conflict detection for milestones: surface conflicts, let humans decide. | Surface conflicts in `/gsd:suggest` review: "Preference A ('use short names') conflicts with Preference B ('use descriptive names'). Both have 5+ occurrences. Consider adding context conditions." User resolves by adding conditions to one or both preferences. |
+| Feature | Why Requested | Why Problematic | Alternative |
+|---|---|---|---|
+| Write tools (mark phase complete, update state, log corrections from remote) | Sessions want to drive other projects from a central session. | Cross-project writes create race conditions with the local session's file watchers, git state, and roadmap progress tracking. A write from session A into project B's `.planning/` would fight project B's active session. Data integrity cannot be guaranteed without locking, and locking introduces deadlock risk. The PROJECT.md explicitly calls out "file locking for concurrent writes — stale locks from killed sessions worse than no locks" as out of scope. | Read-only in v10.0. If write tools are needed, implement them under project B's own session, not remotely. |
+| stdio transport variant | Reduces server coupling — each session runs its own MCP process. | Completely defeats the purpose. stdio spawns a new process per session; sessions can't share the dashboard's in-memory cache or cross-project registry. Each process reads files independently — no benefit over direct file reads. | StreamableHTTP only. |
+| Bearer token auth / API keys | Localhost security looks like due diligence. | Localhost-only server with no external exposure doesn't need auth overhead. Adding auth creates a setup friction step that breaks the "zero-config" installer goal. Adding auth also requires key management (where is the token stored? what if it rotates?). | Trust the network boundary. If multi-user machine scenarios arise, scope that as a future security hardening task with a proper threat model. |
+| Semantic search / embeddings over corrections | "Find corrections similar to my current problem" is a powerful idea. | Requires an embedding model, a vector store, or an external API call — all of which add binary dependencies, startup latency, and operational complexity. The dashboard server is a lightweight Node.js process. | Keyword filtering via the `type` param on `get-observations` covers 80% of the use case. Full semantic search is a v12+ feature if the need is validated. |
+| MCP server as a standalone binary separate from the dashboard | Decouples MCP from dashboard lifecycle. | Means two processes to manage instead of one. The whole point is to piggyback on the dashboard's existing project registry and in-memory cache. A separate binary duplicates all the file-reading logic. | Mount at `/mcp` on the existing server. One process, one cache. |
+| Real-time streaming tool results (SSE/WebSocket per tool call) | Live correction feed for a monitoring session. | MCP tool calls are request-response, not streaming. The spec does not define a streaming result type for tools in v1.x. Implementing a fake streaming pattern on top of tool calls would require polling and adds complexity for minimal gain. | The dashboard already has `/api/events` SSE for real-time updates. Direct the browser dashboard at that endpoint. MCP tools for on-demand queries only. |
+| 40+ tools mirroring the full gsd-skill-creator MCP server | Comprehensive API surface. | gsd-skill-creator's 6-server, 40+ tool architecture was built for a different product (standalone TypeScript CLI with LLM proxy, trust pipeline, skill lifecycle management). gsdup's use case is 6-8 read-only data access tools on a shared server. Over-engineering the tool count bloats the MCP server's initialization, increases test surface, and makes Claude sessions unsure which tool to call for a given query. | 6-8 tools with clear, non-overlapping responsibilities. |
 
 ---
 
 ## Feature Dependencies
 
 ```
-[Hook-based correction capture]
-    |
-    |--required by--> [Auto self-diagnosis on correction]
-    |                      (diagnosis runs immediately after capture)
-    |
-    |--required by--> [Preference tracking]
-    |                      (preferences are promoted from repeated corrections)
-    |
-    |--required by--> [Correction recall at session start]
-    |                      (recall reads correction entries from sessions.jsonl)
-    |
-    |--required by--> [Live recall within session]
-    |                      (intra-session recall needs captured corrections)
-    |
-    |--required by--> [Enhanced /gsd:digest correction analysis]
-    |                      (digest section 3g analyzes correction entries)
+[StreamableHTTP transport at /mcp]
+    └──required-by──> ALL tools (no transport = no tools callable)
 
-[Preference tracking]
-    |
-    |--requires--> [Hook-based correction capture]
-    |                  (corrections are the input signal for preferences)
-    |
-    |--enhances--> [Correction recall at session start]
-    |                  (preferences loaded alongside corrections)
-    |
-    |--enhances--> [Observer agent]
-    |                  (observer reads preferences for pattern context)
+[loadRegistry() + parseProjectData() cache]
+    └──required-by──> list-projects
+    └──required-by──> get-project-state
+    └──required-by──> get-gate-health (per-project)
 
-[Observer agent implementation]
-    |
-    |--requires--> [Hook-based correction capture]
-    |                  (observer aggregates correction data)
-    |
-    |--requires--> [Preference tracking]
-    |                  (observer promotes corrections to preferences)
-    |
-    |--writes to--> [Suggestion pipeline]
-    |                  (observer generates suggestion candidates)
+[getProjectGateHealth() + aggregateGateHealth()]
+    └──required-by──> get-gate-health tool
 
-[Suggestion pipeline writer]
-    |
-    |--requires--> [Observer agent implementation]
-    |                  (observer drives the pipeline)
-    |                  OR can be run standalone in /gsd:digest
-    |
-    |--writes to--> [suggestions.json]
-    |                  (populates the file that /gsd:suggest reads)
+[JSONL file reads from registered project paths]
+    └──required-by──> get-observations (corrections, preferences, suggestions, benchmarks)
+    └──required-by──> get-sessions (per-project patterns/sessions.jsonl)
+    └──required-by──> get-skill-metrics (per-project skill-metrics.json)
 
-[Auto self-diagnosis]
-    |
-    |--requires--> [Hook-based correction capture]
-    |                  (diagnosis is triggered by correction event)
-    |
-    |--enhances--> [Preference tracking]
-    |                  (diagnosis categories help group corrections)
-    |
-    |--enhances--> [Enhanced /gsd:digest]
-    |                  (diagnosis data enables category-level analysis)
+[CORS header update]
+    └──required-by──> ALL tools (MCP POST requests blocked without it)
 
-[Enhanced /gsd:digest]
-    |
-    |--requires--> [Hook-based correction capture]
-    |                  (new section 3g needs correction entries)
-    |
-    |--enhanced by--> [Auto self-diagnosis]
-    |                     (diagnosis categories enable richer analysis)
-    |
-    |--can trigger--> [Collaborative skill refinement]
-    |                     (when corrections consistently contradict a skill)
+[Aggregated cross-project skill metrics function]
+    └──required-by──> get-skill-metrics with no project name (cross-project mode)
+    └──depends-on──> JSONL file reads from registered project paths
 
-[Collaborative skill refinement via digest]
-    |
-    |--requires--> [Enhanced /gsd:digest]
-    |                  (refinement proposals generated during digest analysis)
-    |
-    |--requires--> [Auto self-diagnosis]
-    |                  (needs "skill-conflict" diagnosis category)
-    |
-    |--writes to--> [suggestions.json or skill-refinements/]
-    |                  (proposal reviewed via /gsd:suggest)
+[Auto-configuration in installer]
+    └──enhances──> ALL tools (removes manual setup step)
+    └──no-hard-dependency──> tools work without it if user runs `claude mcp add` manually
 ```
 
 ### Dependency Notes
 
-- **Correction capture is the root dependency.** Every other v6.0 feature depends on corrections being captured to sessions.jsonl. Without the capture hook, the rest of the system has no input data. Build this first.
-
-- **Preference tracking requires correction capture but not diagnosis.** Preferences can be built from raw corrections (group by similarity, count occurrences). Diagnosis enriches preferences with categories but is not required for the basic promotion mechanism.
-
-- **Observer agent is the heaviest dependency.** It requires both correction capture and preference tracking to be working before it can aggregate patterns meaningfully. It also writes to suggestions.json, completing the pipeline. Build it after the foundational features.
-
-- **Suggestion pipeline can be bootstrapped without the full observer.** A simpler version can run inside `/gsd:digest` as a step that writes to suggestions.json. The observer agent adds continuous, automated pattern detection on top of this manual-trigger baseline.
-
-- **Digest enhancements and skill refinement are additive.** They layer on top of existing `/gsd:digest` without changing its current behavior. Existing sections (3a-3f) remain unchanged; new sections (3g: corrections, 3h: skill refinement proposals) are appended.
-
-- **Cross-session preference inheritance is independent of the core pipeline.** It only requires preference tracking to exist. Can be built at any time after preferences are working.
+- **StreamableHTTP transport blocks everything:** The transport must be wired before any tool is
+  testable. This is Phase 1, step 1.
+- **CORS blocks all POST requests:** MCP clients send POST. The current `CORS_HEADERS` only allows
+  GET and PATCH. This is a one-line fix but must land in the same phase as the transport.
+- **6 core tools are independent of each other** once the transport is up. `list-projects` and
+  `get-project-state` are the simplest (cache reads); `get-observations` and `get-skill-metrics`
+  require new JSONL read logic but no new server functions.
+- **Auto-configuration is independent of tool correctness.** It can ship in Phase 2 after the
+  tools are verified to work via manual `claude mcp add`.
+- **Cross-project `get-skill-metrics` depends on a new aggregation function** (not in server.cjs
+  today). Per-project mode can ship without it.
 
 ---
 
 ## MVP Definition
 
-### Launch With (v6.0 -- This Milestone)
+### Launch With (v10.0 Phase 1)
 
-Minimum viable adaptive learning loop -- the smallest feature set that demonstrates "Claude learns from corrections."
+Minimum viable MCP server — tools callable, data correct, transport stable.
 
-- [ ] **Hook-based correction capture** -- the foundation. Without this, nothing else works. Captures corrections to sessions.jsonl with structured fields (type, correction_from, correction_to, context).
+- [ ] `@modelcontextprotocol/sdk@1.29.0` installed (CJS-compatible v1 stable, not v2 alpha)
+- [ ] `StreamableHTTPServerTransport` mounted at `/mcp` on existing `http.createServer`
+- [ ] CORS headers updated: POST and DELETE allowed, `mcp-session-id` in allowed headers
+- [ ] MCP session management: unique `mcp-session-id` per Claude Code session, session map for
+  stateful transports, cleanup on DELETE
+- [ ] `list-projects` tool: returns all registered projects with name, path, health score, active
+  milestone, gate health summary
+- [ ] `get-project-state` tool: returns `state`, `roadmap`, `requirements`, `phases_summary`,
+  `debt` for a named project from cache
+- [ ] `get-gate-health` tool: returns gate pass/fail/warn/blocked counts; per-project when `name`
+  provided, aggregated when omitted
+- [ ] `get-observations` tool: reads `.planning/patterns/<type>.jsonl` (corrections, preferences,
+  suggestions, benchmarks) for a named project; `limit` param, `since` param
+- [ ] `get-sessions` tool: reads `.planning/patterns/sessions.jsonl` for a named project; `limit`
+  param; cross-project aggregated patterns when no `name` provided
+- [ ] `get-skill-metrics` tool: reads `.planning/patterns/skill-metrics.json` for a named project;
+  cross-project merge when no `name` provided
+- [ ] Zod input schemas for all 6 tools (zod already a devDep)
+- [ ] Structured error responses: `{ error, code, available_projects }` shape on all failure paths
+- [ ] Read-only enforcement: no write tools exposed in v10.0
 
-- [ ] **Auto self-diagnosis on correction** -- the differentiator. Inline analysis after each correction produces a diagnosis category. Makes corrections actionable, not just recorded.
+### Add After Validation (v10.0 Phase 2)
 
-- [ ] **Preference tracking (preferences.json)** -- durable memory. Promotes repeated corrections to persistent preferences. Loaded at session start. 3+ occurrence threshold from bounded guardrails.
+After the tools work end-to-end via manual `claude mcp add`:
 
-- [ ] **Correction recall at session start** -- closes the loop for returning sessions. `/gsd:session-start` surfaces relevant past corrections and preferences for the current phase.
+- [ ] Auto-configuration in `bin/install.js`: detect if dashboard is registered, write MCP
+  connection entry to Claude Code MCP config, with `--no-mcp` opt-out flag
+- [ ] Tests for MCP tool handlers: unit tests for each tool's handler function; integration test
+  that actually sends MCP requests to a running test server
+- [ ] `limit` and `since` param validation: reject negative limits, reject malformed ISO dates
+  with clear error messages
 
-- [ ] **Live recall within session** -- closes the loop for the current session. Correction entries available for reference when similar patterns arise.
+### Future Consideration (v10.1 or later)
 
-- [ ] **Observer agent implementation** -- the aggregator. Full implementation replacing the stub. Session boundary analysis, pattern aggregation, suggestion generation.
+Defer until the 6 core tools are validated in real multi-session usage:
 
-- [ ] **Suggestion pipeline writer** -- completes the existing suggest flow. Observer or digest writes to suggestions.json so `/gsd:suggest` has data to review.
-
-- [ ] **Enhanced `/gsd:digest` with correction analysis** -- makes corrections visible. New section analyzing correction patterns, categories, trends, and skill refinement proposals.
-
-### Add After Validation (v6.x)
-
-Features to add once the correction capture and preference loop is generating real data.
-
-- [ ] **Cross-session preference inheritance** -- promote project-level preferences to user-level (`~/.gsd/preferences.json`) when they appear in 3+ projects. Trigger: user has multiple registered projects with overlapping preferences.
-
-- [ ] **Collaborative skill refinement via digest** -- generate specific skill refinement proposals when corrections consistently contradict existing skill guidance. Trigger: 3+ corrections with "skill-conflict" diagnosis pointing to the same skill.
-
-- [ ] **Preference conditions/scoping** -- allow preferences to have context conditions ("prefer X when in test files", "prefer Y in library code"). Trigger: users report that broad preferences cause problems in specific contexts.
-
-### Future Consideration (v7+)
-
-- [ ] **Preference analytics dashboard** -- visual display of preference trends, correction rates over time, learning curve visualization. Requires dashboard infrastructure (v5.0).
-
-- [ ] **Team preference sharing** -- share preferences across team members via a shared preferences file. Requires multi-user workflow patterns not yet in GSD.
+- [ ] `get-benchmarks` tool: dedicated phase benchmark comparison queries (currently covered by
+  `get-observations` with `type: benchmarks`)
+- [ ] Cross-project skill metric aggregation with trend lines (requires more data from multi-
+  project installations)
+- [ ] Debt query tool: filter DEBT.md entries by component, severity, and associated correction
+  count (depends on v9.0 debt impact analysis data being populated)
+- [ ] Write tools: mark a correction resolved, promote a preference — only after read-only mode
+  is validated and a concurrency safety model is designed
 
 ---
 
 ## Feature Prioritization Matrix
 
 | Feature | User Value | Implementation Cost | Priority |
-|---------|------------|---------------------|----------|
-| Hook-based correction capture | HIGH -- foundation for all learning | MEDIUM -- hook infrastructure + pattern detection | P1 |
-| Auto self-diagnosis on correction | HIGH -- makes corrections actionable | MEDIUM -- inline analysis logic, ~500 token budget | P1 |
-| Preference tracking (preferences.json) | HIGH -- durable cross-session memory | MEDIUM -- new data store + promotion logic | P1 |
-| Correction recall at session start | HIGH -- prevents repeating mistakes | LOW -- extend existing session-start command | P1 |
-| Live recall within session | MEDIUM -- intra-session awareness | LOW -- corrections already in conversation context; add historical cross-ref | P1 |
-| Observer agent implementation | HIGH -- closes the full loop | HIGH -- full agent with aggregation, pattern detection, suggestion generation | P1 |
-| Suggestion pipeline writer | HIGH -- completes dead-code suggest flow | MEDIUM -- aggregation logic + write to suggestions.json | P1 |
-| Enhanced `/gsd:digest` correction analysis | MEDIUM -- visibility into learning progress | LOW -- new section in existing digest command | P1 |
-| Cross-session preference inheritance | MEDIUM -- multi-project consistency | LOW -- two-tier file read, promotion logic | P2 |
-| Collaborative skill refinement | MEDIUM -- auto-proposes skill improvements | MEDIUM -- detection logic + proposal format | P2 |
-| Preference conditions/scoping | LOW -- edge case handling | MEDIUM -- query engine for conditional preferences | P3 |
+|---|---|---|---|
+| StreamableHTTP transport at `/mcp` | HIGH | MEDIUM | P1 |
+| CORS header update | HIGH | LOW | P1 |
+| `list-projects` tool | HIGH | LOW | P1 |
+| `get-project-state` tool | HIGH | LOW | P1 |
+| `get-gate-health` tool | HIGH | LOW | P1 |
+| `get-observations` tool | HIGH | MEDIUM | P1 |
+| `get-sessions` tool | MEDIUM | MEDIUM | P1 |
+| `get-skill-metrics` tool | MEDIUM | LOW | P1 |
+| `limit` / `since` params | HIGH | LOW | P1 |
+| Structured error responses | MEDIUM | LOW | P1 |
+| Auto-configuration in installer | HIGH | MEDIUM | P2 |
+| `--no-mcp` opt-out flag | MEDIUM | LOW | P2 |
+| Tests for MCP tool handlers | HIGH | MEDIUM | P2 |
+| Cross-project skill metric aggregation | MEDIUM | MEDIUM | P3 |
+| `get-benchmarks` dedicated tool | LOW | MEDIUM | P3 |
+| Write tools | MEDIUM | HIGH | Deferred |
+| Semantic search over corrections | LOW | HIGH | Deferred |
 
 **Priority key:**
-- P1: Must have for v6.0 to deliver "Claude learns from corrections"
-- P2: Should have, meaningfully improves the learning loop; add when P1 is stable
-- P3: Nice to have, addresses edge cases
+- P1: Must have for v10.0 Phase 1 (MCP server ships)
+- P2: Must have for v10.0 Phase 2 (installer and tests)
+- P3: Future milestone
 
 ---
 
-## Competitor Feature Analysis
+## Existing server.cjs Functions Directly Used by Each Tool
 
-| Feature | Claude Code MEMORY.md | Windsurf Cascade Memories | Cursor Rules | GSD v6.0 Approach |
-|---------|----------------------|---------------------------|--------------|-------------------|
-| Correction capture | Auto-memory detects recurring corrections, writes to MEMORY.md | Session context persistence; remembers corrections within cascade | `.cursorrules` file; manual, not auto-captured | Hook-based structured capture to sessions.jsonl with diagnosis categories |
-| Preference storage | MEMORY.md (200-line limit, unstructured) | In-memory session context (lost between cascades unless manually saved) | `.cursorrules` (manual, static) | preferences.json (structured, unlimited, auto-promoted from corrections) |
-| Cross-session recall | First 200 lines of MEMORY.md loaded at session start | Cascade Memories persist within project scope | Rules file always loaded | Correction + preference recall at session start, filtered by phase relevance |
-| Pattern detection | None -- MEMORY.md is manual or auto-memory (basic) | None -- no aggregation across sessions | None -- static rules | Observer agent + digest analysis: aggregation, threshold detection, suggestion generation |
-| Self-diagnosis | None | None | None | Auto diagnosis on correction: why the mistake happened (5 categories) |
-| Skill/rule refinement | Manual MEMORY.md edits | Manual | Manual `.cursorrules` edits | Semi-automated: digest proposes refinements, user reviews via `/gsd:suggest` |
+This maps each MCP tool to the existing `server.cjs` code it calls. The dependency is on
+functions that already exist and are tested — no new data layer required.
 
-**GSD's key differentiator:** Structured, categorized, threshold-gated learning with a closed feedback loop. Competitors offer passive memory (save notes) or session persistence (remember within conversation). GSD captures corrections, diagnoses root causes, promotes to durable preferences, detects patterns across sessions, and proposes skill refinements -- all with bounded guardrails and human review gates.
+| MCP Tool | Existing Functions Called | New Code Required |
+|---|---|---|
+| `list-projects` | `cache.values()` | Format as MCP result |
+| `get-project-state` | `cache.get(name)` | Format as MCP result |
+| `get-gate-health` | `getProjectGateHealth(path)`, `aggregateGateHealth(registry)` | Route by `name` param |
+| `get-observations` | Direct `fs.readFileSync()` of `patterns/*.jsonl` | JSONL reader with `limit`/`since` |
+| `get-sessions` | `aggregatePatterns(registry)` for cross-project; `fs.readFileSync()` of `patterns/sessions.jsonl` for per-project | Route by `name` param |
+| `get-skill-metrics` | `fs.readFileSync()` of `patterns/skill-metrics.json` | Per-project read + cross-project merge |
+| Transport + session mgmt | `http.createServer` (existing) | `StreamableHTTPServerTransport` wiring, session map |
+| CORS update | `CORS_HEADERS` constant | Add POST, DELETE, `mcp-session-id` |
 
 ---
 
 ## Sources
 
-- [Claude Code Memory System](https://code.claude.com/docs/en/memory) -- HIGH confidence (official docs; MEMORY.md structure, auto-memory behavior, 200-line limit)
-- [SFEIR Institute - CLAUDE.md Deep Dive](https://institute.sfeir.com/en/claude-code/claude-code-memory-system-claude-md/deep-dive/) -- MEDIUM confidence (third-party analysis; 40% correction reduction claim, memory patterns)
-- [Windsurf/Cursor/Copilot Comparison](https://www.builder.io/blog/cursor-vs-windsurf-vs-github-copilot) -- MEDIUM confidence (comparison article; Cascade Memories behavior)
-- [Algomox - Agentic AI RCA](https://www.algomox.com/resources/blog/agentic_ai_rca_root_cause/) -- MEDIUM confidence (RCA agent patterns; iterative hypothesis testing, confidence calibration)
-- [Cleric AI Agent for RCA](https://www.zenml.io/llmops-database/ai-agent-for-automated-root-cause-analysis-in-production-systems) -- MEDIUM confidence (implicit feedback systems, automated feedback mechanisms)
-- Internal: `.planning/PROJECT.md` v6.0 target features -- HIGH confidence (canonical requirements)
-- Internal: `commands/gsd/digest.md` -- HIGH confidence (existing digest command structure)
-- Internal: `commands/gsd/suggest.md` -- HIGH confidence (existing suggest reader, no writer)
-- Internal: `commands/gsd/session-start.md` -- HIGH confidence (existing session-start structure)
-- Internal: `.claude/agents/observer.md` -- HIGH confidence (stub agent, TODO noted)
-- Internal: `skills/skill-integration/SKILL.md` -- HIGH confidence (bounded learning guardrails, observation protocol)
-- Internal: `skills/skill-integration/references/observation-patterns.md` -- HIGH confidence (JSONL schema, signal taxonomy, correction fields)
-- Internal: `hooks/gsd-snapshot-session.js` -- HIGH confidence (existing session-end hook pattern)
+- `/Users/tmac/Projects/gsdup/.planning/v10.0-MILESTONE-CONTEXT.md` — milestone context with
+  confirmed SDK compatibility, transport architecture decision, and initial tool list
+- `/Users/tmac/Projects/gsdup/get-shit-done/bin/lib/server.cjs` — existing server functions
+  inventory (functions: `getProjectGateHealth`, `aggregateGateHealth`, `aggregatePatterns`,
+  `parseProjectData`, `loadRegistry`, `handleListProjects`, `handleGetProject`)
+- `/Users/tmac/Projects/gsdup/.planning/observations/` and `.planning/patterns/` — data file
+  inventory (confirmed files: `gate-executions.jsonl`, `corrections.jsonl`, `sessions.jsonl`,
+  `skill-metrics.json`, `skill-scores.json`, `preferences.jsonl`, `phase-benchmarks.jsonl`,
+  `suggestions.json`)
+- `@modelcontextprotocol/sdk@1.29.0` — CJS compatibility confirmed in milestone context (verified
+  against package exports; v2 alpha is ESM-only and explicitly excluded)
+- MCP StreamableHTTP transport pattern: `StreamableHTTPServerTransport.handleRequest(req, res)`
+  mounts on any `http.createServer` handler (confirmed in milestone context research notes)
+- PROJECT.md constraints: "file locking for concurrent writes — stale locks from killed sessions
+  worse than no locks" and "real-time inter-session sync — requires always-on daemon" — both
+  confirm read-only tool scope for v10.0
 
 ---
 
-*Feature research for: GSD v6.0 Adaptive Observation and Learning Loop -- correction capture, preference learning, auto self-diagnosis, live recall, observer agent, suggestion pipeline, enhanced digest*
-*Researched: 2026-03-10*
+*Feature research for: MCP tool endpoints on existing GSD dashboard server (v10.0)*
+*Researched: 2026-04-04*

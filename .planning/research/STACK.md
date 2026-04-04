@@ -1,190 +1,173 @@
-# Stack Research
+# Technology Stack — v10.0 Shared MCP Dashboard
 
-**Domain:** Adaptive observation and learning loop for Claude Code agent framework (GSD v6.0)
-**Researched:** 2026-03-10
-**Confidence:** HIGH
+**Project:** GSD — MCP Dashboard Integration milestone
+**Researched:** 2026-04-04
+**Confidence:** HIGH (SDK exports verified against v1.29.0 tag; pkce-challenge issue verified closed; transport API confirmed against source)
 
 ---
 
 ## Executive Summary
 
-The v6.0 milestone needs correction capture, preference learning, pattern detection, live context injection, and suggestion generation. The critical insight: **Claude IS the NLP engine.** Every feature in this milestone runs inside Claude Code, where Claude's own reasoning performs the "NLP" -- pattern detection, semantic analysis, root cause diagnosis. No external NLP/ML libraries are needed or appropriate.
+v10.0 adds MCP server endpoints to the existing `server.cjs` dashboard server. The critical constraint: the dashboard is a CJS Node.js server (`http.createServer`, no framework) and must remain so.
 
-The stack additions are minimal and deliberate:
-- **Zero new npm dependencies** for the core learning pipeline
-- **Node.js stdlib only** (fs, path, crypto) for hook scripts and data modules
-- **JSONL file storage** extended with new record types (corrections, preferences, suggestions)
-- **Markdown agent specs** for the observer agent
-- **Existing Claude Code hooks system** for real-time capture
+**One new runtime dependency.** `@modelcontextprotocol/sdk@1.29.0` is the only addition. It ships dual CJS/ESM builds, and `StreamableHTTPServerTransport` (the class that handles `/mcp` route integration) accepts Node.js `IncomingMessage` and `ServerResponse` directly — no Express, no Hono, no adapter layer needed by the consumer.
 
-This is a data pipeline problem, not a technology problem. The existing patterns (JSONL append, CJS modules, hook scripts, agent Markdown) are the right tools.
+`zod` is already a `devDependency`. The SDK requires `zod: ^3.25 || ^4.0` as a peer dependency, and the existing `zod@^4.3.6` satisfies it. No version conflict.
 
 ---
 
-## Recommended Stack
+## Stack Additions
 
-### Core Technologies
+### New Runtime Dependency
 
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| Node.js CJS modules | Node 18+ (existing) | Hook scripts, data read/write, CLI commands | Already the standard for all GSD modules. CJS required for consistency with core.cjs, phase.cjs, etc. No ESM migration needed or wanted. |
-| JSONL file storage | N/A (file format) | Corrections, preferences, suggestions persistence | Existing pattern (sessions.jsonl). Append-only, line-delimited JSON. No database needed -- files are small (hundreds of entries per project, not millions). `fs.appendFileSync` gives atomic single-line writes. |
-| Claude Code Hooks | Current (2026) | Real-time correction capture, session boundary events | PreToolUse/PostToolUse hooks already wired. Need new hooks for correction detection (PostToolUse on Edit/Write after user message containing correction signals). SessionStart for live recall injection. |
-| Claude Code Skills (SKILL.md) | Current (2026) | Preference-aware behavior, correction avoidance | Auto-loading Markdown specifications. Observer skill loads correction history and preferences into Claude's context. No code execution -- pure prompt engineering via structured Markdown. |
-| Claude Code Agents (subagent) | Current (2026) | Observer agent for session boundary analysis, pattern aggregation | Spawned as subagent with fresh context. Reads JSONL data, produces suggestions. Markdown spec, no compiled code. |
+| Package | Version | Purpose | Why |
+|---------|---------|---------|-----|
+| `@modelcontextprotocol/sdk` | `1.29.0` (pin exact) | MCP server scaffolding, StreamableHTTP transport | Official Anthropic SDK; v1 stable branch; only package that provides `McpServer` + `StreamableHTTPServerTransport` with CJS support |
 
-### Supporting Libraries
+### No Other New Dependencies
 
-| Library | Version | Purpose | When to Use |
-|---------|---------|---------|-------------|
-| `node:fs` | Built-in | JSONL read/write, config updates | All data persistence -- corrections.jsonl, preferences.jsonl, suggestions.jsonl |
-| `node:path` | Built-in | Path resolution for .planning/patterns/ | Resolving data file paths relative to project root |
-| `node:crypto` | Built-in | UUID generation for correction/preference IDs | `crypto.randomUUID()` for unique record identifiers (Node 19+, or `crypto.randomBytes(16).toString('hex')` for Node 18) |
-
-### Data Files (New)
-
-| File | Location | Format | Purpose |
-|------|----------|--------|---------|
-| `corrections.jsonl` | `.planning/patterns/` | JSONL | Captured corrections with root cause analysis |
-| `preferences.jsonl` | `.planning/patterns/` | JSONL | Extracted user preferences as durable patterns |
-| `suggestions.jsonl` | `.planning/patterns/` | JSONL | Generated skill refinement candidates |
-| `sessions.jsonl` | `.planning/patterns/` (existing) | JSONL | Extended with correction-type entries |
-
-### Development Tools
-
-| Tool | Purpose | Notes |
-|------|---------|-------|
-| Vitest (existing) | Unit tests for new CJS modules | Already configured. Test the data modules (correction capture, preference extraction, suggestion generation) |
-| Node.js built-in test runner (existing) | CJS module tests | `node --test tests/*.test.cjs` for new learning pipeline modules |
+| Capability | How Covered |
+|------------|-------------|
+| Session ID generation | `node:crypto` built-in (`randomUUID()`) — already available in Node.js 25.x |
+| Session state (Map) | In-memory `Map` in `server.cjs` — same pattern as existing cache |
+| Tool input validation | `zod` already a devDependency; SDK peer dep satisfied |
+| HTTP request handling | `node:http` `IncomingMessage`/`ServerResponse` — already used by `server.cjs` |
+| CORS headers | Already implemented in `server.cjs`; add `Mcp-Session-Id` to expose list |
 
 ---
 
-## New Module Architecture
+## SDK Integration API
 
-### What to Build (CJS modules in `get-shit-done/bin/lib/`)
+### Imports (CJS)
 
-| Module | Responsibility | Depends On |
-|--------|---------------|------------|
-| `learning.cjs` | Core learning pipeline: write corrections, read corrections, write preferences, read preferences, write suggestions, read suggestions | `node:fs`, `node:path`, `node:crypto`, `core.cjs` (for `planningRoot`) |
+```js
+const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
+const { StreamableHTTPServerTransport } = require('@modelcontextprotocol/sdk/server/streamableHttp.js');
+const { randomUUID } = require('node:crypto');
+const { z } = require('zod');
+```
 
-**Single module, not five.** The learning pipeline is cohesive -- corrections feed preferences which feed suggestions. Splitting into separate files adds import overhead and cross-module coordination for no benefit. One module with clearly separated sections (like `debt.cjs` handles log/list/resolve).
+All four import paths resolve to `dist/cjs/` variants in the SDK's exports map. The wildcard export pattern `(.*)` in the SDK's `package.json` maps `./server/streamableHttp` to `./dist/cjs/server/streamableHttp.js` when `require()` is used.
 
-### What to Build (Hook scripts in `.claude/hooks/`)
+### StreamableHTTPServerTransport Constructor
 
-| Hook | Trigger | Purpose |
-|------|---------|---------|
-| `gsd-capture-correction.js` | PostToolUse (Edit, Write) | Detects when Claude re-does work after user correction. Writes to corrections.jsonl. |
-| `gsd-inject-learning.js` | SessionStart | Injects recent corrections and active preferences into session context. Replaces or augments `gsd-inject-snapshot.js`. |
+```js
+const transport = new StreamableHTTPServerTransport({
+  sessionIdGenerator: () => randomUUID(),           // stateful mode
+  onsessioninitialized: (sessionId) => {            // callback when session is assigned
+    sessions.set(sessionId, transport);
+  },
+});
+```
 
-### What to Build (Agent specs in `.claude/agents/`)
+Setting `sessionIdGenerator: undefined` switches to stateless mode (no session tracking). Use stateful mode for the dashboard — sessions persist while the dashboard is running, matching the existing in-memory cache pattern.
 
-| Agent | Trigger | Purpose |
-|-------|---------|---------|
-| `observer.md` | SessionEnd hook or `/gsd:digest` command | Reads corrections.jsonl + sessions.jsonl, detects patterns, generates suggestions.jsonl entries, proposes preference extractions |
+### handleRequest Signature
 
-### What to Build (Skill specs in `.claude/skills/`)
+```js
+await transport.handleRequest(req, res, parsedBody);
+// req:        http.IncomingMessage (no auth extension needed for localhost)
+// res:        http.ServerResponse
+// parsedBody: pre-parsed JSON body (object) — parse in route handler before calling
+```
 
-| Skill | Purpose |
-|-------|---------|
-| `learning-observer/SKILL.md` | Teaches Claude to self-diagnose when corrected. Provides the "pause and analyze" protocol -- what went wrong, why, what preference to extract. |
+The transport internally uses `@hono/node-server` to convert between Node.js HTTP objects and the Web Standard Request/Response that the underlying transport implementation uses. This conversion is transparent to `server.cjs` — the consumer only sees `handleRequest(req, res, body)`.
 
----
+### Session Map Pattern
 
-## Schema Designs
+```js
+// In server.cjs — add alongside existing cache Map
+const mcpSessions = new Map(); // sessionId -> { transport, server }
 
-### corrections.jsonl Record
+// Route handler for POST /mcp
+async function handleMcpRequest(req, res) {
+  const sessionId = req.headers['mcp-session-id'];
 
-```json
-{
-  "id": "corr-<uuid>",
-  "timestamp": "ISO-8601",
-  "session_id": "string",
-  "type": "correction",
-  "trigger": "user_message",
-  "user_said": "string -- the corrective message",
-  "what_claude_did": "string -- the action that was wrong",
-  "what_was_wanted": "string -- the correct action",
-  "root_cause": "string -- why Claude made the mistake",
-  "category": "style|naming|architecture|testing|workflow|tool_choice|other",
-  "related_files": ["string -- files involved"],
-  "preference_extracted": "pref-<uuid> | null"
+  if (sessionId && mcpSessions.has(sessionId)) {
+    const { transport } = mcpSessions.get(sessionId);
+    const body = await parseBody(req);
+    await transport.handleRequest(req, res, body);
+    return;
+  }
+
+  // New session — create transport + McpServer
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: () => randomUUID(),
+    onsessioninitialized: (id) => {
+      mcpSessions.set(id, { transport, server: mcpServer });
+    },
+  });
+  const body = await parseBody(req);
+  await mcpServer.connect(transport);
+  await transport.handleRequest(req, res, body);
 }
 ```
 
-### preferences.jsonl Record
+### GET and DELETE Routes
 
-```json
-{
-  "id": "pref-<uuid>",
-  "timestamp": "ISO-8601",
-  "source_corrections": ["corr-<uuid>"],
-  "pattern": "string -- the preference as a reusable rule",
-  "category": "style|naming|architecture|testing|workflow|tool_choice|other",
-  "confidence": "low|medium|high",
-  "occurrence_count": 1,
-  "last_seen": "ISO-8601",
-  "active": true
-}
+The same `/mcp` path handles three HTTP methods:
+
+| Method | Purpose | Handler |
+|--------|---------|---------|
+| `POST` | Client-to-server messages (initialize, tool calls) | `transport.handleRequest(req, res, body)` |
+| `GET` | Server-to-client SSE stream (server-initiated messages) | `transport.handleRequest(req, res)` — no body |
+| `DELETE` | Session termination | `transport.handleRequest(req, res)` — no body |
+
+Route these in `server.cjs` by checking `req.method` in the existing `requestHandler` switch block.
+
+### CORS Headers
+
+Add to existing CORS response headers in `server.cjs`:
+
+```js
+'Access-Control-Expose-Headers': 'Mcp-Session-Id',
+'Access-Control-Allow-Headers': '..., mcp-session-id',
+'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
 ```
 
-### suggestions.jsonl Record
+### Tool Definition Pattern
 
-```json
-{
-  "id": "sug-<uuid>",
-  "timestamp": "ISO-8601",
-  "type": "skill_refinement|new_skill|preference_promotion|anti_pattern",
-  "title": "string -- short description",
-  "rationale": "string -- why this suggestion",
-  "source_corrections": ["corr-<uuid>"],
-  "source_preferences": ["pref-<uuid>"],
-  "confidence": "low|medium|high",
-  "status": "pending|accepted|rejected|expired",
-  "target_skill": "string | null -- skill to refine, if applicable"
-}
+```js
+const { z } = require('zod');
+
+mcpServer.tool(
+  'list-projects',
+  'List all registered GSD projects with current state',
+  {},                           // no input schema for this tool
+  async () => {
+    const registry = loadRegistry();
+    return {
+      content: [{ type: 'text', text: JSON.stringify(registry, null, 2) }],
+    };
+  }
+);
+
+mcpServer.tool(
+  'get-project-state',
+  'Get STATE.md data for a specific GSD project',
+  { name: z.string().describe('Project name from registry') },
+  async ({ name }) => {
+    const state = getProjectState(name);   // existing server.cjs function
+    return {
+      content: [{ type: 'text', text: JSON.stringify(state, null, 2) }],
+    };
+  }
+);
 ```
 
----
-
-## Correction Detection Strategy
-
-**How hooks detect corrections (no NLP library needed):**
-
-The PostToolUse hook does NOT do NLP. It does simple structural detection:
-
-1. **Hook receives tool call context** -- the tool name, parameters, and result
-2. **Hook checks a flag file** (`.planning/patterns/.correction-pending`) that gets written by a PreToolUse hook when it detects the user's message contains correction signals
-3. **Correction signal detection** is done by Claude itself via the learning-observer skill, NOT by the hook script
-
-The flow:
-```
-User says "no, use X instead"
-  -> Claude reads learning-observer SKILL.md (auto-loaded)
-  -> Skill instructs Claude to self-diagnose before acting
-  -> Claude writes correction record via learning.cjs API
-  -> Claude then performs the corrected action
-```
-
-**Why this beats hook-based NLP:**
-- Claude has full conversational context; a hook script only sees one tool call
-- Claude understands nuance ("actually, let's try..." vs "no, that's wrong")
-- No regex/keyword matching that produces false positives
-- The skill approach means Claude captures corrections BEFORE acting, not after
+Tool handlers return `{ content: [{ type: 'text', text: string }] }`. All six planned tools follow this pattern with zod-validated inputs.
 
 ---
 
 ## Installation
 
 ```bash
-# No new npm dependencies required.
-# All new code uses Node.js built-in modules only.
+# Single new runtime dependency (pin exact version — v2 is breaking, ESM-only)
+npm install @modelcontextprotocol/sdk@1.29.0
 
-# New files to create:
-# get-shit-done/bin/lib/learning.cjs     -- data persistence module
-# .claude/hooks/gsd-capture-correction.js -- PostToolUse correction capture
-# .claude/hooks/gsd-inject-learning.js    -- SessionStart context injection
-# .claude/agents/observer.md              -- observer agent spec
-# .claude/skills/learning-observer/SKILL.md -- self-diagnosis skill
+# No other installs needed
+# zod already in devDependencies (^4.3.6 satisfies SDK peer dep ^3.25 || ^4.0)
+# node:crypto built-in (randomUUID available since Node.js 14.17)
 ```
 
 ---
@@ -193,12 +176,11 @@ User says "no, use X instead"
 
 | Recommended | Alternative | Why Not |
 |-------------|-------------|---------|
-| JSONL flat files | SQLite via `better-sqlite3` | Overkill. Correction data is small (hundreds of records per project). JSONL is already the established pattern. SQLite adds a native dependency (build issues on some platforms), requires schema migrations, and doesn't improve query performance at this scale. |
-| Claude-as-NLP (skill-driven) | `compromise` or `natural` NLP libraries | Wrong abstraction. Claude already understands natural language. Adding an NLP library to detect corrections in user messages is like adding a calculator to a supercomputer. The library would do keyword matching; Claude understands intent. |
-| Single `learning.cjs` module | Separate `corrections.cjs`, `preferences.cjs`, `suggestions.cjs` | Over-modularization. The learning pipeline is tightly coupled -- corrections feed preferences which feed suggestions. Three modules means three sets of imports, three test files, cross-module dependencies. One module with clear sections is simpler. |
-| Skill-driven self-diagnosis | Hook-based regex correction detection | Hooks only see tool call parameters, not conversation context. A hook can't distinguish "actually, use tabs" (correction) from "use tabs in the config" (instruction). Claude with the learning-observer skill has full conversation context. |
-| `.planning/patterns/` directory | New `.planning/learning/` directory | Patterns directory already exists and is in `.gitignore`. Adding a new directory fragments the data and requires updating gitignore, dashboard aggregation, etc. |
-| Append-only JSONL | Mutable JSON files | Append-only prevents data loss from concurrent writes, partial writes, or corruption. JSONL survives crashes mid-write (at most one line lost). Mutable JSON can be fully corrupted by a partial write. |
+| `@modelcontextprotocol/sdk@1.29.0` | `@modelcontextprotocol/sdk@2.x` (alpha) | v2 is pre-alpha, ESM-only — drops CJS, `package.json` has `"type": "module"`, no `dist/cjs/` — incompatible with `server.cjs` |
+| `@modelcontextprotocol/sdk@1.29.0` | Building stdio transport | stdio spawns one process per client session; cannot share data across sessions — fundamentally wrong for this use case |
+| Pin exact `1.29.0` | `^1.29.0` | Minor version bumps may introduce breaking changes in an active SDK; pin until v10.0 ships, then evaluate upgrading |
+| Stateful session Map | Stateless (no sessionIdGenerator) | Stateless requires clients to re-initialize on every request; the dashboard's in-memory cache only pays off with persistent sessions |
+| Raw `http.createServer` | Adding Express | Express is a 5MB framework addition for one route; `server.cjs` already handles routing with `switch(req.url)` — no new framework needed |
 
 ---
 
@@ -206,82 +188,83 @@ User says "no, use X instead"
 
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
-| External NLP libraries (`natural`, `compromise`, `wink-nlp`) | Claude IS the language model. Adding NLP to detect patterns in user messages is redundant -- Claude already parses and understands the messages. These libraries do token-level analysis; Claude does semantic understanding. | Claude's own reasoning via the learning-observer skill |
-| SQLite / LevelDB / any database | Data volume is tiny (hundreds of records). Database adds native dependency compilation, schema migrations, and operational complexity for zero performance benefit. | JSONL flat files with `fs.appendFileSync` |
-| Vector databases (ChromaDB, Pinecone) | Embedding-based similarity search is unnecessary. Corrections and preferences are structured records with explicit categories, not unstructured text requiring semantic search. | Category-based filtering on JSONL records |
-| ESM modules for new code | Core GSD modules are CJS. Mixing module systems creates `require`/`import` interop pain, especially in hook scripts which must be self-contained. | CJS (`module.exports`, `require()`) consistent with existing modules |
-| React/Vue for suggestion UI | Suggestions are reviewed via CLI commands (`/gsd:suggest`), not a web UI. Building a frontend for this is over-engineering. | Markdown output from CLI commands, displayed in Claude Code conversation |
-| Redis/message queues | No inter-process communication needed. Hooks write files; skills read files. The "pipeline" is a series of file reads within a single Claude Code session. | Direct file I/O |
-| `node-cron` / scheduled tasks | No daemon process. Analysis runs at session boundaries (SessionStart/SessionEnd hooks) and on-demand (`/gsd:digest`). | Hook-triggered and command-triggered execution |
+| `@modelcontextprotocol/sdk@2.x` | Pre-alpha, ESM-only, breaking API changes; v2 README says "v1.x remains the recommended version" | `@modelcontextprotocol/sdk@1.29.0` |
+| stdio transport | Spawns isolated per-session subprocess; no shared state across Claude Code sessions | StreamableHTTP at `/mcp` |
+| `@modelcontextprotocol/node` package | This is a v2 package providing `NodeStreamableHTTPServerTransport`; does not exist as a separate v1 package | `StreamableHTTPServerTransport` from core SDK v1.29.0 |
+| `@modelcontextprotocol/express` | v2 package; ESM-only; also unnecessary since the SDK transport handles `IncomingMessage`/`ServerResponse` natively | Direct `handleRequest(req, res, body)` call |
+| Bearer token auth / OAuth | Overkill for a localhost-only server; adds the pkce-challenge dependency path that was previously problematic in CJS | No auth for localhost; scope to 127.0.0.1 binding if needed |
 
 ---
 
-## Integration Points
+## CJS Compatibility Notes
 
-### With Existing Systems
+**pkce-challenge issue (Issue #217) — resolved.** The SDK had a CJS incompatibility where `auth.js` used synchronous `require()` on `pkce-challenge`, an ESM-only package. This was fixed via PR #254 and merged before v1.29.0. The fix uses dynamic `import()` in `auth.js`.
 
-| System | Integration | How |
-|--------|------------|-----|
-| `sessions.jsonl` (existing) | Corrections also written to sessions.jsonl as type "correction" | Dual-write: full record to corrections.jsonl, summary to sessions.jsonl for backward compatibility |
-| `config.json` adaptive_learning section | Learning pipeline config (capture enabled, categories, thresholds) | Read via existing `loadConfig()` pattern in core.cjs |
-| `/gsd:digest` command (existing) | Enhanced with correction analysis | Observer agent reads corrections.jsonl alongside sessions.jsonl |
-| `/gsd:suggest` command (existing) | Reads from suggestions.jsonl | Currently has no writer; learning.cjs provides the writer |
-| Dashboard server (server.cjs) | Pattern aggregation reads corrections.jsonl | Extend existing `aggregatePatterns()` to include correction records |
-| Bounded learning guardrails | Suggestion generation respects 3-correction minimum, 7-day cooldown | learning.cjs enforces thresholds before writing suggestions |
+**Server-only import path avoids auth entirely.** Even if the fix weren't present, `require('@modelcontextprotocol/sdk/server/streamableHttp.js')` does not load `auth.js` — that module is only in the client auth path. The dashboard only uses server-side exports.
 
-### With Claude Code Hook System
+**Verified export paths for v1.29.0:**
 
-| Hook Point | Current Use | v6.0 Addition |
-|------------|------------|---------------|
-| SessionStart | Restore work state, inject snapshot, session state | Add: inject recent corrections + active preferences |
-| SessionEnd | Save work state, snapshot session | Add: trigger observer agent for pattern analysis |
-| PreToolUse (Bash) | Validate commit messages | No change needed |
-| PostToolUse (Write) | Phase boundary check | No change needed -- correction capture handled by skill, not hook |
+| Import path | CJS resolution |
+|-------------|---------------|
+| `@modelcontextprotocol/sdk/server/mcp.js` | `./dist/cjs/server/mcp.js` |
+| `@modelcontextprotocol/sdk/server/streamableHttp.js` | `./dist/cjs/server/streamableHttp.js` |
+| `@modelcontextprotocol/sdk/types.js` | `./dist/cjs/types.js` |
+
+The wildcard `(.*)` export pattern in the SDK's `package.json` maps these paths correctly when `require()` is detected.
+
+**Transitive dependency note.** The SDK depends on `@hono/node-server@^1.19.9` and `hono@^4.11.4`. These are used internally by `StreamableHTTPServerTransport` to convert between Node.js HTTP objects and Web Standard APIs. They are transparent to `server.cjs` — no Hono APIs are called directly.
 
 ---
 
 ## Version Compatibility
 
-| Component | Required Version | Notes |
-|-----------|-----------------|-------|
-| Node.js | 18+ (existing requirement) | `crypto.randomUUID()` available in Node 19+. For Node 18, use `crypto.randomBytes(16).toString('hex')`. |
-| Claude Code Hooks | 2026 current | SessionStart, SessionEnd, PreToolUse, PostToolUse all used. No new hook types needed. |
-| Claude Code Skills | 2026 current | SKILL.md auto-loading. learning-observer skill uses standard frontmatter format. |
-| GSD config.json | v4.0+ format | `adaptive_learning` key already exists from v4.0 migration. Extend with `learning_pipeline` sub-key. |
+| Package | Version | Satisfies |
+|---------|---------|-----------|
+| `@modelcontextprotocol/sdk` | `1.29.0` | zod peer dep: `^3.25 \|\| ^4.0` |
+| `zod` (existing devDep) | `^4.3.6` | Satisfies SDK peer dep |
+| Node.js | 25.x (current env) | `randomUUID()` available since 14.17; `http.createServer` stable since v0.1 |
+| `@hono/node-server` | `^1.19.9` (transitive) | Bundled with SDK; no direct installation needed |
 
 ---
 
-## Config Extension
+## Integration Points in server.cjs
 
-```json
-{
-  "adaptive_learning": {
-    "learning_pipeline": {
-      "capture_corrections": true,
-      "extract_preferences": true,
-      "generate_suggestions": true,
-      "min_corrections_for_preference": 3,
-      "min_corrections_for_suggestion": 3,
-      "suggestion_cooldown_days": 7,
-      "max_context_injection_entries": 10,
-      "categories": ["style", "naming", "architecture", "testing", "workflow", "tool_choice"]
-    }
-  }
-}
+The MCP addition touches `server.cjs` in four places:
+
+1. **Top of file — imports** (~3 lines): `require` McpServer, StreamableHTTPServerTransport, randomUUID
+2. **After cache initialization — MCP server setup** (~40 lines): create `McpServer` instance, register 6 tool handlers using existing `loadRegistry()`, `cache.get()`, file read functions
+3. **Request router (`switch(req.url)`)** (~30 lines): add `case '/mcp':` branch that checks `req.method` (POST/GET/DELETE) and routes to `handleMcpRequest`
+4. **CORS headers** (~5 lines): add `Mcp-Session-Id` to expose and allow headers
+
+The existing `requestHandler` function already switches on `req.url`. The `/mcp` case slots in alongside `/api/projects`, `/api/events`, etc. No restructuring of the server is needed.
+
+**Session cleanup on server shutdown:** Add to the existing SIGTERM/SIGINT handler (or process exit) to close all transports in `mcpSessions` and clear the Map.
+
+---
+
+## Claude Code Connection
+
+After the MCP endpoint is live at `http://localhost:7778/mcp`, Claude Code sessions connect with:
+
+```bash
+claude mcp add --transport http gsd-dashboard http://localhost:7778/mcp
 ```
+
+The installer (`bin/install.js`) will run this command automatically unless `--no-mcp` is passed. The installer already writes to `~/.claude/` for skills and commands — adding an MCP config write follows the same pattern.
 
 ---
 
 ## Sources
 
-- Project codebase analysis: `.claude/hooks/`, `get-shit-done/bin/lib/`, `.claude/skills/` -- direct inspection of existing patterns
-- `.claude/skills/skill-integration/SKILL.md` -- current skill integration protocol
-- `.claude/skills/skill-integration/references/observation-patterns.md` -- JSONL schema and signal strength taxonomy
-- `.claude/skills/skill-integration/references/bounded-guardrails.md` -- non-negotiable learning constraints
-- `.claude/settings.json` -- current hook configuration
-- `.planning/PROJECT.md` -- v6.0 milestone requirements
-- Claude Code documentation (2026) -- hook I/O protocol, skill auto-loading, agent spawning
+- `@modelcontextprotocol/sdk` v1.29.0 `package.json` (verified via GitHub tag): CJS exports map, `@hono/node-server` dependency, zod peer dep, pkce-challenge@5.0.0 included
+- `src/server/streamableHttp.ts` at v1.29.0 tag: `handleRequest(req: IncomingMessage, res: ServerResponse, parsedBody?: unknown)` confirmed; `@hono/node-server` usage for Node.js HTTP conversion confirmed
+- GitHub Issue #217 (pkce-challenge CJS incompatibility): closed via PR #254, fixed in client auth path only; server imports unaffected
+- GitHub Issue #340 (stateless mode): confirmed `sessionIdGenerator: undefined` enables stateless mode
+- `examples/server/src/simpleStreamableHttp.ts` (main branch): Map-based session pattern, `onsessioninitialized` callback, POST/GET/DELETE handler pattern confirmed
+- v10.0-MILESTONE-CONTEXT.md: architecture decisions, tool list, estimated scope (~80 lines in server.cjs)
+- Live `package.json` inspection: `zod@^4.3.6` confirmed in devDependencies; `ws@^8.19.0` and `chokidar@^4.0.3` confirmed in dependencies
 
 ---
-*Stack research for: GSD v6.0 Adaptive Observation & Learning Loop*
-*Researched: 2026-03-10*
+
+*Stack research for: MCP server endpoints on existing CJS Node.js dashboard*
+*Researched: 2026-04-04*
