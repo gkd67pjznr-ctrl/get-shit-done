@@ -8,13 +8,14 @@
 const fs = require('fs');
 const path = require('path');
 
-// Valid gate names for the 5 quality sentinel gates
+// Valid gate names for the quality sentinel gates
 const VALID_GATES = new Set([
   'codebase_scan',
   'context7_lookup',
   'test_baseline',
   'test_gate',
   'diff_review',
+  'eslint_gate',
 ]);
 
 // Valid gate outcomes
