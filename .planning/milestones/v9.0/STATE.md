@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: "Plan 40-01 complete — session-report.cjs module, CLI subcommand, /gsd:session-report slash command"
-last_updated: "2026-04-04T06:09:35.907Z"
-last_activity: "2026-04-04 — Plan 40-01 complete: session-report.cjs, CLI subcommand, /gsd:session-report slash command"
+stopped_at: "Plan 41-01 complete — skill-metrics.cjs module, CLI subcommand, /gsd:digest Step 3i"
+last_updated: "2026-04-04T06:44:40.612Z"
+last_activity: "2026-04-04 — Plan 41-01 complete: skill-metrics.cjs, CLI subcommand, digest Step 3i, SQLQ-01/02/03 marked complete"
 progress:
   total_phases: 6
-  completed_phases: 4
-  total_plans: 6
-  completed_plans: 6
+  completed_phases: 5
+  total_plans: 7
+  completed_plans: 7
   percent: 60
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 40 — Session Report (plan 01 complete)
+**Current focus:** Phase 41 — Skill Quality Metrics (plan 01 complete)
 
 ## Current Position
 
-Phase: 40 of 42 (session-report)
+Phase: 41 of 42 (skill-quality-metrics)
 Plan: 1 of 1 in current phase
 Status: Plan 01 complete
-Last activity: 2026-04-04 — Plan 40-01 complete: session-report.cjs, CLI subcommand, /gsd:session-report slash command
+Last activity: 2026-04-04 — Plan 41-01 complete: skill-metrics.cjs, CLI subcommand, digest Step 3i, SQLQ-01/02/03 marked complete
 
 Progress: [██████░░░░] 60% (6/10 plans)
 
@@ -73,6 +73,9 @@ Progress: [██████░░░░] 60% (6/10 plans)
 - Plan 40-01: parseJsonlFile is a local copy in session-report.cjs (not imported from benchmark.cjs) to keep modules independent
 - Plan 40-01: gate_fire_count in buildSessionRow uses phase-level matching (not plan-level) to aggregate all gate fires for the phase
 - Plan 40-01: loadCorrections uses same two-path fallback as benchmark.cjs (milestone-scoped path first, then flat patterns fallback)
+- Plan 41-01: CATEGORY_SKILL_MAP is inlined in skill-metrics.cjs (not imported from analyze-patterns.cjs) to keep module independent
+- Plan 41-01: Tests use result.output not result.stdout — runGsdTools helper returns { success, output } not { success, stdout }
+- Plan 41-01: .planning/ is gitignored — REQUIREMENTS.md file changes staged in same commit as digest.md via git's gitignore behavior
 
 ### Blockers/Concerns
 
@@ -81,6 +84,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-04
-Stopped at: Plan 40-01 complete — session-report.cjs module, CLI subcommand, /gsd:session-report slash command
+Stopped at: Plan 41-01 complete — skill-metrics.cjs module, CLI subcommand, /gsd:digest Step 3i
 Resume file: None
-Next step: Phase 40 complete — proceed to Phase 41
+Next step: Phase 41 complete — proceed to Phase 42
