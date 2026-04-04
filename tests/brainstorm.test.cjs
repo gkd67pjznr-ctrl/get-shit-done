@@ -321,3 +321,46 @@ describe('cmdBrainstormCheckSaturation', () => {
     assert.strictEqual(r.saturated, false);
   });
 });
+
+// ─── cmdBrainstormBuildSeedBrief ────────────────────────────────────────────
+
+describe('cmdBrainstormBuildSeedBrief', () => {
+  let tempDir;
+
+  beforeEach(() => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'seed-test-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  test('returns brief string and sources array', () => {
+    const r = brainstorm.cmdBrainstormBuildSeedBrief(tempDir);
+    assert.strictEqual(typeof r.brief, 'string', 'brief should be a string');
+    assert.ok(Array.isArray(r.sources), 'sources should be an array');
+  });
+
+  test('brief contains expected section headers', () => {
+    const r = brainstorm.cmdBrainstormBuildSeedBrief(tempDir);
+    assert.ok(r.brief.includes('Correction Patterns'), 'brief should include Correction Patterns');
+    assert.ok(r.brief.includes('Open Debt'), 'brief should include Open Debt');
+    assert.ok(r.brief.includes('Prior Brainstorm Ideas'), 'brief should include Prior Brainstorm Ideas');
+  });
+
+  test('sources does not include ROADMAP.md or STATE.md', () => {
+    // Create ROADMAP.md and STATE.md in the tempDir to ensure they are not read
+    fs.writeFileSync(path.join(tempDir, 'ROADMAP.md'), '# Roadmap\n\nshould not be read');
+    fs.writeFileSync(path.join(tempDir, 'STATE.md'), '# State\n\nshould not be read');
+    const r = brainstorm.cmdBrainstormBuildSeedBrief(tempDir);
+    const sourcePaths = r.sources;
+    assert.ok(
+      !sourcePaths.some(s => s.endsWith('ROADMAP.md')),
+      `sources should not include ROADMAP.md, got: ${JSON.stringify(sourcePaths)}`
+    );
+    assert.ok(
+      !sourcePaths.some(s => s.endsWith('STATE.md')),
+      `sources should not include STATE.md, got: ${JSON.stringify(sourcePaths)}`
+    );
+  });
+});
