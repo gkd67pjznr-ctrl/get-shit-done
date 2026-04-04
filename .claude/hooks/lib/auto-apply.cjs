@@ -228,6 +228,7 @@ function runAutoApply({ cwd }) {
 
     let applied = 0;
     let skipped = 0;
+    let hadGateFailure = false;
     const now = new Date().toISOString();
 
     for (const suggestion of pendingSuggestions) {
@@ -244,6 +245,9 @@ function runAutoApply({ cwd }) {
           reason: rateResult.reason,
           timestamp: now,
         }, resolvedCwd);
+        suggestion.auto_apply_failed = true;
+        suggestion.failed_gate = 'rate';
+        hadGateFailure = true;
         skipped++;
         continue;
       }
@@ -259,6 +263,9 @@ function runAutoApply({ cwd }) {
           reason: qualityResult.reason,
           timestamp: now,
         }, resolvedCwd);
+        suggestion.auto_apply_failed = true;
+        suggestion.failed_gate = 'quality';
+        hadGateFailure = true;
         skipped++;
         continue;
       }
@@ -274,6 +281,9 @@ function runAutoApply({ cwd }) {
           reason: confidenceResult.reason,
           timestamp: now,
         }, resolvedCwd);
+        suggestion.auto_apply_failed = true;
+        suggestion.failed_gate = 'confidence';
+        hadGateFailure = true;
         skipped++;
         continue;
       }
@@ -289,6 +299,9 @@ function runAutoApply({ cwd }) {
           reason: sizeResult.reason,
           timestamp: now,
         }, resolvedCwd);
+        suggestion.auto_apply_failed = true;
+        suggestion.failed_gate = 'size';
+        hadGateFailure = true;
         skipped++;
         continue;
       }
@@ -340,8 +353,18 @@ function runAutoApply({ cwd }) {
           reason: applyResult.reason || 'apply_failed',
           timestamp: now,
         }, resolvedCwd);
+        suggestion.auto_apply_failed = true;
+        suggestion.failed_gate = 'apply';
+        hadGateFailure = true;
         skipped++;
       }
+    }
+
+    // Write back suggestions.json if any suggestion gained gate-failure flags
+    if (hadGateFailure) {
+      const tmpPath = suggestionsPath + '.tmp';
+      fs.writeFileSync(tmpPath, JSON.stringify(doc, null, 2));
+      fs.renameSync(tmpPath, suggestionsPath);
     }
 
     return { applied, skipped };
