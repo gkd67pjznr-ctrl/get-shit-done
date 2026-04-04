@@ -458,6 +458,22 @@ node ~/.claude/get-shit-done/bin/gsd-tools.cjs brainstorm format-results "$SESSI
   --finalists-file "$SESSION_DIR/finalists.json"
 ```
 
+Log the completed session to the persistent session index:
+
+```bash
+LOG_RESULT=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs brainstorm log-session "$PLANNING_ROOT" \
+  --topic "$TOPIC" \
+  --flags "${WILD_FLAG}${FROM_CORRECTIONS:+ $FROM_CORRECTIONS}${FROM_DEBT:+ $FROM_DEBT}${FOR_MILESTONE:+ $FOR_MILESTONE}" \
+  --idea-count "${IDEA_COUNT:-0}" \
+  --output-path "$OUTPUT_DIR")
+```
+
+Parse `session_count` from `$LOG_RESULT`. Show:
+
+```
+Session logged. Total brainstorm sessions: [session_count]
+```
+
 Show completion summary:
 
 ```

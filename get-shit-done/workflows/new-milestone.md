@@ -19,6 +19,49 @@ Read all files referenced by the invoking prompt's execution_context before star
 - Read STATE.md (pending todos, blockers)
 - Check for MILESTONE-CONTEXT.md (from /gsd:discuss-milestone)
 
+### Check for Recent Brainstorm Ideas
+
+Resolve planning root for the recent-ideas check:
+
+```bash
+PLANNING_ROOT=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs state json 2>/dev/null | node -e "
+process.stdin.resume();let d='';process.stdin.on('data',c=>d+=c);
+process.stdin.on('end',()=>{try{const p=JSON.parse(d);process.stdout.write(p.planning_root||'.planning')}catch{process.stdout.write('.planning')}})
+" 2>/dev/null || echo ".planning")
+```
+
+```bash
+RECENT_IDEAS=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs brainstorm recent-ideas "$PLANNING_ROOT" --days 30 --raw 2>/dev/null || echo '{"files":[],"count":0}')
+RECENT_COUNT=$(echo "$RECENT_IDEAS" | node -e "process.stdin.resume();let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const p=JSON.parse(d);process.stdout.write(String(p.count))}catch{process.stdout.write('0')}})")
+```
+
+**If `RECENT_COUNT` > 0:**
+
+Use AskUserQuestion to offer loading prior ideas:
+
+```
+Options:
+- "Yes, load as seed context" — Read each file in $RECENT_IDEAS.files, extract the ideas list, and store as $SEED_IDEAS for use in Step 9 (requirements gathering)
+- "No, start fresh" — Continue without loading
+```
+
+**If the user selects "Yes, load as seed context":**
+
+For each file path in the `files` array from `$RECENT_IDEAS`:
+1. Read the file
+2. Extract the ideas (everything between `# Feature Ideas` and `## Implemented` if present, or the full content)
+3. Append a summary to `$SEED_IDEAS`
+
+Display a confirmation:
+```
+Loaded [N] FEATURE-IDEAS.md file(s) as brainstorm seed context.
+These ideas will inform the requirements conversation.
+```
+
+**If `RECENT_COUNT` is 0:**
+
+No prompt shown — continue directly to Step 2.
+
 ## 2. Gather Milestone Goals
 
 **If MILESTONE-CONTEXT.md exists:**
@@ -220,6 +263,15 @@ Display key findings from SUMMARY.md:
 ```
 
 Read PROJECT.md: core value, current milestone goals, validated requirements (what exists).
+
+**If `$SEED_IDEAS` is non-empty** (user loaded prior brainstorm context in Step 1), prepend this note to the requirements-gathering conversation:
+
+```
+**Prior brainstorm context:** The following ideas were explored in recent sessions.
+Use these as inspiration and avoid retreading them unless they directly apply.
+
+[SEED_IDEAS content]
+```
 
 **If research exists:** Read FEATURES.md, extract feature categories.
 
