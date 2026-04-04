@@ -4,9 +4,10 @@
 
 const fs = require('fs');
 const path = require('path');
-const { safeReadFile, normalizePhaseName, execGit, findPhaseInternal, getMilestoneInfo, planningRoot, resolveActiveMilestone, output, error } = require('./core.cjs');
+const { safeReadFile, normalizePhaseName, execGit, findPhaseInternal, getMilestoneInfo, planningRoot, resolveActiveMilestone, output, error, loadConfig } = require('./core.cjs');
 const { extractFrontmatter, parseMustHavesBlock } = require('./frontmatter.cjs');
 const { writeStateMd } = require('./state.cjs');
+const guards = require('./transition-guards.cjs');
 
 function cmdVerifySummary(cwd, summaryPath, checkFileCount, raw) {
   if (!summaryPath) {
@@ -165,6 +166,51 @@ function cmdVerifyPlanStructure(cwd, filePath, raw) {
   }, raw, errors.length === 0 ? 'valid' : 'invalid');
 }
 
+/**
+ * Run transition guards for a phase directory.
+ *
+ * Returns a guards result object:
+ * {
+ *   skipped: boolean,          // true when quality level is fast
+ *   pass: number,
+ *   fail: number,
+ *   needsHuman: number,
+ *   failures: AssertionResult[],
+ *   humanChecks: AssertionResult[],
+ *   blocked: boolean,           // true when strict mode and failures > 0
+ * }
+ *
+ * @param {string} phaseDir    - Absolute path to phase directory
+ * @param {string} cwd         - Project root
+ * @param {'fast'|'standard'|'strict'} qualityLevel
+ * @returns {object}
+ */
+function runTransitionGuards(phaseDir, cwd, qualityLevel) {
+  // fast: skip
+  if (qualityLevel === 'fast') {
+    return { skipped: true, pass: 0, fail: 0, needsHuman: 0, failures: [], humanChecks: [], blocked: false };
+  }
+
+  const assertions = guards.parseDoneCriteria(phaseDir);
+  const results = guards.verifyAssertions(assertions, cwd);
+
+  const failures = results.filter(r => r.outcome === 'fail');
+  const humanChecks = results.filter(r => r.outcome === 'needs-human');
+  const passCount = results.filter(r => r.outcome === 'pass').length;
+
+  const blocked = qualityLevel === 'strict' && failures.length > 0;
+
+  return {
+    skipped: false,
+    pass: passCount,
+    fail: failures.length,
+    needsHuman: humanChecks.length,
+    failures,
+    humanChecks,
+    blocked,
+  };
+}
+
 function cmdVerifyPhaseCompleteness(cwd, phase, raw, milestoneScope) {
   if (!phase) { error('phase required'); }
   const phaseInfo = findPhaseInternal(cwd, phase, milestoneScope);
@@ -200,8 +246,33 @@ function cmdVerifyPhaseCompleteness(cwd, phase, raw, milestoneScope) {
     warnings.push(`Summaries without plans: ${orphanSummaries.join(', ')}`);
   }
 
+  // Transition guards
+  const qualityLevel = (() => {
+    try {
+      const cfg = loadConfig(cwd);
+      const level = (cfg.quality || {}).level;
+      if (level === 'fast' || level === 'standard' || level === 'strict') return level;
+      return 'fast';
+    } catch (e) {
+      return 'fast';
+    }
+  })();
+
+  const guardResults = runTransitionGuards(phaseDir, cwd, qualityLevel);
+
+  let passed = errors.length === 0;
+
+  if (guardResults.blocked) {
+    errors.push(
+      `Transition guards blocked: ${guardResults.fail} DONE criterion/criteria failed. ` +
+      'Fix failures before proceeding (strict mode). Run with fast or standard to warn instead.'
+    );
+    passed = false;
+  }
+
   output({
     complete: errors.length === 0,
+    passed,
     phase: phaseInfo.phase_number,
     plan_count: plans.length,
     summary_count: summaries.length,
@@ -209,6 +280,7 @@ function cmdVerifyPhaseCompleteness(cwd, phase, raw, milestoneScope) {
     orphan_summaries: orphanSummaries,
     errors,
     warnings,
+    guards: guardResults,
   }, raw, errors.length === 0 ? 'complete' : 'incomplete');
 }
 
