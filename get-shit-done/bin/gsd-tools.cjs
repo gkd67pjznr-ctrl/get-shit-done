@@ -172,6 +172,7 @@ const frontmatter = require('./lib/frontmatter.cjs');
 const debt = require('./lib/debt.cjs');
 const migrate = require('./lib/migrate.cjs');
 const benchmark = require('./lib/benchmark.cjs');
+const sessionReport = require('./lib/session-report.cjs');
 const dashboard = require('./lib/dashboard.cjs');
 
 // ─── CLI Router ───────────────────────────────────────────────────────────────
@@ -313,6 +314,16 @@ async function main() {
       } else {
         state.cmdStateLoad(cwd, raw);
       }
+      break;
+    }
+
+    case 'session-report': {
+      const lastIdx = args.indexOf('--last');
+      const rawLast = lastIdx !== -1 ? parseInt(args[lastIdx + 1], 10) : NaN;
+      sessionReport.cmdSessionReport(cwd, {
+        last: (Number.isFinite(rawLast) && rawLast > 0) ? rawLast : 10,
+        milestone_scope: milestoneScope || null,
+      }, raw);
       break;
     }
 
