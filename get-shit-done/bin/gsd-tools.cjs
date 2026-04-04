@@ -371,10 +371,13 @@ async function main() {
     }
 
     case 'mcp-classify': {
+      const planFlagIdx = args.indexOf('--plan');
+      const planPath = planFlagIdx !== -1 ? args[planFlagIdx + 1] : null;
       const taskIdx = args.indexOf('--task');
       const taskDescription = taskIdx !== -1 ? args[taskIdx + 1] : '';
-      if (!taskDescription) {
+      if (!taskDescription && !planPath) {
         console.error('Usage: mcp-classify --task "<description>" [--ext .tsx,.ts] [--raw]');
+        console.error('       mcp-classify --plan <path-to-plan.md> [--raw]');
         process.exit(1);
       }
       // Parse optional --ext comma-separated extensions
@@ -382,7 +385,7 @@ async function main() {
       const fileExtensions = extIdx !== -1
         ? (args[extIdx + 1] || '').split(',').map(e => e.trim()).filter(Boolean)
         : [];
-      mcpClassifier.cmdMcpClassify(cwd, taskDescription, fileExtensions, raw);
+      mcpClassifier.cmdMcpClassify(cwd, taskDescription, fileExtensions, raw, planPath);
       break;
     }
 

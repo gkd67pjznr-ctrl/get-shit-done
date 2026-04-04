@@ -1,5 +1,7 @@
 'use strict';
 
+const fs = require('fs');
+
 /**
  * MCP task-type classifier and server recommendation map.
  *
@@ -95,24 +97,63 @@ function classifyAndRecommend(description, fileExtensions) {
 }
 
 /**
+ * Classify an entire plan file by extracting <title>, <action>, and <files>
+ * tags and calling classifyAndRecommend on the combined text.
+ *
+ * @param {string} planPath - absolute or relative path to the plan file
+ * @returns {{ task_type: string, servers: string[] }}
+ */
+function classifyPlanForMcp(planPath) {
+  try {
+    const content = fs.readFileSync(planPath, 'utf-8');
+
+    // Extract all <title>...</title> and <action>...</action> text
+    const titleMatches = [...content.matchAll(/<title>([\s\S]*?)<\/title>/gi)];
+    const actionMatches = [...content.matchAll(/<action>([\s\S]*?)<\/action>/gi)];
+    const combinedText = [
+      ...titleMatches.map(m => m[1]),
+      ...actionMatches.map(m => m[1]),
+    ].join(' ');
+
+    // Extract file extensions from <files>...</files> blocks
+    const filesMatches = [...content.matchAll(/<files>([\s\S]*?)<\/files>/gi)];
+    const allFileText = filesMatches.map(m => m[1]).join(' ');
+    const extRegex = /\.\w+/g;
+    const fileExtensions = [...new Set((allFileText.match(extRegex) || []).map(e => e.toLowerCase()))];
+
+    return classifyAndRecommend(combinedText, fileExtensions);
+  } catch {
+    return { task_type: 'unknown', servers: [] };
+  }
+}
+
+/**
  * CLI command: mcp-classify
  *
- * @param {string} _cwd - working directory (reserved for future use)
+ * @param {string} cwd - working directory
  * @param {string} taskDescription
  * @param {string[]} fileExtensions
  * @param {boolean} raw - if true, output JSON to stdout
+ * @param {string|null} planPath - if provided, classify a plan file instead of task description
  */
-function cmdMcpClassify(_cwd, taskDescription, fileExtensions, raw) {
-  const result = classifyAndRecommend(taskDescription, fileExtensions || []);
+function cmdMcpClassify(cwd, taskDescription, fileExtensions, raw, planPath) {
+  let result;
+  if (planPath) {
+    const resolvedPath = require('path').isAbsolute(planPath)
+      ? planPath
+      : require('path').join(cwd, planPath);
+    result = classifyPlanForMcp(resolvedPath);
+  } else {
+    result = classifyAndRecommend(taskDescription, fileExtensions || []);
+  }
   if (raw) {
     process.stdout.write(JSON.stringify(result) + '\n');
   } else {
+    const serverList = result.servers.length > 0
+      ? result.servers.join(', ')
+      : '(none — task type unknown or unmapped)';
     console.log(`Task type: ${result.task_type}`);
-    if (result.servers.length > 0) {
-      console.log(`Recommended MCP servers: ${result.servers.join(', ')}`);
-    } else {
-      console.log('Recommended MCP servers: (none — task type unknown or unmapped)');
-    }
+    console.log(`Recommended MCP servers: ${serverList}`);
   }
 }
 
@@ -121,5 +162,6 @@ module.exports = {
   classifyTask,
   getMcpServers,
   classifyAndRecommend,
+  classifyPlanForMcp,
   cmdMcpClassify,
 };
