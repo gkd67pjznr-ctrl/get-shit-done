@@ -117,17 +117,20 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 - ✓ Per-skill correction rate metrics via CATEGORY_SKILL_MAP attribution with confidence tiers — v9.0
 - ✓ Skill relevance scoring with Jaccard keyword overlap, cold-start floor, dormancy decay, content-hash cache — v9.0
 
+- ✓ MCP server at /mcp on dashboard with StreamableHTTP transport, stateless per-request, Origin validation — v10.0
+- ✓ 8 read-only MCP query tools (list-projects, get-project-state, get-gate-health, get-observations, get-sessions, get-skill-metrics, get-cost-metrics, get-git-status) — v10.0
+- ✓ Installer auto-configures ~/.claude.json with mcpServers.gsd-dashboard and --no-mcp opt-out — v10.0
+- ✓ Unit tests for all 8 MCP tool handlers plus integration test for /mcp endpoint — v10.0
+
+- ✓ ESLint gate fires on PostToolUse Write events for .ts/.js/.cjs files with quality-level gating and graceful degradation — v12.0
+- ✓ Gate results persist to gate-executions.jsonl with eslint_gate type, dashboard aggregates automatically — v12.0
+- ✓ DONE criteria parser extracts verifiable assertions from `<done>` tags in plan tasks — v12.0
+- ✓ Transition guards verify assertions mechanically at verify_phase_goal before verifier agent runs — v12.0
+- ✓ Unverifiable DONE criteria surfaced for human check, quality-level gated (fast=skip, standard=warn, strict=block) — v12.0
+- ✓ Test count extracted at plan completion, persisted to phase-benchmarks.jsonl with delta computation — v12.0
+- ✓ /gsd:progress shows test count with delta, /gsd:digest surfaces test count trend table — v12.0
+
 ### Active
-
-## Current Milestone: v10.0 Shared MCP Dashboard
-
-**Goal:** Mount MCP tool endpoints on the existing dashboard server so every Claude Code session can query cross-project data (phases, gates, skills, corrections, sessions) via StreamableHTTP transport.
-
-**Target features:**
-- MCP server scaffolding on existing dashboard server (StreamableHTTP transport at `/mcp`)
-- Cross-project query tools (list-projects, get-project-state, get-gate-health, get-observations, get-sessions, get-skill-metrics)
-- Auto-configuration via installer (`install.js` wires MCP connection with `--no-mcp` opt-out)
-- Read-only tools for safety (write tools deferred)
 
 ## Current Milestone: v12.0 Quality Enforcement Evolution
 
@@ -138,6 +141,15 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 - State machine guards for phase transitions (verify DONE criteria mechanically before completion)
 - Test coverage trending (track test count per plan, surface delta in progress/digest)
 
+## Current Milestone: v13.0 Unified Observability & Context Routing
+
+**Goal:** Unify fragmented event streams into a single chronological journal, track per-skill context budget costs, and add advisory MCP server selection based on task type.
+
+**Target features:**
+- Workflow event journaling (unified workflow.jsonl with emitEvent, reader function, digest integration)
+- Context budget optimizer (per-skill token cost, cost-per-relevance ratio, deferral recommendations)
+- MCP server selection intelligence (task-type classifier, advisory recommendations before executor spawn)
+
 ## Current Milestone: v15.0 Autonomous Learning
 
 **Goal:** Close the gap between "captures data" and "acts on it" — auto-apply high-confidence skill refinements, shift code review focus per-project based on correction history, and surface when correction patterns contradict recorded decisions.
@@ -147,7 +159,29 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 - Adaptive code review profiles (per-project review focus based on correction history)
 - Decision audit trail (surface correction-decision tensions in /gsd:digest)
 
+## Current Milestone: v16.0 Multi-Milestone Batch Planner
+
+**Goal:** A `/gsd:multi-milestone` command that takes a dump of feature ideas, clusters them into milestone themes, creates N workspaces, runs per-milestone research + full requirements scoping, spawns N parallel roadmappers producing unnumbered proposals, then a roadmap synthesizer assigns all version and phase numbers and writes every artifact — all in one session.
+
+**Target features:**
+- Freeform, file-based, or brainstorm-sourced feature intake with affinity clustering
+- `--from-brainstorm NN` flag to consume `/gsd:brainstorm` output directly
+- Parallel workspace creation (N milestones, cap N<=20)
+- Per-milestone research (skip/include choice per milestone)
+- Full per-milestone requirements scoping (same UX as new-milestone)
+- Parallel roadmapping in PROPOSAL mode (unnumbered phases)
+- `gsd-roadmap-synthesizer` agent: assigns all milestone versions and phase numbers
+- Session continuity via BATCH-SESSION.md and `--resume` flag
+
 ## Completed Milestones
+
+### v12.0 Quality Enforcement Evolution — SHIPPED 2026-04-04
+
+**Delivered:** Closed remaining quality enforcement gaps — ESLint gate fires on every code file write via PostToolUse hook with quality-level gating and graceful degradation, transition guards mechanically verify DONE criteria before phase completion (no more trust-based transitions), test coverage trending tracks test count per plan and surfaces delta in progress/digest. 3 phases, 7 plans, 14/14 requirements satisfied.
+
+### v10.0 Shared MCP Dashboard — SHIPPED 2026-04-04
+
+**Delivered:** MCP server endpoints mounted on existing dashboard server via StreamableHTTP transport — 8 read-only query tools (list-projects, get-project-state, get-gate-health, get-observations, get-sessions, get-skill-metrics, get-cost-metrics, get-git-status), installer auto-configuration with --no-mcp opt-out, Origin validation, full test coverage. 2 phases, 5 plans, 16/16 requirements satisfied.
 
 ### v9.0 Signal Intelligence — SHIPPED 2026-04-04
 
@@ -187,9 +221,9 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 
 ## Context
 
-Shipped v9.0 with ~89K LOC across 17 CJS source modules + 23 test suites, plus workflow/agent Markdown specifications, 16 skills, 4 teams, a TypeScript dashboard with Gate Health page, adaptive learning pipeline, skill feedback loop, gate enforcement hooks, and signal intelligence analytics (session reports, skill metrics, skill relevance scoring, phase benchmarks, debt impact analysis).
-Tech stack: Node.js, CJS modules, TypeScript (dashboard), Markdown agent specifications, Context7 MCP.
-Tests passing across 23+ test suites.
+Shipped v12.0 with ~97K LOC across 19 CJS source modules + 27 test suites, plus workflow/agent Markdown specifications, 16 skills, 4 teams, a TypeScript dashboard with Gate Health page and MCP server, adaptive learning pipeline, skill feedback loop, gate enforcement hooks (including ESLint gate), transition guards for mechanical DONE verification, signal intelligence analytics with test coverage trending, and cross-session MCP query tools.
+Tech stack: Node.js, CJS modules, TypeScript (dashboard), Markdown agent specifications, Context7 MCP, @modelcontextprotocol/sdk v1.29.0.
+Tests: 1175+ passing across 27 test suites.
 
 **Quality enforcement** (v1.0-v1.1): Full Plan→Execute→Verify loop with Quality Sentinel, Context7 library lookup, mandatory testing, quality dimensions, config-gated enforcement levels (fast/standard/strict), and observability.
 
@@ -211,7 +245,11 @@ Tests passing across 23+ test suites.
 
 **Gate enforcement** (v8.0): Quality sentinel gates moved from agent prose instructions to deterministic PostToolUse hooks. test_gate fires on test commands, diff_review fires on code file writes. Real entries persist to gate-executions.jsonl and flow to dashboard Gate Health page.
 
-**Known tech debt:** MISS-01 resolved in v9.0. See `.planning/DEBT.md` and MILESTONES.md for remaining items.
+**Shared MCP dashboard** (v10.0): StreamableHTTP MCP server at `/mcp` on existing dashboard — 8 read-only query tools for cross-session/cross-project data access, stateless per-request transport, Origin validation, installer auto-configuration to `~/.claude.json`.
+
+**Quality enforcement evolution** (v12.0): ESLint gate fires on code file writes via PostToolUse hook (extending gate-runner.cjs), transition guards mechanically verify `<done>` criteria before phase completion (parseDoneCriteria + verifyAssertions wired into cmdVerifyPhaseCompleteness), test coverage trending tracks test count per plan with delta computation in phase-benchmarks.jsonl and surfaces in progress/digest.
+
+**Known tech debt:** See `.planning/DEBT.md` and MILESTONES.md for remaining items.
 
 ## Constraints
 
@@ -261,4 +299,4 @@ Tests passing across 23+ test suites.
 | Cross-project promotion at 3+ projects | Ensures preferences are truly universal before elevating | ✓ Good — project-specific quirks don't pollute global store |
 
 ---
-*Last updated: 2026-04-04 after v15.0 milestone start*
+*Last updated: 2026-04-04 after v16.0 milestone start*

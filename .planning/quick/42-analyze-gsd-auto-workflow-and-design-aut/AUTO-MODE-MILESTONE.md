@@ -6,7 +6,7 @@ Auto Mode allows a user to invoke `/gsd:auto` and have gsdup autonomously chain 
 
 The gsdup codebase already has the overwhelming majority of this infrastructure in place. All three workflow entry points (discuss-phase.md, plan-phase.md, execute-phase.md) have `--auto` flag parsing, `_auto_chain_active` chain flag syncing, chain flag reading, Skill()-based chaining to keep nesting flat, and stop conditions for gap/checkpoint cases. The transition.md workflow clears the chain flag at milestone boundaries and invokes the next phase's slash command with `--auto` when YOLO mode is active. new-project.md bootstraps the chain from a PRD document and sets both `auto_advance: true` in config and `_auto_chain_active: true` before invoking discuss-phase 1 --auto.
 
-What this milestone adds is narrow and precise: a `/gsd:auto` entry point that starts the chain mid-project (new-project only covers greenfield), a headless path in discuss-phase that synthesizes CONTEXT.md from the roadmap when `--auto` is active and no CONTEXT.md exists (today it still requires interactive questioning), surface-level observability in the MCP dashboard, and safety-cap enforcement via `auto_chain_max_phases`. Together these four additions close the loop from "chain mechanics work" to "a user can type `/gsd:auto` on any active milestone and walk away."
+What this milestone adds: a `/gsd:auto` entry point that starts the chain mid-project (new-project only covers greenfield), a headless path in discuss-phase that synthesizes CONTEXT.md from the roadmap when `--auto` is active (today it still requires interactive questioning), surface-level observability in the MCP dashboard, **multi-milestone chaining** that runs through ALL planned milestones end-to-end (auto-completing each milestone and advancing to the next), and **doctor checkpoints** — periodic self-assessment where GSD code-reviews its own recent output, checks test trends, and flags quality drift before continuing. Together these additions close the loop from "chain mechanics work" to "a user can type `/gsd:auto` and walk away while the entire project builds itself, with periodic health checks."
 
 ---
 
@@ -81,13 +81,21 @@ When `--auto` is active and no CONTEXT.md exists, discuss-phase still runs its f
 
 The MCP dashboard has panels for gate health, skill loads, and brainstorm ideas, but nothing that shows: is the chain currently running? What phase is it on? How many phases are left? When a chain is active, the user has no observability without reading STATE.md manually.
 
-### Gap 4: No runaway prevention (auto_chain_max_phases)
+### Gap 4: No periodic self-assessment (doctor checkpoints)
 
-There is no mechanism to cap how many phases auto-advance can chain before pausing for a check-in. A 52-phase milestone run completely headless with no intervention points (beyond human-action checkpoints) may be more automation than a user intends. `auto_chain_max_phases` provides a configurable safety cap.
+There is no mechanism for GSD to periodically assess whether its own output is drifting in quality. Over a long auto chain (dozens of phases across multiple milestones), quality problems can compound. Doctor checkpoints provide a "health check" that code-reviews recent changes, checks test health, monitors correction density, and flags scope drift.
 
-### Gap 5: auto_chain_max_phases missing from /gsd:settings
+### Gap 5: No multi-milestone chaining
 
-This flows from Gap 4. Once `auto_chain_max_phases` is implemented, it must be exposed in `/gsd:settings` so users can configure it without manually editing config.json. (Note: `auto_advance` is already in settings — this gap is specifically about the new integer setting for max phases.)
+The chain stops at milestone boundaries (`is_last_phase` clears `_auto_chain_active`). For a full project autopilot, the chain must cross milestone boundaries — auto-completing each milestone (audit → archive) and advancing to the next. This requires modifying transition.md Route B and making `/gsd:complete-milestone` auto-invocable.
+
+### Gap 6: No gate auto-retry for strict mode
+
+When `quality.level` is `"strict"` and a gate blocks, execution stops immediately. In auto mode this is too aggressive — the executor should get one automatic retry to fix the issue before the chain stops. This reduces false-positive interruptions.
+
+### Gap 7: doctor_interval missing from /gsd:settings
+
+Once doctor checkpoints are implemented, the interval must be exposed in `/gsd:settings` so users can configure it without manually editing config.json.
 
 ---
 
@@ -97,7 +105,7 @@ This flows from Gap 4. Once `auto_chain_max_phases` is implemented, it must be e
 
 - **AC-01:** `/gsd:auto` slash command reads STATE.md to find current incomplete phase, validates the phase is not already complete, sets `_auto_chain_active=true`, and invokes `Skill("gsd:discuss-phase", "{phase} --auto")`. If no CONTEXT.md exists for the phase, the headless path (HD-01) handles it.
 - **AC-02:** `/gsd:auto --from N` flag overrides STATE.md phase detection and starts the chain at phase N. Validates phase N exists in ROADMAP.md.
-- **AC-03:** `/gsd:auto --phases N` flag sets `auto_chain_max_phases=N` for this run (one-time, does not write to config). Chain pauses after N phases regardless of milestone progress.
+- **AC-03:** `/gsd:auto --discuss` flag forces interactive discuss-phase for the current phase only, then resumes auto chain for subsequent phases. Overrides headless synthesis for that one phase.
 - **AC-04:** `new-project --auto` already bootstraps the chain — this is pre-met. Document it as implemented and verify the config-set + SlashCommand sequence at lines 195, 212, 1074 of new-project.md.
 - **AC-05:** Chain flag persists across context compaction via disk-backed `_auto_chain_active` in config.json — pre-met. Document as implemented invariant.
 - **AC-06:** `--stop` flag: `/gsd:auto --stop` clears `_auto_chain_active` immediately and displays confirmation. No chaining occurs.
@@ -111,10 +119,31 @@ This flows from Gap 4. Once `auto_chain_max_phases` is implemented, it must be e
 
 ### SETTINGS (ST) — User Control Surface
 
-- **ST-01:** `/gsd:settings` exposes `workflow.auto_chain_max_phases` as a configurable integer with label "Auto-chain phase cap" and description "Maximum phases to chain before pausing for a check-in (0 = unlimited)". Default: 0.
-- **ST-02:** `/gsd:settings` update_config step writes `workflow.auto_chain_max_phases` to config.json alongside the existing `auto_advance` field.
-- **ST-03:** `/gsd:settings` save_as_defaults step includes `auto_chain_max_phases` in `~/.gsd/defaults.json`.
+- **ST-01:** `/gsd:settings` exposes `workflow.doctor_interval` as a configurable integer with label "Doctor checkpoint interval" and description "Run self-assessment every N phases (0 = disabled)". Default: 5.
+- **ST-02:** `/gsd:settings` update_config step writes `workflow.doctor_interval` to config.json alongside the existing `auto_advance` field.
+- **ST-03:** `/gsd:settings` save_as_defaults step includes `doctor_interval` in `~/.gsd/defaults.json`.
 - **ST-04:** `gsd-tools config-get workflow._auto_chain_active` already works (pre-met) — document as the mechanism for querying live chain state.
+
+### MULTI-MILESTONE (MM) — Cross-Milestone Chaining
+
+- **MM-01:** At milestone boundary (`is_last_phase: true`), when auto chain is active, transition.md auto-invokes the full milestone completion flow: `audit-milestone` → `complete-milestone` → archive.
+- **MM-02:** After milestone completion, auto chain detects the next planned milestone from MILESTONES.md / ROADMAP.md. If one exists, invokes `/gsd:auto` on the new milestone's first phase.
+- **MM-03:** If no more milestones are planned, chain terminates with summary: milestones completed, total phases, total time.
+- **MM-04:** `/gsd:complete-milestone` must be auto-invocable when `_auto_chain_active` is true — skip confirmation prompts, auto-approve archive.
+- **MM-05:** Milestone boundary transitions log to `auto-chain-log.jsonl`: `{ event: "milestone_complete", milestone: "vN.0", phases: N, timestamp }`.
+
+### DOCTOR CHECKPOINTS (DC) — Self-Assessment
+
+- **DC-01:** Every `workflow.doctor_interval` phases (default: 5), the auto chain spawns a "doctor" self-assessment agent before continuing to the next phase.
+- **DC-02:** Doctor agent runs 4 diagnostic checks:
+  1. **Code review**: Spawns code-review agent on git diff of last N phases — checks for quality drift, dead code, missing tests.
+  2. **Test health**: Runs `npm test` (or project test command), checks pass rate and coverage trend (if available).
+  3. **Correction density**: Reads corrections.jsonl, computes correction rate for recent phases vs project average. Flags if trending up.
+  4. **Scope drift**: Compares git diff size (lines changed) to plan scope (estimated from PLAN.md task count). Flags if actual >> expected.
+- **DC-03:** Doctor produces a diagnostic report: `DOCTOR-CHECK-{N}.md` in `.planning/auto-chain/`.
+- **DC-04:** If all checks pass: log "Doctor check passed at phase {N}", continue chain automatically.
+- **DC-05:** If any check flags issues: pause chain, present diagnostic report, ask "Continue, investigate, or stop?" via AskUserQuestion.
+- **DC-06:** Doctor check interval is configurable via `/gsd:settings` (ST-01) and `/gsd:auto --doctor-interval N` flag.
 
 ### DASHBOARD (DB) — Observability
 
@@ -123,13 +152,14 @@ This flows from Gap 4. Once `auto_chain_max_phases` is implemented, it must be e
 - **DB-03:** Dashboard panel updates via standard MCP poll (same pattern as gate-health and skill-loads panels — no push required).
 - **DB-04:** When `_auto_chain_active` is false, panel displays "Idle — run /gsd:auto to start chain" with the current phase as the suggested entry point.
 
-### SAFETY (SF) — Runaway Prevention
+### SAFETY (SF) — Runaway Prevention & Quality
 
-- **SF-01:** When `workflow.auto_chain_max_phases` is non-zero and the chain has advanced that many phases in the current session, the chain pauses before invoking the next discuss-phase. Displays: phases completed, time elapsed, phase names completed, and "Continue N more phases? (y/n)" prompt.
-- **SF-02:** On pause (SF-01), user must explicitly continue. `/gsd:auto --phases N` can be used to continue with a new cap. The chain flag (`_auto_chain_active`) remains true during the pause — it is not cleared, preventing accidental orphan chains on context reset.
+- **SF-01:** Doctor checkpoints (DC-01 through DC-06) serve as the primary runaway prevention mechanism, replacing the dropped `auto_chain_max_phases` cap. The doctor self-assesses quality drift, test health, correction density, and scope creep at configurable intervals.
+- **SF-02:** When `quality.level` is `"strict"` and a gate blocks during auto mode, the executor gets ONE automatic retry to fix the issue. If the retry also fails, the chain stops and presents the issue. This is the "auto-retry once" policy.
 - **SF-03:** `human-action` checkpoints always block regardless of `auto_advance` or `_auto_chain_active` settings — pre-met by execute-phase.md checkpoint_handling at line 266. Document as hard invariant. No code change needed.
 - **SF-04:** `gaps_found` from verify_phase_goal stops the chain and presents the manual recovery path (`/gsd:plan-phase {X} --gaps`) — pre-met by discuss-phase.md return routing (lines 698–701) and plan-phase.md return routing (lines 575–582). Document as hard invariant. No code change needed.
 - **SF-05:** `/gsd:auto --stop` clears `_auto_chain_active` immediately (AC-06). This is the emergency stop. Implemented as part of the `/gsd:auto` command (Phase 84).
+- **SF-06:** Milestone completion in auto mode is logged to `auto-chain-log.jsonl` for auditability (MM-05). If milestone audit fails, chain stops with audit report.
 
 ---
 
@@ -147,14 +177,15 @@ This flows from Gap 4. Once `auto_chain_max_phases` is implemented, it must be e
 
 - **84-01: Create `/gsd:auto` slash command**
   - File: `project-claude/commands/gsd/auto.md`
-  - Step 1: Parse flags: `--from N`, `--phases N`, `--stop`
+  - Step 1: Parse flags: `--from N`, `--discuss`, `--stop`, `--doctor-interval N`
   - Step 2 (`--stop` path): `config-set workflow._auto_chain_active false`, display "Auto chain cleared." Stop.
   - Step 3 (normal path): Load STATE.md, parse current incomplete phase. If `--from N` provided, use N instead.
   - Step 4: Validate phase exists in ROADMAP.md. Error if not found or already complete.
-  - Step 5: If `--phases N` provided, set `workflow.auto_chain_max_phases=N` in config (one-time).
+  - Step 5: If `--doctor-interval N` provided, set `workflow.doctor_interval=N` in config.
   - Step 6: `config-set workflow._auto_chain_active true`
-  - Step 7: Display banner: "Auto chain starting at Phase {N} — {name}. Chain will run to milestone boundary."
-  - Step 8: `Skill(skill="gsd:discuss-phase", args="{phase} --auto")`
+  - Step 7: Display banner: "Auto chain starting at Phase {N} — {name}. Chain will run through all planned milestones."
+  - Step 8: If `--discuss` flag set, invoke `Skill(skill="gsd:discuss-phase", args="{phase}")` (interactive, no --auto for this one phase), then after return, invoke `Skill(skill="gsd:plan-phase", args="{phase} --auto")` to resume auto chain.
+  - Step 8 (default): `Skill(skill="gsd:discuss-phase", args="{phase} --auto")`
   - After return: Display chain result (COMPLETE, PAUSED, STOPPED).
   - Must install into project-claude layer (not global ~/.claude/commands) — gsdup project-specific command.
 
@@ -212,12 +243,12 @@ This flows from Gap 4. Once `auto_chain_max_phases` is implemented, it must be e
 
 **Plans:**
 
-- **86-01: Wire `auto_chain_max_phases` into `/gsd:settings` workflow**
+- **86-01: Wire `doctor_interval` into `/gsd:settings` workflow**
   - File: `get-shit-done/workflows/settings.md`
-  - Add 9th AskUserQuestion option: "Auto-chain phase cap?" with description "Max phases to chain before pausing (0 = unlimited, recommended for first use)". Integer input or "Unlimited" select.
-  - update_config step: add `workflow.auto_chain_max_phases` to config JSON shape.
-  - save_as_defaults step: include `auto_chain_max_phases` in `~/.gsd/defaults.json`.
-  - confirm display step: add "Auto-chain cap | {value}" row to the settings table.
+  - Add 9th AskUserQuestion option: "Doctor checkpoint interval?" with description "Run self-assessment every N phases (0 = disabled, 5 = recommended)". Integer input.
+  - update_config step: add `workflow.doctor_interval` to config JSON shape.
+  - save_as_defaults step: include `doctor_interval` in `~/.gsd/defaults.json`.
+  - confirm display step: add "Doctor interval | every {value} phases" row to the settings table.
   - Note: `auto_advance` boolean is already wired (lines 81–88, 136, 187) — do NOT remove or alter it.
 
 - **86-02: Add `auto-chain-status` MCP tool and `AutoChainPanel` dashboard panel**
@@ -237,50 +268,90 @@ This flows from Gap 4. Once `auto_chain_max_phases` is implemented, it must be e
 
 ---
 
-### Phase 87: Safety Rails & Integration Tests
+### Phase 87: Doctor Checkpoints & Gate Retry
 
-**Goal:** Runaway prevention works end-to-end, all safety invariants are documented and regression-tested, and the complete auto-chain can be demonstrated with a controlled test scenario.
+**Goal:** Doctor self-assessment runs at configurable intervals during auto chain, code-reviewing recent output and checking for quality drift. Gate retry gives the executor one chance to fix strict-mode blocks before stopping the chain.
 
-**Depends on:** Phases 84–86 all complete.
+**Depends on:** Phase 84 (chain state), Phase 86 (doctor_interval setting).
 
-**Requirements:** SF-01, SF-02, SF-03 (doc), SF-04 (doc), SF-05.
+**Requirements:** DC-01, DC-02, DC-03, DC-04, DC-05, DC-06, SF-01, SF-02.
 
 **Plans:**
 
-- **87-01: Implement `auto_chain_max_phases` enforcement in auto_advance steps**
-  - Files: `get-shit-done/workflows/discuss-phase.md`, `plan-phase.md`
-  - In each `auto_advance` step, before invoking the next Skill():
-    1. Read `workflow.auto_chain_max_phases` from config.
-    2. Read `workflow._auto_chain_phase_count` from config (new counter — incremented on each phase advance).
-    3. If `max_phases > 0` AND `phase_count >= max_phases`: pause chain.
-    4. Pause display:
-       ```
-       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        GSD ► AUTO-CHAIN PAUSED — phase cap reached
-       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-       Phases completed this run: {phase_count}
-       Phases completed: {list of phase names}
-       Continue? Run: /gsd:auto --phases {N}
-       Or clear chain: /gsd:auto --stop
-       ```
-    5. Stop. Do NOT invoke next Skill(). Do NOT clear `_auto_chain_active`.
-  - Add `_auto_chain_phase_count` counter: incremented in discuss-phase auto_advance when chain flag is already active (each phase advance increments). Cleared when `_auto_chain_active` is set to false.
+- **87-01: Implement doctor checkpoint agent and chain integration**
+  - Files: `get-shit-done/workflows/discuss-phase.md`, `get-shit-done/agents/gsd-doctor.md` (new)
+  - Create `gsd-doctor.md` agent spec — a diagnostic subagent that runs 4 checks:
+    1. **Code review**: `git diff HEAD~{N}..HEAD` — spawn code-review skill on the diff
+    2. **Test health**: run project test command, check for failures or coverage regression
+    3. **Correction density**: read corrections.jsonl, compare recent phase rate to project average
+    4. **Scope drift**: compare actual lines changed to plan task count (heuristic: >3x expected = flag)
+  - Output: `DOCTOR-CHECK-{N}.md` in `.planning/auto-chain/` with pass/flag/fail per check
+  - Wire into discuss-phase auto_advance step:
+    1. Read `workflow.doctor_interval` from config (default: 5, 0 = disabled)
+    2. Read `workflow._auto_chain_phase_count` from config (incremented each phase)
+    3. If `doctor_interval > 0` AND `phase_count % doctor_interval == 0`: spawn doctor agent
+    4. If doctor passes: log "Doctor check passed", increment counter, continue chain
+    5. If doctor flags issues: pause chain, present report, AskUserQuestion "Continue, investigate, or stop?"
+  - Counter (`_auto_chain_phase_count`): incremented in discuss-phase auto_advance, reset when `_auto_chain_active` cleared
 
-- **87-02: Integration tests and invariant documentation**
-  - File: `get-shit-done/references/auto-mode.md` (extend from Phase 84)
-  - Document hard safety invariants (no code change — pre-met):
-    - `human-action` checkpoints always block: execute-phase.md `checkpoint_handling`, line 266.
-    - `gaps_found` stops chain: discuss-phase.md lines 698–701, plan-phase.md lines 575–582.
-    - `is_last_phase: true` clears chain flag: transition.md line 467.
-  - Document configurable safety rail: `auto_chain_max_phases` enforcement (Phase 87-01).
-  - Write verification test scenarios (as numbered checklists, not code tests — these are workflow files, not compiled code):
+- **87-02: Implement gate auto-retry in execute-phase**
+  - File: `get-shit-done/workflows/execute-phase.md`
+  - In checkpoint_handling: when `quality.level == "strict"` and a gate blocks:
+    1. First occurrence: log "Gate blocked — auto-retrying", re-run the executor task
+    2. Second occurrence (same gate): stop chain, present issue to user
+  - Track retry state via `_gate_retry_count` in executor context (not persisted — per-execution only)
+
+---
+
+### Phase 88: Multi-Milestone Chaining & Integration Tests
+
+**Goal:** Auto chain crosses milestone boundaries automatically, completing each milestone (audit → verify → archive) and advancing to the next. Chain continues until no more milestones are planned. All safety invariants documented and tested end-to-end.
+
+**Depends on:** Phases 84–87 all complete.
+
+**Requirements:** MM-01, MM-02, MM-03, MM-04, MM-05, SF-03 (doc), SF-04 (doc), SF-06.
+
+**Plans:**
+
+- **88-01: Wire multi-milestone chaining into transition.md**
+  - File: `get-shit-done/workflows/transition.md`
+  - Modify Route B (`is_last_phase: true`):
+    - Current behavior: clears `_auto_chain_active`, invokes `/gsd:complete-milestone`
+    - New behavior when `_auto_chain_active` is true:
+      1. Do NOT clear `_auto_chain_active`
+      2. Auto-invoke milestone completion flow: `Skill("gsd:audit-milestone")` → `Skill("gsd:complete-milestone", "{version} --auto")`
+      3. Log to `auto-chain-log.jsonl`: `{ event: "milestone_complete", milestone, phases_completed, timestamp }`
+      4. Detect next planned milestone from MILESTONES.md / main ROADMAP.md
+      5. If next milestone exists: `Skill("gsd:discuss-phase", "{first_phase} --auto")` on new milestone
+      6. If no more milestones: clear `_auto_chain_active`, display final summary (milestones completed, total phases, total time)
+  - Modify `/gsd:complete-milestone` to accept `--auto` flag:
+    - Skip confirmation prompts
+    - Auto-approve archive
+    - Return milestone summary instead of interactive next-steps
+  - If milestone audit fails (gaps found): stop chain, present audit report, require human decision
+
+- **88-02: Integration tests and invariant documentation**
+  - File: `get-shit-done/references/auto-mode.md` (extend)
+  - Document all safety invariants:
+    - `human-action` checkpoints always block: execute-phase.md line 266
+    - `gaps_found` stops chain: discuss-phase.md lines 698–701, plan-phase.md lines 575–582
+    - Doctor checkpoints flag quality drift: discuss-phase auto_advance step
+    - Gate auto-retry: one chance before stopping chain
+    - Milestone audit failure stops chain with report
+    - No-more-milestones terminates chain with summary
+  - Write verification test scenarios:
     - Scenario A: `human-action` checkpoint blocks regardless of `auto_advance: true`
     - Scenario B: `gaps_found` stops chain at discuss-phase return routing
-    - Scenario C: `is_last_phase: true` clears chain flag at milestone boundary
-    - Scenario D: `auto_chain_max_phases=2` pauses after 2 phases
-    - Scenario E: `/gsd:auto --stop` clears chain immediately without running any phase
-    - Scenario F: CONTEXT.md already exists — headless path skips synthesis
-    - Scenario G: No CONTEXT.md — headless path synthesizes and planner accepts output
+    - Scenario C: Multi-milestone chain crosses boundary and starts next milestone
+    - Scenario D: No more milestones — chain terminates with summary
+    - Scenario E: `/gsd:auto --stop` clears chain immediately
+    - Scenario F: CONTEXT.md exists — headless path skips synthesis
+    - Scenario G: No CONTEXT.md — headless path synthesizes, planner accepts
+    - Scenario H: Strict quality gate blocks — auto-retry once, then stop
+    - Scenario I: Doctor check flags issues — chain pauses with diagnostic report
+    - Scenario J: Doctor check passes — chain continues with log entry
+    - Scenario K: Milestone audit fails — chain stops with audit report
+    - Scenario L: `--discuss` flag forces interactive discussion for one phase, then resumes auto
 
 ---
 
@@ -298,19 +369,20 @@ The existing Skill() invocations in the codebase:
 
 ### Config Key Architecture
 
-Three config keys govern auto mode:
+Four config keys govern auto mode:
 
 | Key | Type | Scope | Description |
 |-----|------|-------|-------------|
 | `workflow.auto_advance` | boolean | Persistent preference | User's standing preference. Survives sessions. Set via /gsd:settings or new-project --auto. |
-| `workflow._auto_chain_active` | boolean | Ephemeral (disk-backed) | Chain is currently running. Cleared on manual invocations, milestone boundaries, --stop, gaps found. |
-| `workflow.auto_chain_max_phases` | integer | Persistent preference | Safety cap. 0 = unlimited. Set via /gsd:settings or /gsd:auto --phases N (one-time). |
-| `workflow._auto_chain_phase_count` | integer | Ephemeral (session) | Counter for phases advanced in current chain run. Reset when `_auto_chain_active` is cleared. |
+| `workflow._auto_chain_active` | boolean | Ephemeral (disk-backed) | Chain is currently running. Cleared on manual invocations, --stop, gaps found, or no-more-milestones. NOT cleared at milestone boundary (chains across milestones). |
+| `workflow.doctor_interval` | integer | Persistent preference | Doctor checkpoint interval. 0 = disabled, 5 = recommended. Set via /gsd:settings or /gsd:auto --doctor-interval N. |
+| `workflow._auto_chain_phase_count` | integer | Ephemeral (session) | Counter for phases advanced in current chain run. Used by doctor checkpoint trigger. Reset when `_auto_chain_active` is cleared. |
 
-The two-key design (persistent preference + ephemeral chain flag) is intentional:
+Key design decisions:
 - User can set `auto_advance=true` without triggering a chain (chain only starts when `--auto` is passed or `/gsd:auto` is invoked).
 - Manual invocation of any workflow clears `_auto_chain_active` without touching `auto_advance` preference.
 - Interrupted chains do not re-trigger on next session start.
+- **Multi-milestone**: `_auto_chain_active` is NOT cleared at milestone boundaries — chain continues through all planned milestones. Only cleared on: manual invocation, `--stop`, gaps_found, or no more milestones.
 
 ### discuss-phase Headless Path Decision
 
@@ -330,9 +402,14 @@ The auto-chain panel follows the exact same pattern as existing panels:
 | Generator wiring | `src/dashboard/dashboard-generator.ts` | existing barrel entries |
 | Barrel export | `src/components/panels/index.ts` | existing exports |
 
-### Milestone vs Phase Boundary
+### Milestone Boundary Chaining
 
-`/gsd:auto` operates within a single milestone. It starts at the current position in STATE.md and runs until `is_last_phase` triggers the chain flag clear in transition.md (line 467). To chain across milestones, the user runs `/gsd:auto` again after `/gsd:complete-milestone`. This is intentional: milestone boundaries are natural human checkpoints. Crossing milestone boundaries automatically would remove a meaningful review opportunity.
+`/gsd:auto` chains through ALL planned milestones. At `is_last_phase`, instead of clearing the chain flag, transition.md auto-invokes the milestone completion flow (audit → complete → archive), then detects the next planned milestone and continues the chain. The chain only terminates when:
+1. No more milestones are planned
+2. A blocking condition occurs (human-action, gaps_found, doctor flags, gate block after retry)
+3. User runs `/gsd:auto --stop`
+
+Doctor checkpoints serve as the periodic review mechanism, replacing the milestone-boundary-as-checkpoint pattern. This gives finer-grained control: a user can set `doctor_interval: 3` to get a health check every 3 phases regardless of milestone boundaries.
 
 ### Settings Backward Compatibility
 
@@ -346,16 +423,17 @@ The auto-chain panel follows the exact same pattern as existing panels:
 |-------|-------|------------|---------------|
 | 84 | 2 | Low | `project-claude/commands/gsd/auto.md` (new), `get-shit-done/references/auto-mode.md` (new) |
 | 85 | 2 | Medium | `get-shit-done/workflows/discuss-phase.md` (modify) |
-| 86 | 2 | Medium-High | `get-shit-done/workflows/settings.md` (modify), `src/mcp/tools/auto-chain-status.ts` (new), `src/dashboard/collectors/auto-chain-collector.ts` (new), `src/components/panels/auto-chain/AutoChainPanel.tsx` (new) |
-| 87 | 2 | Medium | `get-shit-done/workflows/discuss-phase.md` + `plan-phase.md` (modify), `get-shit-done/references/auto-mode.md` (extend) |
+| 86 | 2 | Medium-High | `get-shit-done/workflows/settings.md` (modify), `src/mcp/tools/auto-chain-status.ts` (new), dashboard components (new) |
+| 87 | 2 | High | `get-shit-done/agents/gsd-doctor.md` (new), `discuss-phase.md` (modify), `execute-phase.md` (modify) |
+| 88 | 2 | High | `get-shit-done/workflows/transition.md` (modify), `complete-milestone` (modify), `references/auto-mode.md` (extend) |
 
-Total: 8 plans across 4 phases — comparable to v13.0 Unified Observability.
+Total: 10 plans across 5 phases. Larger than any single previous milestone — closest comparison is v8.0 Close the Loop (4 phases) + v9.0 Signal Intelligence (6 phases) combined.
 
 ---
 
 ## What This Enables
 
-Once v16.0 ships, a user mid-project can type:
+Once v16.0 ships, a user can type:
 
 ```
 /gsd:auto
@@ -367,25 +445,69 @@ And gsdup will:
 3. If CONTEXT.md exists: use it directly
 4. Plan the phase with research and verification
 5. Execute all plans, auto-approving `human-verify` and `decision` checkpoints
-6. Transition to the next phase
-7. Repeat until milestone boundary (`is_last_phase: true`) or a blocking condition
+6. If strict gate blocks: auto-retry once before stopping
+7. Transition to the next phase
+8. Every N phases (configurable): run doctor self-assessment — code review, test health, correction density, scope drift
+9. At milestone boundary: auto-complete milestone (audit → archive), advance to next milestone
+10. Repeat until no more milestones are planned or a blocking condition occurs
 
-The only times the user must intervene:
-- `human-action` checkpoint (auth gates, destructive operations — hard invariant, cannot be automated)
+**The user can walk away while the entire project builds itself.**
+
+The only times intervention is required:
+- `human-action` checkpoint (auth gates, destructive operations — hard invariant)
 - Verification `gaps_found` (quality issues need human judgment — hard invariant)
-- `auto_chain_max_phases` cap reached (configurable safety check-in)
-- Milestone boundary (natural stopping point — run `/gsd:auto` again to continue next milestone)
+- Doctor check flags quality drift (configurable interval, presents diagnostic report)
+- Strict gate blocks after auto-retry (quality enforcement)
+- Milestone audit failure (gaps in milestone requirements)
+- No more milestones planned (chain complete — natural termination)
+
+Optional mid-chain intervention:
+- `/gsd:auto --discuss` — force interactive discussion for next phase, then resume auto
+- `/gsd:auto --stop` — emergency stop, clears chain immediately
 
 ---
 
-## Open Questions
+## Design Decisions (Resolved 2026-04-04)
 
-1. **discuss-phase headless quality**: Will plans generated from auto-synthesized CONTEXT.md be as good as plans from interactive discussion? The synthesized stub gives Claude full discretion on implementation — this is probably fine for well-specified phases with detailed ROADMAP goals, but may produce weaker plans for phases with vague goals. A potential mitigation: add a `--discuss` flag to `/gsd:auto` that forces interactive discuss-phase even in auto mode, for phases where the user wants to provide direction before the chain runs. This flag would override the headless path for that specific phase only.
+These questions were resolved in discussion with the user. Decisions are **locked** — treat as requirements.
 
-2. **Phase count tracking across context compaction**: `_auto_chain_phase_count` is described as ephemeral-but-disk-backed. If the context compacts mid-chain, the counter persists in config.json and can be read on the next invocation. But "phases in this chain run" semantics become ambiguous if the user manually runs a phase between two auto-chain segments. Consider whether `_auto_chain_phase_count` should reset whenever `_auto_chain_active` is cleared (current proposal), or persist across multiple chain runs for accurate total tracking. The current proposal (reset on clear) is simpler and matches the SF-01 use case (per-run cap).
+### 1. Headless discuss: `--discuss` override — APPROVED
 
-3. **multi-milestone auto**: Is there a use case for `/gsd:auto --all-milestones` that chains across milestone boundaries? Probably not — milestone boundaries exist for good reason, and crossing them automatically removes a natural human checkpoint. Deferred from v16.0. If requested in the future, the mechanism would be: on milestone boundary, instead of displaying "complete milestone" prompt, auto-invoke `/gsd:complete-milestone` and then `/gsd:auto` on the next milestone. The safety implications of unattended milestone completion (archiving, state writes) warrant a separate design discussion.
+Add a `--discuss` flag to `/gsd:auto` that forces interactive discuss-phase for the current phase only, then resumes auto chain. This lets the user provide direction on specific phases mid-chain. The headless path (auto-synthesize from ROADMAP) remains the default for unattended phases.
 
-4. **PRD-driven auto per-phase**: `/gsd:auto --prd prd.md` would use the PRD express path for CONTEXT.md in every phase. This is interesting but complex — the PRD covers the whole product, individual phases need per-phase extraction from the PRD rather than using it wholesale. This would require a "PRD chunking" step that extracts the relevant section for each phase. Deferred to a Phase 85 follow-on or v17.0.
+**Impact:** New flag on `/gsd:auto` command (Phase 84), discuss-phase must detect `--discuss` override even when `--auto` is active.
 
-5. **Auto-mode quality gate interaction**: When `quality.level` is `"strict"`, gates block on issues. In auto mode, a gate block stops execution and presents the issue to the user. This is correct behavior — strict gates should never be bypassed by auto mode. However, the current codebase does not explicitly document this interaction. Phase 87-02 should add a Scenario H: "auto mode + strict quality level — gate block stops chain" to the invariants documentation.
+### 2. Phase cap: NOT NEEDED — DROPPED
+
+`auto_chain_max_phases` is dropped entirely. Milestone boundaries + human-action checkpoints + doctor checkpoints (see #3) are sufficient safety rails. This simplifies the config architecture (3 keys instead of 4), removes Phase 87-01 enforcement logic, and removes ST-01/ST-02/ST-03 settings wiring.
+
+**Impact:** Remove AC-03, SF-01, SF-02, ST-01, ST-02, ST-03. Remove `_auto_chain_phase_count` counter. Phase 87-01 becomes doctor checkpoint implementation instead.
+
+### 3. Multi-milestone chaining: FULL PIPELINE — MAJOR SCOPE EXPANSION
+
+The auto chain should NOT stop at milestone boundaries. Instead, `/gsd:auto` chains through ALL planned milestones end-to-end:
+- At milestone boundary: auto-invoke the full completion flow (audit → verify → integration-check → complete-milestone → archive)
+- After milestone completion: detect next planned milestone, invoke `/gsd:auto` on it
+- Continue until no more milestones are planned or a blocking condition occurs
+
+**Doctor checkpoints:** Periodically (every N phases, configurable), GSD enters a self-assessment workflow:
+- Spawns a code-review agent to audit recent changes for quality drift
+- Checks test coverage trends (are tests still passing? coverage dropping?)
+- Reviews correction density (has the learning loop flagged recurring issues?)
+- Checks git diff size vs plan scope (scope creep detection)
+- If issues found: pauses chain, presents diagnostic report, asks "Continue or investigate?"
+- If clean: logs "Doctor check passed at phase {N}", continues chain
+
+This transforms auto mode from "single milestone autopilot" to "full project autopilot with periodic health checks."
+
+**Impact:** Adds new requirement group (DC — Doctor Checkpoints). Adds new phase (88: Multi-Milestone Chaining + Doctor). Transition.md Route B must chain instead of stopping. Complete-milestone must be auto-invocable.
+
+### 4. Strict quality gates: AUTO-RETRY ONCE — APPROVED
+
+When `quality.level` is `"strict"` and a gate blocks during auto mode, the executor gets one automatic retry to fix the issue before stopping the chain. This reduces false-positive interruptions while maintaining quality enforcement. If the retry also fails, the chain stops and presents the issue.
+
+**Impact:** execute-phase checkpoint_handling needs a retry counter for gate blocks. Phase 87-02 adds Scenario H: "auto mode + strict quality — gate retry then block."
+
+### 5. PRD-driven auto per-phase: DEFERRED to v17.0
+
+No change from original proposal. PRD chunking is interesting but complex — deferred.
