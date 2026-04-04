@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: active
-stopped_at: Plan 39-03 complete — cmdDebtImpact with source_phase correlation, CLI wired, fix-debt Step 1a surfacing impact
-last_updated: "2026-04-03T06:00:00.000Z"
-last_activity: "2026-04-03 — Plan 39-03 complete: debt impact analysis with correction linkage and fix-debt integration"
+stopped_at: Plan 39-02 complete — benchmark.cjs, state benchmark-plan CLI, execute-plan.md update_current_position, /gsd:digest step 3h
+last_updated: "2026-04-04T05:35:00.000Z"
+last_activity: "2026-04-04 — Plan 39-02 complete: phase benchmarking with JSONL append, correction/gate counts, digest trends"
 progress:
   total_phases: 6
   completed_phases: 2
-  total_plans: 3
-  completed_plans: 3
-  percent: 18
+  total_plans: 4
+  completed_plans: 4
+  percent: 25
 ---
 
 # Project State — Milestone v9.0 Signal Intelligence
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 39 — Data Capture Triad (plans 01 and 03 complete)
+**Current focus:** Phase 39 — Data Capture Triad (all 3 plans complete)
 
 ## Current Position
 
 Phase: 39 of 42 (data-capture-triad)
 Plan: 3 of 3 in current phase
-Status: Plans 01 and 03 complete; Plan 02 (BNCH) outstanding
-Last activity: 2026-04-03 — Plan 39-03 complete: debt impact analysis with correction linkage and fix-debt integration
+Status: All plans complete (01, 02, 03)
+Last activity: 2026-04-04 — Plan 39-02 complete: phase benchmarking with JSONL append, correction/gate counts, digest trends
 
-Progress: [███░░░░░░░] 37% (3/8 plans)
+Progress: [████░░░░░░] 50% (4/8 plans)
 
 ## Performance Metrics
 
@@ -67,6 +67,9 @@ Progress: [███░░░░░░░] 37% (3/8 plans)
 - Plan 39-03: cmdDebtImpact uses object identity deduplication (allMatched.includes(c)) not index sets — ensures phase+component union works correctly
 - Plan 39-03: tests call CLI via runGsdTools('debt impact --raw') — implementation must be wired in gsd-tools.cjs before tests can pass
 - Plan 39-03: corrections.jsonl entries with null component still match on source_phase correlation alone
+- Plan 39-02: benchmark-plan call placed in update_current_position (not inside quality-gate conditional per BNCH-03 pitfall)
+- Plan 39-02: PLAN_TYPE extracted via frontmatter get --field type --raw in identify_plan step; QUALITY_LEVEL via config-get at call time
+- Plan 39-02: gsd-tools.cjs benchmark require and handler were already staged from session start — committed atomically with other files
 
 ### Blockers/Concerns
 
@@ -74,7 +77,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-03
-Stopped at: Plan 39-03 complete — cmdDebtImpact, CLI router, fix-debt Step 1a
+Last session: 2026-04-04
+Stopped at: Plan 39-02 complete — benchmark.cjs, state benchmark-plan CLI, execute-plan.md update_current_position, /gsd:digest step 3h
 Resume file: None
-Next step: Phase 39 Plan 02 (BNCH benchmarking) — the remaining plan in phase 39
+Next step: Phase 39 complete — proceed to Phase 40

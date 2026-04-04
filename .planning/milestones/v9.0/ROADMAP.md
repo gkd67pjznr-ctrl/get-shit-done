@@ -10,7 +10,7 @@ v9.0 extracts actionable signals from existing observability data. Six phases fo
 
 - [x] **Phase 37: MISS-01 Fix** - Repair milestone-scoped progress tracking (cmdStateUpdateProgress uses planningRoot) (completed 2026-04-04)
 - [x] **Phase 38: Skill Call Tracking** - Populate skills_loaded in sessions.jsonl and skills_active in gate-executions.jsonl (completed 2026-04-04)
-- [ ] **Phase 39: Data Capture Triad** - Skill iteration history, phase benchmarking, and debt impact analysis (3 independent plans)
+- [x] **Phase 39: Data Capture Triad** - Skill iteration history, phase benchmarking, and debt impact analysis (3 independent plans) (completed 2026-04-04)
 - [ ] **Phase 40: Session Report** - /gsd:session-report command surfacing per-session analytics across all observability data
 - [ ] **Phase 41: Skill Quality Metrics** - Per-skill correction rate scoring using CATEGORY_SKILL_MAP attribution
 - [ ] **Phase 42: Skill Relevance Scoring** - Context budget optimization via keyword-based skill relevance scoring
@@ -105,7 +105,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 37. MISS-01 Fix | 1/1 | Complete    | 2026-04-04 |
 | 38. Skill Call Tracking | 1/1 | Complete    | 2026-04-04 |
-| 39. Data Capture Triad | 0/3 | Not started | - |
+| 39. Data Capture Triad | 3/3 | Complete   | 2026-04-04 |
 | 40. Session Report | 0/1 | Not started | - |
 | 41. Skill Quality Metrics | 0/1 | Not started | - |
 | 42. Skill Relevance Scoring | 0/1 | Not started | - |
