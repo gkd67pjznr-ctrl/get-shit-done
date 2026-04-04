@@ -11,6 +11,15 @@ try {
 
   const result = analyzePatterns({ cwd });
 
+  // Run auto-apply engine after pattern analysis
+  let autoApplyResult;
+  try {
+    const { runAutoApply } = require('./lib/auto-apply.cjs');
+    autoApplyResult = runAutoApply({ cwd });
+  } catch (e) {
+    // Silent failure -- auto-apply must not block session end
+  }
+
   // Write watermark to scan-state.json regardless of whether new suggestions were written.
   // This confirms analysis ran even when no new patterns met thresholds.
   const scanStatePath = path.join(cwd, '.planning', 'patterns', 'scan-state.json');
@@ -24,6 +33,9 @@ try {
 
   scanState.last_analyzed_at = new Date().toISOString();
   scanState.last_analysis_result = result;
+  if (autoApplyResult) {
+    scanState.last_auto_apply_result = autoApplyResult;
+  }
 
   const tmpPath = scanStatePath + '.tmp';
   fs.writeFileSync(tmpPath, JSON.stringify(scanState, null, 2));
