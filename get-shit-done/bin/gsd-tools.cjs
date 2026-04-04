@@ -255,7 +255,7 @@ async function main() {
           files: filesIdx !== -1 ? args[filesIdx + 1] : null,
         }, raw);
       } else if (subcommand === 'update-progress') {
-        state.cmdStateUpdateProgress(cwd, raw);
+        state.cmdStateUpdateProgress(cwd, raw, milestoneScope);
       } else if (subcommand === 'add-decision') {
         const phaseIdx = args.indexOf('--phase');
         const summaryIdx = args.indexOf('--summary');
