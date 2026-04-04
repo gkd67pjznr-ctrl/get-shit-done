@@ -292,6 +292,24 @@ describe('aggregateGateHealth', () => {
     fs2.rmSync(dirA, { recursive: true });
     fs2.rmSync(dirB, { recursive: true });
   });
+
+  it('LINT-05: eslint_gate entries aggregate into gates.eslint_gate', () => {
+    const dir = makeTempProject({
+      gateExecs: [
+        { gate: 'eslint_gate', outcome: 'passed',  quality_level: 'standard', timestamp: '2026-04-04T12:00:00.000Z' },
+        { gate: 'eslint_gate', outcome: 'warned',  quality_level: 'standard', timestamp: '2026-04-04T12:01:00.000Z' },
+        { gate: 'eslint_gate', outcome: 'blocked', quality_level: 'strict',   timestamp: '2026-04-04T12:02:00.000Z' },
+        { gate: 'test_gate',   outcome: 'passed',  quality_level: 'standard', timestamp: '2026-04-04T12:03:00.000Z' },
+      ],
+    });
+    const result = aggregateGateHealth([{ name: 'proj', path: dir }]);
+    assert.equal(result.gates.eslint_gate.total, 3);
+    assert.equal(result.gates.eslint_gate.passed, 1);
+    assert.equal(result.gates.eslint_gate.warned, 1);
+    assert.equal(result.gates.eslint_gate.blocked, 1);
+    assert.equal(result.totalExecutions, 4);
+    fs2.rmSync(dir, { recursive: true });
+  });
 });
 
 // ─── getProjectGateHealth unit tests (DASH-06, DASH-07, DASH-08) ─────────────

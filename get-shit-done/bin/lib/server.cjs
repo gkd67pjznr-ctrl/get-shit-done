@@ -536,7 +536,7 @@ function aggregatePatterns(registry) {
  * @returns {object} Per-project gate health data
  */
 function getProjectGateHealth(projectPath) {
-  const VALID_GATES = ['codebase_scan', 'context7_lookup', 'test_baseline', 'test_gate', 'diff_review'];
+  const VALID_GATES = ['codebase_scan', 'context7_lookup', 'test_baseline', 'test_gate', 'diff_review', 'eslint_gate'];
   const VALID_OUTCOMES = ['passed', 'warned', 'blocked', 'skipped'];
   const obsDir = path.join(projectPath, '.planning', 'observations');
   const gateFile = path.join(obsDir, 'gate-executions.jsonl');
@@ -589,7 +589,7 @@ function getProjectGateHealth(projectPath) {
  * @returns {object} Aggregated gate health data
  */
 function aggregateGateHealth(registry) {
-  const VALID_GATES = ['codebase_scan', 'context7_lookup', 'test_baseline', 'test_gate', 'diff_review'];
+  const VALID_GATES = ['codebase_scan', 'context7_lookup', 'test_baseline', 'test_gate', 'diff_review', 'eslint_gate'];
   const VALID_OUTCOMES = ['passed', 'warned', 'blocked', 'skipped'];
 
   // Initialize accumulators

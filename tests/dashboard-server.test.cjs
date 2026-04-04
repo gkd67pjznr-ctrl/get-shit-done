@@ -601,10 +601,38 @@ describe('aggregateGateHealth() with real entry data', () => {
     assert.ok(result.qualityLevels && typeof result.qualityLevels.standard === 'number');
     assert.ok(result.gates && typeof result.gates.test_gate === 'object');
     assert.ok(result.gates && typeof result.gates.test_gate.total === 'number');
+    assert.ok(result.gates && typeof result.gates.eslint_gate === 'object');
+    assert.ok(result.gates && typeof result.gates.eslint_gate.total === 'number');
     assert.ok(result.context7 && typeof result.context7.totalCalls === 'number');
     assert.ok(result.context7 && typeof result.context7.avgTokensRequested === 'number');
     assert.ok(result.context7 && typeof result.context7.capHitRate === 'number');
     assert.ok(result.context7 && typeof result.context7.usedInCodeRate === 'number');
+  });
+
+  it('aggregates eslint_gate entries from gate-executions.jsonl', () => {
+    const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-eslint-gate-test-'));
+    try {
+      const obsDir = path.join(projectDir, '.planning', 'observations');
+      fs.mkdirSync(obsDir, { recursive: true });
+      const entries = [
+        { gate: 'eslint_gate', task: 0, outcome: 'passed', quality_level: 'standard', phase: 50, plan: '1', timestamp: new Date().toISOString(), detail: 'code file written' },
+        { gate: 'eslint_gate', task: 1, outcome: 'warned', quality_level: 'standard', phase: 50, plan: '1', timestamp: new Date().toISOString(), detail: 'eslint_unavailable' },
+        { gate: 'test_gate', task: 0, outcome: 'passed', quality_level: 'standard', phase: 50, plan: '1', timestamp: new Date().toISOString(), detail: 'test run detected' },
+      ];
+      fs.writeFileSync(path.join(obsDir, 'gate-executions.jsonl'), entries.map(e => JSON.stringify(e)).join('\n') + '\n', 'utf-8');
+
+      const serverModule = require(path.join(__dirname, '..', 'get-shit-done', 'bin', 'lib', 'server.cjs'));
+      const result = serverModule.aggregateGateHealth([{ name: 'test', path: projectDir }]);
+
+      assert.strictEqual(result.hasData, true);
+      assert.strictEqual(result.totalExecutions, 3);
+      assert.strictEqual(result.gates.eslint_gate.total, 2);
+      assert.strictEqual(result.gates.eslint_gate.passed, 1);
+      assert.strictEqual(result.gates.eslint_gate.warned, 1);
+      assert.strictEqual(result.gates.test_gate.total, 1);
+    } finally {
+      cleanup(projectDir);
+    }
   });
 });
 
