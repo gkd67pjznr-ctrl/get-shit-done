@@ -4,7 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { safeReadFile, normalizePhaseName, execGit, findPhaseInternal, getMilestoneInfo, planningRoot, resolveActiveMilestone, output, error, loadConfig } = require('./core.cjs');
+const { safeReadFile, normalizePhaseName, execGit, findPhaseInternal, getMilestoneInfo, planningRoot, resolveActiveMilestone, output, error } = require('./core.cjs');
 const { extractFrontmatter, parseMustHavesBlock } = require('./frontmatter.cjs');
 const { writeStateMd } = require('./state.cjs');
 const guards = require('./transition-guards.cjs');
@@ -249,8 +249,10 @@ function cmdVerifyPhaseCompleteness(cwd, phase, raw, milestoneScope) {
   // Transition guards
   const qualityLevel = (() => {
     try {
-      const cfg = loadConfig(cwd);
-      const level = (cfg.quality || {}).level;
+      const configPath = path.join(cwd, '.planning', 'config.json');
+      const raw = fs.readFileSync(configPath, 'utf-8');
+      const parsed = JSON.parse(raw);
+      const level = (parsed.quality || {}).level;
       if (level === 'fast' || level === 'standard' || level === 'strict') return level;
       return 'fast';
     } catch (e) {
