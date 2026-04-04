@@ -520,3 +520,141 @@ describe('cmdBrainstormSelectFinalists', () => {
     assert.strictEqual(JSON.stringify(scores), scoresCopy, 'input scores array should not be modified');
   });
 });
+
+// ─── cmdBrainstormCreateOutputDir ────────────────────────────────────────────
+
+describe('cmdBrainstormCreateOutputDir', () => {
+  let tmpRoot;
+
+  beforeEach(() => {
+    tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'bstest-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  });
+
+  test('creates first dir with number 1 and correct name', () => {
+    const r = brainstorm.cmdBrainstormCreateOutputDir(tmpRoot, 'authentication');
+    assert.strictEqual(r.number, 1);
+    assert.strictEqual(path.basename(r.dir), '01-brainstorm-authentication');
+  });
+
+  test('sequential numbering increments on second call', () => {
+    brainstorm.cmdBrainstormCreateOutputDir(tmpRoot, 'authentication');
+    const r2 = brainstorm.cmdBrainstormCreateOutputDir(tmpRoot, 'caching');
+    assert.strictEqual(r2.number, 2);
+  });
+
+  test('sanitizes spaces in topic to hyphens', () => {
+    const r = brainstorm.cmdBrainstormCreateOutputDir(tmpRoot, 'caching layer');
+    assert.ok(path.basename(r.dir).includes('caching-layer'),
+      `expected basename to contain 'caching-layer', got: ${path.basename(r.dir)}`);
+  });
+
+  test('created directory exists on disk', () => {
+    const r = brainstorm.cmdBrainstormCreateOutputDir(tmpRoot, 'authentication');
+    assert.strictEqual(fs.existsSync(r.dir), true);
+  });
+
+  test('creates quick dir if it does not exist', () => {
+    // fresh tmpRoot has no quick/ subdir
+    const r = brainstorm.cmdBrainstormCreateOutputDir(tmpRoot, 'test');
+    assert.strictEqual(fs.existsSync(r.dir), true);
+    assert.ok(r.dir.includes('quick'), 'dir should be under quick/');
+  });
+});
+
+// ─── cmdBrainstormFormatResults ──────────────────────────────────────────────
+
+describe('cmdBrainstormFormatResults', () => {
+  let sessionDir;
+  let outputDir;
+  let clusters;
+  let scores;
+  let finalists;
+
+  beforeEach(() => {
+    sessionDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bssess-'));
+    outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bsout-'));
+
+    brainstorm.cmdBrainstormAppendIdea(sessionDir, { content: 'cache layer', source_technique: 'freeform' });
+    brainstorm.cmdBrainstormAppendIdea(sessionDir, { content: 'auth tokens', source_technique: 'scamper' });
+    brainstorm.cmdBrainstormAppendIdea(sessionDir, { content: 'notifications system', source_technique: 'freeform' });
+
+    const { ideas } = brainstorm.cmdBrainstormReadIdeas(sessionDir);
+    const clustersResult = brainstorm.cmdBrainstormCluster(ideas);
+    clusters = clustersResult.clusters;
+    scores = ideas.map(i => brainstorm.cmdBrainstormScore(i, { feasibility: 4, impact: 4, alignment: 4, risk: 2 }));
+    const result = brainstorm.cmdBrainstormSelectFinalists(ideas, scores, [1, 3]);
+    finalists = result.finalists;
+  });
+
+  afterEach(() => {
+    fs.rmSync(sessionDir, { recursive: true, force: true });
+    fs.rmSync(outputDir, { recursive: true, force: true });
+  });
+
+  test('returns files_written array with 3 entries', () => {
+    const r = brainstorm.cmdBrainstormFormatResults(clusters, scores, finalists, sessionDir, outputDir);
+    assert.strictEqual(r.files_written.length, 3);
+  });
+
+  test('FEATURE-IDEAS.md exists after format', () => {
+    brainstorm.cmdBrainstormFormatResults(clusters, scores, finalists, sessionDir, outputDir);
+    assert.strictEqual(fs.existsSync(path.join(outputDir, 'FEATURE-IDEAS.md')), true);
+  });
+
+  test('BRAINSTORM-SESSION.md exists after format', () => {
+    brainstorm.cmdBrainstormFormatResults(clusters, scores, finalists, sessionDir, outputDir);
+    assert.strictEqual(fs.existsSync(path.join(outputDir, 'BRAINSTORM-SESSION.md')), true);
+  });
+
+  test('ideas.jsonl copied to output dir', () => {
+    brainstorm.cmdBrainstormFormatResults(clusters, scores, finalists, sessionDir, outputDir);
+    assert.strictEqual(fs.existsSync(path.join(outputDir, 'ideas.jsonl')), true);
+  });
+
+  test('FEATURE-IDEAS.md contains finalist content', () => {
+    brainstorm.cmdBrainstormFormatResults(clusters, scores, finalists, sessionDir, outputDir);
+    const content = fs.readFileSync(path.join(outputDir, 'FEATURE-IDEAS.md'), 'utf-8');
+    // finalists are ideas 1 (cache layer) and 3 (notifications system)
+    const hasFinalist = content.includes('cache layer') || content.includes('notifications system');
+    assert.ok(hasFinalist, 'FEATURE-IDEAS.md should contain at least one finalist idea content');
+  });
+
+  test('FEATURE-IDEAS.md contains composite score', () => {
+    brainstorm.cmdBrainstormFormatResults(clusters, scores, finalists, sessionDir, outputDir);
+    const content = fs.readFileSync(path.join(outputDir, 'FEATURE-IDEAS.md'), 'utf-8');
+    assert.ok(content.includes('Composite'), 'FEATURE-IDEAS.md should contain Composite score column');
+  });
+
+  test('BRAINSTORM-SESSION.md contains all ideas', () => {
+    brainstorm.cmdBrainstormFormatResults(clusters, scores, finalists, sessionDir, outputDir);
+    const content = fs.readFileSync(path.join(outputDir, 'BRAINSTORM-SESSION.md'), 'utf-8');
+    assert.ok(content.includes('cache layer'), 'should include idea 1');
+    assert.ok(content.includes('auth tokens'), 'should include idea 2');
+    assert.ok(content.includes('notifications system'), 'should include idea 3');
+  });
+
+  test('files_written contains only paths that exist on disk', () => {
+    const r = brainstorm.cmdBrainstormFormatResults(clusters, scores, finalists, sessionDir, outputDir);
+    for (const p of r.files_written) {
+      assert.strictEqual(fs.existsSync(p), true, `path should exist: ${p}`);
+    }
+  });
+
+  test('handles missing ideas.jsonl gracefully', () => {
+    // Create a sessionDir with no ideas.jsonl
+    const emptySession = fs.mkdtempSync(path.join(os.tmpdir(), 'bsempty-'));
+    try {
+      let r;
+      assert.doesNotThrow(() => {
+        r = brainstorm.cmdBrainstormFormatResults(clusters, scores, finalists, emptySession, outputDir);
+      });
+      assert.strictEqual(r.files_written.length, 2, 'should write only 2 files when ideas.jsonl missing');
+    } finally {
+      fs.rmSync(emptySession, { recursive: true, force: true });
+    }
+  });
+});
