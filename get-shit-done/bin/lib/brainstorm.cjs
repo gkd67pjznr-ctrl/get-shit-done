@@ -289,126 +289,166 @@ function cmdBrainstormCheckSaturation(sessionDir, windowSize) {
  * ROADMAP.md, STATE.md, and any phase plan/summary files.
  *
  * @param {string} planningRoot - Absolute path to the planning root directory
- * @returns {{ brief: string, sources: string[] }}
+ * @param {Object} [options] - Source filtering options (all default to true)
+ * @param {boolean} [options.corrections=true] - Include correction patterns from corrections.jsonl
+ * @param {boolean} [options.debt=true] - Include open debt from DEBT.md
+ * @param {boolean} [options.sessions=true] - Include session history from sessions.jsonl
+ * @param {boolean} [options.priorIdeas=true] - Include prior brainstorm ideas from FEATURE-IDEAS.md files
+ * @returns {{ brief: string, sources: string[], included: string[], excluded: string[] }}
  */
-function cmdBrainstormBuildSeedBrief(planningRoot) {
+function cmdBrainstormBuildSeedBrief(planningRoot, options) {
+  const opts = Object.assign({ corrections: true, debt: true, sessions: true, priorIdeas: true }, options || {});
   const sources = [];
   const sections = [];
 
   // Section 1: Correction Patterns from corrections.jsonl
-  const correctionsPath = path.join(planningRoot, 'corrections.jsonl');
-  let correctionSection = '## Correction Patterns\n\nNone found.';
-  if (fs.existsSync(correctionsPath)) {
-    try {
-      const raw = fs.readFileSync(correctionsPath, 'utf-8');
-      const lines = raw.split('\n').filter(l => l.trim() !== '');
-      const patterns = [];
-      for (const line of lines) {
-        try {
-          const entry = JSON.parse(line);
-          if (entry.pattern) patterns.push(entry.pattern);
-          else if (entry.description) patterns.push(entry.description);
-        } catch (_) {
-          // skip malformed lines
-        }
-      }
-      if (patterns.length > 0) {
-        correctionSection = '## Correction Patterns\n\n' + patterns.map(p => `- ${p}`).join('\n');
-        sources.push(correctionsPath);
-      } else {
-        correctionSection = '## Correction Patterns\n\nNone found.';
-        sources.push(correctionsPath);
-      }
-    } catch (_) {
-      // skip on read error
-    }
-  }
-  sections.push(correctionSection);
-
-  // Section 2: Session History from sessions.jsonl
-  const sessionsPath = path.join(planningRoot, 'sessions.jsonl');
-  let sessionSection = '## Session History\n\nNone found.';
-  if (fs.existsSync(sessionsPath)) {
-    try {
-      const raw = fs.readFileSync(sessionsPath, 'utf-8');
-      const lines = raw.split('\n').filter(l => l.trim() !== '');
-      const summaries = [];
-      for (const line of lines) {
-        try {
-          const entry = JSON.parse(line);
-          const parts = [];
-          if (entry.phase) parts.push(`phase ${entry.phase}`);
-          if (entry.plan) parts.push(`plan ${entry.plan}`);
-          if (entry.timestamp) parts.push(entry.timestamp);
-          if (entry.outcome) parts.push(`outcome: ${entry.outcome}`);
-          if (parts.length > 0) summaries.push(parts.join(', '));
-          else if (entry.summary) summaries.push(entry.summary);
-        } catch (_) {
-          // skip malformed lines
-        }
-      }
-      if (summaries.length > 0) {
-        sessionSection = '## Session History\n\n' + summaries.map(s => `- ${s}`).join('\n');
-        sources.push(sessionsPath);
-      } else {
-        sessionSection = '## Session History\n\nNone found.';
-        sources.push(sessionsPath);
-      }
-    } catch (_) {
-      // skip on read error
-    }
-  }
-  sections.push(sessionSection);
-
-  // Section 3: Open Debt from DEBT.md
-  const debtPath = path.join(planningRoot, 'DEBT.md');
-  let debtSection = '## Open Debt\n\nNone found.';
-  if (fs.existsSync(debtPath)) {
-    try {
-      const raw = fs.readFileSync(debtPath, 'utf-8');
-      const excerpt = raw.slice(0, 1000);
-      debtSection = `## Open Debt\n\n${excerpt}`;
-      sources.push(debtPath);
-    } catch (_) {
-      // skip on read error
-    }
-  }
-  sections.push(debtSection);
-
-  // Section 4: Prior Brainstorm Ideas from quick/*/FEATURE-IDEAS.md
-  let ideasSection = '## Prior Brainstorm Ideas\n\nNone found.';
-  const quickDir = path.join(planningRoot, 'quick');
-  const ideaExcerpts = [];
-  if (fs.existsSync(quickDir) && fs.statSync(quickDir).isDirectory()) {
-    try {
-      const subdirs = fs.readdirSync(quickDir).filter(name => {
-        const sub = path.join(quickDir, name);
-        return fs.statSync(sub).isDirectory();
-      });
-      for (const sub of subdirs) {
-        const ideaFile = path.join(quickDir, sub, 'FEATURE-IDEAS.md');
-        if (fs.existsSync(ideaFile)) {
+  if (opts.corrections) {
+    const correctionsPath = path.join(planningRoot, 'corrections.jsonl');
+    let correctionSection = '## Correction Patterns\n\nNone found.';
+    if (fs.existsSync(correctionsPath)) {
+      try {
+        const raw = fs.readFileSync(correctionsPath, 'utf-8');
+        const lines = raw.split('\n').filter(l => l.trim() !== '');
+        const patterns = [];
+        for (const line of lines) {
           try {
-            const raw = fs.readFileSync(ideaFile, 'utf-8');
-            const excerpt = raw.slice(0, 500);
-            ideaExcerpts.push(`### ${sub}\n\n${excerpt}`);
-            sources.push(ideaFile);
+            const entry = JSON.parse(line);
+            if (entry.pattern) patterns.push(entry.pattern);
+            else if (entry.description) patterns.push(entry.description);
           } catch (_) {
-            // skip on read error
+            // skip malformed lines
           }
         }
+        if (patterns.length > 0) {
+          correctionSection = '## Correction Patterns\n\n' + patterns.map(p => `- ${p}`).join('\n');
+          sources.push(correctionsPath);
+        } else {
+          correctionSection = '## Correction Patterns\n\nNone found.';
+          sources.push(correctionsPath);
+        }
+      } catch (_) {
+        // skip on read error
       }
-    } catch (_) {
-      // skip on read error
     }
+    sections.push(correctionSection);
+  } else {
+    sections.push('## Correction Patterns\n\n(Not included in this seed.)');
   }
-  if (ideaExcerpts.length > 0) {
-    ideasSection = '## Prior Brainstorm Ideas\n\n' + ideaExcerpts.join('\n\n');
+
+  // Section 2: Session History from sessions.jsonl
+  if (opts.sessions) {
+    const sessionsPath = path.join(planningRoot, 'sessions.jsonl');
+    let sessionSection = '## Session History\n\nNone found.';
+    if (fs.existsSync(sessionsPath)) {
+      try {
+        const raw = fs.readFileSync(sessionsPath, 'utf-8');
+        const lines = raw.split('\n').filter(l => l.trim() !== '');
+        const summaries = [];
+        for (const line of lines) {
+          try {
+            const entry = JSON.parse(line);
+            const parts = [];
+            if (entry.phase) parts.push(`phase ${entry.phase}`);
+            if (entry.plan) parts.push(`plan ${entry.plan}`);
+            if (entry.timestamp) parts.push(entry.timestamp);
+            if (entry.outcome) parts.push(`outcome: ${entry.outcome}`);
+            if (parts.length > 0) summaries.push(parts.join(', '));
+            else if (entry.summary) summaries.push(entry.summary);
+          } catch (_) {
+            // skip malformed lines
+          }
+        }
+        if (summaries.length > 0) {
+          sessionSection = '## Session History\n\n' + summaries.map(s => `- ${s}`).join('\n');
+          sources.push(sessionsPath);
+        } else {
+          sessionSection = '## Session History\n\nNone found.';
+          sources.push(sessionsPath);
+        }
+      } catch (_) {
+        // skip on read error
+      }
+    }
+    sections.push(sessionSection);
+  } else {
+    sections.push('## Session History\n\n(Not included in this seed.)');
   }
-  sections.push(ideasSection);
+
+  // Section 3: Open Debt from DEBT.md
+  if (opts.debt) {
+    const debtPath = path.join(planningRoot, 'DEBT.md');
+    let debtSection = '## Open Debt\n\nNone found.';
+    if (fs.existsSync(debtPath)) {
+      try {
+        const raw = fs.readFileSync(debtPath, 'utf-8');
+        const excerpt = raw.slice(0, 1000);
+        debtSection = `## Open Debt\n\n${excerpt}`;
+        sources.push(debtPath);
+      } catch (_) {
+        // skip on read error
+      }
+    }
+    sections.push(debtSection);
+  } else {
+    sections.push('## Open Debt\n\n(Not included in this seed.)');
+  }
+
+  // Section 4: Prior Brainstorm Ideas from quick/*/FEATURE-IDEAS.md
+  if (opts.priorIdeas) {
+    let ideasSection = '## Prior Brainstorm Ideas\n\nNone found.';
+    const quickDir = path.join(planningRoot, 'quick');
+    const ideaExcerpts = [];
+    if (fs.existsSync(quickDir) && fs.statSync(quickDir).isDirectory()) {
+      try {
+        const subdirs = fs.readdirSync(quickDir).filter(name => {
+          const sub = path.join(quickDir, name);
+          return fs.statSync(sub).isDirectory();
+        });
+        for (const sub of subdirs) {
+          const ideaFile = path.join(quickDir, sub, 'FEATURE-IDEAS.md');
+          if (fs.existsSync(ideaFile)) {
+            try {
+              const raw = fs.readFileSync(ideaFile, 'utf-8');
+              const excerpt = raw.slice(0, 500);
+              ideaExcerpts.push(`### ${sub}\n\n${excerpt}`);
+              sources.push(ideaFile);
+            } catch (_) {
+              // skip on read error
+            }
+          }
+        }
+      } catch (_) {
+        // skip on read error
+      }
+    }
+    if (ideaExcerpts.length > 0) {
+      ideasSection = '## Prior Brainstorm Ideas\n\n' + ideaExcerpts.join('\n\n');
+    }
+    sections.push(ideasSection);
+  } else {
+    sections.push('## Prior Brainstorm Ideas\n\n(Not included in this seed.)');
+  }
+
+  // Build included/excluded source name arrays
+  const SOURCE_NAMES = {
+    corrections: 'corrections.jsonl',
+    sessions: 'sessions.jsonl',
+    debt: 'DEBT.md',
+    priorIdeas: 'FEATURE-IDEAS.md files',
+  };
+  const included = Object.keys(SOURCE_NAMES).filter(k => opts[k]);
+  const excluded = Object.keys(SOURCE_NAMES).filter(k => !opts[k]);
+
+  // Prepend summary header
+  const headerLines = ['# Seed Brief'];
+  if (included.length > 0) headerLines.push(`**Data sources included:** ${included.map(k => SOURCE_NAMES[k]).join(', ')}`);
+  if (excluded.length > 0) headerLines.push(`**Excluded (context-blind):** ${excluded.map(k => SOURCE_NAMES[k]).join(', ')}`);
+  headerLines.push('**Not read (always excluded):** ROADMAP.md, STATE.md');
+  headerLines.push('');
+  sections.unshift(headerLines.join('\n'));
 
   const brief = sections.join('\n\n');
-  return { brief, sources };
+  return { brief, sources, included, excluded };
 }
 
 const STOP_WORDS = new Set([
