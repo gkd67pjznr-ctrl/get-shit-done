@@ -158,3 +158,166 @@ describe('cmdBrainstormAppendIdea and cmdBrainstormReadIdeas', () => {
     assert.strictEqual(lineCount, 5, `ideas.jsonl should have exactly 5 lines, got ${lineCount}`);
   });
 });
+
+// ─── cmdBrainstormGetScamperLens ────────────────────────────────────────────
+
+describe('cmdBrainstormGetScamperLens', () => {
+  test('returns substitute lens for index 0', () => {
+    const r = brainstorm.cmdBrainstormGetScamperLens(0);
+    assert.strictEqual(r.id, 'substitute');
+    assert.ok(r.prompt.length > 0, 'prompt should be non-empty');
+  });
+
+  test('returns reverse lens for index 6', () => {
+    const r = brainstorm.cmdBrainstormGetScamperLens(6);
+    assert.strictEqual(r.id, 'reverse');
+  });
+
+  test('throws for out-of-range index 7', () => {
+    assert.throws(() => brainstorm.cmdBrainstormGetScamperLens(7), /Invalid lens index/);
+  });
+
+  test('returns all 7 unique lens IDs', () => {
+    const ids = [];
+    for (let i = 0; i <= 6; i++) {
+      ids.push(brainstorm.cmdBrainstormGetScamperLens(i).id);
+    }
+    assert.strictEqual(ids.length, 7);
+    const unique = new Set(ids);
+    assert.strictEqual(unique.size, 7, 'all lens IDs should be unique');
+  });
+});
+
+// ─── cmdBrainstormScamperComplete ───────────────────────────────────────────
+
+describe('cmdBrainstormScamperComplete', () => {
+  let tempDir;
+
+  beforeEach(() => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sc-test-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  test('returns complete=false when no ideas exist', () => {
+    const r = brainstorm.cmdBrainstormScamperComplete(tempDir);
+    assert.strictEqual(r.complete, false);
+    assert.strictEqual(r.missingLenses.length, 7);
+  });
+
+  test('returns complete=false when only 5 lenses covered', () => {
+    const coveredFive = ['substitute', 'combine', 'adapt', 'modify', 'eliminate'];
+    for (const lens of coveredFive) {
+      brainstorm.cmdBrainstormAppendIdea(tempDir, { content: `idea for ${lens}`, scamper_lens: lens });
+    }
+    const r = brainstorm.cmdBrainstormScamperComplete(tempDir);
+    assert.strictEqual(r.complete, false);
+    assert.strictEqual(r.missingLenses.length, 2);
+  });
+
+  test('returns complete=true when all 7 lenses have at least 1 idea', () => {
+    const allLenses = ['substitute', 'combine', 'adapt', 'modify', 'put-to-another-use', 'eliminate', 'reverse'];
+    for (const lens of allLenses) {
+      brainstorm.cmdBrainstormAppendIdea(tempDir, { content: `idea for ${lens}`, scamper_lens: lens });
+    }
+    const r = brainstorm.cmdBrainstormScamperComplete(tempDir);
+    assert.strictEqual(r.complete, true);
+    assert.strictEqual(r.missingLenses.length, 0);
+  });
+});
+
+// ─── cmdBrainstormCheckFloor ────────────────────────────────────────────────
+
+describe('cmdBrainstormCheckFloor', () => {
+  test('freeform floor is 15 in normal mode', () => {
+    const r = brainstorm.cmdBrainstormCheckFloor('freeform', 0, false);
+    assert.strictEqual(r.floor, 15);
+  });
+
+  test('freeform floor is 30 in wild mode', () => {
+    const r = brainstorm.cmdBrainstormCheckFloor('freeform', 0, true);
+    assert.strictEqual(r.floor, 30);
+  });
+
+  test('met=false when count below floor', () => {
+    const r = brainstorm.cmdBrainstormCheckFloor('freeform', 10, false);
+    assert.strictEqual(r.met, false);
+    assert.strictEqual(r.remaining, 5);
+  });
+
+  test('met=true when count equals floor', () => {
+    const r = brainstorm.cmdBrainstormCheckFloor('freeform', 15, false);
+    assert.strictEqual(r.met, true);
+    assert.strictEqual(r.remaining, 0);
+  });
+
+  test('scamper_per_lens floor is 2 normal, 4 wild', () => {
+    const normal = brainstorm.cmdBrainstormCheckFloor('scamper_per_lens', 0, false);
+    const wild = brainstorm.cmdBrainstormCheckFloor('scamper_per_lens', 0, true);
+    assert.strictEqual(normal.floor, 2);
+    assert.strictEqual(wild.floor, 4);
+  });
+
+  test('throws for unknown technique', () => {
+    assert.throws(() => brainstorm.cmdBrainstormCheckFloor('unknown', 5, false), /Unknown technique/);
+  });
+});
+
+// ─── cmdBrainstormGetPerspective and cmdBrainstormRandomPerspectives ─────────
+
+describe('cmdBrainstormGetPerspective and cmdBrainstormRandomPerspectives', () => {
+  test('returns competitor perspective with prompt', () => {
+    const r = brainstorm.cmdBrainstormGetPerspective('competitor');
+    assert.strictEqual(r.id, 'competitor');
+    assert.ok(r.prompt.length > 0, 'prompt should be non-empty');
+  });
+
+  test('throws for unknown perspective id', () => {
+    assert.throws(() => brainstorm.cmdBrainstormGetPerspective('robot'), /Unknown perspective/);
+  });
+
+  test('randomPerspectives returns exactly N items', () => {
+    const r = brainstorm.cmdBrainstormRandomPerspectives(3);
+    assert.strictEqual(r.length, 3);
+  });
+
+  test('randomPerspectives returns unique perspectives', () => {
+    const r = brainstorm.cmdBrainstormRandomPerspectives(7);
+    const ids = r.map(p => p.id);
+    const unique = new Set(ids);
+    assert.strictEqual(unique.size, ids.length, 'all returned perspectives should be unique');
+  });
+
+  test('randomPerspectives caps at 7 when count exceeds 7', () => {
+    const r = brainstorm.cmdBrainstormRandomPerspectives(20);
+    assert.strictEqual(r.length, 7);
+  });
+});
+
+// ─── cmdBrainstormCheckSaturation ───────────────────────────────────────────
+
+describe('cmdBrainstormCheckSaturation', () => {
+  let tempDir;
+
+  beforeEach(() => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sat-test-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  test('returns saturated=false and velocity=null with no ideas', () => {
+    const r = brainstorm.cmdBrainstormCheckSaturation(tempDir, 5);
+    assert.strictEqual(r.saturated, false);
+    assert.strictEqual(r.velocity, null);
+  });
+
+  test('returns saturated=false with 1 idea', () => {
+    brainstorm.cmdBrainstormAppendIdea(tempDir, { content: 'only idea' });
+    const r = brainstorm.cmdBrainstormCheckSaturation(tempDir, 5);
+    assert.strictEqual(r.saturated, false);
+  });
+});
