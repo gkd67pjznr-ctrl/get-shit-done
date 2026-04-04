@@ -411,6 +411,117 @@ function cmdBrainstormBuildSeedBrief(planningRoot) {
   return { brief, sources };
 }
 
+const STOP_WORDS = new Set([
+  "a","an","the","and","or","but","in","on","at","to","for","of","with","by",
+  "is","it","this","that","be","are","was","were","has","have","do","we","i",
+  "you","they","their","our","its","as","if","can","from","not","will",
+]);
+
+/**
+ * Cluster ideas into 3–7 thematic groups using keyword frequency.
+ * Every idea appears in exactly one cluster.
+ *
+ * @param {Array<{ id: number, content: string }>} ideas
+ * @returns {{ clusters: Array<{ label: string, theme: string, idea_ids: number[] }>, count: number }}
+ */
+function cmdBrainstormCluster(ideas) {
+  if (ideas.length === 0) {
+    return { clusters: [], count: 0 };
+  }
+
+  // Extract keywords from a piece of content
+  function extractKeywords(content) {
+    return content
+      .toLowerCase()
+      .split(/[\s\W]+/)
+      .filter(token => token.length >= 4 && !STOP_WORDS.has(token));
+  }
+
+  // Build keyword frequency map (how many ideas contain each keyword)
+  const keywordFreq = new Map();
+  for (const idea of ideas) {
+    const keywords = new Set(extractKeywords(idea.content));
+    for (const kw of keywords) {
+      keywordFreq.set(kw, (keywordFreq.get(kw) || 0) + 1);
+    }
+  }
+
+  // Determine N: clamped between 3 and min(7, ideas.length)
+  const N = Math.min(7, Math.max(Math.min(3, ideas.length), Math.floor(ideas.length / 3)));
+
+  // Select top N keywords by frequency
+  const topKeywords = [...keywordFreq.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, N)
+    .map(([kw]) => kw);
+
+  // Initialize clusters
+  const clusters = topKeywords.map(label => ({ label, theme: label, idea_ids: [] }));
+
+  // Assign each idea to a cluster
+  for (const idea of ideas) {
+    const content = idea.content.toLowerCase();
+    let assigned = false;
+
+    for (const cluster of clusters) {
+      if (content.includes(cluster.label)) {
+        cluster.idea_ids.push(idea.id);
+        assigned = true;
+        break;
+      }
+    }
+
+    if (!assigned) {
+      // Round-robin to smallest cluster
+      let minCluster = clusters[0];
+      for (const cluster of clusters) {
+        if (cluster.idea_ids.length < minCluster.idea_ids.length) {
+          minCluster = cluster;
+        }
+      }
+      minCluster.idea_ids.push(idea.id);
+    }
+  }
+
+  return { clusters, count: clusters.length };
+}
+
+/**
+ * Compute a composite score for a single idea from four dimension values.
+ * Composite = (feasibility + impact + alignment) - risk. Range: -2 to 14.
+ *
+ * @param {{ id: number }} idea
+ * @param {{ feasibility: number, impact: number, alignment: number, risk: number }} dimensions
+ * @returns {{ id: number, feasibility: number, impact: number, alignment: number, risk: number, composite: number }}
+ */
+function cmdBrainstormScore(idea, dimensions) {
+  const { feasibility, impact, alignment, risk } = dimensions;
+
+  for (const [name, value] of [['feasibility', feasibility], ['impact', impact], ['alignment', alignment], ['risk', risk]]) {
+    if (!Number.isInteger(value) || value < 1 || value > 5) {
+      throw new Error('Invalid dimension value: must be integer 1-5');
+    }
+  }
+
+  const composite = (feasibility + impact + alignment) - risk;
+  return { id: idea.id, feasibility, impact, alignment, risk, composite };
+}
+
+/**
+ * Filter ideas and scores to only the user-selected IDs.
+ *
+ * @param {Array} ideas - Full idea array
+ * @param {Array} scores - Full scores array (each with id field)
+ * @param {number[]} selectedIds - IDs chosen by the user
+ * @returns {{ finalists: Array, scores: Array, count: number }}
+ */
+function cmdBrainstormSelectFinalists(ideas, scores, selectedIds) {
+  const selectedSet = new Set(selectedIds);
+  const finalists = ideas.filter(i => selectedSet.has(i.id));
+  const filteredScores = scores.filter(s => selectedSet.has(s.id));
+  return { finalists, scores: filteredScores, count: finalists.length };
+}
+
 module.exports = {
   cmdBrainstormCheckEval,
   cmdBrainstormAppendIdea,
@@ -422,4 +533,7 @@ module.exports = {
   cmdBrainstormRandomPerspectives,
   cmdBrainstormCheckSaturation,
   cmdBrainstormBuildSeedBrief,
+  cmdBrainstormCluster,
+  cmdBrainstormScore,
+  cmdBrainstormSelectFinalists,
 };
