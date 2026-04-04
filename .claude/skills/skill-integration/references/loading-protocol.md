@@ -8,7 +8,7 @@ The 6-stage pipeline determines which skills are loaded into context before any 
 2. **Resolve** -- Handle conflicts between project-level and user-level skills. Project-level always wins. Deduplicate by skill name.
 3. **ModelFilter** -- Filter skills by model compatibility. Some skills are model-specific (e.g., vision skills only for multimodal models).
 4. **CacheOrder** -- Prioritize recently activated skills. Skills used in the last 3 sessions rank higher than dormant ones.
-5. **Budget** -- Enforce 2-5% context window maximum. Calculate total token cost of selected skills. Trim lowest-scored skills if over budget.
+5. **Budget** -- Enforce 2-5% context window maximum (20k-50k tokens at 1M). Calculate total token cost of selected skills. Trim lowest-scored skills if over budget.
 6. **Load** -- Read selected SKILL.md files into context. Log which skills were loaded and which were deferred.
 
 ## Priority Algorithm
@@ -58,7 +58,11 @@ When forking subagent contexts for GSD phases:
 
 The 2-5% budget is calculated against the model's context window:
 
-- 200k context window: 4k-10k tokens for skills
-- Skills averaging ~150 lines: roughly 5-15 skills fit within budget
+| Context Window | 2-5% Budget | Approx. Skills (150 lines avg) |
+|----------------|-------------|-------------------------------|
+| 200k           | 4k-10k tokens  | 5-15 skills               |
+| 1M             | 20k-50k tokens | 25-75 skills              |
+
 - Overflow is queued, not silently dropped -- always note what was deferred
 - If zero skills fit, log a warning but do not block phase execution
+- At 1M context, nearly all project skills can load simultaneously within budget

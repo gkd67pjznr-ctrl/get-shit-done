@@ -170,8 +170,125 @@ function cmdBrainstormReadIdeas(sessionDir) {
   return { ideas, count: ideas.length };
 }
 
+/**
+ * Get a single SCAMPER lens by index.
+ *
+ * @param {number} lensIndex - Integer 0–6
+ * @returns {{ id: string, prompt: string }}
+ */
+function cmdBrainstormGetScamperLens(lensIndex) {
+  if (!Number.isInteger(lensIndex) || lensIndex < 0 || lensIndex > 6) {
+    throw new Error('Invalid lens index: must be 0-6');
+  }
+  return SCAMPER_LENSES[lensIndex];
+}
+
+/**
+ * Check whether all 7 SCAMPER lenses have at least one idea in the session.
+ *
+ * @param {string} sessionDir - Absolute path to session directory
+ * @returns {{ complete: boolean, missingLenses: string[], coveredLenses: string[] }}
+ */
+function cmdBrainstormScamperComplete(sessionDir) {
+  const { ideas } = cmdBrainstormReadIdeas(sessionDir);
+  const allLensIds = SCAMPER_LENSES.map(l => l.id);
+  const covered = new Set(ideas.map(i => i.scamper_lens).filter(Boolean));
+  const coveredLenses = allLensIds.filter(id => covered.has(id));
+  const missingLenses = allLensIds.filter(id => !covered.has(id));
+  return {
+    complete: missingLenses.length === 0,
+    missingLenses,
+    coveredLenses,
+  };
+}
+
+/**
+ * Check whether the quantity floor for a technique has been met.
+ *
+ * @param {string} technique - One of the keys in QUANTITY_FLOORS
+ * @param {number} currentCount - Current number of ideas for this technique
+ * @param {boolean} wildMode - When true, the floor doubles
+ * @returns {{ met: boolean, remaining: number, floor: number }}
+ */
+function cmdBrainstormCheckFloor(technique, currentCount, wildMode) {
+  if (!(technique in QUANTITY_FLOORS)) {
+    throw new Error(`Unknown technique: ${technique}`);
+  }
+  const floor = QUANTITY_FLOORS[technique] * (wildMode ? 2 : 1);
+  const met = currentCount >= floor;
+  const remaining = Math.max(0, floor - currentCount);
+  return { met, remaining, floor };
+}
+
+/**
+ * Get a perspective by ID.
+ *
+ * @param {string} perspectiveId - The perspective ID to look up
+ * @returns {{ id: string, prompt: string }}
+ */
+function cmdBrainstormGetPerspective(perspectiveId) {
+  const p = PERSPECTIVES.find(p => p.id === perspectiveId);
+  if (!p) {
+    throw new Error(`Unknown perspective: ${perspectiveId}`);
+  }
+  return p;
+}
+
+/**
+ * Return N unique perspectives chosen randomly from PERSPECTIVES.
+ *
+ * @param {number} count - Number of perspectives to return (capped at 7)
+ * @returns {Array<{ id: string, prompt: string }>}
+ */
+function cmdBrainstormRandomPerspectives(count) {
+  const cap = Math.min(count, PERSPECTIVES.length);
+  const shuffled = [...PERSPECTIVES].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, cap);
+}
+
+/**
+ * Detect whether idea velocity has dropped (saturation signal).
+ *
+ * @param {string} sessionDir - Absolute path to session directory
+ * @param {number} windowSize - Number of recent ideas to analyze
+ * @returns {{ saturated: boolean, velocity: number|null, suggestion: string }}
+ */
+function cmdBrainstormCheckSaturation(sessionDir, windowSize) {
+  const { ideas } = cmdBrainstormReadIdeas(sessionDir);
+  const window = ideas.slice(-windowSize);
+
+  if (window.length < 2) {
+    return { saturated: false, velocity: null, suggestion: '' };
+  }
+
+  const timestamps = window.map(i => new Date(i.timestamp).getTime());
+  const gaps = [];
+  for (let i = 1; i < timestamps.length; i++) {
+    gaps.push(timestamps[i] - timestamps[i - 1]);
+  }
+
+  const averageGap = gaps.reduce((a, b) => a + b, 0) / gaps.length;
+  const lastGap = gaps[gaps.length - 1];
+
+  const totalTimespan = (timestamps[timestamps.length - 1] - timestamps[0]) / 1000;
+  const velocity = totalTimespan === 0 ? 0 : window.length / totalTimespan;
+
+  const saturated = lastGap > 2 * averageGap;
+  const suggestion = saturated
+    ? 'Switch technique — idea velocity has dropped. Try a new angle or move to converge.'
+    : '';
+
+  return { saturated, velocity, suggestion };
+}
+
 module.exports = {
   cmdBrainstormCheckEval,
   cmdBrainstormAppendIdea,
   cmdBrainstormReadIdeas,
+  cmdBrainstormGetScamperLens,
+  cmdBrainstormScamperComplete,
+  cmdBrainstormCheckFloor,
+  cmdBrainstormGetPerspective,
+  cmdBrainstormRandomPerspectives,
+  cmdBrainstormCheckSaturation,
 };
