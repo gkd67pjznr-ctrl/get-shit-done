@@ -330,12 +330,73 @@ function registerGsdTools(server, cache, loadRegistry) {
 
   server.tool(
     'get-cost-metrics',
-    'Return session token usage and cost data',
+    'Return session token usage and cost data from cost-log.jsonl',
     {
       name: z.string().optional().describe('Project name (omit for all projects)'),
       since: z.string().optional().describe('ISO 8601 timestamp filter'),
     },
-    async () => ({ content: [{ type: 'text', text: 'TODO' }] })
+    async ({ name, since } = {}) => {
+      const projectList = name
+        ? (() => {
+            const p = cache.get(name);
+            if (!p) return null;
+            return [p];
+          })()
+        : Array.from(cache.values());
+
+      if (projectList === null) {
+        const available = Array.from(cache.keys()).sort();
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({ error: 'Project not found', code: 'NOT_FOUND', available_projects: available }),
+          }],
+        };
+      }
+
+      const sessions = [];
+      for (const project of projectList) {
+        const filePath = path.join(project.path, '.planning', 'cost-log.jsonl');
+        const sessionMax = new Map(); // session_id → { cumulative, timestamp }
+        try {
+          const lines = fs.readFileSync(filePath, 'utf-8').trim().split('\n').filter(Boolean);
+          for (const line of lines) {
+            try {
+              const entry = JSON.parse(line);
+              if (!entry.session || entry.cumulative == null) continue;
+              if (since && entry.timestamp && entry.timestamp < since) continue;
+              const prev = sessionMax.get(entry.session);
+              if (!prev || entry.cumulative > prev.cumulative) {
+                sessionMax.set(entry.session, { cumulative: entry.cumulative, timestamp: entry.timestamp });
+              }
+            } catch { /* skip malformed */ }
+          }
+        } catch { /* no cost-log.jsonl */ }
+
+        for (const [session_id, data] of sessionMax) {
+          sessions.push({
+            project: project.name,
+            session_id,
+            cost_usd: Math.round(data.cumulative * 10000) / 10000,
+            last_updated: data.timestamp,
+          });
+        }
+      }
+
+      sessions.sort((a, b) => (b.last_updated || '').localeCompare(a.last_updated || ''));
+      const totalCost = sessions.reduce((sum, s) => sum + s.cost_usd, 0);
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            sessionCount: sessions.length,
+            totalCostUsd: Math.round(totalCost * 10000) / 10000,
+            sessions,
+          }),
+        }],
+      };
+    }
   );
 
   server.tool(
