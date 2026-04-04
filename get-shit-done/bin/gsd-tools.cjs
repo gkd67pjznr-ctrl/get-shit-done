@@ -718,8 +718,41 @@ async function main() {
           ? JSON.parse(fs.readFileSync(args[finalistsFileIdx + 1], 'utf-8'))
           : [];
         output(brainstorm.cmdBrainstormFormatResults(clusters, scores, finalists, sessionDir, outputDir), raw);
+      } else if (subcommand === 'log-session') {
+        const planningRoot = args[2];
+        const topicIdx = args.indexOf('--topic');
+        const flagsIdx = args.indexOf('--flags');
+        const ideaCountIdx = args.indexOf('--idea-count');
+        const outputPathIdx = args.indexOf('--output-path');
+        const metadata = {
+          topic: topicIdx !== -1 ? args[topicIdx + 1] : '',
+          date: new Date().toISOString().slice(0, 10),
+          flags: flagsIdx !== -1 ? args[flagsIdx + 1] : '',
+          idea_count: ideaCountIdx !== -1 ? parseInt(args[ideaCountIdx + 1]) || 0 : 0,
+          output_path: outputPathIdx !== -1 ? args[outputPathIdx + 1] : '',
+        };
+        output(brainstorm.cmdBrainstormLogSession(planningRoot, metadata), raw);
+      } else if (subcommand === 'list-sessions') {
+        const planningRoot = args[2];
+        output(brainstorm.cmdBrainstormListSessions(planningRoot), raw);
+      } else if (subcommand === 'tag-idea') {
+        const outputDir = args[2];
+        const ideaIdx = args.indexOf('--idea');
+        const phaseIdx = args.indexOf('--phase');
+        const ideaId = ideaIdx !== -1 ? args[ideaIdx + 1] : null;
+        const phaseNumber = phaseIdx !== -1 ? args[phaseIdx + 1] : null;
+        if (!ideaId || !phaseNumber) { error('tag-idea requires --idea <id> --phase <n>'); break; }
+        output(brainstorm.cmdBrainstormTagIdea(outputDir, ideaId, phaseNumber), raw);
+      } else if (subcommand === 'list-implemented') {
+        const planningRoot = args[2];
+        output(brainstorm.cmdBrainstormListImplemented(planningRoot), raw);
+      } else if (subcommand === 'recent-ideas') {
+        const planningRoot = args[2];
+        const daysIdx = args.indexOf('--days');
+        const days = daysIdx !== -1 ? parseInt(args[daysIdx + 1]) || 7 : 7;
+        output(brainstorm.cmdBrainstormRecentIdeas(planningRoot, days), raw);
       } else {
-        error('Unknown brainstorm subcommand. Available: check-eval, append-idea, read-ideas, scamper-lens, scamper-complete, check-floor, get-perspective, random-perspectives, check-saturation, build-seed-brief, cluster, score, select-finalists, create-output-dir, format-results');
+        error('Unknown brainstorm subcommand. Available: check-eval, append-idea, read-ideas, scamper-lens, scamper-complete, check-floor, get-perspective, random-perspectives, check-saturation, build-seed-brief, cluster, score, select-finalists, create-output-dir, format-results, log-session, list-sessions, tag-idea, list-implemented, recent-ideas');
       }
       break;
     }
