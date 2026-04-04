@@ -14,6 +14,12 @@ This project uses **milestone-scoped layout**. Each milestone has its own ROADMA
 - ✅ **v6.0 Adaptive Observation & Learning Loop** — Phases 22-27 (shipped 2026-03-11)
 - ✅ **v7.0 Quality Enforcement Observability** — Phases 28-32 (shipped 2026-03-11)
 - ✅ **v8.0 Close the Loop** — Phases 33-36 (shipped 2026-04-03)
+- ✅ **v9.0 Signal Intelligence** — Phases 37-42 (shipped 2026-04-04)
+- ✅ **v10.0 Shared MCP Dashboard** — Phases 43-44 (shipped 2026-04-04)
+- 🔨 **v11.0 Wild Brainstorming Engine** — Phases 45-49
+- 🔨 **v12.0 Quality Enforcement Evolution** — Phases 50-52
+- 🔨 **v13.0 Unified Observability & Context Routing** — Phases 84-86
+- 🔨 **v15.0 Autonomous Learning** — Phases 80-83
 
 ## Completed Milestones
 
@@ -29,6 +35,16 @@ This project uses **milestone-scoped layout**. Each milestone has its own ROADMA
 | v6.0 Adaptive Observation & Learning Loop | 2026-03-11 | 6 phases | 17 plans | `milestones/v6.0/ROADMAP.md` |
 | v7.0 Quality Enforcement Observability | 2026-03-11 | 5 phases | 7 plans | `milestones/v7.0/ROADMAP.md` |
 | v8.0 Close the Loop | 2026-04-03 | 4 phases | 8 plans | `milestones/v8.0-ROADMAP.md` |
+| v9.0 Signal Intelligence | 2026-04-04 | 6 phases | 8 plans | `milestones/v9.0/ROADMAP.md` |
+| v10.0 Shared MCP Dashboard | 2026-04-04 | 2 phases | 5 plans | `milestones/v10.0/ROADMAP.md` |
+
+## Active Milestone
+
+| Milestone | Status | Phases | Plans | Workspace |
+|-----------|--------|--------|-------|-----------|
+| v11.0 Wild Brainstorming Engine | Not started | 45-49 (5 phases) | TBD | `milestones/v11.0/ROADMAP.md` |
+| v12.0 Quality Enforcement Evolution | Not started | 50-52 (3 phases) | 7 plans | `milestones/v12.0/ROADMAP.md` |
+| v15.0 Autonomous Learning | Not started | 80-83 (4 phases) | 7 plans | `milestones/v15.0/ROADMAP.md` |
 
 See `.planning/MILESTONES.md` for detailed milestone history.
 
