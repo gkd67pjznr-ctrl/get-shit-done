@@ -64,6 +64,13 @@ function acceptSuggestion({ suggestionId, cwd }) {
       { cwd: resolvedCwd }
     );
 
+    // Capture diff after commit so HEAD~1 shows exactly what changed
+    const diff = execSync(
+      'git diff HEAD~1 -- ' + JSON.stringify(skillPath),
+      { cwd: resolvedCwd }
+    ).toString();
+    appendSkillHistory(resolvedCwd, skillPath, suggestion, diff);
+
     retireByCategory(suggestion.category, suggestionId, { cwd: resolvedCwd });
 
     return { ok: true, skillPath, committed: true };
@@ -106,7 +113,67 @@ function dismissSuggestion({ suggestionId, cwd }) {
   }
 }
 
-module.exports = { acceptSuggestion, dismissSuggestion };
+/**
+ * Append a structured history entry to SKILL-HISTORY.md in the skill directory.
+ * Rotates to an archive file (SKILL-HISTORY-YYYY-MM.md) when entry count reaches 50.
+ *
+ * @param {string} cwd - Project root (unused but kept for API consistency)
+ * @param {string} skillPath - Absolute path to SKILL.md
+ * @param {{ id: string, category: string, rationale?: string }} suggestion
+ * @param {string} diff - Unified diff string from git diff HEAD~1
+ */
+function appendSkillHistory(cwd, skillPath, suggestion, diff) {
+  const skillDir = path.dirname(skillPath);
+  const historyPath = path.join(skillDir, 'SKILL-HISTORY.md');
+
+  // Read existing content (or empty string)
+  const existing = fs.existsSync(historyPath)
+    ? fs.readFileSync(historyPath, 'utf-8')
+    : '';
+
+  // Count existing entries by header pattern
+  const entryCount = (existing.match(/^## Entry \d+/gm) || []).length;
+
+  // Rotate if at or above 50 entries
+  if (entryCount >= 50) {
+    const dateStr = new Date().toISOString().slice(0, 7); // YYYY-MM
+    const archiveName = `SKILL-HISTORY-${dateStr}.md`;
+    let archivePath = path.join(skillDir, archiveName);
+    // Avoid collision: increment suffix if archive exists
+    let seq = 1;
+    while (fs.existsSync(archivePath)) {
+      archivePath = path.join(skillDir, `SKILL-HISTORY-${dateStr}-${seq}.md`);
+      seq++;
+    }
+    fs.writeFileSync(archivePath, existing, 'utf-8');
+    fs.writeFileSync(historyPath, '', 'utf-8');
+  }
+
+  // Re-read after possible rotation
+  const current = fs.existsSync(historyPath)
+    ? fs.readFileSync(historyPath, 'utf-8')
+    : '';
+  const currentCount = (current.match(/^## Entry \d+/gm) || []).length;
+  const nextEntry = currentCount + 1;
+
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const entry = [
+    `## Entry ${String(nextEntry).padStart(3, '0')} — ${dateStr}`,
+    '',
+    `**Suggestion:** ${suggestion.id}`,
+    `**Category:** ${suggestion.category}`,
+    `**Rationale:** ${suggestion.rationale || '(none)'}`,
+    '',
+    '```diff',
+    diff.trim(),
+    '```',
+    '',
+  ].join('\n');
+
+  fs.appendFileSync(historyPath, entry + '\n', 'utf-8');
+}
+
+module.exports = { acceptSuggestion, dismissSuggestion, appendSkillHistory };
 
 // CLI invocation:
 //   node refine-skill.cjs accept <suggestionId> [cwd]
