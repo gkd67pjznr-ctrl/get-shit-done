@@ -179,6 +179,7 @@ const eventJournal = require('./lib/event-journal.cjs');
 const skillMetrics = require('./lib/skill-metrics.cjs');
 const skillScorer = require('./lib/skill-scorer.cjs');
 const dashboard = require('./lib/dashboard.cjs');
+const contextBudget = require('./lib/context-budget.cjs');
 
 // ─── CLI Router ───────────────────────────────────────────────────────────────
 
@@ -344,6 +345,25 @@ async function main() {
         skillMetrics.cmdSkillMetricsShow(cwd, raw);
       } else {
         console.error('Unknown skill-metrics subcommand. Available: compute, show');
+        process.exit(1);
+      }
+      break;
+    }
+
+    case 'skill-budget': {
+      const subcommand = args[1];
+      if (subcommand === 'measure') {
+        const skillNameIdx = args.indexOf('--skill');
+        const skillName = skillNameIdx !== -1 ? args[skillNameIdx + 1] : '';
+        if (!skillName) {
+          console.error('Usage: skill-budget measure --skill <name> [--raw]');
+          process.exit(1);
+        }
+        contextBudget.cmdSkillBudgetMeasure(cwd, skillName, raw);
+      } else if (subcommand === 'aggregate') {
+        contextBudget.cmdSkillBudgetAggregate(cwd, raw);
+      } else {
+        console.error('Unknown skill-budget subcommand. Available: measure, aggregate');
         process.exit(1);
       }
       break;
