@@ -166,4 +166,87 @@ function cmdDebtResolve(cwd, opts, raw) {
   output({ id: opts.id, status: opts.status, updated: true }, raw, 'true');
 }
 
-module.exports = { cmdDebtLog, cmdDebtList, cmdDebtResolve };
+/**
+ * Compute debt impact by joining DEBT.md entries with corrections.jsonl.
+ * Read-only — never modifies DEBT.md.
+ *
+ * @param {string} cwd - Working directory
+ * @param {Object} opts - {} (no required options; future: --status filter)
+ * @param {boolean} raw - Raw output mode
+ */
+function cmdDebtImpact(cwd, opts, raw) {
+  const debtPath = path.join(cwd, '.planning', 'DEBT.md');
+  if (!fs.existsSync(debtPath)) {
+    output({ entries: [], total: 0 }, raw, '[]');
+    return;
+  }
+
+  const debtContent = fs.readFileSync(debtPath, 'utf-8');
+  const debtEntries = parseDebtRows(debtContent);
+
+  // Load active corrections
+  const correctionsPath = path.join(cwd, '.planning', 'patterns', 'corrections.jsonl');
+  let corrections = [];
+  if (fs.existsSync(correctionsPath)) {
+    const lines = fs.readFileSync(correctionsPath, 'utf-8')
+      .split('\n')
+      .filter(l => l.trim() !== '');
+    corrections = lines
+      .map(l => { try { return JSON.parse(l); } catch { return null; } })
+      .filter(c => c && !c.retired_at);
+  }
+
+  // For each debt entry, count matching corrections
+  const results = debtEntries.map(entry => {
+    // Primary signal: source_phase correlation
+    const phaseMatches = corrections.filter(
+      c => String(c.phase) === String(entry.source_phase)
+    );
+
+    // Secondary signal: component substring match (case-insensitive)
+    // Only applies if corrections have a 'component' field
+    const componentMatches = corrections.filter(c => {
+      if (!c.component || !entry.component) return false;
+      return c.component.toLowerCase().includes(entry.component.toLowerCase()) ||
+        entry.component.toLowerCase().includes(c.component.toLowerCase());
+    });
+
+    // Union of both signals, deduplicate by object identity
+    const allMatched = [...phaseMatches];
+    componentMatches.forEach(c => {
+      if (!allMatched.includes(c)) allMatched.push(c);
+    });
+
+    const correction_count = allMatched.length;
+    let link_confidence;
+    if (correction_count >= 3) link_confidence = 'high';
+    else if (correction_count >= 1) link_confidence = 'medium';
+    else link_confidence = 'low';
+
+    return {
+      id: entry.id,
+      type: entry.type,
+      severity: entry.severity,
+      component: entry.component,
+      description: entry.description,
+      source_phase: entry.source_phase,
+      correction_count,
+      link_confidence,
+      matched_corrections: allMatched.map(c => ({
+        phase: c.phase,
+        category: c.diagnosis_category,
+        component: c.component || null,
+      })),
+    };
+  });
+
+  // Sort by correction_count descending, then id ascending as tiebreaker
+  results.sort((a, b) => {
+    if (b.correction_count !== a.correction_count) return b.correction_count - a.correction_count;
+    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+  });
+
+  output({ entries: results, total: results.length }, raw, JSON.stringify(results));
+}
+
+module.exports = { cmdDebtLog, cmdDebtList, cmdDebtResolve, cmdDebtImpact };
