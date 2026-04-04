@@ -1395,8 +1395,64 @@ describe('milestone-scoped phase counting in frontmatter', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('state update-progress', () => {
-  test('placeholder — to be replaced by 37-01-01 and 37-01-02', () => {
-    // stub
+  test('reads phases and state from milestone-scoped workspace', async (t) => {
+    const tmpDir = createTempProject('v1.0');
+    t.after(() => cleanup(tmpDir));
+
+    const workspace = path.join(tmpDir, '.planning', 'milestones', 'v1.0');
+
+    // Write STATE.md with a Progress field in the milestone workspace
+    fs.writeFileSync(path.join(workspace, 'STATE.md'), [
+      '---',
+      'gsd_state_version: 1.0',
+      '---',
+      '',
+      '# State',
+      '',
+      'Progress: [░░░░░░░░░░] 0% (0/0 plans)',
+    ].join('\n'));
+
+    // Create one phase dir with 1 PLAN.md and 1 SUMMARY.md
+    const phaseDir = path.join(workspace, 'phases', '01-setup');
+    fs.mkdirSync(phaseDir, { recursive: true });
+    fs.writeFileSync(path.join(phaseDir, '01-01-PLAN.md'), '# Plan\n');
+    fs.writeFileSync(path.join(phaseDir, '01-01-SUMMARY.md'), '# Summary\n');
+
+    const result = runGsdTools('state update-progress', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const out = JSON.parse(result.output);
+    assert.strictEqual(out.updated, true, 'progress should be updated');
+    assert.strictEqual(out.total, 1, 'should count 1 plan from milestone phases dir');
+    assert.strictEqual(out.completed, 1, 'should count 1 summary from milestone phases dir');
+    assert.strictEqual(out.percent, 100, 'should be 100%');
+  });
+
+  test('does not count plans from root .planning/phases when milestone-scoped', async (t) => {
+    const tmpDir = createTempProject('v1.0');
+    t.after(() => cleanup(tmpDir));
+
+    const workspace = path.join(tmpDir, '.planning', 'milestones', 'v1.0');
+
+    // Write STATE.md in the milestone workspace (no progress yet)
+    fs.writeFileSync(path.join(workspace, 'STATE.md'), [
+      '# State',
+      '',
+      'Progress: [░░░░░░░░░░] 0% (0/0 plans)',
+    ].join('\n'));
+
+    // Write a PLAN.md under root .planning/phases (the old hardcoded path) — should be ignored
+    const rootPhaseDir = path.join(tmpDir, '.planning', 'phases', '99-old');
+    fs.mkdirSync(rootPhaseDir, { recursive: true });
+    fs.writeFileSync(path.join(rootPhaseDir, '99-01-PLAN.md'), '# Old Plan\n');
+
+    const result = runGsdTools('state update-progress', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const out = JSON.parse(result.output);
+    // Milestone workspace has 0 plans — root .planning/phases plans must not be counted
+    assert.strictEqual(out.total, 0, 'root .planning/phases should not be counted');
+    assert.strictEqual(out.percent, 0, 'percent should be 0 when no milestone plans exist');
   });
 });
 
