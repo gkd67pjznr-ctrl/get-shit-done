@@ -116,8 +116,50 @@ function registerGsdTools(server, cache, loadRegistry) {
   server.tool(
     'get-gate-health',
     'Return gate pass/fail metrics, per-project or aggregated',
-    { name: z.string().optional().describe('Project name (omit for aggregated)') },
-    async () => ({ content: [{ type: 'text', text: 'TODO' }] })
+    { name: z.string().optional().describe('Project name (omit for aggregated across all projects)') },
+    async ({ name } = {}) => {
+      if (name) {
+        const project = cache.get(name);
+        if (!project) {
+          const available = Array.from(cache.keys()).sort();
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({ error: 'Project not found', code: 'NOT_FOUND', available_projects: available }),
+            }],
+          };
+        }
+        const health = readProjectGateHealth(project.path);
+        return { content: [{ type: 'text', text: JSON.stringify({ name, ...health }) }] };
+      }
+
+      // Aggregate across all projects
+      const projects = Array.from(cache.values());
+      const VALID_GATES = ['codebase_scan', 'context7_lookup', 'test_baseline', 'test_gate', 'diff_review'];
+      const VALID_OUTCOMES = ['passed', 'warned', 'blocked', 'skipped'];
+      const totals = { passed: 0, warned: 0, blocked: 0, skipped: 0 };
+      const gates = {};
+      for (const g of VALID_GATES) gates[g] = { total: 0, passed: 0, warned: 0, blocked: 0, skipped: 0 };
+      let totalExecutions = 0;
+
+      for (const p of projects) {
+        const h = readProjectGateHealth(p.path);
+        if (!h) continue;
+        totalExecutions += h.totalExecutions;
+        for (const o of VALID_OUTCOMES) totals[o] += h.outcomes[o];
+        for (const g of VALID_GATES) {
+          gates[g].total += h.gates[g].total;
+          for (const o of VALID_OUTCOMES) gates[g][o] += h.gates[g][o];
+        }
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({ projectCount: projects.length, totalExecutions, outcomes: totals, gates }),
+        }],
+      };
+    }
   );
 
   server.tool(
