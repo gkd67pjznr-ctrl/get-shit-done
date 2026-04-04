@@ -168,10 +168,49 @@ function registerGsdTools(server, cache, loadRegistry) {
     {
       name: z.string().describe('Project name'),
       type: z.enum(['corrections', 'preferences', 'sessions', 'suggestions']).describe('Observation type'),
-      limit: z.number().int().positive().optional().default(50).describe('Max entries to return'),
+      limit: z.number().int().positive().optional().describe('Max entries to return (default 50)'),
       since: z.string().optional().describe('ISO 8601 timestamp — only return entries after this time'),
     },
-    async () => ({ content: [{ type: 'text', text: 'TODO' }] })
+    async ({ name, type, limit = 50, since }) => {
+      const project = cache.get(name);
+      if (!project) {
+        const available = Array.from(cache.keys()).sort();
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({ error: 'Project not found', code: 'NOT_FOUND', available_projects: available }),
+          }],
+        };
+      }
+
+      const filePath = path.join(project.path, '.planning', 'patterns', type + '.jsonl');
+      let entries = [];
+      try {
+        const lines = fs.readFileSync(filePath, 'utf-8').trim().split('\n').filter(Boolean);
+        for (const line of lines) {
+          try { entries.push(JSON.parse(line)); } catch { /* skip malformed */ }
+        }
+      } catch {
+        // File doesn't exist — return empty
+      }
+
+      // Apply since filter
+      if (since) {
+        entries = entries.filter(e => {
+          const ts = e.timestamp || e.last_correction_ts || e.created_at;
+          return ts && ts >= since;
+        });
+      }
+
+      // Return last N entries
+      const result = entries.slice(-limit);
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({ name, type, count: result.length, total: entries.length, entries: result }),
+        }],
+      };
+    }
   );
 
   server.tool(
