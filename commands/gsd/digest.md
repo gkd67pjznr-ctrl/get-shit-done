@@ -318,6 +318,42 @@ Display rules:
 - Note: `attribution_confidence: low` means insufficient session data, not that the skill is defective
 - Include metadata context: "Computed at {metadata.computed_at}. Total active corrections: {metadata.total_active_corrections}. Unmapped: {metadata.unmapped_correction_count}."
 
+### 3j. Decision tensions
+
+Run the decision audit tool to detect corrections that contradict recorded decisions in PROJECT.md:
+
+```bash
+node .claude/hooks/lib/decision-audit.cjs "$(pwd)"
+```
+
+- The command outputs a JSON array to stdout. Parse it.
+- If the command fails, produces no output, or produces invalid JSON, display:
+  > No decision tensions detected.
+  and continue to Step 4.
+- If the parsed array is empty, display:
+  > No decision tensions detected.
+- If the array has one or more entries, display each as a table:
+
+```
+### Decision Tensions
+| Decision | Corrections | Confidence | Evidence |
+|----------|-------------|------------|----------|
+| Fork the repo (not extension... | 4 | 0.12 | fix pattern to avoid forking... |
+| Quality Sentinel in executor... | 3 | 0.08 | inline sentinel burns context... |
+```
+
+Display rules:
+- Decision column: truncate `decision_text` to 60 characters, appending `...` if truncated.
+- Corrections column: show `correction_count` as an integer.
+- Confidence column: show `confidence` rounded to 2 decimal places (e.g., 0.12).
+- Evidence column: take the first element of `matched_corrections`, use its `correction_to` field truncated to 50 characters, appending `...` if truncated.
+- Sort rows by `correction_count` descending.
+
+After the table, add a callout for each tension on its own line:
+> **Tension:** "[decision_text truncated to 80 chars]" — [correction_count] correction(s) with avg Jaccard confidence [confidence to 2dp]. Consider whether this decision is still valid or whether the recurring mistake should be addressed.
+
+If multiple tensions exist, display one callout per tension.
+
 ## Step 4: Activation history
 
 Read `.planning/patterns/budget-history.jsonl` using the Read tool.
@@ -343,6 +379,7 @@ Based on the analysis, generate 3-5 actionable recommendations. Apply these rule
   - Heavily test: "Strong test focus ([X%]). Good TDD discipline."
 - **Large session history:** If sessions.jsonl has more than 1000 entries, recommend: "Session history has [N] entries. Consider archiving old entries: copy the file to a backup and truncate sessions.jsonl to recent entries only."
 - **Pending suggestions:** Check `.planning/patterns/suggestions.json` -- if it exists and has entries, recommend: "You have [N] pending suggestions. Run `/gsd:suggest` to review."
+- **Decision tensions:** If any tensions were detected in Step 3j (the tensions array was non-empty), add: "N decision tension(s) detected. Review the Decision Tensions section and decide whether to update PROJECT.md or address the recurring mistake pattern."
 - **Budget pressure:** Check `.planning/patterns/budget-history.jsonl` -- if recent entries show budget usage above 80%, recommend: "Skill budget at [X%]. Review loaded skills with `/gsd:session-start`."
 
 Always generate at least one recommendation. If nothing specific triggers, provide a general tip based on the data.
@@ -386,4 +423,5 @@ _Run `/gsd:session-start` for session briefing | `/gsd:digest` again for updated
 - Footer links to related commands (/gsd:session-start, /gsd:digest)
 - Correction analysis section (Step 3g) appears with category grouping table, sorted by count descending, with bold rows and callout for categories >= 3 corrections
 - Benchmark trends present (or 'insufficient data' message shown) in Step 3h after correction analysis
+- Decision Tensions section (Step 3j) appears with tension table and callouts when tensions exist, or "No decision tensions detected." when none
 </success_criteria>
