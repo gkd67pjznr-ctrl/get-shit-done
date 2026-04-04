@@ -14,7 +14,7 @@ Three focused features that unify fragmented event streams, surface hidden conte
 
 - [x] **Phase 84: Event Journaling** - Central workflow.jsonl emitter, full integration, reader, digest timeline, and rotation
 - [x] **Phase 85: Context Budget Optimizer** - Per-skill token cost measurement, session recording, aggregation, and digest surfacing
-- [ ] **Phase 86: MCP Server Selection** - Task-type classifier, recommendation mapping, execute-plan integration, and dashboard validation
+- [x] **Phase 86: MCP Server Selection** - Task-type classifier, recommendation mapping, execute-plan integration, and dashboard validation
 
 ## Phase Details
 
@@ -60,7 +60,7 @@ Plans:
 
 Plans:
 - [x] 86-01: Implement task-type classifier and MCP recommendation mapping
-- [ ] 86-02: Integrate recommendation emission into execute-plan workflow and add dashboard validation query
+- [x] 86-02: Integrate recommendation emission into execute-plan workflow and add dashboard validation query
 
 ## Progress
 
@@ -71,4 +71,4 @@ Phases execute in order: 84 → 85 → 86
 |-------|----------------|--------|-----------|
 | 84. Event Journaling | 3/3 | Complete    | 2026-04-04 |
 | 85. Context Budget Optimizer | 1/1 | Complete    | 2026-04-04 |
-| 86. MCP Server Selection | 1/2 | In progress | - |
+| 86. MCP Server Selection | 2/2 | Complete    | 2026-04-04 |
