@@ -270,14 +270,16 @@ function cmdStateRecordMetric(cwd, options, raw) {
   }
 }
 
-function cmdStateUpdateProgress(cwd, raw) {
-  const statePath = path.join(cwd, '.planning', 'STATE.md');
+function cmdStateUpdateProgress(cwd, raw, milestoneScope) {
+  const ms = milestoneScope || resolveActiveMilestone(cwd);
+  const root = planningRoot(cwd, ms);
+  const statePath = path.join(root, 'STATE.md');
   if (!fs.existsSync(statePath)) { output({ error: 'STATE.md not found' }, raw); return; }
 
   let content = fs.readFileSync(statePath, 'utf-8');
 
   // Count summaries across all phases
-  const phasesDir = path.join(cwd, '.planning', 'phases');
+  const phasesDir = path.join(root, 'phases');
   let totalPlans = 0;
   let totalSummaries = 0;
 

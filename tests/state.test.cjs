@@ -989,19 +989,20 @@ describe('cmdStateUpdateProgress (state update-progress)', () => {
   });
 
   test('calculates progress from plan/summary counts', () => {
+    const workspace = path.join(tmpDir, '.planning', 'milestones', 'v1.0');
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'STATE.md'),
+      path.join(workspace, 'STATE.md'),
       '# Project State\n\n**Progress:** [░░░░░░░░░░] 0%\n'
     );
 
     // Phase 01: 1 PLAN + 1 SUMMARY = completed
-    const phase01Dir = path.join(tmpDir, '.planning', 'phases', '01');
+    const phase01Dir = path.join(workspace, 'phases', '01');
     fs.mkdirSync(phase01Dir, { recursive: true });
     fs.writeFileSync(path.join(phase01Dir, '01-01-PLAN.md'), '# Plan\n');
     fs.writeFileSync(path.join(phase01Dir, '01-01-SUMMARY.md'), '# Summary\n');
 
     // Phase 02: 1 PLAN only = not completed
-    const phase02Dir = path.join(tmpDir, '.planning', 'phases', '02');
+    const phase02Dir = path.join(workspace, 'phases', '02');
     fs.mkdirSync(phase02Dir, { recursive: true });
     fs.writeFileSync(path.join(phase02Dir, '02-01-PLAN.md'), '# Plan\n');
 
@@ -1014,13 +1015,14 @@ describe('cmdStateUpdateProgress (state update-progress)', () => {
     assert.strictEqual(output.completed, 1, 'completed should be 1');
     assert.strictEqual(output.total, 2, 'total should be 2');
 
-    const updated = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
+    const updated = fs.readFileSync(path.join(workspace, 'STATE.md'), 'utf-8');
     assert.ok(updated.includes('50%'), 'STATE.md Progress should contain 50%');
   });
 
   test('handles zero plans gracefully', () => {
+    const workspace = path.join(tmpDir, '.planning', 'milestones', 'v1.0');
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'STATE.md'),
+      path.join(workspace, 'STATE.md'),
       '# Project State\n\n**Progress:** [░░░░░░░░░░] 0%\n'
     );
 
@@ -1032,8 +1034,9 @@ describe('cmdStateUpdateProgress (state update-progress)', () => {
   });
 
   test('returns error when Progress field missing', () => {
+    const workspace = path.join(tmpDir, '.planning', 'milestones', 'v1.0');
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'STATE.md'),
+      path.join(workspace, 'STATE.md'),
       '# Project State\n\n**Status:** Active\n'
     );
 
@@ -1046,6 +1049,10 @@ describe('cmdStateUpdateProgress (state update-progress)', () => {
   });
 
   test('returns error when STATE.md missing', () => {
+    // Remove the STATE.md that createTempProject creates
+    const workspace = path.join(tmpDir, '.planning', 'milestones', 'v1.0');
+    fs.rmSync(path.join(workspace, 'STATE.md'));
+
     const result = runGsdTools('state update-progress', tmpDir);
     assert.ok(result.success, `Command should exit 0: ${result.error}`);
 
