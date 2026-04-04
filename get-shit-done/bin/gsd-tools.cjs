@@ -173,6 +173,7 @@ const debt = require('./lib/debt.cjs');
 const migrate = require('./lib/migrate.cjs');
 const benchmark = require('./lib/benchmark.cjs');
 const sessionReport = require('./lib/session-report.cjs');
+const skillMetrics = require('./lib/skill-metrics.cjs');
 const dashboard = require('./lib/dashboard.cjs');
 
 // ─── CLI Router ───────────────────────────────────────────────────────────────
@@ -324,6 +325,21 @@ async function main() {
         last: (Number.isFinite(rawLast) && rawLast > 0) ? rawLast : 10,
         milestone_scope: milestoneScope || null,
       }, raw);
+      break;
+    }
+
+    case 'skill-metrics': {
+      const subcommand = args[1];
+      if (subcommand === 'compute') {
+        skillMetrics.cmdSkillMetricsCompute(cwd, {
+          milestone_scope: milestoneScope || null,
+        }, raw);
+      } else if (subcommand === 'show') {
+        skillMetrics.cmdSkillMetricsShow(cwd, raw);
+      } else {
+        console.error('Unknown skill-metrics subcommand. Available: compute, show');
+        process.exit(1);
+      }
       break;
     }
 
