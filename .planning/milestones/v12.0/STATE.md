@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-04-04)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 50 — ESLint Gate
+**Current focus:** Phase 51 — Transition Guards
 
 ## Current Position
 
-Phase: 50 of 3 (ESLint Gate)
-Plan: 1 of 2 in current phase
-Status: Plan 50-01 complete — ready for 50-02
-Last activity: 2026-04-04 — Plan 50-01 executed
+Phase: 51 of 3 (Transition Guards)
+Plan: 0 of 3 in current phase
+Status: Phase 50 complete — ready for 51-01
+Last activity: 2026-04-04 — Plan 50-02 executed
 
-Progress: [█░░░░░░░░░] 10%
+Progress: [██░░░░░░░░] 20%
 
 ## Performance Metrics
 
@@ -27,10 +27,10 @@ Progress: [█░░░░░░░░░] 10%
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 50 | 1 | ~30m | ~30m |
+| 50 | 2 | ~55m | ~27m |
 
 **Recent Trend:**
-- Last 5 plans: 50-01 (complete)
+- Last 5 plans: 50-01 (complete), 50-02 (complete)
 - Trend: On track
 
 *Updated after each plan completion*
@@ -42,6 +42,7 @@ Progress: [█░░░░░░░░░] 10%
 - v8.0: Quality gates moved from agent instructions to deterministic PostToolUse hooks (gate-runner.cjs pattern) — Phase 50 extends this
 - v9.0: phase-benchmarks.jsonl established with per-plan metrics — Phase 52 adds test_count/test_delta fields
 - v7.0: ESLint MCP recommended during quality gating research — Phase 50 implements the recommendation
+- Phase 50: server.cjs VALID_GATES pattern established — any new gate added to gate-runner.cjs must also be added to VALID_GATES in write-gate-execution.cjs AND both aggregation functions in server.cjs (getProjectGateHealth + aggregateGateHealth)
 
 ### Pending Todos
 
@@ -55,6 +56,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-04
-Stopped at: Plan 50-01 complete (eslint_gate wired in gate-runner.cjs + write-gate-execution.cjs)
-Resume at: Plan 50-02
+Stopped at: Plan 50-02 complete (Phase 50 complete — eslint_gate end-to-end verified, dashboard VALID_GATES fixed)
+Resume at: Plan 51-01
 Resume file: None
