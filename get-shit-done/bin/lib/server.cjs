@@ -1143,8 +1143,9 @@ function setupTerminalWebSocket(httpServer) {
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, PATCH, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, mcp-session-id',
+  'Access-Control-Expose-Headers': 'mcp-session-id',
 };
 
 function createHttpServer(port, cache, clients, dashboardDir, tmuxCache) {
@@ -1158,8 +1159,9 @@ function createHttpServer(port, cache, clients, dashboardDir, tmuxCache) {
 
     // Add CORS headers to all responses
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, PATCH, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, mcp-session-id');
+    res.setHeader('Access-Control-Expose-Headers', 'mcp-session-id');
 
     let url;
     try {
