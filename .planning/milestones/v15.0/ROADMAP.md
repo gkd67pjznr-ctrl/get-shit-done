@@ -13,7 +13,7 @@ Close the gap between "captures data" and "acts on it." This milestone delivers 
 
 - [x] **Phase 80: Auto-Apply Safety Engine** - Core auto-apply logic with all safety guardrails (confidence gate, rate limiting, high-performer skip, audit log)
 - [x] **Phase 81: Auto-Apply User Control** - Revert command and manual fallback surface for failed auto-apply checks (completed 2026-04-04)
-- [ ] **Phase 82: Adaptive Review Profiles** - Per-project review profile generation, storage, and code-review skill integration (82-01 done 2026-04-04)
+- [x] **Phase 82: Adaptive Review Profiles** - Per-project review profile generation, storage, and code-review skill integration (completed 2026-04-04)
 - [ ] **Phase 83: Decision Audit Trail** - Decision tension detection via Jaccard matching and digest surfacing
 
 ## Phase Details
@@ -59,7 +59,7 @@ Plans:
 
 Plans:
 - [x] 82-01: Implement review profile generator (corrections.jsonl → review-profile.json) with 10-correction minimum guard
-- [ ] 82-02: Update code-review skill to read review-profile.json and wire session-start hook refresh
+- [x] 82-02: Update code-review skill to read review-profile.json and wire session-start hook refresh
 
 ### Phase 83: Decision Audit Trail
 **Goal**: When correction patterns contradict a recorded decision in PROJECT.md, /gsd:digest surfaces the tension so the user can re-evaluate the decision or address the recurring mistake
@@ -85,5 +85,5 @@ Phases execute in numeric order: 80 → 81 → 82 → 83
 |-------|----------------|--------|-----------|
 | 80. Auto-Apply Safety Engine | 2/2 | Complete    | 2026-04-04 |
 | 81. Auto-Apply User Control | 1/1 | Complete    | 2026-04-04 |
-| 82. Adaptive Review Profiles | 1/2 | In progress | - |
+| 82. Adaptive Review Profiles | 2/2 | Complete    | 2026-04-04 |
 | 83. Decision Audit Trail | 0/2 | Not started | - |

@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: in_progress
-stopped_at: Plan 82-01 complete — generateReviewProfile module + 8 tests committed at 92aa705
+milestone: v15.0
+milestone_name: Autonomous Learning
+status: executing
+stopped_at: Plan 82-02 complete — code-review skill + session-hook refresh + 2 integration tests committed at f1bf404
 last_updated: "2026-04-04T00:00:00.000Z"
-last_activity: "2026-04-04 — Plan 82-01 executed: review-profile.cjs with generateReviewProfile(), 8 unit tests (all pass)"
+last_activity: "2026-04-04 — Plan 82-02 executed: adaptive review focus in SKILL.md, profile refresh in session-start hook, 10 tests pass"
 progress:
   total_phases: 4
-  completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
-  percent: 60
+  completed_phases: 3
+  total_plans: 5
+  completed_plans: 5
+  percent: 75
 ---
 
 # Project State — Milestone v15.0 Autonomous Learning
@@ -21,33 +21,35 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-04)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 82 — Adaptive Review Profiles (plan 82-01 done)
+**Current focus:** Phase 82 complete — Adaptive Review Profiles fully delivered (82-01 + 82-02)
 
 ## Current Position
 
-Phase: 82 of 4 (Adaptive Review Profiles)
-Plan: 1 of 1 in current phase (plan 82-01 done)
-Status: In progress — Phase 82 plan 82-01 done; awaiting further plans if any
-Last activity: 2026-04-04 — Plan 82-01 executed: review-profile.cjs with generateReviewProfile(), 8 unit tests (all pass)
+Phase: 82 of 4 (Adaptive Review Profiles — COMPLETE)
+Plan: 82-02 done (phase complete)
+Status: Phase 82 complete — ready for Phase 83 or milestone close
+Last activity: 2026-04-04 — Plan 82-02 executed: Adaptive Review Focus in code-review SKILL.md, generateReviewProfile wired into gsd-recall-corrections.cjs, 2 integration tests (10 total pass)
 
-Progress: [████░░░░░░] 40%
+Progress: [███████░░░] 75%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: -
-- Total execution time: -
+- Total plans completed: 5
+- Average duration: ~20 min/plan
+- Total execution time: ~100 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 80 | 2 | ~40 min | ~20 min |
+| 81 | 1 | ~20 min | ~20 min |
+| 82 | 2 | ~40 min | ~20 min |
 
 **Recent Trend:**
-- Last 5 plans: -
-- Trend: -
+- Last 5 plans: consistent ~20 min each
+- Trend: stable
 
 *Updated after each plan completion*
 
@@ -65,18 +67,21 @@ Recent decisions affecting current work:
 - Plan 81-01: revertAutoApply appends audit entry inline (no import from auto-apply.cjs) to avoid circular dependency
 - Plan 81-01: test file placed at tests/ (project convention) rather than src/tests/ (plan spec) — src/tests/ does not exist
 - Plan 82-01: VALID_CATEGORIES defined inline in review-profile.cjs (not imported from write-correction.cjs) as write-correction.cjs does not export that set from module.exports
+- Plan 82-02: SKILL.md instructs Claude to read review-profile.json at review time — skill stays stateless, profile always fresh
+- Plan 82-02: Profile refresh inserted before body += '\n</system-reminder>' — cannot contaminate session output
+- Plan 82-02: Integration tests use execSync with { cwd: tmp } — hook's process.cwd() resolves to fixture dir, no CLI flag needed
 
 ### Pending Todos
 
-None yet.
+None.
 
 ### Blockers/Concerns
 
-None yet.
+None.
 
 ## Session Continuity
 
 Last session: 2026-04-04
-Stopped at: Plan 82-01 complete — generateReviewProfile module + 8 tests committed at 92aa705
+Stopped at: Plan 82-02 complete — code-review skill + session-hook refresh + 2 integration tests committed at f1bf404
 Resume file: None
-Next: Phase 82 continued (if additional plans exist) or Phase 83
+Next: Phase 83 or milestone v15.0 completion check
