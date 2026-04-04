@@ -172,6 +172,16 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 - Context budget optimizer (per-skill token cost, cost-per-relevance ratio, deferral recommendations)
 - MCP server selection intelligence (task-type classifier, advisory recommendations before executor spawn)
 
+## Current Milestone: v14.0 Planning Intelligence
+
+**Goal:** Turn historical execution data into planning inputs — the planner learns from 15 milestones and 80+ plans instead of starting from scratch every time.
+
+**Target features:**
+- Phase Reuse / Template Library (index completed plans, detect structural similarity, suggest reusing plan skeletons)
+- Phase Composition Assistant (classify tasks by type, rank by performance, compose optimal task sequences)
+- Automated Milestone Decomposition (propose phase breakdowns for new milestones using structural patterns)
+- Prompt Quality Scoring (score task prompts against correction frequency, surface patterns in digest)
+
 ## Current Milestone: v16.0 Multi-Milestone Batch Planner
 
 **Goal:** A `/gsd:multi-milestone` command that takes a dump of feature ideas, clusters them into milestone themes, creates N workspaces, runs per-milestone research + full requirements scoping, spawns N parallel roadmappers producing unnumbered proposals, then a roadmap synthesizer assigns all version and phase numbers and writes every artifact — all in one session.
@@ -322,4 +332,4 @@ Tests: 1220+ passing across 30 test suites.
 | Cross-project promotion at 3+ projects | Ensures preferences are truly universal before elevating | ✓ Good — project-specific quirks don't pollute global store |
 
 ---
-*Last updated: 2026-04-04 after v15.0 Autonomous Learning milestone*
+*Last updated: 2026-04-04 after v14.0 Planning Intelligence milestone started*

@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: Defining requirements
 stopped_at: Phase 81 context gathered
-last_updated: "2026-04-04T14:29:19.496Z"
+last_updated: "2026-04-04T23:33:56.685Z"
 last_activity: 2026-04-04 — Milestone v16.0 started
 progress:
   total_phases: 4
@@ -27,9 +27,8 @@ Last activity: 2026-04-04 — Milestone v16.0 started
 | Milestone | Status | Phases |
 |-----------|--------|--------|
 | v16.0 Multi-Milestone Batch Planner | Ready to plan | 87-89 |
+| v14.0 Planning Intelligence | Defining requirements | TBD |
 | v13.0 Unified Observability & Context Routing | Defining requirements | TBD |
-| v11.0 Wild Brainstorming Engine | Ready to plan | 45-49 |
-| v15.0 Autonomous Learning | Defining requirements | TBD |
 
 ## Completed Milestones
 
