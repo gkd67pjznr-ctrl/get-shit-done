@@ -25,7 +25,7 @@ v10.0 mounts MCP tool endpoints on the existing dashboard server so every Claude
 
 Plans:
 - [x] 43-01: Pin SDK, install, update CORS headers, write `mcp-server.cjs` skeleton, wire `/mcp` route, smoke test
-- [ ] 43-02: Implement tools 1-4 (list-projects, get-project-state, get-gate-health, get-observations)
+- [x] 43-02: Implement tools 1-4 (list-projects, get-project-state, get-gate-health, get-observations)
 - [ ] 43-03: Implement tools 5-8 (get-sessions, get-skill-metrics, get-cost-metrics, get-git-status) + E2E verification
 
 ### Phase 44: Auto-Configuration and Tests
@@ -50,5 +50,5 @@ Phases execute in order: 43 → 44
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 43. MCP Server Scaffolding and Tools | 1/3 | In progress | - |
+| 43. MCP Server Scaffolding and Tools | 2/3 | In progress | - |
 | 44. Auto-Configuration and Tests | 0/2 | Not started | - |

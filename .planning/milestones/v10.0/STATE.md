@@ -10,29 +10,29 @@ See: .planning/PROJECT.md (updated 2026-04-04)
 ## Current Position
 
 Phase: 43 of 44 (MCP Server Scaffolding and Tools)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-04-04 — Plan 43-01 complete: SDK pinned, /mcp route live, MCP initialize responds with valid InitializeResult
+Last activity: 2026-04-04 — Plan 43-02 complete: list-projects, get-project-state, get-gate-health, get-observations implemented
 
-Progress: [██░░░░░░░░] 20%
+Progress: [████░░░░░░] 40%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 20 min
-- Total execution time: 20 min
+- Total plans completed: 2
+- Average duration: 17 min
+- Total execution time: 35 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 43. MCP Scaffolding + Tools | 1/3 | 20 min | 20 min |
+| 43. MCP Scaffolding + Tools | 2/3 | 35 min | 17 min |
 | 44. Auto-Config + Tests | 0/2 | — | — |
 
 **Recent Trend:**
-- Last 5 plans: 43-01 (20 min)
-- Trend: baseline established
+- Last 5 plans: 43-01 (20 min), 43-02 (15 min)
+- Trend: stable, on pace
 
 *Updated after each plan completion*
 
@@ -58,6 +58,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-04
-Stopped at: Plan 43-01 complete — /mcp route live, MCP transport skeleton + 8 stub tools registered
+Stopped at: Plan 43-02 complete — tools 1-4 implemented (list-projects, get-project-state, get-gate-health, get-observations)
 Resume file: None
-Next step: Plan 43-02 — implement tools 1-4 (list-projects, get-project-state, get-gate-health, get-observations)
+Next step: Plan 43-03 — implement tools 5-8 (get-sessions, get-skill-metrics, get-cost-metrics, get-git-status) + E2E verification

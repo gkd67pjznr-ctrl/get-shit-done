@@ -219,9 +219,63 @@ function registerGsdTools(server, cache, loadRegistry) {
     {
       name: z.string().optional().describe('Project name (omit for all projects)'),
       since: z.string().optional().describe('ISO 8601 timestamp filter'),
-      limit: z.number().int().positive().optional().default(20).describe('Max sessions to return'),
+      limit: z.number().int().positive().optional().describe('Max sessions to return (default 20)'),
     },
-    async () => ({ content: [{ type: 'text', text: 'TODO' }] })
+    async ({ name, since, limit = 20 } = {}) => {
+      const projectList = name
+        ? (() => {
+            const p = cache.get(name);
+            if (!p) return null;
+            return [p];
+          })()
+        : Array.from(cache.values());
+
+      if (projectList === null) {
+        const available = Array.from(cache.keys()).sort();
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({ error: 'Project not found', code: 'NOT_FOUND', available_projects: available }),
+          }],
+        };
+      }
+
+      const allSessions = [];
+      for (const project of projectList) {
+        const filePath = path.join(project.path, '.planning', 'patterns', 'sessions.jsonl');
+        try {
+          const lines = fs.readFileSync(filePath, 'utf-8').trim().split('\n').filter(Boolean);
+          for (const line of lines) {
+            try {
+              const entry = JSON.parse(line);
+              entry._project = project.name;
+              allSessions.push(entry);
+            } catch { /* skip malformed */ }
+          }
+        } catch { /* no sessions.jsonl */ }
+      }
+
+      let filtered = since
+        ? allSessions.filter(e => {
+            const ts = e.timestamp || e.started_at;
+            return ts && ts >= since;
+          })
+        : allSessions;
+
+      filtered.sort((a, b) => {
+        const ta = a.timestamp || a.started_at || '';
+        const tb = b.timestamp || b.started_at || '';
+        return tb.localeCompare(ta);
+      });
+
+      const result = filtered.slice(0, limit);
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({ count: result.length, total: filtered.length, sessions: result }),
+        }],
+      };
+    }
   );
 
   server.tool(
