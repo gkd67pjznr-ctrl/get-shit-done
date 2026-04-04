@@ -54,7 +54,14 @@ Build seed brief (context-blind — no ROADMAP/STATE loaded yet):
 SEED=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs brainstorm build-seed-brief "$PLANNING_ROOT" $FROM_CORRECTIONS $FROM_DEBT $FOR_MILESTONE)
 ```
 
-Parse the `brief` field from the SEED JSON and display it. Also parse the `sources` array for debug reference (no need to display).
+Parse the `brief` field from the SEED JSON and display it.
+Parse the `included` and `excluded` arrays from the SEED JSON.
+If `excluded` is non-empty, display a note after the brief content:
+
+> **Note:** The following sources were excluded from this seed brief (context-blind): [excluded joined with ", "]
+> ROADMAP.md and STATE.md are always excluded.
+
+If `excluded` is empty (all sources included), no additional note is needed.
 
 Show:
 
