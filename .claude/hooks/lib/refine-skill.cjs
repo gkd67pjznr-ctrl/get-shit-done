@@ -114,6 +114,77 @@ function dismissSuggestion({ suggestionId, cwd }) {
 }
 
 /**
+ * Revert a previously auto-applied suggestion by running git revert on its commit SHA.
+ * Appends a 'reverted' marker entry to auto-applied.jsonl on success.
+ *
+ * @param {{ suggestionId: string, cwd?: string }} options
+ * @returns {{ ok: boolean, reverted?: boolean, skill?: string, commit_sha?: string, reason?: string, error?: string }}
+ */
+function revertAutoApply({ suggestionId, cwd }) {
+  const resolvedCwd = cwd || process.cwd();
+  const auditPath = path.join(resolvedCwd, '.planning', 'patterns', 'auto-applied.jsonl');
+
+  if (!fs.existsSync(auditPath)) {
+    return { ok: false, reason: 'audit_log_missing' };
+  }
+
+  const lines = fs.readFileSync(auditPath, 'utf-8').split('\n');
+  const entries = [];
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    try {
+      entries.push(JSON.parse(line));
+    } catch {
+      // skip malformed lines
+    }
+  }
+
+  // Find the LAST 'applied' entry for this suggestion_id
+  let foundEntry = null;
+  for (let i = entries.length - 1; i >= 0; i--) {
+    if (entries[i].suggestion_id === suggestionId && entries[i].action === 'applied') {
+      foundEntry = entries[i];
+      break;
+    }
+  }
+
+  if (!foundEntry) {
+    return { ok: false, reason: 'not_found' };
+  }
+
+  // Check if already reverted
+  const alreadyReverted = entries.some(
+    e => e.suggestion_id === suggestionId && e.action === 'reverted'
+  );
+  if (alreadyReverted) {
+    return { ok: false, reason: 'already_reverted' };
+  }
+
+  const commit_sha = foundEntry.commit_sha;
+  if (!commit_sha) {
+    return { ok: false, reason: 'no_commit_sha' };
+  }
+
+  try {
+    execSync('git revert --no-edit ' + commit_sha, { cwd: resolvedCwd });
+  } catch (e) {
+    return { ok: false, reason: 'git_revert_failed', error: e.message };
+  }
+
+  // Append reverted marker inline (avoid circular dep with auto-apply.cjs)
+  const revertEntry = {
+    action: 'reverted',
+    suggestion_id: suggestionId,
+    skill: foundEntry.skill,
+    reverted_commit_sha: commit_sha,
+    reverted_at: new Date().toISOString(),
+  };
+  fs.appendFileSync(auditPath, JSON.stringify(revertEntry) + '\n');
+
+  return { ok: true, reverted: true, skill: foundEntry.skill, commit_sha };
+}
+
+/**
  * Append a structured history entry to SKILL-HISTORY.md in the skill directory.
  * Rotates to an archive file (SKILL-HISTORY-YYYY-MM.md) when entry count reaches 50.
  *
@@ -173,18 +244,19 @@ function appendSkillHistory(cwd, skillPath, suggestion, diff) {
   fs.appendFileSync(historyPath, entry + '\n', 'utf-8');
 }
 
-module.exports = { acceptSuggestion, dismissSuggestion, appendSkillHistory };
+module.exports = { acceptSuggestion, dismissSuggestion, appendSkillHistory, revertAutoApply };
 
 // CLI invocation:
 //   node refine-skill.cjs accept <suggestionId> [cwd]
 //   node refine-skill.cjs dismiss <suggestionId> [cwd]
+//   node refine-skill.cjs revert <suggestionId> [cwd]
 if (require.main === module) {
   const action = process.argv[2];
   const suggestionId = process.argv[3];
   const cwd = process.argv[4] || process.cwd();
 
   if (!action || !suggestionId) {
-    console.error('Usage: node refine-skill.cjs <accept|dismiss> <suggestionId> [cwd]');
+    console.error('Usage: node refine-skill.cjs <accept|dismiss|revert> <suggestionId> [cwd]');
     process.exit(1);
   }
 
@@ -193,6 +265,8 @@ if (require.main === module) {
     result = acceptSuggestion({ suggestionId, cwd });
   } else if (action === 'dismiss') {
     result = dismissSuggestion({ suggestionId, cwd });
+  } else if (action === 'revert') {
+    result = revertAutoApply({ suggestionId, cwd });
   } else {
     console.error('Unknown action: ' + action);
     process.exit(1);
