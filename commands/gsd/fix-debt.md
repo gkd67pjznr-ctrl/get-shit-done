@@ -53,6 +53,32 @@ If `$TOTAL` is 0:
 - Print: "No open debt entries found. Nothing to fix."
 - EXIT
 
+### 1a. Surface Correction-Linked Impact Data
+
+Before showing the entry selection, fetch the ranked impact view:
+
+```bash
+IMPACT=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs debt impact --raw)
+IMPACT_COUNT=$(echo "$IMPACT" | jq -r '.total // 0')
+```
+
+If `$IMPACT_COUNT > 0`:
+
+Display the impact table as part of the selection context:
+```
+Debt Impact Analysis (ranked by correction count):
+```
+```bash
+echo "$IMPACT" | jq -r '
+  .entries[] |
+  "\(.id)  [\(.link_confidence)] corrections=\(.correction_count)  \(.component): \(.description)"
+'
+```
+
+This table appears ABOVE the auto-select logic and above any AskUserQuestion prompt, so the user sees correction-weighted priorities before the selection is made.
+
+If `$IMPACT_COUNT == 0` OR if `$TOTAL == 0`: skip impact display and proceed to existing auto-select logic.
+
 If `$ARGUMENTS` matches `TD-[0-9]+` pattern:
 ```bash
 ENTRY=$(echo "$ENTRIES" | jq -r --arg id "$ARGUMENTS" '.entries[] | select(.id == $id) | @json')
@@ -374,4 +400,6 @@ node ~/.claude/get-shit-done/bin/gsd-tools.cjs debt resolve --id "$ENTRY_ID" --s
 - [ ] Executor spawned and fix applied
 - [ ] Entry marked resolved (or deferred if fix failed)
 - [ ] No entry left stuck in in-progress
+- [ ] When open debt entries exist and corrections data is present, Step 1 displays correction-linked impact ranking before entry selection
+- [ ] Impact display shows link_confidence (high/medium/low) and correction_count for each entry
 </success_criteria>
