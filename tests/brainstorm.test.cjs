@@ -1,0 +1,160 @@
+/**
+ * Tests for brainstorm commands: eval detection, append-only store
+ * TDD test suite for brainstorm.cjs enforcement primitives.
+ */
+
+'use strict';
+
+const { test, describe, beforeEach, afterEach } = require('node:test');
+const assert = require('node:assert');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+const { createTempProject, cleanup } = require('./helpers.cjs');
+
+const brainstorm = require('../get-shit-done/bin/lib/brainstorm.cjs');
+
+// ─── cmdBrainstormCheckEval ─────────────────────────────────────────────────
+
+describe('cmdBrainstormCheckEval', () => {
+  test('returns clean=true for neutral text', () => {
+    const result = brainstorm.cmdBrainstormCheckEval(
+      'the system could route requests through a cache',
+      false
+    );
+    assert.strictEqual(result.clean, true);
+    assert.strictEqual(result.violations.length, 0);
+  });
+
+  test("detects won't work as a violation", () => {
+    const result = brainstorm.cmdBrainstormCheckEval(
+      "that won't work in this context",
+      false
+    );
+    assert.strictEqual(result.clean, false);
+    assert.ok(result.violations.includes("won't work"), `violations should include "won't work", got: ${JSON.stringify(result.violations)}`);
+  });
+
+  test('detects too complex as a violation', () => {
+    const result = brainstorm.cmdBrainstormCheckEval(
+      'this seems too complex to implement',
+      false
+    );
+    assert.strictEqual(result.clean, false);
+  });
+
+  test('constructive override clears violations', () => {
+    const result = brainstorm.cmdBrainstormCheckEval(
+      'too complex but what if we simplify it',
+      false
+    );
+    assert.strictEqual(result.clean, true);
+    assert.strictEqual(result.violations.length, 0);
+  });
+
+  test('wild mode detects might as a violation', () => {
+    const result = brainstorm.cmdBrainstormCheckEval(
+      'this might work',
+      true
+    );
+    assert.strictEqual(result.clean, false);
+  });
+
+  test('wild mode does not flag might in non-wild mode', () => {
+    const result = brainstorm.cmdBrainstormCheckEval(
+      'this might work',
+      false
+    );
+    assert.strictEqual(result.clean, true);
+  });
+
+  test('returns non-empty suggestion when violations present', () => {
+    const result = brainstorm.cmdBrainstormCheckEval(
+      "that won't work here",
+      false
+    );
+    assert.strictEqual(result.clean, false);
+    assert.ok(typeof result.suggestion === 'string' && result.suggestion.length > 0,
+      `suggestion should be non-empty when violations present, got: ${JSON.stringify(result.suggestion)}`);
+  });
+});
+
+// ─── cmdBrainstormAppendIdea and cmdBrainstormReadIdeas ─────────────────────
+
+describe('cmdBrainstormAppendIdea and cmdBrainstormReadIdeas', () => {
+  let tempDir;
+
+  beforeEach(() => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bs-test-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  test('appends first idea with id=1 and count=1', () => {
+    const r = brainstorm.cmdBrainstormAppendIdea(tempDir, { content: 'first idea', source_technique: 'freeform' });
+    assert.strictEqual(r.id, 1);
+    assert.strictEqual(r.count, 1);
+  });
+
+  test('sequential ids increment', () => {
+    brainstorm.cmdBrainstormAppendIdea(tempDir, { content: 'first idea', source_technique: 'freeform' });
+    const r2 = brainstorm.cmdBrainstormAppendIdea(tempDir, { content: 'second idea', source_technique: 'scamper' });
+    assert.strictEqual(r2.id, 2);
+    assert.strictEqual(r2.count, 2);
+  });
+
+  test('readIdeas returns all ideas with no filtering', () => {
+    brainstorm.cmdBrainstormAppendIdea(tempDir, { content: 'idea one' });
+    brainstorm.cmdBrainstormAppendIdea(tempDir, { content: 'idea two' });
+    brainstorm.cmdBrainstormAppendIdea(tempDir, { content: 'idea three' });
+    const r = brainstorm.cmdBrainstormReadIdeas(tempDir);
+    assert.strictEqual(r.count, 3);
+    assert.strictEqual(r.ideas.length, 3);
+    assert.ok(r.ideas.some(i => i.content === 'idea one'), 'should include idea one');
+    assert.ok(r.ideas.some(i => i.content === 'idea two'), 'should include idea two');
+    assert.ok(r.ideas.some(i => i.content === 'idea three'), 'should include idea three');
+  });
+
+  test('readIdeas returns empty array when no ideas file exists', () => {
+    const r = brainstorm.cmdBrainstormReadIdeas(tempDir);
+    assert.deepStrictEqual(r.ideas, []);
+    assert.strictEqual(r.count, 0);
+  });
+
+  test('idea record contains required fields', () => {
+    brainstorm.cmdBrainstormAppendIdea(tempDir, {
+      content: 'full idea',
+      source_technique: 'scamper',
+      perspective: 'competitor',
+      scamper_lens: 'substitute',
+      tags: ['tag1', 'tag2'],
+    });
+    const r = brainstorm.cmdBrainstormReadIdeas(tempDir);
+    assert.strictEqual(r.ideas.length, 1);
+    const idea = r.ideas[0];
+    assert.ok('id' in idea, 'record should have id');
+    assert.ok('content' in idea, 'record should have content');
+    assert.ok('source_technique' in idea, 'record should have source_technique');
+    assert.ok('perspective' in idea, 'record should have perspective');
+    assert.ok('scamper_lens' in idea, 'record should have scamper_lens');
+    assert.ok('tags' in idea, 'record should have tags');
+    assert.ok('timestamp' in idea, 'record should have timestamp');
+    assert.strictEqual(idea.content, 'full idea');
+    assert.strictEqual(idea.source_technique, 'scamper');
+    assert.strictEqual(idea.perspective, 'competitor');
+    assert.strictEqual(idea.scamper_lens, 'substitute');
+    assert.deepStrictEqual(idea.tags, ['tag1', 'tag2']);
+  });
+
+  test('append is truly append-only — file grows monotonically', () => {
+    for (let i = 1; i <= 5; i++) {
+      brainstorm.cmdBrainstormAppendIdea(tempDir, { content: `idea ${i}` });
+    }
+    const ideasPath = path.join(tempDir, 'ideas.jsonl');
+    const content = fs.readFileSync(ideasPath, 'utf-8');
+    const lineCount = content.split('\n').filter(l => l.trim() !== '').length;
+    assert.strictEqual(lineCount, 5, `ideas.jsonl should have exactly 5 lines, got ${lineCount}`);
+  });
+});
