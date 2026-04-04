@@ -364,3 +364,159 @@ describe('cmdBrainstormBuildSeedBrief', () => {
     );
   });
 });
+
+// ─── cmdBrainstormCluster ────────────────────────────────────────────────────
+
+describe('cmdBrainstormCluster', () => {
+  const nineIdeas = [
+    { id: 1, content: 'cache layer for database queries to improve speed' },
+    { id: 2, content: 'database index optimization for faster reads' },
+    { id: 3, content: 'cache invalidation strategy when data changes' },
+    { id: 4, content: 'user authentication token refresh mechanism' },
+    { id: 5, content: 'session storage for user login state' },
+    { id: 6, content: 'notification system for user activity alerts' },
+    { id: 7, content: 'email notification templates for system events' },
+    { id: 8, content: 'real-time notification via websocket channel' },
+    { id: 9, content: 'background task queue for async processing' },
+  ];
+
+  test('returns empty clusters for empty ideas array', () => {
+    const r = brainstorm.cmdBrainstormCluster([]);
+    assert.deepStrictEqual(r.clusters, []);
+    assert.strictEqual(r.count, 0);
+  });
+
+  test('every idea appears in exactly one cluster', () => {
+    const r = brainstorm.cmdBrainstormCluster(nineIdeas);
+    const allIds = r.clusters.flatMap(c => c.idea_ids);
+    assert.strictEqual(allIds.length, 9, `all 9 ideas should be assigned, got ${allIds.length}`);
+    assert.strictEqual(new Set(allIds).size, 9, 'each idea should appear in exactly one cluster');
+  });
+
+  test('cluster count is between 3 and 7 for 9 ideas', () => {
+    const r = brainstorm.cmdBrainstormCluster(nineIdeas);
+    assert.ok(r.count >= 3 && r.count <= 7, `cluster count should be 3-7, got ${r.count}`);
+  });
+
+  test('each cluster has a non-empty label', () => {
+    const r = brainstorm.cmdBrainstormCluster(nineIdeas);
+    for (const cluster of r.clusters) {
+      assert.ok(typeof cluster.label === 'string' && cluster.label.length > 0,
+        `cluster label should be non-empty, got: ${JSON.stringify(cluster.label)}`);
+    }
+  });
+
+  test('cluster count equals idea count when fewer than 3 ideas', () => {
+    const twoIdeas = [
+      { id: 1, content: 'fast cache implementation' },
+      { id: 2, content: 'slow database query fix' },
+    ];
+    const r = brainstorm.cmdBrainstormCluster(twoIdeas);
+    assert.ok(r.count <= 2, `cluster count should be <= 2 for 2 ideas, got ${r.count}`);
+  });
+
+  test('does not modify the input ideas array', () => {
+    const ideas = [
+      { id: 1, content: 'original idea content here' },
+      { id: 2, content: 'another original idea content' },
+    ];
+    const original = JSON.stringify(ideas);
+    brainstorm.cmdBrainstormCluster(ideas);
+    assert.strictEqual(JSON.stringify(ideas), original, 'input ideas array should not be modified');
+  });
+});
+
+// ─── cmdBrainstormScore ──────────────────────────────────────────────────────
+
+describe('cmdBrainstormScore', () => {
+  const idea = { id: 42, content: 'test idea' };
+
+  test('composite is feasibility + impact + alignment - risk', () => {
+    const r = brainstorm.cmdBrainstormScore(idea, { feasibility: 4, impact: 3, alignment: 5, risk: 2 });
+    assert.strictEqual(r.composite, 10);
+  });
+
+  test('maximum composite is 14', () => {
+    const r = brainstorm.cmdBrainstormScore(idea, { feasibility: 5, impact: 5, alignment: 5, risk: 1 });
+    assert.strictEqual(r.composite, 14);
+  });
+
+  test('minimum composite is -2', () => {
+    const r = brainstorm.cmdBrainstormScore(idea, { feasibility: 1, impact: 1, alignment: 1, risk: 5 });
+    assert.strictEqual(r.composite, -2);
+  });
+
+  test('returns id from input idea', () => {
+    const r = brainstorm.cmdBrainstormScore(idea, { feasibility: 3, impact: 3, alignment: 3, risk: 3 });
+    assert.strictEqual(r.id, 42);
+  });
+
+  test('throws for feasibility=0', () => {
+    assert.throws(
+      () => brainstorm.cmdBrainstormScore(idea, { feasibility: 0, impact: 3, alignment: 3, risk: 3 }),
+      /Invalid dimension value/
+    );
+  });
+
+  test('throws for feasibility=6', () => {
+    assert.throws(
+      () => brainstorm.cmdBrainstormScore(idea, { feasibility: 6, impact: 3, alignment: 3, risk: 3 }),
+      /Invalid dimension value/
+    );
+  });
+
+  test('throws for non-integer dimension', () => {
+    assert.throws(
+      () => brainstorm.cmdBrainstormScore(idea, { feasibility: 2.5, impact: 3, alignment: 3, risk: 3 }),
+      /Invalid dimension value/
+    );
+  });
+});
+
+// ─── cmdBrainstormSelectFinalists ────────────────────────────────────────────
+
+describe('cmdBrainstormSelectFinalists', () => {
+  const ideas = [
+    { id: 1, content: 'alpha' },
+    { id: 2, content: 'beta' },
+    { id: 3, content: 'gamma' },
+  ];
+  const scores = [
+    { id: 1, composite: 10 },
+    { id: 2, composite: 8 },
+    { id: 3, composite: 12 },
+  ];
+
+  test('returns only selected ideas', () => {
+    const r = brainstorm.cmdBrainstormSelectFinalists(ideas, scores, [1, 3]);
+    assert.strictEqual(r.finalists.length, 2);
+    assert.ok(r.finalists.some(f => f.id === 1), 'finalists should include id 1');
+    assert.ok(r.finalists.some(f => f.id === 3), 'finalists should include id 3');
+  });
+
+  test('returns only selected scores', () => {
+    const r = brainstorm.cmdBrainstormSelectFinalists(ideas, scores, [1, 3]);
+    assert.strictEqual(r.scores.length, 2);
+    assert.ok(r.scores.some(s => s.id === 1), 'scores should include id 1');
+    assert.ok(r.scores.some(s => s.id === 3), 'scores should include id 3');
+  });
+
+  test('count matches finalist length', () => {
+    const r = brainstorm.cmdBrainstormSelectFinalists(ideas, scores, [1, 3]);
+    assert.strictEqual(r.count, r.finalists.length);
+  });
+
+  test('empty selection returns count 0', () => {
+    const r = brainstorm.cmdBrainstormSelectFinalists(ideas, scores, []);
+    assert.strictEqual(r.count, 0);
+    assert.deepStrictEqual(r.finalists, []);
+  });
+
+  test('does not modify input arrays', () => {
+    const ideasCopy = JSON.stringify(ideas);
+    const scoresCopy = JSON.stringify(scores);
+    brainstorm.cmdBrainstormSelectFinalists(ideas, scores, [1]);
+    assert.strictEqual(JSON.stringify(ideas), ideasCopy, 'input ideas array should not be modified');
+    assert.strictEqual(JSON.stringify(scores), scoresCopy, 'input scores array should not be modified');
+  });
+});
