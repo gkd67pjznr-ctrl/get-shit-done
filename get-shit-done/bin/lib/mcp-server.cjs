@@ -280,9 +280,52 @@ function registerGsdTools(server, cache, loadRegistry) {
 
   server.tool(
     'get-skill-metrics',
-    'Return per-skill correction rates for a project',
+    'Return per-skill correction rates for a project or all projects',
     { name: z.string().optional().describe('Project name (omit for all projects)') },
-    async () => ({ content: [{ type: 'text', text: 'TODO' }] })
+    async ({ name } = {}) => {
+      const projectList = name
+        ? (() => {
+            const p = cache.get(name);
+            if (!p) return null;
+            return [p];
+          })()
+        : Array.from(cache.values());
+
+      if (projectList === null) {
+        const available = Array.from(cache.keys()).sort();
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({ error: 'Project not found', code: 'NOT_FOUND', available_projects: available }),
+          }],
+        };
+      }
+
+      const merged = {};
+      for (const project of projectList) {
+        const filePath = path.join(project.path, '.planning', 'patterns', 'skill-metrics.json');
+        try {
+          const raw = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+          for (const [skill, data] of Object.entries(raw)) {
+            if (!merged[skill]) {
+              merged[skill] = { ...data, _projects: [project.name] };
+            } else {
+              for (const [k, v] of Object.entries(data)) {
+                if (typeof v === 'number') merged[skill][k] = (merged[skill][k] || 0) + v;
+              }
+              merged[skill]._projects.push(project.name);
+            }
+          }
+        } catch { /* no skill-metrics.json for this project */ }
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({ projectCount: projectList.length, skills: merged }),
+        }],
+      };
+    }
   );
 
   server.tool(
