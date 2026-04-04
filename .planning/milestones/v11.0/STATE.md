@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v11.0
 milestone_name: Wild Brainstorming Engine
 status: in_progress
-stopped_at: 46-01 complete — cluster, score, selectFinalists converge functions added to brainstorm.cjs, 54 tests passing.
-last_updated: "2026-04-04T13:25:00.000Z"
-last_activity: "2026-04-04 — 46-01 complete: cluster/score/selectFinalists converge functions, 54 brainstorm tests passing"
+stopped_at: 46-02 complete — createOutputDir, formatResults, CLI wiring for all 5 Phase 46 functions, 68 brainstorm tests passing.
+last_updated: "2026-04-04T14:00:00.000Z"
+last_activity: "2026-04-04 — 46-02 complete: createOutputDir, formatResults output functions + full CLI wiring, 68 brainstorm tests passing"
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 2
-  completed_plans: 1
-  percent: 50
+  completed_plans: 2
+  percent: 75
 ---
 
 # Project State — Milestone v11.0 Wild Brainstorming Engine
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-04)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 46 — Converge and Output (Plan 01 complete)
+**Current focus:** Phase 46 — Converge and Output (both plans complete, phase complete)
 
 ## Current Position
 
 Phase: 46 (Converge and Output)
-Plan: 1 completed (46-01) — plan complete
+Plan: 2 completed (46-01, 46-02) — phase complete
 Status: In Progress
-Last activity: 2026-04-04 — 46-01 complete: cluster/score/selectFinalists converge functions, 54 brainstorm tests passing
+Last activity: 2026-04-04 — 46-02 complete: createOutputDir/formatResults output functions + CLI wiring, 68 brainstorm tests passing
 
-Progress: [████░░░░░░] 40%
+Progress: [███████░░░] 75%
 
 ## Performance Metrics
 
@@ -62,6 +62,9 @@ Recent decisions affecting current work:
 - append-only JSONL store enforces no-mutation invariant structurally
 - Context blinding: seed brief builder explicitly excludes ROADMAP.md and STATE.md
 - Converge is read-only against the frozen store — no modifications during scoring (confirmed in 46-01)
+- cmdBrainstormCreateOutputDir scans quick/ subdirs for max numeric prefix, increments, pads to 2 digits
+- cmdBrainstormFormatResults: FEATURE-IDEAS.md shows finalists only; BRAINSTORM-SESSION.md shows all ideas; ideas.jsonl copied (skips gracefully if missing)
+- Plan's e2e verification script had formula `3+Math.floor(i.id/3)` producing value=6 for id=9 (out of 1-5 range) — our validation correctly rejects it; capped to confirm all 5 SC true
 - cmdBrainstormCluster N formula: Math.min(7, Math.max(Math.min(3, ideas.length), Math.floor(ideas.length / 3)))
 - Cluster fallback assignment: smallest-cluster selection (cleaner than modulo, same invariant guarantee)
 - cmdBrainstormScore throws on any dimension outside [1,5] or non-integer
@@ -87,5 +90,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-04
-Stopped at: 45-03 complete — seed brief builder (context blinding enforced), full brainstorm CLI namespace (10 sub-commands wired), 36 brainstorm tests passing. Phase 45 complete.
+Stopped at: 46-02 complete — output functions (createOutputDir, formatResults) + CLI wiring for all 5 Phase 46 converge functions. Phase 46 complete. 68 brainstorm tests passing.
 Resume file: None
