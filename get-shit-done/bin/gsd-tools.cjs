@@ -647,7 +647,25 @@ async function main() {
         output(brainstorm.cmdBrainstormCheckSaturation(sessionDir, parseInt(windowArg) || 10), raw);
       } else if (subcommand === 'build-seed-brief') {
         const planningRoot = args[2];
-        output(brainstorm.cmdBrainstormBuildSeedBrief(planningRoot), raw);
+        const fromCorrections = args.includes('--from-corrections');
+        const fromDebt = args.includes('--from-debt');
+        const forMilestone = args.includes('--for-milestone');
+
+        let sourceOpts;
+        if (forMilestone) {
+          sourceOpts = { corrections: true, debt: true, sessions: true, priorIdeas: true };
+        } else if (fromCorrections && fromDebt) {
+          sourceOpts = { corrections: true, debt: true, sessions: false, priorIdeas: true };
+        } else if (fromCorrections) {
+          sourceOpts = { corrections: true, debt: false, sessions: false, priorIdeas: true };
+        } else if (fromDebt) {
+          sourceOpts = { corrections: false, debt: true, sessions: false, priorIdeas: true };
+        } else {
+          // No flags: default all sources
+          sourceOpts = { corrections: true, debt: true, sessions: true, priorIdeas: true };
+        }
+
+        output(brainstorm.cmdBrainstormBuildSeedBrief(planningRoot, sourceOpts), raw);
       } else if (subcommand === 'cluster') {
         const sessionDir = args[2];
         const { ideas } = brainstorm.cmdBrainstormReadIdeas(sessionDir);
