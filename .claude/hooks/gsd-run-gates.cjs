@@ -63,6 +63,23 @@ try {
 
   const writeResult = writeGateExecution(result.entry, { cwd });
 
+  // ─── Emit to workflow journal ────────────────────────────────────────────────
+  try {
+    const eventJournal = require(path.join(cwd, 'get-shit-done/bin/lib/event-journal.cjs'));
+    eventJournal.emitEvent('gate_fired', {
+      phase: result.entry.phase,
+      plan: result.entry.plan,
+      task: result.entry.task,
+      session_id: sessionId,
+    }, {
+      gate: result.entry.gate,
+      outcome: result.entry.outcome,
+      quality_level: result.entry.quality_level,
+    }, cwd);
+  } catch (e) {
+    // Silent — journal unavailable must not block gate execution
+  }
+
   // Debug output if DEBUG_GATE_RUNNER env var is set
   if (process.env.DEBUG_GATE_RUNNER) {
     process.stdout.write(
