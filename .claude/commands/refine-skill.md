@@ -12,6 +12,7 @@ Accept or dismiss a pending suggestion to refine a SKILL.md file. Accepting writ
 <arguments>
 - skill-name (optional): name of the target skill (e.g. code-review)
 - --id <suggestionId>: target a specific suggestion by ID
+- revert <suggestionId>: revert a previously auto-applied suggestion by its suggestion ID
 </arguments>
 
 <process>
@@ -45,12 +46,23 @@ Accept or dismiss a pending suggestion to refine a SKILL.md file. Accepting writ
    - If exit code is 0 and `ok: true`: report "Suggestion dismissed."
    - If exit code is non-zero or `ok: false`: report the error reason and stop.
 
-8. Confirm the action completed successfully. If the user accepted, note that the Learned Patterns section was added to the skill file and the change was committed to git.
+8. On 'revert <id>' (called as `/gsd:refine-skill revert <id>`):
+   - Run: `node .claude/hooks/lib/refine-skill.cjs revert <id>`
+   - Parse the JSON output.
+   - If `ok: true`: report "Reverted: auto-applied change for suggestion <id> on skill <skill> has been undone via git revert."
+   - If `reason: 'not_found'`: report "No auto-applied entry found for suggestion <id>. Nothing to revert."
+   - If `reason: 'already_reverted'`: report "Suggestion <id> has already been reverted."
+   - If `reason: 'no_commit_sha'`: report "Audit log entry for <id> has no commit SHA — cannot revert automatically. Check auto-applied.jsonl for reversal_instructions."
+   - If `reason: 'git_revert_failed'`: report the error message and suggest the user check for merge conflicts.
+   - If `reason: 'audit_log_missing'`: report "No auto-applied.jsonl found — nothing has been auto-applied yet."
+
+9. Confirm the action completed successfully. If the user accepted, note that the Learned Patterns section was added to the skill file and the change was committed to git.
 </process>
 
 <success_criteria>
 - The user is shown the pending suggestion details before being asked to act.
 - Accept path: SKILL.md is updated, a git commit is created, and the suggestion status becomes `refined`.
 - Dismiss path: suggestion status becomes `dismissed`, no skill file is touched, no git commit is created.
+- Revert path: git revert is run using the commit SHA from auto-applied.jsonl, a reverted marker is appended to the audit log, and the user is informed of the outcome including all error cases.
 - Exit code from `refine-skill.cjs` is checked — errors are surfaced to the user.
 </success_criteria>
