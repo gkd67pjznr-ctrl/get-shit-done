@@ -156,3 +156,68 @@ describe('generateReviewProfile', () => {
     assert.ok(!result.weights['invalid.category'], 'invalid.category should not appear in weights');
   });
 });
+
+describe('session-start hook integration', () => {
+  it('creates review-profile.json when hook runs in project with 10+ corrections', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-rp-hook-'));
+    try {
+      // Set up minimal project structure
+      const patternsDir = path.join(tmp, '.planning', 'patterns');
+      fs.mkdirSync(patternsDir, { recursive: true });
+      fs.writeFileSync(path.join(tmp, '.planning', 'config.json'), JSON.stringify({ adaptive_learning: { integration: { suggest_on_session_start: false } } }));
+
+      // Write 12 active corrections across 2 categories
+      const corrections = [
+        ...Array.from({ length: 8 }, (_, i) => ({
+          id: `c${i}`, diagnosis_category: 'code.wrong_pattern', status: 'active',
+          timestamp: new Date().toISOString(), correction_to: `fix ${i}`, scope: 'project',
+        })),
+        ...Array.from({ length: 4 }, (_, i) => ({
+          id: `d${i}`, diagnosis_category: 'process.regression', status: 'active',
+          timestamp: new Date().toISOString(), correction_to: `reg ${i}`, scope: 'project',
+        })),
+      ];
+      fs.writeFileSync(path.join(patternsDir, 'corrections.jsonl'), corrections.map(c => JSON.stringify(c)).join('\n') + '\n');
+
+      // Run the hook as a subprocess with cwd set to tmp
+      const { execSync } = require('child_process');
+      const hookPath = path.join(__dirname, '..', '.claude', 'hooks', 'gsd-recall-corrections.cjs');
+      // Hook reads process.cwd() — pass via --cwd is not supported; run with cwd option
+      execSync(`node "${hookPath}"`, { cwd: tmp, stdio: 'ignore' });
+
+      // Verify review-profile.json was created
+      const profilePath = path.join(patternsDir, 'review-profile.json');
+      assert.ok(fs.existsSync(profilePath), 'review-profile.json should be created by hook');
+      const profile = JSON.parse(fs.readFileSync(profilePath, 'utf-8'));
+      assert.strictEqual(profile.sample_size, 12);
+      assert.ok(profile.weights['code.wrong_pattern'] > 0);
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  it('does not create review-profile.json when fewer than 10 corrections exist', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-rp-hook2-'));
+    try {
+      const patternsDir = path.join(tmp, '.planning', 'patterns');
+      fs.mkdirSync(patternsDir, { recursive: true });
+      fs.writeFileSync(path.join(tmp, '.planning', 'config.json'), JSON.stringify({ adaptive_learning: { integration: { suggest_on_session_start: false } } }));
+
+      // Only 5 corrections — below minimum
+      const corrections = Array.from({ length: 5 }, (_, i) => ({
+        id: `c${i}`, diagnosis_category: 'code.wrong_pattern', status: 'active',
+        timestamp: new Date().toISOString(), correction_to: `fix ${i}`, scope: 'project',
+      }));
+      fs.writeFileSync(path.join(patternsDir, 'corrections.jsonl'), corrections.map(c => JSON.stringify(c)).join('\n') + '\n');
+
+      const { execSync } = require('child_process');
+      const hookPath = path.join(__dirname, '..', '.claude', 'hooks', 'gsd-recall-corrections.cjs');
+      execSync(`node "${hookPath}"`, { cwd: tmp, stdio: 'ignore' });
+
+      const profilePath = path.join(patternsDir, 'review-profile.json');
+      assert.ok(!fs.existsSync(profilePath), 'review-profile.json should NOT be created with < 10 corrections');
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+});
