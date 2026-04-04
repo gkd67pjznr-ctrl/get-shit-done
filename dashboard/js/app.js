@@ -12,6 +12,7 @@ import { ProjectDetail } from './components/project-detail.js';
 import { EmptyState } from './components/empty-state.js';
 import { PatternPage } from './components/pattern-page.js';
 import { GateHealthPage } from './components/gate-health-page.js';
+import { SkillLoadsPage } from './components/skill-loads-page.js';
 import { TerminalModal } from './components/terminal-modal.js';
 import { fmtCost } from './utils/format.js';
 
@@ -77,6 +78,7 @@ function App() {
       <a href="#/" style="color:var(--text-muted); text-decoration:none; margin-right:16px;">Overview</a>
       <a href="#/patterns" style="color:var(--text-muted); text-decoration:none; margin-right:16px;">Patterns</a>
       <a href="#/gate-health" style="color:var(--text-muted); text-decoration:none; margin-right:16px;">Gate Health</a>
+      <a href="#/skill-loads" style="color:var(--text-muted); text-decoration:none; margin-right:16px;">Skill Loads</a>
       <${TotalCost} />
     </nav>
     <div class="page-layout">
@@ -86,9 +88,11 @@ function App() {
           ? html`<${GateHealthPage} />`
           : r.page === 'patterns'
             ? html`<${PatternPage} />`
-            : r.page === 'detail'
-              ? html`<${ProjectDetail} name=${r.name} milestone=${r.milestone} />`
-              : html`<${Overview} onOpenTerminal=${setOpenTerminalSession} />`
+            : r.page === 'skill-loads'
+              ? html`<${SkillLoadsPage} />`
+              : r.page === 'detail'
+                ? html`<${ProjectDetail} name=${r.name} milestone=${r.milestone} />`
+                : html`<${Overview} onOpenTerminal=${setOpenTerminalSession} />`
         }
       </main>
     </div>
