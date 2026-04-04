@@ -527,6 +527,57 @@ function aggregatePatterns(registry) {
 }
 
 /**
+ * Aggregates skill activation counts from skill-loads.jsonl across all registered projects.
+ *
+ * @param {Array<{name: string, path: string}>} registry
+ * @returns {Array}
+ */
+function aggregateSkillLoads(registry) {
+  /** @type {Map<string, { count: number, projects: Set<string>, lastSeen: string|null }>} */
+  const bySkill = new Map();
+
+  for (const project of registry) {
+    const loadsFile = path.join(project.path, '.planning', 'patterns', 'skill-loads.jsonl');
+    let lines;
+    try {
+      lines = fs.readFileSync(loadsFile, 'utf-8').trim().split('\n').filter(Boolean);
+    } catch {
+      continue; // project has no skill-loads.jsonl -- skip
+    }
+
+    for (const line of lines) {
+      let entry;
+      try {
+        entry = JSON.parse(line);
+      } catch {
+        continue; // malformed JSONL -- skip
+      }
+
+      const skill = entry.skill || 'unknown';
+      if (!bySkill.has(skill)) {
+        bySkill.set(skill, { count: 0, projects: new Set(), lastSeen: null });
+      }
+      const bucket = bySkill.get(skill);
+      bucket.count++;
+      bucket.projects.add(project.name);
+      if (entry.ts && (!bucket.lastSeen || entry.ts > bucket.lastSeen)) {
+        bucket.lastSeen = entry.ts;
+      }
+    }
+  }
+
+  return Array.from(bySkill.entries())
+    .sort((a, b) => b[1].count - a[1].count)
+    .map(([skill, data]) => ({
+      skill,
+      count: data.count,
+      projects: Array.from(data.projects).sort(),
+      projectCount: data.projects.size,
+      lastSeen: data.lastSeen,
+    }));
+}
+
+/**
  * Returns gate health metrics for a single project.
  *
  * Reads .planning/observations/gate-executions.jsonl and returns compact
@@ -1262,6 +1313,18 @@ function createHttpServer(port, cache, clients, dashboardDir, tmuxCache) {
       return;
     }
 
+    if (req.method === 'GET' && pathname === '/api/skill-loads') {
+      const registry = loadRegistry();
+      const skillLoads = aggregateSkillLoads(registry);
+      res.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'no-cache',
+      });
+      res.end(JSON.stringify(skillLoads));
+      return;
+    }
+
     if (req.method === 'GET' && pathname === '/api/events') {
       handleSSE(req, res, clients);
       return;
@@ -1648,6 +1711,7 @@ module.exports = {
   parseProjectData,
   parseAllMilestones,
   aggregatePatterns,
+  aggregateSkillLoads,
   getProjectGateHealth,
   aggregateGateHealth,
   formatSSE,
