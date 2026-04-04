@@ -67,6 +67,20 @@ function cmdBenchmarkPlan(cwd, opts, raw) {
   const correction_count = countCorrections(cwd, opts.milestone_scope || null, opts.phase);
   const gate_fire_count = countGateFires(cwd, opts.phase, opts.plan);
 
+  const test_count = opts.test_count != null ? Number(opts.test_count) : null;
+
+  let test_delta = null;
+  if (test_count !== null && Number.isFinite(test_count)) {
+    const existingEntries = parseJsonlFile(filePath);
+    for (let i = existingEntries.length - 1; i >= 0; i--) {
+      const prior = existingEntries[i];
+      if (prior && prior.test_count != null && Number.isFinite(Number(prior.test_count))) {
+        test_delta = test_count - Number(prior.test_count);
+        break;
+      }
+    }
+  }
+
   const entry = {
     phase: opts.phase,
     plan: opts.plan,
@@ -75,6 +89,8 @@ function cmdBenchmarkPlan(cwd, opts, raw) {
     correction_count,
     gate_fire_count,
     duration_min: opts.duration_min != null ? Number(opts.duration_min) : null,
+    test_count: test_count,
+    test_delta: test_delta,
     timestamp: new Date().toISOString(),
   };
 
