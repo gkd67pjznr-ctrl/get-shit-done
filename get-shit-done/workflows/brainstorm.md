@@ -161,10 +161,10 @@ Apply this lens to the topic "[TOPIC]". Generate ideas:
 ```bash
 STORE=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs brainstorm append-idea "$SESSION_DIR" \
   --content "$IDEA_TEXT" --technique scamper --lens $LENS_ID)
-LENS_IDEA_COUNT=$(echo "$STORE" | node -e "process.stdin.resume();let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const p=JSON.parse(d);process.stdout.write(String(p.count))}catch{process.stdout.write('0')}})")
+LENS_IDEA_COUNT=$((LENS_IDEA_COUNT + 1))
 ```
 
-   (Note: LENS_IDEA_COUNT tracks ideas for this lens only — reset to 0 for each new lens.)
+   (Note: LENS_IDEA_COUNT is a local counter — reset to 0 for each new lens, incremented per idea.)
 
 5. After each store, check floor for this lens:
 
@@ -218,10 +218,10 @@ For each angle:
 ```bash
 STORE=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs brainstorm append-idea "$SESSION_DIR" \
   --content "$IDEA_TEXT" --technique starburst)
-ANGLE_COUNT=$(echo "$STORE" | node -e "process.stdin.resume();let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const p=JSON.parse(d);process.stdout.write(String(p.count))}catch{process.stdout.write('0')}})")
+ANGLE_COUNT=$((ANGLE_COUNT + 1))
 ```
 
-   (ANGLE_COUNT tracks ideas for this angle only — reset to 0 for each new angle.)
+   (ANGLE_COUNT is a local counter — reset to 0 for each new angle, incremented per idea.)
 
 4. After each store, check floor:
 
@@ -274,10 +274,10 @@ Apply this perspective to "[TOPIC]". Generate ideas as this character or framing
 ```bash
 STORE=$(node ~/.claude/get-shit-done/bin/gsd-tools.cjs brainstorm append-idea "$SESSION_DIR" \
   --content "$IDEA_TEXT" --technique perspective --perspective $PERSPECTIVE_ID)
-PERSP_IDEA_COUNT=$(echo "$STORE" | node -e "process.stdin.resume();let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{const p=JSON.parse(d);process.stdout.write(String(p.count))}catch{process.stdout.write('0')}})")
+PERSP_IDEA_COUNT=$((PERSP_IDEA_COUNT + 1))
 ```
 
-   (PERSP_IDEA_COUNT tracks ideas for this perspective only — reset to 0 for each new perspective.)
+   (PERSP_IDEA_COUNT is a local counter — reset to 0 for each new perspective, incremented per idea.)
 
 5. After each store, check floor:
 
