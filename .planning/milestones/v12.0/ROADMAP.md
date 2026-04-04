@@ -59,7 +59,7 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 52-01: Test count extraction at plan completion and phase-benchmarks.jsonl field additions
+- [x] 52-01: Test count extraction at plan completion and phase-benchmarks.jsonl field additions
 - [ ] 52-02: Surface test count delta in /gsd:progress and /gsd:digest
 
 ## Progress
@@ -68,4 +68,4 @@ Plans:
 |-------|----------------|--------|-----------|
 | 50. ESLint Gate | 2/2 | Complete    | 2026-04-04 |
 | 51. Transition Guards | 3/3 | Complete    | 2026-04-04 |
-| 52. Test Trending | 0/2 | Not started | - |
+| 52. Test Trending | 1/2 | In Progress | - |

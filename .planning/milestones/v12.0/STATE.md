@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in-progress
-stopped_at: Plan 51-03 complete (transition guards integration — guards wired into CLI, 78 tests passing)
-last_updated: "2026-04-04T20:00:00.000Z"
-last_activity: 2026-04-04 — Plan 51-03 executed
+status: in_progress
+stopped_at: Plan 52-01 complete (test_count/test_delta schema extension — 9 benchmark tests pass, 0 failures)
+last_updated: "2026-04-04T00:00:00.000Z"
+last_activity: 2026-04-04 — Plan 52-01 executed
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 3
   completed_plans: 3
-  percent: 75
+  percent: 83
 ---
 
 # Project State — Milestone v12.0
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-04)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 51 complete — Transition Guards system fully implemented
+**Current focus:** Phase 52 in progress — Plan 52-01 complete (test_count/test_delta fields added to benchmark schema)
 
 ## Current Position
 
-Phase: 51 of 3 (Transition Guards) — COMPLETE
-Plan: 3 of 3 in current phase — ALL COMPLETE
-Status: Phase 51 complete — transition guard system (parser + engine + CLI integration) done
-Last activity: 2026-04-04 — Plan 51-03 executed
+Phase: 52 of 3 (Test Trending) — IN PROGRESS
+Plan: 1 of 2 in current phase — 52-01 COMPLETE
+Status: Plan 52-01 done — test_count/test_delta fields added to phase-benchmarks schema, CLI wired, workflow updated, tests pass
+Last activity: 2026-04-04 — Plan 52-01 executed
 
-Progress: [████████░░] 75%
+Progress: [████████░░] 83%
 
 ## Performance Metrics
 
@@ -47,7 +47,7 @@ Progress: [████████░░] 75%
 | 51 | 3 | ~90m | ~30m |
 
 **Recent Trend:**
-- Last 5 plans: 50-01 (complete), 50-02 (complete), 51-01 (complete), 51-02 (complete), 51-03 (complete)
+- Last 5 plans: 50-02 (complete), 51-01 (complete), 51-02 (complete), 51-03 (complete), 52-01 (complete)
 - Trend: On track
 
 *Updated after each plan completion*
@@ -62,6 +62,7 @@ Progress: [████████░░] 75%
 - Phase 50: server.cjs VALID_GATES pattern established — any new gate added to gate-runner.cjs must also be added to VALID_GATES in write-gate-execution.cjs AND both aggregation functions in server.cjs (getProjectGateHealth + aggregateGateHealth)
 - Phase 51: loadConfig strips the quality key — when reading quality.level (or other non-standard config sections like adaptive_learning), read config.json directly via fs.readFileSync + JSON.parse rather than through loadConfig
 - Phase 51: output(result, raw, rawValue) in core.cjs — when raw=true AND third arg provided, outputs the raw string value (status text), NOT JSON. JSON is the default (raw=false) output mode. Tests that need JSON should omit --raw.
+- Phase 52: test_delta reads prior entries from the file AFTER rotation — if the file was rotated (>500 entries), delta will be null for the first entry in the new file. This is intentional.
 
 ### Pending Todos
 
@@ -78,6 +79,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-04
-Stopped at: Plan 51-03 complete (CLI integration — 78 tests pass, 0 failures)
-Resume at: Next milestone phase (Phase 52 or next milestone)
+Stopped at: Plan 52-01 complete (test_count/test_delta schema extension — 9 benchmark tests pass, 0 failures)
+Resume at: Plan 52-02 (surface test count delta in /gsd:progress and /gsd:digest)
 Resume file: None
