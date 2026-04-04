@@ -131,7 +131,8 @@ function registerGsdTools(server, cache, loadRegistry) {
           };
         }
         const health = readProjectGateHealth(project.path);
-        return { content: [{ type: 'text', text: JSON.stringify({ name, ...health }) }] };
+        const gateResult = health !== null ? { name, ...health } : { name, gateData: null };
+        return { content: [{ type: 'text', text: JSON.stringify(gateResult) }] };
       }
 
       // Aggregate across all projects
@@ -184,7 +185,8 @@ function registerGsdTools(server, cache, loadRegistry) {
         };
       }
 
-      const filePath = path.join(project.path, '.planning', 'patterns', type + '.jsonl');
+      const ext = type === 'suggestions' ? '.json' : '.jsonl';
+      const filePath = path.join(project.path, '.planning', 'patterns', type + ext);
       let entries = [];
       try {
         const lines = fs.readFileSync(filePath, 'utf-8').trim().split('\n').filter(Boolean);
