@@ -2,7 +2,8 @@
 
 *Quick Task 41 — Research Output*
 *Date: 2026-04-04*
-*Status: Design complete, pending user decisions (Section 5)*
+*Status: Design complete — all decisions locked (Section 5 resolved)*
+*Updated: 2026-04-04 — Synthesizer architecture, /gsd:multi-milestone command, per-milestone scoping*
 
 ---
 
@@ -89,7 +90,7 @@ The batch planner should call `manifest-check` once after all N workspaces exist
 
 ---
 
-## Section 2 — Proposed Workflow: `/gsd:multi-plan`
+## Section 2 — Proposed Workflow: `/gsd:multi-milestone`
 
 ### Stage 0 — Feature Intake (The Big Dump)
 
@@ -98,11 +99,17 @@ The command accepts freeform feature lists and organizes them into candidate mil
 **Input parsing:**
 
 ```
-/gsd:multi-plan "Feature A, Feature B, Feature C..."
-/gsd:multi-plan --from-file .planning/quick/34-brainstorm/FEATURE-IDEAS.md
+/gsd:multi-milestone "Feature A, Feature B, Feature C..."
+/gsd:multi-milestone --from-brainstorm 34
+/gsd:multi-milestone --from-file .planning/quick/34-brainstorm/FEATURE-IDEAS.md
+/gsd:multi-milestone --resume 43
 ```
 
-If `$ARGUMENTS` starts with `--from-file`, read the file. Otherwise treat all arguments as the freeform list.
+Input modes:
+- **`--from-brainstorm NN`**: Reads `.planning/quick/NN-brainstorm-*/FEATURE-IDEAS.md`, pre-populates clusters from brainstorm's already-clustered output. Bypasses affinity grouping entirely — clusters are already done.
+- **`--from-file <path>`**: Reads file as raw idea list, runs affinity grouping.
+- **`--resume NN`**: Loads `BATCH-SESSION.md` from task NN, resumes from last completed stage.
+- **Inline**: All arguments treated as freeform idea list, runs affinity grouping.
 
 **Counting and display:**
 
@@ -147,7 +154,7 @@ Continue until user promotes clusters to milestones.
 
 **Session artifact:**
 
-Write `BATCH-INTAKE.md` to `.planning/quick/NN-multi-plan-[YYYY-MM-DD]/BATCH-INTAKE.md`:
+Write `BATCH-INTAKE.md` to `.planning/quick/NN-multi-milestone-[YYYY-MM-DD]/BATCH-INTAKE.md`:
 
 ```markdown
 # Batch Intake — [date]
@@ -223,160 +230,172 @@ Update `BATCH-SESSION.md` with workspace creation status and timestamps.
 
 ---
 
-### Stage 2 — Parallel Requirements Research (Per Milestone)
+### Stage 2 — (Merged into Stage 3)
 
-**Spawn N×4 researchers concurrently:**
+Research is now per-milestone, interleaved with scoping in Stage 3. The user chooses skip/include for each milestone individually before scoping it. This means research results are fresh in context when the user makes scope decisions.
 
-For each milestone, spawn 4 `gsd-project-researcher` agents simultaneously (Stack, Features, Architecture, Pitfalls). Each agent writes to its milestone-scoped workspace:
+**Per-milestone research flow (when user opts in):**
+
+Spawn 4 `gsd-project-researcher` agents for that milestone:
 
 ```
 Task(gsd-project-researcher, milestone=v16.0, dimension=Stack,
      output=.planning/milestones/v16.0/research/STACK.md)
 Task(gsd-project-researcher, milestone=v16.0, dimension=Features,
      output=.planning/milestones/v16.0/research/FEATURES.md)
-... × 4 dimensions × N milestones = N×4 concurrent agents
+Task(gsd-project-researcher, milestone=v16.0, dimension=Architecture,
+     output=.planning/milestones/v16.0/research/ARCHITECTURE.md)
+Task(gsd-project-researcher, milestone=v16.0, dimension=Pitfalls,
+     output=.planning/milestones/v16.0/research/PITFALLS.md)
 ```
 
-After all 4 researchers for a given milestone complete, spawn that milestone's synthesizer. Synthesizers across milestones can also run in parallel.
+After all 4 complete, spawn research synthesizer for that milestone. Then proceed to scoping.
 
-**Failure handling:**
+**Failure handling:** Same as before — partial research doesn't block scoping.
 
-If one researcher returns an error (not `## RESEARCH COMPLETE`):
-- Log warning to `BATCH-SESSION.md`: `v16.0 Stack research: PARTIAL (error: ...)`
-- Mark that milestone's workspace as `research_status: partial`
-- Continue with remaining researchers — do not pause the batch
-- Synthesizer runs with whatever research files exist; notes missing dimensions
-
-**Progress display:**
-
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- GSD ► RESEARCHING (N×4 agents)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-v16.0 Observable Runtime:
-  Stack [done] | Features [done] | Architecture [running] | Pitfalls [running]
-
-v17.0 Auth Layer:
-  Stack [done] | Features [running] | Architecture [queued] | Pitfalls [queued]
-
-v18.0 Test Maturity:
-  Stack [running] | Features [queued] | Architecture [queued] | Pitfalls [queued]
-```
-
-**Token cost note:** N×4 researchers + N synthesizers = N×5 subagent context windows. For N=5: 25 subagent spawns. At ~40k tokens each (research content + project context), this is ~1M tokens of subagent work. With a 1M context window, the orchestrator itself has headroom. Budget for ~30 minutes of wall-clock time for large batches.
+**Token cost note:** Research is now sequential per-milestone (not N×4 all at once), which reduces peak parallelism but keeps research results in-context for scoping. For N=5 with all research: 5×(4+1) = 25 subagent spawns spread across the session.
 
 ---
 
-### Stage 3 — Requirements Definition (RECOMMENDED: Option C — Quick-Scope Mode)
+### Stage 3 — Per-Milestone Requirements Scoping (Sequential, Full Ceremony)
 
-**Recommendation: Option C (Quick-Scope Mode)**
+**Decision: Full per-milestone scoping** — same UX as `new-milestone` Step 9.
 
-**Rationale:** Option A (one milestone at a time) defeats the purpose of the batch command — it's just serial `new-milestone` invocations with extra steps. Option B (simultaneous table) is cognitively overwhelming at N=4+ milestones and risks the very scope bleed it tries to prevent by presenting all milestones' features side-by-side.
+The multi-milestone command owns the entire funnel: raw feature dump → clustering → milestone splitting → **per-milestone requirements scoping** → parallel research → parallel roadmapping → synthesizer. This is not "run N `new-milestone` in parallel" — it's a single session that handles everything.
 
-Option C is the right design for a batch planner because:
+**Per-milestone scoping UX:**
 
-1. **The batch session is about breadth, not depth.** Detailed scoping belongs in `/gsd:discuss-phase` where the user has full attention on one phase at a time.
-2. **Most milestone-level scoping decisions are binary.** "Is auth in scope for v17.0?" is a yes/no, not a discussion. Option C's Y/N interface matches this.
-3. **Quick-scope produces good-enough REQUIREMENTS.md files** for the roadmapper. Roadmappers don't need exhaustive requirements — they need scope boundaries.
-4. **Deferred scoping via `/gsd:discuss-phase` is the natural next step** in the GSD workflow anyway. Quick-scope doesn't skip that step — it just doesn't duplicate it at the milestone level.
-
-**Option C UX design:**
-
-For each milestone, sequentially present a quick-scope screen:
+For each milestone sequentially, the orchestrator runs the same requirements flow as `new-milestone.md` Step 9:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- QUICK-SCOPE: v16.0 Observable Runtime
+ SCOPING: v16.0 Observable Runtime (1 of 3)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Derived from research. Select what's in scope for v16.0:
-
-Complexity ratings: L = low (1 phase), M = medium (1-2 phases), H = high (2-3 phases)
-
-[Category: Metrics]
-  [ ] METR-01: Real-time CPU/memory metrics collection (M)
-  [ ] METR-02: Structured log output with severity levels (L)
-  [ ] METR-03: Metric storage and retention policy (H)
-
-[Category: Dashboard]
-  [ ] DASH-01: Live metrics dashboard panel (M)
-  [ ] DASH-02: Alert threshold configuration (M)
-
-None for this milestone →
+Ideas assigned to this milestone:
+  - Real-time metrics collection
+  - Structured log output
+  - Metric storage and retention policy
+  - Live metrics dashboard panel
+  - Alert threshold configuration
 ```
 
-AskUserQuestion (multiSelect: true) with the above items.
+If research exists for this milestone, read FEATURES.md and present by category. Otherwise, derive categories from the cluster's ideas.
 
-After user selects, display brief confirmation:
-```
-v16.0 scope confirmed: 4 requirements, estimated 3-5 phases
-```
+**Scope each category** via AskUserQuestion (multiSelect: true):
+- "[Feature 1]" — [brief description]
+- "[Feature 2]" — [brief description]
+- "None for this milestone" — Defer entire category
 
-Then immediately move to the next milestone's quick-scope screen.
+**Identify gaps** via AskUserQuestion:
+- "No, research covered it" — Proceed
+- "Yes, let me add some" — Capture additions
 
-**After all N milestones scoped:** Write `REQUIREMENTS.md` files to each workspace, commit each:
+**Generate REQUIREMENTS.md** with REQ-IDs per category (same format as `new-milestone`).
+
+Present full requirements list for confirmation → adjust loop → commit:
 
 ```bash
 node gsd-tools.cjs commit "docs: define v16.0 requirements (N items)" \
   --files .planning/milestones/v16.0/REQUIREMENTS.md
-
-node gsd-tools.cjs commit "docs: define v17.0 requirements (N items)" \
-  --files .planning/milestones/v17.0/REQUIREMENTS.md
 ```
+
+Then move to next milestone. After all N milestones scoped, proceed to Stage 4.
+
+**Research skip/include:** Before each milestone's scoping, ask:
+
+```
+AskUserQuestion: "Research v16.0 Observable Runtime before scoping?"
+- "Research first" — Spawn 4 researchers for this milestone, synthesize, then scope
+- "Skip research" — Scope from cluster ideas directly
+```
+
+This replaces the global research toggle from Stage 2. Research happens per-milestone, interleaved with scoping, so the user sees research results before making scope decisions.
 
 ---
 
-### Stage 4 — Parallel Roadmapping
+### Stage 4 — Parallel Roadmapping + Roadmap Synthesizer
 
-**Phase slot pre-assignment (see Section 3.4 for the full algorithm):**
+**Key architectural decision: Roadmappers produce UNNUMBERED proposals. The synthesizer assigns all numbers.**
 
-Before spawning any roadmapper, the orchestrator assigns non-overlapping phase slots. The assignment is based on requirement count heuristic and written to `BATCH-SESSION.md` for transparency.
+This eliminates the phase slot pre-assignment problem entirely. No buffer math, no collision detection, no slot overrun handling.
 
-Display:
+**Spawn N roadmappers in parallel (unnumbered mode):**
 
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- PHASE SLOT ASSIGNMENT
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-v16.0 Observable Runtime   → Phases 87–96  (slot: 10, 4 reqs × 1.5 ≈ 6 + 4 buffer)
-v17.0 Auth Layer           → Phases 97–104 (slot: 8, 3 reqs × 1.5 ≈ 5 + 3 buffer)
-v18.0 Test Maturity        → Phases 105–116 (slot: 12, 5 reqs × 1.5 ≈ 8 + 4 buffer)
-
-Roadmappers will be told their starting phase. They must not exceed their slot.
-```
-
-**Spawn N roadmappers in parallel:**
+Each roadmapper receives its milestone's REQUIREMENTS.md but is told to produce **unnumbered phase proposals** — phase names, goals, requirement mappings, and success criteria, but NO phase numbers and NO milestone version numbers.
 
 ```
-Task(gsd-roadmapper, milestone=v16.0, starting_phase=87, slot_end=96,
-     requirements=.planning/milestones/v16.0/REQUIREMENTS.md)
+Task(gsd-roadmapper, milestone=v16.0, mode="proposal",
+     requirements=.planning/milestones/v16.0/REQUIREMENTS.md,
+     instructions="Produce unnumbered phase proposals. Use placeholder PHASE-A, PHASE-B, etc.
+     Do NOT assign phase numbers. Do NOT write ROADMAP.md directly.
+     Return proposals as structured markdown in PROPOSAL.md.")
 
-Task(gsd-roadmapper, milestone=v17.0, starting_phase=97, slot_end=104,
-     requirements=.planning/milestones/v17.0/REQUIREMENTS.md)
-
-Task(gsd-roadmapper, milestone=v18.0, starting_phase=105, slot_end=116,
-     requirements=.planning/milestones/v18.0/REQUIREMENTS.md)
+Task(gsd-roadmapper, milestone=v17.0, mode="proposal", ...)
+Task(gsd-roadmapper, milestone=v18.0, mode="proposal", ...)
 ```
 
-**After all N roadmappers complete:**
+Each roadmapper writes: `.planning/milestones/vX.Y/PROPOSAL.md`
 
-1. Read all N `ROADMAP.md` files
-2. Verify no phase number overlaps (scan for duplicate phase numbers across all roadmaps)
-3. Update root `.planning/ROADMAP.md` with all N milestone entries
-4. Update root `STATE.md` active milestones table
-5. Display consolidated phase overview (Stage 5)
+**After all N roadmappers complete — spawn Roadmap Synthesizer:**
+
+New agent: `gsd-roadmap-synthesizer` (modeled on `gsd-research-synthesizer`).
+
+```
+Task(gsd-roadmap-synthesizer,
+     prompt="
+     <files_to_read>
+     - .planning/milestones/v16.0/PROPOSAL.md
+     - .planning/milestones/v16.0/REQUIREMENTS.md
+     - .planning/milestones/v17.0/PROPOSAL.md
+     - .planning/milestones/v17.0/REQUIREMENTS.md
+     - .planning/milestones/v18.0/PROPOSAL.md
+     - .planning/milestones/v18.0/REQUIREMENTS.md
+     </files_to_read>
+
+     <context>
+     next_starting_phase: ${next_starting_phase}
+     milestones_in_order: [v16.0, v17.0, v18.0]
+     </context>
+
+     <instructions>
+     1. Read all N PROPOSAL.md files
+     2. Assign milestone versions in the order provided
+     3. Assign phase numbers sequentially starting from next_starting_phase
+        - v16.0 gets phases ${next_starting_phase} through ${next_starting_phase + v16_phase_count - 1}
+        - v17.0 continues from there, etc.
+     4. Write final ROADMAP.md to each milestone workspace
+     5. Write final STATE.md to each milestone workspace
+     6. Update root ROADMAP.md with all N milestone entries (phase ranges)
+     7. Update root STATE.md active milestones table
+     8. Update REQUIREMENTS.md traceability sections with actual phase numbers
+     9. Return consolidated summary
+     </instructions>
+     ",
+     subagent_type="gsd-roadmap-synthesizer",
+     description="Synthesize N roadmaps into numbered phases")
+```
+
+**Why this is better than pre-assignment:**
+
+| Dimension | Pre-Assignment (old) | Synthesizer (new) |
+|-----------|---------------------|-------------------|
+| Phase numbers | Predicted before roadmapping | Assigned after all proposals known |
+| Collision risk | Non-zero (buffer overrun) | Zero (sequential assignment) |
+| Buffer waste | Gaps in phase numbers | No gaps — tight sequential |
+| Complexity | Slot algorithm + collision detection + re-slotting | Simple sequential counter |
+| New tooling | `milestone phase-slots` subcommand | `gsd-roadmap-synthesizer` agent |
+| Failure mode | Roadmapper overruns slot → re-slot cascade | Roadmapper fails → re-run just that one, re-synthesize |
 
 ---
 
 ### Stage 5 — Review and Commit
 
-**Consolidated plan display:**
+**The synthesizer returns a consolidated view. Display it:**
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- MULTI-MILESTONE PLAN
+ MULTI-MILESTONE PLAN (synthesized)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 v16.0 Observable Runtime (Phases 87-92, 6 phases)
@@ -387,32 +406,33 @@ v16.0 Observable Runtime (Phases 87-92, 6 phases)
   Phase 91: Alert Configuration
   Phase 92: End-to-End Smoke Tests
 
-v17.0 Auth Layer (Phases 97-100, 4 phases)
-  Phase 97: Token Management
-  Phase 98: Login/Logout Flow
-  Phase 99: Session Persistence
-  Phase 100: Auth Middleware
+v17.0 Auth Layer (Phases 93-96, 4 phases)
+  Phase 93: Token Management
+  Phase 94: Login/Logout Flow
+  Phase 95: Session Persistence
+  Phase 96: Auth Middleware
 
-v18.0 Test Maturity (Phases 105-111, 7 phases)
-  Phase 105: Coverage Gates
+v18.0 Test Maturity (Phases 97-103, 7 phases)
+  Phase 97: Coverage Gates
   ...
 
 Total: 3 milestones | 17 phases | 11 requirements
+No phase gaps — sequential assignment by synthesizer.
 ```
 
 AskUserQuestion:
 - "Approve all — commit everything"
 - "Adjust one milestone — tell me which"
-- "Re-roadmap one milestone — re-spawn roadmapper with notes"
+- "Re-roadmap one milestone — re-spawn roadmapper with notes, then re-synthesize"
 
-**On approval, commit all artifacts atomically per milestone:**
+**On approval, commit all artifacts (synthesizer already wrote the files):**
 
 ```bash
-# Root files
-node gsd-tools.cjs commit "docs: add v16.0/v17.0/v18.0 to root roadmap (batch multi-plan)" \
+# Root files (updated by synthesizer)
+node gsd-tools.cjs commit "docs: add v16.0/v17.0/v18.0 to root roadmap (multi-milestone batch)" \
   --files .planning/ROADMAP.md .planning/STATE.md .planning/MILESTONES.md
 
-# Per-milestone (3 commits)
+# Per-milestone (N commits)
 node gsd-tools.cjs commit "docs: initialize v16.0 Observable Runtime (6 phases)" \
   --files .planning/milestones/v16.0/ROADMAP.md \
           .planning/milestones/v16.0/STATE.md \
@@ -422,8 +442,8 @@ node gsd-tools.cjs commit "docs: initialize v16.0 Observable Runtime (6 phases)"
 
 # Session artifact
 node gsd-tools.cjs commit "docs: record batch session artifacts" \
-  --files .planning/quick/NN-multi-plan-[date]/BATCH-INTAKE.md \
-          .planning/quick/NN-multi-plan-[date]/BATCH-SESSION.md
+  --files .planning/quick/NN-multi-milestone-[date]/BATCH-INTAKE.md \
+          .planning/quick/NN-multi-milestone-[date]/BATCH-SESSION.md
 ```
 
 ---
@@ -432,13 +452,13 @@ node gsd-tools.cjs commit "docs: record batch session artifacts" \
 
 ### 3.1 New Slash Command
 
-**File:** `~/.claude/commands/gsd/multi-plan.md`
+**File:** `~/.claude/commands/gsd/multi-milestone.md`
 
 ```yaml
 ---
-name: multi-plan
-description: Plan multiple milestones in one batch session — intake ideas, cluster into themes, research, scope requirements, and roadmap all in parallel
-argument-hint: "[ideas...] | --from-file <path>"
+name: multi-milestone
+description: Plan multiple milestones in one batch session — intake ideas, cluster into themes, research, scope requirements, and roadmap all at once
+argument-hint: "[ideas...] | --from-brainstorm <task#> | --from-file <path> | --resume <task#>"
 allowed-tools:
   - Read
   - Write
@@ -449,31 +469,35 @@ allowed-tools:
 ---
 ```
 
-The command file reads `~/.claude/get-shit-done/workflows/multi-plan.md` via `execution_context` (same pattern as all other GSD commands).
+The command file reads `~/.claude/get-shit-done/workflows/multi-milestone.md` via `execution_context` (same pattern as all other GSD commands).
+
+**Brainstorm integration (v1):** `--from-brainstorm NN` reads `.planning/quick/NN-brainstorm-*/FEATURE-IDEAS.md` and pre-populates clusters from the brainstorm's already-clustered output, bypassing the affinity-grouping step in Stage 0.
 
 ### 3.2 New Workflow File
 
-**File:** `~/.claude/get-shit-done/workflows/multi-plan.md`
+**File:** `~/.claude/get-shit-done/workflows/multi-milestone.md`
 
-This is the primary new file. Estimated 450-600 lines. Key sections:
+This is the primary new file. Estimated 600-800 lines. Key sections:
 
 ```
 ## 0. Parse Input
-  - Detect --from-file vs inline arguments
-  - Read file or normalize inline list
+  - Detect --from-brainstorm NN / --from-file / --resume NN / inline arguments
+  - If --from-brainstorm: read FEATURE-IDEAS.md, pre-populate clusters
+  - If --from-file: read file, normalize list
+  - If --resume: load BATCH-SESSION.md, skip completed stages
 
 ## 1. Load Project Context
   - Read PROJECT.md, MILESTONES.md, STATE.md
   - Run: node gsd-tools.cjs init new-milestone --raw
     (for highest_phase, researcher_model, roadmapper_model, etc.)
 
-## 2. Cluster Ideas
+## 2. Feature Intake & Clustering (Stage 0)
   - Perform affinity grouping (orchestrator, no subagent)
   - Present clusters with candidate milestone names
   - Run refinement loop until user approves clusters
   - Write BATCH-INTAKE.md
 
-## 3. Version Assignment and Workspace Creation
+## 3. Version Assignment and Workspace Creation (Stage 1)
   - Parse last version from MILESTONES.md
   - Auto-assign vX+1.0, vX+2.0, ... per cluster
   - Confirm with user
@@ -481,144 +505,95 @@ This is the primary new file. Estimated 450-600 lines. Key sections:
   - Run manifest-check
   - Write initial BATCH-SESSION.md
 
-## 4. Parallel Research
-  - Spawn N×4 gsd-project-researcher agents concurrently
-  - Spawn N synthesizers after their milestone's researchers complete
-  - Handle partial research failures gracefully
-
-## 5. Quick-Scope Requirements
-  - For each milestone (sequential, interactive):
-    - Present top features with complexity ratings
-    - User Y/N selects in scope items
+## 4. Per-Milestone Research + Scoping Loop (Stages 2-3, merged)
+  For each milestone sequentially:
+    - Ask: research this milestone? (skip/include)
+    - If research: spawn 4 researchers → synthesizer → present findings
+    - Run full requirements scoping (same UX as new-milestone Step 9)
     - Generate and commit REQUIREMENTS.md
 
-## 6. Phase Slot Pre-Assignment
-  - Compute slots using requirement-count heuristic (see 3.4)
-  - Display slot table for user visibility
-  - Write slot assignments to BATCH-SESSION.md
-
-## 7. Parallel Roadmapping
-  - Spawn N gsd-roadmapper agents with explicit starting_phase and slot_end
+## 5. Parallel Roadmapping (Stage 4)
+  - Spawn N gsd-roadmapper agents in PROPOSAL mode (unnumbered)
+  - Each writes PROPOSAL.md to its milestone workspace
   - Wait for all to complete
-  - Detect phase number collisions
-  - Update root ROADMAP.md
 
-## 8. Review and Commit
-  - Display consolidated plan
-  - User approves / adjusts / re-roadmaps
+## 6. Roadmap Synthesizer
+  - Spawn gsd-roadmap-synthesizer
+  - Reads all N PROPOSAL.md + REQUIREMENTS.md files
+  - Assigns milestone versions and phase numbers sequentially
+  - Writes final ROADMAP.md, STATE.md, REQUIREMENTS.md to each workspace
+  - Updates root ROADMAP.md and STATE.md
+
+## 7. Review and Commit (Stage 5)
+  - Display consolidated plan from synthesizer
+  - User approves / adjusts / re-roadmaps one milestone
+  - If re-roadmap: re-spawn that roadmapper, then re-synthesize
   - Atomic per-milestone commits
   - Update BATCH-SESSION.md with commit SHAs
 ```
 
 ### 3.3 gsd-tools.cjs Extensions
 
-**Analysis:** The existing `milestone new-workspace` command is already idempotent and takes one version at a time. The workflow can call it N times in parallel (N separate Bash tool calls in the same message). No new `batch-init` subcommand is strictly needed.
+**Analysis:** The existing `milestone new-workspace` command is already idempotent and takes one version at a time. The workflow can call it N times in parallel. No new `batch-init` subcommand is strictly needed.
 
-However, two new subcommands would improve the workflow:
+**Optional: `milestone batch-init <version1> <version2> ...`**
 
-**Candidate 1: `milestone batch-init <version1> <version2> ...`**
+Creates N workspaces in one call, returns array. Useful for error aggregation. Recommend as follow-on, not blocker.
 
-Creates N workspaces in one call, returns an array:
+**No `phase-slots` subcommand needed.** The synthesizer approach eliminates all slot math from gsd-tools.cjs. Phase numbering is handled entirely by the `gsd-roadmap-synthesizer` agent.
 
-```json
-[
-  {"version": "v16.0", "planning_root": ".planning/milestones/v16.0", "created": true},
-  {"version": "v17.0", "planning_root": ".planning/milestones/v17.0", "created": true}
-]
-```
+### 3.4 New Agent: `gsd-roadmap-synthesizer`
 
-**Verdict: Optional.** The workflow can achieve the same by calling `milestone new-workspace` N times. The batch subcommand would be useful for error aggregation (know which workspaces succeeded vs failed in one response) and for future CLI users. Recommend implementing as a follow-on, not a blocker.
+**File:** `agents/gsd-roadmap-synthesizer.md`
 
-**Candidate 2: `milestone phase-slots <current_highest> <req_counts...>`**
+Modeled on the existing `gsd-research-synthesizer`. Core responsibilities:
 
-Computes non-overlapping phase slots given current highest phase and per-milestone requirement counts:
+1. Read all N `PROPOSAL.md` files (unnumbered phase proposals from parallel roadmappers)
+2. Read all N `REQUIREMENTS.md` files (for REQ-ID traceability)
+3. Receive `next_starting_phase` and milestone ordering from orchestrator
+4. Assign phase numbers sequentially: milestone 1 gets phases `next..next+count1-1`, milestone 2 continues from there, etc.
+5. Write final `ROADMAP.md` to each milestone workspace (numbered phases, requirement mappings, success criteria)
+6. Write final `STATE.md` to each milestone workspace
+7. Update `REQUIREMENTS.md` traceability sections with actual phase numbers
+8. Update root `ROADMAP.md` with all N milestone entries and phase ranges
+9. Update root `STATE.md` active milestones table
+10. Return consolidated summary for the review stage
 
-```bash
-node gsd-tools.cjs milestone phase-slots 86 4 3 5
-# Returns: {"slots": [{"start": 87, "end": 96}, {"start": 97, "end": 104}, {"start": 105, "end": 116}]}
-```
-
-**Verdict: Recommended.** The slot algorithm (Section 3.4) is deterministic arithmetic. Implementing it in gsd-tools.cjs makes it testable, shareable with future tools, and avoids reimplementing it in workflow prose. This is a ~50-line addition to `milestone.cjs`.
-
-### 3.4 Phase Number Coordination Algorithm
-
-This is the hardest correctness problem. Full algorithm:
-
-**Step 1: Determine current highest phase**
-
-```bash
-INIT=$(node gsd-tools.cjs init new-milestone --raw)
-HIGHEST=$(echo "$INIT" | jq -r '.highest_phase')
-NEXT=$(echo "$INIT" | jq -r '.next_starting_phase')
-```
-
-This reads from all three sources (`getHighestPhaseNumber`): milestone phase dirs, root ROADMAP.md ranges, root STATE.md table.
-
-**Step 2: Estimate slot size per milestone**
-
-For each milestone `i` with `req_count[i]` scoped requirements:
+**Algorithm (trivial compared to pre-assignment):**
 
 ```
-phases_estimate[i] = ceil(req_count[i] * 1.5)
-buffer[i] = max(3, ceil(phases_estimate[i] * 0.5))
-slot_size[i] = phases_estimate[i] + buffer[i]
+cursor = next_starting_phase
+for each milestone in order:
+  read PROPOSAL.md → extract phase_count
+  assign phases cursor through cursor + phase_count - 1
+  rewrite PROPOSAL phase placeholders (PHASE-A → cursor, PHASE-B → cursor+1, etc.)
+  write numbered ROADMAP.md to milestone workspace
+  cursor += phase_count
 ```
 
-Rationale: 1.5× requirement count is a conservative estimate (most milestones average 1.2 phases per requirement in this project's history). The 50% buffer absorbs roadmapper decisions to split phases. Minimum buffer of 3 prevents gaps too small to be useful.
+Zero collision risk. No buffers. No gaps. If a roadmapper needs to be re-run, re-run just that one and call the synthesizer again — it re-numbers everything from scratch.
 
-Example: 4 requirements → `ceil(4 × 1.5) = 6 phases estimate`, `buffer = max(3, 3) = 3`, `slot_size = 9`
+**Structured return:**
 
-**Step 3: Assign slots sequentially**
-
-```
-cursor = next_starting_phase  // e.g., 87
-for each milestone i:
-  slot_start[i] = cursor
-  slot_end[i] = cursor + slot_size[i] - 1
-  cursor = slot_end[i] + 1
-```
-
-Example (starting at 87, requirements: [4, 3, 5]):
-- v16.0: start=87, estimate=6, buffer=3, slot=9 → phases 87-95
-- v17.0: start=96, estimate=5, buffer=3, slot=8 → phases 96-103
-- v18.0: start=104, estimate=8, buffer=4, slot=12 → phases 104-115
-
-**Step 4: Pass slot bounds to each roadmapper**
-
-The roadmapper prompt must include:
-```
-Start phase numbering from {slot_start}.
-Do NOT use phases beyond {slot_end} — this is your allocated slot.
-If you need more phases than your slot allows, return ROADMAP BLOCKED with a larger estimate.
-```
-
-**Step 5: Post-roadmap validation**
-
-After all N roadmappers return, scan each `ROADMAP.md` for the actual phase numbers used. Extract all phase numbers across all N roadmaps. Check for:
-- Phases outside assigned slot → SLOT VIOLATION
-- Duplicate phase numbers across roadmaps → COLLISION
-
-If collision detected:
-```
-Phase collision detected: Phase 97 used by both v16.0 and v17.0.
-v16.0 roadmapper used phases 87-97 (overran slot 87-95 by 2)
-v17.0 roadmapper started at 96 as assigned.
-
-Options:
-1. Re-slot v17.0 to start at 98 and re-run its roadmapper
-2. Re-run v16.0 roadmapper with tighter slot (87-95)
-```
-
-**Step 6: Root ROADMAP.md update (after validation passes)**
-
-Add entries in order, using actual phase ranges from roadmaps:
 ```markdown
-- 🔨 **v16.0 Observable Runtime** — Phases 87-92
-- 🔨 **v17.0 Auth Layer** — Phases 96-99
-- 🔨 **v18.0 Test Maturity** — Phases 104-110
-```
+## SYNTHESIS COMPLETE
 
-This ensures future `getHighestPhaseNumber()` calls return 110 (the actual highest), not 115 (the last allocated slot), preventing artificial gaps.
+**Milestones synthesized:** N
+**Total phases:** X (phases {start}-{end})
+
+| Milestone | Version | Phases | Requirements |
+|-----------|---------|--------|-------------|
+| Observable Runtime | v16.0 | 87-92 (6) | 4 |
+| Auth Layer | v17.0 | 93-96 (4) | 3 |
+| Test Maturity | v18.0 | 97-103 (7) | 5 |
+
+**Files written:**
+- .planning/milestones/v16.0/ROADMAP.md, STATE.md, REQUIREMENTS.md
+- .planning/milestones/v17.0/ROADMAP.md, STATE.md, REQUIREMENTS.md
+- .planning/milestones/v18.0/ROADMAP.md, STATE.md, REQUIREMENTS.md
+- .planning/ROADMAP.md (root, updated)
+- .planning/STATE.md (root, updated)
+```
 
 ### 3.5 Failure Modes and Recovery
 
@@ -626,14 +601,14 @@ This ensures future `getHighestPhaseNumber()` calls return 110 (the actual highe
 |---------|-----------|----------|
 | One research subagent fails | Returns error instead of `## RESEARCH COMPLETE` | Log warning to `BATCH-SESSION.md`, mark workspace `research_status: partial`. Continue batch. Synthesizer runs with available files, notes gaps. |
 | One roadmapper returns `## ROADMAP BLOCKED` | Roadmapper return value starts with BLOCKED signal | Pause batch for that milestone. Present blocker to user with inline prompt. Re-spawn with clarification notes. Other milestones' roadmaps may already be complete — do not discard them. |
-| Phase slot collision (roadmapper overruns slot) | Post-roadmap phase scan detects overlapping phase numbers | Display diff showing which roadmapper overran. Offer: re-slot later milestones (shift starts), re-run offending roadmapper with tighter constraint, or manual re-numbering. |
-| User abandons mid-session | Workspaces exist but REQUIREMENTS.md is empty or ROADMAP.md is scaffold-only | On next `/gsd:multi-plan`, detect `BATCH-SESSION.md` files in `.planning/quick/` with `status: incomplete`. Offer: "Resume session from [date] (milestones: v16.0, v17.0, v18.0)" or "Start fresh (discard incomplete workspaces)". |
-| Concurrent `gsd-roadmapper` writes to same root ROADMAP.md | Two roadmappers both try to update root ROADMAP.md simultaneously | **Prevention:** Root ROADMAP.md is updated ONLY by the orchestrator, AFTER all roadmappers complete. Roadmappers write ONLY to their milestone-scoped ROADMAP.md. The orchestrator aggregates. This is the correct architectural boundary. |
-| Research opt-in config mismatch | `workflow.research` is `false` in config but user wants research for this batch | Add `--research` flag to override: `/gsd:multi-plan --research "ideas..."`. Batch research always writes to milestone-scoped `research/` dirs, never to legacy `.planning/research/`. |
+| Roadmapper returns invalid PROPOSAL.md | Missing required sections or empty | Re-spawn that roadmapper. Synthesizer only runs when all N proposals are valid. |
+| User abandons mid-session | Workspaces exist but REQUIREMENTS.md is empty or ROADMAP.md is scaffold-only | On next `/gsd:multi-milestone`, detect `BATCH-SESSION.md` files in `.planning/quick/` with `status: incomplete`. Offer: "Resume session from [date] (milestones: v16.0, v17.0, v18.0)" or "Start fresh (discard incomplete workspaces)". |
+| Concurrent `gsd-roadmapper` writes to same root ROADMAP.md | Two roadmappers both try to update root ROADMAP.md simultaneously | **Prevention:** Roadmappers write ONLY PROPOSAL.md (no ROADMAP.md at all). The synthesizer is the single writer for all ROADMAP.md files. No concurrent write risk. |
+| Research opt-in config mismatch | `workflow.research` is `false` in config but user wants research for this batch | Add `--research` flag to override: `/gsd:multi-milestone --research "ideas..."`. Batch research always writes to milestone-scoped `research/` dirs, never to legacy `.planning/research/`. |
 
 ### 3.6 Session Continuity File
 
-**File:** `.planning/quick/NN-multi-plan-[YYYY-MM-DD]/BATCH-SESSION.md`
+**File:** `.planning/quick/NN-multi-milestone-[YYYY-MM-DD]/BATCH-SESSION.md`
 
 Written incrementally as stages complete. Final state:
 
@@ -674,11 +649,11 @@ Written incrementally as stages complete. Final state:
 
 ## Resume Instructions
 
-To resume this session: `/gsd:multi-plan --resume NN`
+To resume this session: `/gsd:multi-milestone --resume NN`
 Last completed stage: Roadmapping
 ```
 
-**Resume protocol:** `/gsd:multi-plan --resume NN` reads `BATCH-SESSION.md`, determines the last completed stage per milestone, and re-enters the workflow at the correct stage. Completed stages are idempotent (workspaces already exist, requirements already written) — the orchestrator skips them.
+**Resume protocol:** `/gsd:multi-milestone --resume NN` reads `BATCH-SESSION.md`, determines the last completed stage per milestone, and re-enters the workflow at the correct stage. Completed stages are idempotent (workspaces already exist, requirements already written) — the orchestrator skips them.
 
 ---
 
@@ -688,12 +663,12 @@ Last completed stage: Roadmapping
 
 | Dimension | Size | Notes |
 |-----------|------|-------|
-| New files | 3 required | `multi-plan.md` workflow, `multi-plan.md` command, `milestone.cjs` addition for `phase-slots` |
-| Workflow complexity | High | ~500 lines; more complex than `new-milestone.md` (~400 lines) due to N-milestone fan-out, parallel agent management, slot algorithm, and resume logic |
-| Interactive stages | 4 | Cluster approval, version confirmation, N×quick-scope, final review — each requires conversation-aware state |
-| gsd-tools.cjs additions | Small | `milestone phase-slots` subcommand (~50 lines + tests) |
-| Testing surface | Medium | Slot algorithm unit tests in `milestone.cjs`; workflow integration testing via manual run |
-| Risk | High — novel | Parallel roadmapping with slot pre-assignment has no existing precedent in the workflow system |
+| New files | 3 required | `multi-milestone.md` workflow, `multi-milestone.md` command, `gsd-roadmap-synthesizer.md` agent |
+| Workflow complexity | High | ~600-800 lines; more complex than `new-milestone.md` (~400 lines) due to N-milestone fan-out, per-milestone research/scoping loop, parallel roadmapping, and synthesizer coordination |
+| Interactive stages | 3+N | Cluster approval, version confirmation, N×(research choice + full scoping), final review |
+| gsd-tools.cjs additions | None required | Synthesizer handles all numbering; existing `milestone new-workspace` + `manifest-check` suffice |
+| Testing surface | Medium | Roadmap synthesizer agent can be tested with mock PROPOSAL.md files; workflow integration via manual run |
+| Risk | Medium | Synthesizer pattern proven by `gsd-research-synthesizer`; main novelty is the unnumbered-proposal roadmapper mode |
 
 ### Recommendation: Multi-Phase Milestone (v16.0)
 
@@ -703,108 +678,75 @@ This is too large for a quick task (estimated 3-5 hours of execution work, 500+ 
 
 Three phases:
 
-**Phase NN: Core Infrastructure**
-- `milestone phase-slots` subcommand with tests
-- Slot assignment algorithm implementation
+**Phase NN: Roadmap Synthesizer Agent + Proposal Mode**
+- `gsd-roadmap-synthesizer.md` agent definition
+- Roadmapper "proposal mode" — teach existing roadmapper to produce unnumbered PROPOSAL.md
 - `BATCH-SESSION.md` write/read helpers
-- Unit tests for slot algorithm and session continuity
+- Test: synthesizer with 2 mock PROPOSAL.md files produces correct numbered output
 
-**Phase NN+1: Workflow File — Stages 0-3**
-- `multi-plan.md` workflow: intake, clustering, workspace creation, parallel research
-- Command file: `~/.claude/commands/gsd/multi-plan.md`
-- Integration test: run intake through workspace creation with 2 milestones
+**Phase NN+1: Workflow File — Stages 0-3 (Intake through Scoping)**
+- `multi-milestone.md` workflow: input parsing, clustering, workspace creation, per-milestone research/scoping loop
+- Command file: `~/.claude/commands/gsd/multi-milestone.md`
+- `--from-brainstorm NN` flag reads FEATURE-IDEAS.md and pre-populates clusters
+- Integration test: run intake through requirements scoping with 2 milestones
 
 **Phase NN+2: Workflow File — Stages 4-5 + Resume**
-- `multi-plan.md` workflow: quick-scope, slot assignment, parallel roadmapping, review and commit
+- `multi-milestone.md` workflow: parallel roadmapping (proposal mode), synthesizer spawn, review and commit
 - Resume protocol: `--resume NN` flag handling
 - Integration test: end-to-end with 2 test milestones
 
-The resume protocol and slot algorithm are the highest-risk components. Separating them into dedicated phases allows iteration without re-running the entire workflow.
+The synthesizer agent and proposal mode are the highest-risk components. Separating them into phase 1 allows testing the numbering logic before wiring it into the full workflow.
 
 **Milestone brief (ready for `/gsd:new-milestone` input):**
 
 ```
 Milestone: v16.0 Multi-Milestone Batch Planner
-Goal: A /gsd:multi-plan command that clusters feature ideas into milestone themes,
-creates N workspaces in parallel, runs N×4 research agents concurrently,
-quick-scopes requirements for each milestone interactively, assigns non-overlapping
-phase slots, runs N roadmappers in parallel, and commits all artifacts in one session.
+Goal: A /gsd:multi-milestone command that takes a huge dump of feature ideas,
+clusters them into milestone themes, creates N workspaces, runs per-milestone
+research + full requirements scoping, spawns N parallel roadmappers producing
+unnumbered proposals, then a roadmap synthesizer assigns all version and phase
+numbers and writes every artifact — all in one session.
 
 Key capabilities:
-- Freeform or file-based feature intake with inline affinity clustering
-- Parallel workspace creation (N milestones at once)
-- N×4 concurrent research agents writing to milestone-scoped workspaces
-- Quick-scope requirements UX (binary Y/N per feature, not full discussion)
-- Phase slot pre-assignment algorithm (requirement-count heuristic + buffer)
-- Parallel roadmapping with slot bounds passed to each agent
-- Post-roadmap collision detection
+- Freeform, file-based, or brainstorm-sourced feature intake with affinity clustering
+- --from-brainstorm NN flag to consume /gsd:brainstorm output directly
+- Parallel workspace creation (N milestones, cap N≤20)
+- Per-milestone research (skip/include choice per milestone)
+- Full per-milestone requirements scoping (same UX as new-milestone)
+- Parallel roadmapping in PROPOSAL mode (unnumbered phases)
+- gsd-roadmap-synthesizer agent: assigns all milestone versions and phase numbers
 - Session continuity via BATCH-SESSION.md and --resume flag
 ```
 
 ---
 
-## Section 5 — Open Questions
+## Section 5 — Decisions (All Resolved)
 
-### Q1 — Requirements UX Option
+All 7 questions resolved in session on 2026-04-04.
 
-The design recommends **Option C (Quick-Scope)**. Is this acceptable?
+| # | Question | Decision | Rationale |
+|---|----------|----------|-----------|
+| Q1 | Requirements UX | **Full per-milestone scoping** (same UX as `new-milestone`) | The multi-milestone command owns the entire funnel — features in, milestones out. No shortcuts on scoping. |
+| Q2 | Research opt-in | **Per-milestone skip/include** | User chooses before each milestone's scoping. Research results inform scope decisions. |
+| Q3 | Phase numbering | **Synthesizer assigns all numbers** | Milestone ordering is Claude's discretion — milestones run concurrently in different sessions anyway. Eliminates all slot math. |
+| Q4 | Command name | **`/gsd:multi-milestone`** | Standalone command, clear name. |
+| Q5 | Max batch size | **N ≤ 20** | Let it rip. |
+| Q6 | Relationship to `new-milestone` | **Fully separate workflow** | `multi-milestone.md` is its own thing. `new-milestone` stays the single-milestone path. |
+| Q7 | Brainstorm integration | **In v1 — `--from-brainstorm NN`** | Primary use case. Reads FEATURE-IDEAS.md, pre-populates clusters, bypasses affinity grouping. |
 
-The tradeoff: Option C produces lighter REQUIREMENTS.md files (binary include/exclude) vs Option A (full conversational scoping per milestone). The user gets faster batch planning but may find that per-milestone `/gsd:discuss-phase` sessions are needed to add nuance before execution.
+### Additional Architectural Decision: Synthesizer Pattern
 
-Alternative: keep Option A but add a `--quick` flag to the command so users can choose which mode per session.
+The original design used phase slot pre-assignment (predict phase counts, allocate ranges, detect collisions). This was replaced with a **roadmap synthesizer** pattern:
 
-### Q2 — Research Opt-In
+- Parallel roadmappers produce **unnumbered PROPOSAL.md** files
+- A new `gsd-roadmap-synthesizer` agent reads all proposals and assigns milestone versions + phase numbers sequentially
+- Zero collision risk, no buffer math, no gaps
+- Pattern proven by existing `gsd-research-synthesizer`
 
-Should research be mandatory for all milestones in a batch, or should the user be able to:
-- Skip globally with `--skip-research`
-- Skip per-milestone during the intake clustering stage
-- Use a project config toggle (`workflow.research = false` already exists)
-
-The current design respects the existing `workflow.research` config flag. If false, research is skipped for the entire batch. Should the batch command allow overriding per-milestone?
-
-### Q3 — Phase Slot Strategy
-
-The design uses a **pre-assignment with buffers** approach. Two open decisions:
-
-1. **Buffer size:** The current algorithm uses `max(3, 50% of estimate)`. Is this too generous (wastes phase numbers) or too tight (roadmappers still overrun)?
-2. **On overrun:** If a roadmapper exceeds its slot, the design recommends re-slotting subsequent milestones. Is this acceptable, or should the design enforce hard stops and require re-running the roadmapper with a tighter constraint?
-
-### Q4 — Command Name
-
-Working title: `gsd:multi-plan`. Alternatives:
-- `gsd:batch-milestone` — more explicit about what it does
-- `gsd:plan-milestones` — grammatically parallel to `plan-phase`
-- `gsd:roadmap-all` — emphasizes the output artifact
-- `gsd:intake` — emphasizes the input (brainstorm → milestones pipeline)
-
-Note: `gsd:multi-plan` is consistent with the verb pattern (plan) used in `plan-phase`. `plan-milestones` (plural) is the most self-explanatory.
-
-### Q5 — Max Batch Size
-
-The design implicitly supports any N, but N > 5 creates practical problems:
-- N×4 concurrent researcher subagents = 20+ agents running simultaneously
-- Quick-scope for N=7+ milestones approaches the cognitive load of Option B
-- `BATCH-SESSION.md` and the consolidated review display become unwieldy
-
-**Recommendation:** Hard-limit N ≤ 5 and surface an error if the user approves more than 5 clusters. Is N ≤ 5 acceptable?
-
-### Q6 — Relationship to `gsd:new-milestone`
-
-The design assumes `gsd:multi-plan` is the N≥2 path and `gsd:new-milestone` remains the single-milestone path. Two concerns:
-
-1. Should `gsd:new-milestone` warn users who are creating their 3rd+ active milestone that `gsd:multi-plan` exists as a better tool for batch planning?
-2. Should `gsd:multi-plan N=1` be valid (single milestone via the batch UX)? The intake/clustering stage would be degenerate (one cluster = one milestone), but the rest of the pipeline is identical.
-
-### Q7 — Brainstorm Integration
-
-The `/gsd:brainstorm` command (v11.0) produces `FEATURE-IDEAS.md` files with clustered, scored ideas. The multi-plan command already accepts `--from-file`. Should `/gsd:multi-plan` explicitly advertise this integration?
-
-Proposed: `/gsd:multi-plan --from-brainstorm NN` reads from the brainstorm session directory `.planning/quick/NN-brainstorm-*/FEATURE-IDEAS.md` and pre-populates clusters from the brainstorm's already-clustered output, bypassing the affinity-grouping step.
-
-This is not in scope for the initial implementation but should be in the milestone's REQUIREMENTS.md as a future requirement.
+This is the single biggest architectural improvement from the review session.
 
 ---
 
 *End of design document.*
-*Total: 7 open questions, 3 implementation phases recommended.*
-*Next action: user reviews Section 5 questions, then `/gsd:new-milestone` to start v16.0.*
+*All decisions locked. 3 implementation phases recommended.*
+*Next action: `/gsd:new-milestone` to start v16.0 Multi-Milestone Batch Planner.*
