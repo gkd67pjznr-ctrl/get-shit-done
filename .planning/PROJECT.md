@@ -117,6 +117,17 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 - ✓ Per-skill correction rate metrics via CATEGORY_SKILL_MAP attribution with confidence tiers — v9.0
 - ✓ Skill relevance scoring with Jaccard keyword overlap, cold-start floor, dormancy decay, content-hash cache — v9.0
 
+- ✓ Auto-apply safety engine with 5 fail-fast gates (CONFIG, RATE, QUALITY, CONFIDENCE, SIZE) and JSONL audit log — v15.0
+- ✓ Auto-apply opt-in via adaptive_learning.auto_apply config key with kill switch behavior — v15.0
+- ✓ Revert command (/gsd:refine-skill revert <id>) with git revert via commit SHA — v15.0
+- ✓ Failed auto-apply suggestions surface as pending with auto_apply_failed flag — v15.0
+- ✓ Per-project review profiles generated from corrections.jsonl with 10-correction minimum guard — v15.0
+- ✓ Code-review skill reads review-profile.json and adapts focus for high-weight categories — v15.0
+- ✓ Review profile refreshes at session start via hook — v15.0
+- ✓ Decision parser extracts Key Decisions table from PROJECT.md — v15.0
+- ✓ Jaccard token overlap matches corrections to decisions deterministically — v15.0
+- ✓ Decision tensions (3+ corrections matching) surfaced in /gsd:digest with evidence — v15.0
+
 - ✓ MCP server at /mcp on dashboard with StreamableHTTP transport, stateless per-request, Origin validation — v10.0
 - ✓ 8 read-only MCP query tools (list-projects, get-project-state, get-gate-health, get-observations, get-sessions, get-skill-metrics, get-cost-metrics, get-git-status) — v10.0
 - ✓ Installer auto-configures ~/.claude.json with mcpServers.gsd-dashboard and --no-mcp opt-out — v10.0
@@ -129,6 +140,17 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 - ✓ Unverifiable DONE criteria surfaced for human check, quality-level gated (fast=skip, standard=warn, strict=block) — v12.0
 - ✓ Test count extracted at plan completion, persisted to phase-benchmarks.jsonl with delta computation — v12.0
 - ✓ /gsd:progress shows test count with delta, /gsd:digest surfaces test count trend table — v12.0
+
+- ✓ Brainstorm eval detection blocks self-censoring language (23 patterns + 7 wild) before idea storage — v11.0
+- ✓ Append-only JSONL idea store with no update/delete API — v11.0
+- ✓ SCAMPER forced cycling requires all 7 lenses with per-lens quantity floors — v11.0
+- ✓ Quantity floors with wild-mode doubling (freeform 15→30, per-lens 2→4) and saturation detection — v11.0
+- ✓ Context blinding excludes ROADMAP.md and STATE.md from seed brief during expand stage — v11.0
+- ✓ Data-driven seeding from corrections, debt, sessions with --from-corrections/--from-debt/--for-milestone flags — v11.0
+- ✓ /gsd:brainstorm command with 3-stage pipeline (seed→expand→converge), --wild mode, composable flags — v11.0
+- ✓ Converge pipeline with keyword clustering (3-7 themes), 4-dimension scoring, finalist selection — v11.0
+- ✓ Output artifacts: FEATURE-IDEAS.md, BRAINSTORM-SESSION.md, ideas.jsonl in sequential quick/ dirs — v11.0
+- ✓ Session history tracking with auto-logging, idea-to-phase tagging, and new-milestone seed integration — v11.0
 
 ### Active
 
@@ -150,15 +172,6 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 - Context budget optimizer (per-skill token cost, cost-per-relevance ratio, deferral recommendations)
 - MCP server selection intelligence (task-type classifier, advisory recommendations before executor spawn)
 
-## Current Milestone: v15.0 Autonomous Learning
-
-**Goal:** Close the gap between "captures data" and "acts on it" — auto-apply high-confidence skill refinements, shift code review focus per-project based on correction history, and surface when correction patterns contradict recorded decisions.
-
-**Target features:**
-- Learning loop automation (auto-apply high-confidence skill refinements with safety guardrails)
-- Adaptive code review profiles (per-project review focus based on correction history)
-- Decision audit trail (surface correction-decision tensions in /gsd:digest)
-
 ## Current Milestone: v16.0 Multi-Milestone Batch Planner
 
 **Goal:** A `/gsd:multi-milestone` command that takes a dump of feature ideas, clusters them into milestone themes, creates N workspaces, runs per-milestone research + full requirements scoping, spawns N parallel roadmappers producing unnumbered proposals, then a roadmap synthesizer assigns all version and phase numbers and writes every artifact — all in one session.
@@ -174,6 +187,14 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 - Session continuity via BATCH-SESSION.md and `--resume` flag
 
 ## Completed Milestones
+
+### v15.0 Autonomous Learning — SHIPPED 2026-04-04
+
+**Delivered:** Closed the gap between "captures data" and "acts on it" — auto-apply engine with 5 safety gates applies high-confidence skill refinements automatically, revert command restores pre-auto-apply state, failed checks surface transparently as pending suggestions, per-project review profiles shift code review focus based on correction history, decision audit trail detects correction-decision contradictions via Jaccard matching and surfaces tensions in /gsd:digest. 4 phases, 7 plans, 16/16 requirements satisfied.
+
+### v11.0 Wild Brainstorming Engine — SHIPPED 2026-04-04
+
+**Delivered:** Mechanically-enforced brainstorming engine that breaks Claude's self-censoring bias through code constraints — eval detection, append-only idea store, forced SCAMPER cycling, quantity floors with wild-mode doubling, saturation detection, context blinding, data-driven seeding from corrections/debt/sessions, `/gsd:brainstorm` command with 3-stage pipeline, converge with clustering and scoring, session history with auto-logging and new-milestone seed integration. 5 phases, 11 plans, 30/30 requirements satisfied.
 
 ### v12.0 Quality Enforcement Evolution — SHIPPED 2026-04-04
 
@@ -221,9 +242,9 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 
 ## Context
 
-Shipped v12.0 with ~97K LOC across 19 CJS source modules + 27 test suites, plus workflow/agent Markdown specifications, 16 skills, 4 teams, a TypeScript dashboard with Gate Health page and MCP server, adaptive learning pipeline, skill feedback loop, gate enforcement hooks (including ESLint gate), transition guards for mechanical DONE verification, signal intelligence analytics with test coverage trending, and cross-session MCP query tools.
+Shipped v15.0 with ~100K LOC across 20+ CJS source modules + 30 test suites, plus workflow/agent Markdown specifications, 16 skills, 4 teams, a TypeScript dashboard with Gate Health page and MCP server, adaptive learning pipeline with autonomous auto-apply engine, skill feedback loop, gate enforcement hooks (including ESLint gate), transition guards, signal intelligence analytics, cross-session MCP query tools, brainstorming engine, per-project adaptive review profiles, and decision audit trail with Jaccard tension detection.
 Tech stack: Node.js, CJS modules, TypeScript (dashboard), Markdown agent specifications, Context7 MCP, @modelcontextprotocol/sdk v1.29.0.
-Tests: 1175+ passing across 27 test suites.
+Tests: 1220+ passing across 30 test suites.
 
 **Quality enforcement** (v1.0-v1.1): Full Plan→Execute→Verify loop with Quality Sentinel, Context7 library lookup, mandatory testing, quality dimensions, config-gated enforcement levels (fast/standard/strict), and observability.
 
@@ -248,6 +269,8 @@ Tests: 1175+ passing across 27 test suites.
 **Shared MCP dashboard** (v10.0): StreamableHTTP MCP server at `/mcp` on existing dashboard — 8 read-only query tools for cross-session/cross-project data access, stateless per-request transport, Origin validation, installer auto-configuration to `~/.claude.json`.
 
 **Quality enforcement evolution** (v12.0): ESLint gate fires on code file writes via PostToolUse hook (extending gate-runner.cjs), transition guards mechanically verify `<done>` criteria before phase completion (parseDoneCriteria + verifyAssertions wired into cmdVerifyPhaseCompleteness), test coverage trending tracks test count per plan with delta computation in phase-benchmarks.jsonl and surfaces in progress/digest.
+
+**Autonomous learning** (v15.0): Auto-apply engine with 5 safety gates (CONFIG, RATE, QUALITY, CONFIDENCE, SIZE) applies high-confidence skill refinements at SessionEnd, revert command restores pre-auto-apply state, failed checks surface as pending suggestions with `auto_apply_failed` flag, per-project review profiles generated from correction category distribution, code-review skill adapts focus automatically, decision audit trail detects correction-decision tensions via Jaccard overlap and surfaces in /gsd:digest.
 
 **Known tech debt:** See `.planning/DEBT.md` and MILESTONES.md for remaining items.
 
@@ -299,4 +322,4 @@ Tests: 1175+ passing across 27 test suites.
 | Cross-project promotion at 3+ projects | Ensures preferences are truly universal before elevating | ✓ Good — project-specific quirks don't pollute global store |
 
 ---
-*Last updated: 2026-04-04 after v16.0 milestone start*
+*Last updated: 2026-04-04 after v15.0 Autonomous Learning milestone*

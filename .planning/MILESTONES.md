@@ -1,5 +1,95 @@
 # Milestones
 
+## v15.0 Autonomous Learning (Shipped: 2026-04-04)
+
+**Phases completed:** 1 phases, 1 plans, 0 tasks
+
+**Key accomplishments:**
+- (none recorded)
+
+---
+
+## v11.0 Wild Brainstorming Engine (Shipped: 2026-04-04)
+
+**Delivered:** Mechanically-enforced brainstorming engine that breaks Claude's self-censoring bias through code constraints. Three-stage pipeline (Seed → Expand → Converge) with evaluation detection, append-only idea store, forced SCAMPER cycling, quantity floors, saturation detection, context blinding, data-driven seeding, and session history tracking.
+
+**Phases:** 5 phases (45-49), 11 plans
+**Code:** 2,301 LOC across brainstorm.cjs (893), workflow (496), tests (866), command (46)
+**Timeline:** 1 day (2026-04-04)
+**Git range:** 6a09753 → 96dc099
+**Requirements:** 30/30 satisfied
+**Tests:** 87 brainstorm-specific tests, 0 failures
+
+**Key accomplishments:**
+1. Enforcement core — eval detection (23 patterns + 7 wild), append-only JSONL store, SCAMPER forced cycling (all 7 lenses), quantity floors with wild-mode doubling, velocity-based saturation detection
+2. Converge pipeline — keyword-frequency clustering (3-7 themes, 100% placement), 4-dimension scoring with composite formula, finalist selection, 3-file output formatting
+3. `/gsd:brainstorm` command — 473-line 3-stage workflow with interactive SCAMPER, perspective shifts, saturation switching, `--wild` mode
+4. Data-driven seeding — `--from-corrections`, `--from-debt`, `--for-milestone` flags with context blinding (excludes ROADMAP/STATE), prior brainstorm dedup
+5. Session history — auto-logging, idea-to-phase tagging, implemented queries, `/gsd:new-milestone` seed context integration
+6. 20 CLI sub-commands in `brainstorm` namespace wired into gsd-tools.cjs
+
+**Tech Debt (from verification):**
+- `"might"` in WILD_EXTRA_PATTERNS overlaps with `"might not"` in EVAL_PATTERNS (cosmetic duplicate violations in wild mode)
+- Empty topic produces trailing hyphen in output dir name
+- REQUIREMENTS.md traceability checkboxes not auto-updated (doc drift)
+- $SEED_IDEAS variable scoping fragility across workflow steps (shared pattern, not regression)
+
+---
+
+## v12.0 Quality Enforcement Evolution (Shipped: 2026-04-04)
+
+**Delivered:** Closed remaining quality enforcement gaps — ESLint gate fires on every code file write via PostToolUse hook with quality-level gating and graceful degradation, transition guards mechanically verify DONE criteria before phase completion (no more trust-based transitions), test coverage trending tracks test count per plan and surfaces delta in progress/digest.
+
+**Phases:** 3 phases (50-52), 7 plans
+**Code:** 70 files changed (+8,018 / -171)
+**Timeline:** 1 day (2026-04-04)
+**Git range:** adb3228 → b6dc3c5
+**Requirements:** 14/14 satisfied
+**Commits:** 63
+
+**Key accomplishments:**
+1. ESLint gate enforcement — PostToolUse hook fires `eslint_gate` on .ts/.js/.cjs writes via subprocess with fast=skip, standard=warn, strict=block quality gating and graceful degradation
+2. DONE criteria parser — Extracts `<done>` tag bullets from PLAN.md files and classifies into file-exists, grep-for-export, test-passes, or human-check assertion types
+3. Transition guards — `cmdVerifyPhaseCompleteness` now calls `runTransitionGuards` to mechanically verify DONE criteria before the verifier agent runs
+4. Test coverage trending — Test count captured at plan completion via `npm test` output parsing, persisted to phase-benchmarks.jsonl with delta computation
+5. Progress/digest integration — `/gsd:progress` shows test count delta, `/gsd:digest` renders test count trend table across milestones
+6. Dashboard aggregation fix — Fixed hardcoded VALID_GATES in server.cjs so new gate types (like eslint_gate) surface automatically in Gate Health
+
+**Tech Debt (7 non-critical items from audit):**
+- LINT-01 requirement text says "ESLint MCP gate" but implementation uses subprocess (naming gap)
+- server.cjs has two separate VALID_GATES arrays that must be kept in sync
+- loadConfig() strips quality key — direct JSON.parse on config.json needed
+- test-passes assertion defaults to needs-human (runTests=true not wired in workflows)
+- Most SUMMARY.md files missing requirements-completed frontmatter (cosmetic)
+- progress.md fallback text wording deviation (cosmetic)
+- 52-02 frontmatter wave:1 should be wave:2 (metadata inconsistency)
+
+---
+
+## v10.0 Shared MCP Dashboard (Shipped: 2026-04-04)
+
+**Delivered:** MCP server endpoints mounted on existing dashboard server via StreamableHTTP transport — 8 read-only query tools for cross-session/cross-project data access, installer auto-configuration, Origin validation, and full test coverage.
+
+**Phases:** 2 phases (43-44), 5 plans
+**Code:** 38 files changed (+6,406 / -24)
+**Timeline:** 1 day (2026-04-04)
+**Git range:** 5010d9f → b930d6b
+**Requirements:** 16/16 satisfied
+**Commits:** 18
+
+**Key accomplishments:**
+1. MCP server scaffolding — StreamableHTTP transport at `/mcp` on existing dashboard server with stateless per-request handling and DNS rebinding protection
+2. 8 read-only query tools — list-projects, get-project-state, get-gate-health, get-observations, get-sessions, get-skill-metrics, get-cost-metrics, get-git-status
+3. Installer auto-configuration — `writeMcpConfig` in `install.js` writes `mcpServers.gsd-dashboard` to `~/.claude.json` with `--no-mcp` opt-out
+4. Bug fixes — gate-health null spread and suggestions file extension mismatch resolved
+5. Full test suite — 9 tests (8 unit + 1 integration) covering all tool handlers with no HTTP server dependency
+
+**Tech Debt (2 minor items from verification):**
+- `ALLOWED_ORIGINS` hardcodes port 7778 but dashboard defaults to 3141 (low impact — Claude Code sends no Origin)
+- Integration test uses random port without collision guard (use port 0 for OS-assigned)
+
+---
+
 ## v9.0 Signal Intelligence (Shipped: 2026-04-04)
 
 **Phases completed:** 6 phases, 8 plans, 0 tasks
@@ -267,3 +357,34 @@
 
 **Tech Debt (1 cosmetic item from audit):**
 - Phase 42: Co-Authored-By trailer uses Sonnet instead of Opus in 3 commits (committed history)
+
+## v11.0
+
+**Phase:** 49 | **Plan:** 2 | **Status:** Complete
+**Progress:** 2/2 plans (100%)
+**Updated:** 2026-04-04
+## v10.0
+
+**Phase:** 44 | **Plan:** 2 | **Status:** Complete
+**Progress:** 2/2 plans (100%)
+**Updated:** 2026-04-04
+## v12.0
+
+**Phase:** 52 | **Plan:** 2 | **Status:** Complete
+**Progress:** 2/2 plans (100%)
+**Updated:** 2026-04-04
+## v15.0
+
+**Phase:** 83 | **Plan:** 2 | **Status:** Complete
+**Progress:** 2/2 plans (100%)
+**Updated:** 2026-04-04
+## v13.0
+
+**Phase:** 86 | **Plan:** 0 | **Status:** In Progress
+**Progress:** 0/2 plans (0%)
+**Updated:** 2026-04-04
+## v16.0
+
+**Phase:** 87 | **Plan:** 0 | **Status:** In Progress
+**Progress:** 0/1 plans (0%)
+**Updated:** 2026-04-04
