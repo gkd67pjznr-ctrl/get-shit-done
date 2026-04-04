@@ -6,7 +6,7 @@ v10.0 mounts MCP tool endpoints on the existing dashboard server so every Claude
 
 ## Phases
 
-- [ ] **Phase 43: MCP Server Scaffolding and Tools** - Transport, CORS, Origin validation, SDK pin, and all 8 read-only query tools
+- [x] **Phase 43: MCP Server Scaffolding and Tools** - Transport, CORS, Origin validation, SDK pin, and all 8 read-only query tools
 - [ ] **Phase 44: Auto-Configuration and Tests** - Installer writes `~/.claude.json` MCP config; unit + integration tests for all tool handlers
 
 ## Phase Details
@@ -26,7 +26,7 @@ v10.0 mounts MCP tool endpoints on the existing dashboard server so every Claude
 Plans:
 - [x] 43-01: Pin SDK, install, update CORS headers, write `mcp-server.cjs` skeleton, wire `/mcp` route, smoke test
 - [x] 43-02: Implement tools 1-4 (list-projects, get-project-state, get-gate-health, get-observations)
-- [ ] 43-03: Implement tools 5-8 (get-sessions, get-skill-metrics, get-cost-metrics, get-git-status) + E2E verification
+- [x] 43-03: Implement tools 5-8 (get-sessions, get-skill-metrics, get-cost-metrics, get-git-status) + E2E verification
 
 ### Phase 44: Auto-Configuration and Tests
 **Goal**: A fresh `node bin/install.js --claude --global` configures MCP automatically; all tool handlers are covered by fast-running unit tests with no HTTP server required
@@ -50,5 +50,5 @@ Phases execute in order: 43 → 44
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 43. MCP Server Scaffolding and Tools | 2/3 | In progress | - |
+| 43. MCP Server Scaffolding and Tools | 3/3 | Complete | 2026-04-04 |
 | 44. Auto-Configuration and Tests | 0/2 | Not started | - |
