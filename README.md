@@ -1,10 +1,10 @@
 # GSD Enhanced Fork
 
-**Quality enforcement + concurrent milestones + adaptive learning + device-wide dashboard on top of vanilla GSD.**
+**Quality enforcement + concurrent milestones + adaptive learning + signal intelligence on top of vanilla GSD.**
 
 ## What This Fork Is
 
-This is a forked version of [GSD (Get Shit Done)](https://github.com/gsd-build/get-shit-done) that adds quality enforcement, concurrent milestone workspaces, structured tech debt tracking, an adaptive learning layer that improves from corrections, and a device-wide project dashboard. It is designed for solo developers using Claude Code who want stronger guarantees about code quality and an AI assistant that learns from its mistakes.
+This is a forked version of [GSD (Get Shit Done)](https://github.com/gsd-build/get-shit-done) that adds quality enforcement, concurrent milestone workspaces, structured tech debt tracking, an adaptive learning layer that improves from corrections, and a signal intelligence pipeline that extracts actionable insights from observability data. It is designed for solo developers using Claude Code who want stronger guarantees about code quality and an AI assistant that learns from its mistakes and gets smarter over time.
 
 All additions are additive and config-gated — the default quality level (`fast`) produces zero behavioral change from upstream GSD.
 
@@ -24,18 +24,31 @@ See [FORK-GUIDE.md](FORK-GUIDE.md) for installation and usage instructions.
 | Adaptive Observation | v6.0 | Correction capture, preference learning, recall injection, observer agent, skill refinement pipeline |
 | Quality Observability | v7.0 | Gate execution persistence (JSONL), dashboard Gate Health page, gate-to-correction attribution |
 | Close the Loop | v8.0 | Skill feedback loop wired E2E, quality gates via deterministic PostToolUse hooks |
+| Signal Intelligence | v9.0 | Skill analytics pipeline, relevance scoring, session reports, benchmarking, debt impact analysis |
+
+### v9.0 Signal Intelligence (latest)
+
+Extracts actionable signals from existing observability data to measure skill effectiveness and optimize context budget:
+
+- **Skill call tracking** — `skills_loaded` in sessions.jsonl and `skills_active` in gate-executions.jsonl across all 6 workflow files, enabling downstream analytics to attribute outcomes to specific skills
+- **Skill iteration history** — SKILL-HISTORY.md audit trail with unified diffs appended on each refinement, 50-entry rotation with monthly archives, merge=union gitattributes for conflict-free merges
+- **Phase benchmarking** — Per-plan execution metrics (correction count, gate fire count, quality level, duration) written to phase-benchmarks.jsonl, surfaced in `/gsd:digest` with N>=5 sample guard
+- **Debt impact analysis** — `debt impact` CLI subcommand joins DEBT.md entries with corrections.jsonl by component-to-category mapping, ranks by correction count with link_confidence scoring, integrated into `/gsd:fix-debt` for prioritized resolution
+- **Session analytics** — `/gsd:session-report` command surfaces per-session correction density, gate fire count, skills loaded, and benchmark trends via Node.js pre-processing with `--last N` flag
+- **Skill quality metrics** — Per-skill correction rates computed using CATEGORY_SKILL_MAP attribution (not raw co-presence), stored in skill-metrics.json with attribution_confidence tiers (high/medium/low), surfaced in `/gsd:digest`
+- **Skill relevance scoring** — Jaccard keyword overlap between task descriptions and skill descriptions, cold-start floor (0.3 for skills <14 days old), dormancy decay (10% per week of inactivity), MD5 content-hash cache with per-skill invalidation, wired into skill-integration loading protocol
 
 ## Quick Stats
 
 | Dimension | Value |
 |-----------|-------|
-| Milestones shipped | 10 (v1.0 through v8.0) |
-| Tests passing | 979 across 200 suites (36 test files) |
-| Source modules | 15 lib modules (~9K LOC) |
-| Validated requirements | 180+ |
+| Milestones shipped | 11 (v1.0 through v9.0) |
+| Tests passing | 1028+ across 23+ test suites |
+| Source modules | 17 CJS lib modules (~89K LOC total) |
+| Validated requirements | 205+ |
 | Skills | 17 auto-loading SKILL.md files |
 | Hooks | 12 deterministic hook files |
-| Workflows | 35 orchestrator definitions |
+| Workflows | 35+ orchestrator definitions |
 
 ## Getting Started
 
