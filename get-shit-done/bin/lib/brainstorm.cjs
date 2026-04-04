@@ -522,6 +522,165 @@ function cmdBrainstormSelectFinalists(ideas, scores, selectedIds) {
   return { finalists, scores: filteredScores, count: finalists.length };
 }
 
+/**
+ * Create a sequentially numbered output directory under <planningRoot>/quick/.
+ *
+ * @param {string} planningRoot - Absolute path to the planning root directory
+ * @param {string} topic - Topic name used in the directory name
+ * @returns {{ dir: string, number: number }}
+ */
+function cmdBrainstormCreateOutputDir(planningRoot, topic) {
+  const quickDir = path.join(planningRoot, 'quick');
+  fs.mkdirSync(quickDir, { recursive: true });
+
+  // Scan existing subdirectories to find max numeric prefix
+  let maxNum = 0;
+  try {
+    const entries = fs.readdirSync(quickDir);
+    for (const entry of entries) {
+      const match = entry.match(/^(\d+)/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxNum) maxNum = num;
+      }
+    }
+  } catch (_) {
+    // quickDir may be empty or unreadable
+  }
+
+  const nextNum = maxNum + 1;
+  const padded = nextNum < 10 ? `0${nextNum}` : `${nextNum}`;
+
+  // Sanitize topic: lowercase, spaces to hyphens, remove non-alphanumeric/hyphen
+  const sanitized = topic
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '');
+
+  const dirName = `${padded}-brainstorm-${sanitized}`;
+  const dir = path.join(quickDir, dirName);
+  fs.mkdirSync(dir, { recursive: true });
+
+  return { dir, number: nextNum };
+}
+
+/**
+ * Format brainstorm results into three output files:
+ *   - FEATURE-IDEAS.md (finalists by cluster with scores)
+ *   - BRAINSTORM-SESSION.md (full transcript)
+ *   - ideas.jsonl (copy of source)
+ *
+ * @param {Array} clusters - Cluster objects from cmdBrainstormCluster
+ * @param {Array} scores - Score objects from cmdBrainstormScore
+ * @param {Array} finalists - Finalist idea objects from cmdBrainstormSelectFinalists
+ * @param {string} sessionDir - Absolute path to session directory
+ * @param {string} outputDir - Absolute path to output directory
+ * @returns {{ files_written: string[] }}
+ */
+function cmdBrainstormFormatResults(clusters, scores, finalists, sessionDir, outputDir) {
+  const filesWritten = [];
+  const now = new Date().toISOString();
+
+  // Build score lookup map
+  const scoreMap = new Map();
+  for (const s of scores) {
+    scoreMap.set(s.id, s);
+  }
+
+  // Build finalist id set for quick lookup
+  const finalistIds = new Set(finalists.map(f => f.id));
+
+  // Build finalist content map
+  const finalistMap = new Map();
+  for (const f of finalists) {
+    finalistMap.set(f.id, f);
+  }
+
+  // --- File 1: FEATURE-IDEAS.md ---
+  const featureIdeasLines = [
+    '# Feature Ideas',
+    '',
+    `Generated: ${now}`,
+    `Finalist count: ${finalists.length}`,
+    '',
+    '---',
+  ];
+
+  const totalClusters = clusters.length;
+  let clusterIndex = 0;
+  for (const cluster of clusters) {
+    clusterIndex++;
+    // Only include finalist ideas in this cluster
+    const clusterFinalists = cluster.idea_ids
+      .filter(id => finalistIds.has(id))
+      .map(id => finalistMap.get(id))
+      .filter(Boolean);
+
+    // Sort by composite score descending
+    const scoreFor = id => {
+      const s = scoreMap.get(id);
+      return s ? s.composite : 0;
+    };
+    clusterFinalists.sort((a, b) => scoreFor(b.id) - scoreFor(a.id));
+
+    if (clusterFinalists.length === 0) continue;
+
+    featureIdeasLines.push('');
+    featureIdeasLines.push(`## ${cluster.label} (cluster ${clusterIndex} of ${totalClusters})`);
+    featureIdeasLines.push('');
+
+    for (const idea of clusterFinalists) {
+      const s = scoreMap.get(idea.id) || {};
+      featureIdeasLines.push(`### Idea ${idea.id}: ${idea.content}`);
+      featureIdeasLines.push('');
+      featureIdeasLines.push('| Dimension   | Score |');
+      featureIdeasLines.push('|-------------|-------|');
+      featureIdeasLines.push(`| Feasibility | ${s.feasibility != null ? s.feasibility : '-'} |`);
+      featureIdeasLines.push(`| Impact      | ${s.impact != null ? s.impact : '-'} |`);
+      featureIdeasLines.push(`| Alignment   | ${s.alignment != null ? s.alignment : '-'} |`);
+      featureIdeasLines.push(`| Risk        | ${s.risk != null ? s.risk : '-'} |`);
+      featureIdeasLines.push(`| **Composite** | **${s.composite != null ? s.composite : '-'}** |`);
+      featureIdeasLines.push('');
+    }
+  }
+
+  const featureIdeasPath = path.join(outputDir, 'FEATURE-IDEAS.md');
+  fs.writeFileSync(featureIdeasPath, featureIdeasLines.join('\n'), 'utf-8');
+  filesWritten.push(featureIdeasPath);
+
+  // --- File 2: BRAINSTORM-SESSION.md ---
+  const { ideas: allIdeas } = cmdBrainstormReadIdeas(sessionDir);
+  const sessionLines = [
+    '# Brainstorm Session Transcript',
+    '',
+    `Generated: ${now}`,
+    `Total ideas captured: ${allIdeas.length}`,
+    '',
+    '---',
+    '',
+  ];
+
+  for (const idea of allIdeas) {
+    sessionLines.push(`**${idea.id}. ${idea.content}**`);
+    sessionLines.push(`Technique: ${idea.source_technique || '-'} | Lens: ${idea.scamper_lens || '—'} | Perspective: ${idea.perspective || '—'}`);
+    sessionLines.push('');
+  }
+
+  const sessionPath = path.join(outputDir, 'BRAINSTORM-SESSION.md');
+  fs.writeFileSync(sessionPath, sessionLines.join('\n'), 'utf-8');
+  filesWritten.push(sessionPath);
+
+  // --- File 3: ideas.jsonl (copy) ---
+  const sourceJsonl = path.join(sessionDir, 'ideas.jsonl');
+  if (fs.existsSync(sourceJsonl)) {
+    const destJsonl = path.join(outputDir, 'ideas.jsonl');
+    fs.copyFileSync(sourceJsonl, destJsonl);
+    filesWritten.push(destJsonl);
+  }
+
+  return { files_written: filesWritten };
+}
+
 module.exports = {
   cmdBrainstormCheckEval,
   cmdBrainstormAppendIdea,
@@ -536,4 +695,6 @@ module.exports = {
   cmdBrainstormCluster,
   cmdBrainstormScore,
   cmdBrainstormSelectFinalists,
+  cmdBrainstormCreateOutputDir,
+  cmdBrainstormFormatResults,
 };
