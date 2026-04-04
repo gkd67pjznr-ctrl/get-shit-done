@@ -645,8 +645,59 @@ async function main() {
       } else if (subcommand === 'build-seed-brief') {
         const planningRoot = args[2];
         output(brainstorm.cmdBrainstormBuildSeedBrief(planningRoot), raw);
+      } else if (subcommand === 'cluster') {
+        const sessionDir = args[2];
+        const { ideas } = brainstorm.cmdBrainstormReadIdeas(sessionDir);
+        output(brainstorm.cmdBrainstormCluster(ideas), raw);
+      } else if (subcommand === 'score') {
+        const sessionDir = args[2];
+        const ideaId = parseInt(args[3], 10);
+        const feasibility = parseInt(args[4], 10);
+        const impact = parseInt(args[5], 10);
+        const alignment = parseInt(args[6], 10);
+        const risk = parseInt(args[7], 10);
+        const { ideas } = brainstorm.cmdBrainstormReadIdeas(sessionDir);
+        const idea = ideas.find(i => i.id === ideaId);
+        if (!idea) { error(`Idea ${ideaId} not found in ${sessionDir}`); break; }
+        output(brainstorm.cmdBrainstormScore(idea, { feasibility, impact, alignment, risk }), raw);
+      } else if (subcommand === 'select-finalists') {
+        const sessionDir = args[2];
+        const idsIdx = args.indexOf('--ids');
+        const idsStr = idsIdx !== -1 ? args[idsIdx + 1] : '';
+        const selectedIds = idsStr ? idsStr.split(',').map(Number) : [];
+        const scoresFileIdx = args.indexOf('--scores-file');
+        const scoresFile = scoresFileIdx !== -1 ? args[scoresFileIdx + 1] : null;
+        const scores = scoresFile && fs.existsSync(scoresFile)
+          ? JSON.parse(fs.readFileSync(scoresFile, 'utf-8'))
+          : [];
+        const { ideas } = brainstorm.cmdBrainstormReadIdeas(sessionDir);
+        output(brainstorm.cmdBrainstormSelectFinalists(ideas, scores, selectedIds), raw);
+      } else if (subcommand === 'create-output-dir') {
+        const planningRootIdx = args.indexOf('--planning-root');
+        const planningRoot = planningRootIdx !== -1 ? args[planningRootIdx + 1] : cwd + '/.planning';
+        const topicIdx = args.indexOf('--topic');
+        const topic = topicIdx !== -1 ? args[topicIdx + 1] : 'session';
+        output(brainstorm.cmdBrainstormCreateOutputDir(planningRoot, topic), raw);
+      } else if (subcommand === 'format-results') {
+        const sessionDir = args[2];
+        const outputDirArg = args.indexOf('--output-dir');
+        const outputDir = outputDirArg !== -1 ? args[outputDirArg + 1] : null;
+        if (!outputDir) { error('format-results requires --output-dir'); break; }
+        const clustersFileIdx = args.indexOf('--clusters-file');
+        const scoresFileIdx = args.indexOf('--scores-file');
+        const finalistsFileIdx = args.indexOf('--finalists-file');
+        const clusters = clustersFileIdx !== -1 && fs.existsSync(args[clustersFileIdx + 1])
+          ? JSON.parse(fs.readFileSync(args[clustersFileIdx + 1], 'utf-8'))
+          : [];
+        const scores = scoresFileIdx !== -1 && fs.existsSync(args[scoresFileIdx + 1])
+          ? JSON.parse(fs.readFileSync(args[scoresFileIdx + 1], 'utf-8'))
+          : [];
+        const finalists = finalistsFileIdx !== -1 && fs.existsSync(args[finalistsFileIdx + 1])
+          ? JSON.parse(fs.readFileSync(args[finalistsFileIdx + 1], 'utf-8'))
+          : [];
+        output(brainstorm.cmdBrainstormFormatResults(clusters, scores, finalists, sessionDir, outputDir), raw);
       } else {
-        error('Unknown brainstorm subcommand. Available: check-eval, append-idea, read-ideas, scamper-lens, scamper-complete, check-floor, get-perspective, random-perspectives, check-saturation, build-seed-brief');
+        error('Unknown brainstorm subcommand. Available: check-eval, append-idea, read-ideas, scamper-lens, scamper-complete, check-floor, get-perspective, random-perspectives, check-saturation, build-seed-brief, cluster, score, select-finalists, create-output-dir, format-results');
       }
       break;
     }
