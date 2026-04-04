@@ -9,7 +9,7 @@ Three targeted quality enforcement additions: a deterministic ESLint MCP gate th
 ## Phases
 
 - [x] **Phase 50: ESLint Gate** - Wire ESLint MCP as a PostToolUse quality gate on .ts/.js/.cjs writes
-- [ ] **Phase 51: Transition Guards** - Parse and mechanically verify DONE criteria before phase completion
+- [x] **Phase 51: Transition Guards** - Parse and mechanically verify DONE criteria before phase completion
 - [ ] **Phase 52: Test Trending** - Track test count per plan and surface delta in progress/digest
 
 ## Phase Details
@@ -43,9 +43,9 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 51-01: DONE criteria parser — extract assertions from `<done>` tags in PLAN.md files
-- [ ] 51-02: Verification engine — check file-exists, grep-for-export, and test-execution assertions
-- [ ] 51-03: Integrate guards into verify_phase_goal with quality-level gating and human-check surfacing
+- [x] 51-01: DONE criteria parser — extract assertions from `<done>` tags in PLAN.md files
+- [x] 51-02: Verification engine — check file-exists, grep-for-export, and test-execution assertions
+- [x] 51-03: Integrate guards into verify_phase_goal with quality-level gating and human-check surfacing
 
 ### Phase 52: Test Trending
 **Goal**: Test count is tracked at plan completion and surfaced as a delta so regressions and growth are visible in progress and digest output
@@ -66,6 +66,6 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 50. ESLint Gate | 2/2 | Complete | 2026-04-04 |
-| 51. Transition Guards | 0/3 | Not started | - |
+| 50. ESLint Gate | 2/2 | Complete    | 2026-04-04 |
+| 51. Transition Guards | 3/3 | Complete    | 2026-04-04 |
 | 52. Test Trending | 0/2 | Not started | - |

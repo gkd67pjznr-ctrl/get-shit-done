@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v11.0
-milestone_name: Wild Brainstorming Engine
-status: in_progress
-stopped_at: 46-02 complete — createOutputDir, formatResults, CLI wiring for all 5 Phase 46 functions, 68 brainstorm tests passing.
-last_updated: "2026-04-04T14:00:00.000Z"
-last_activity: "2026-04-04 — 46-02 complete: createOutputDir, formatResults output functions + full CLI wiring, 68 brainstorm tests passing"
+milestone: v1.0
+milestone_name: milestone
+status: executing
+stopped_at: 47-01 complete — brainstorm.md workflow file with all 9 steps (parse_args, seed, expand_freeform, expand_scamper, expand_starburst, expand_perspectives, check_saturation, converge, output). All 14 CLI subcommands referenced with correct positional arg shapes. Context blinding enforced.
+last_updated: "2026-04-04T13:37:52.000Z"
+last_activity: "2026-04-04 — 47-01 complete: brainstorm workflow file 9 steps, 473 lines, all structural checks pass"
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 2
-  completed_plans: 2
+  completed_plans: 1
   percent: 75
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-04)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 46 — Converge and Output (both plans complete, phase complete)
+**Current focus:** Phase 47 — Workflow and Command (47-01 complete, 47-02 next)
 
 ## Current Position
 
-Phase: 46 (Converge and Output)
-Plan: 2 completed (46-01, 46-02) — phase complete
+Phase: 47 (Workflow and Command)
+Plan: 47-01 complete, 47-02 next
 Status: In Progress
-Last activity: 2026-04-04 — 46-02 complete: createOutputDir/formatResults output functions + CLI wiring, 68 brainstorm tests passing
+Last activity: 2026-04-04 — 47-01 complete: brainstorm.md workflow file, 9 steps, all 14 CLI subcommands, context blinding enforced
 
 Progress: [███████░░░] 75%
 
@@ -78,6 +78,10 @@ Recent decisions affecting current work:
 - All brainstorm analysis reads from JSONL via cmdBrainstormReadIdeas — single read path
 - Seed brief builder returns sources array for auditability — populated only on successful file reads
 - output() imported from core.cjs in gsd-tools.cjs to unify brainstorm namespace output with debt/roadmap pattern
+- Brainstorm workflow file is Markdown instruction (not CJS) — Claude reads and executes step-by-step when /gsd:brainstorm is invoked
+- check_saturation step is a subroutine called inline after each expand technique — not a standalone interactive step
+- LENS_IDEA_COUNT and ANGLE_COUNT reset to 0 per-unit (not cumulative) to enforce per-lens and per-angle floors
+- WILD_FLAG is an empty string or --wild — passed positionally to check-eval, check-floor, and random-perspectives
 
 ### Pending Todos
 
@@ -90,5 +94,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-04
-Stopped at: 46-02 complete — output functions (createOutputDir, formatResults) + CLI wiring for all 5 Phase 46 converge functions. Phase 46 complete. 68 brainstorm tests passing.
+Stopped at: 47-01 complete — brainstorm.md workflow file (get-shit-done/workflows/brainstorm.md), 9 steps, all 14 CLI subcommands, context blinding, WILD_FLAG propagation. Next: 47-02 (command file /gsd:brainstorm).
 Resume file: None
