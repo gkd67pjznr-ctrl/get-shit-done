@@ -314,6 +314,142 @@ describe('debt commands', () => {
     });
   });
 
+  // ─── debt impact ──────────────────────────────────────────────────────────
+
+  describe('debt impact', () => {
+    test('debt impact outputs ranked entries with link_confidence', () => {
+      // Create DEBT.md via debt log calls
+      runGsdTools(
+        'debt log --type code --severity high --component state.cjs --description "State parser issue" --logged-by test --source-phase 37 --source-plan 37-01',
+        tmpDir
+      );
+      runGsdTools(
+        'debt log --type test --severity medium --component debt.cjs --description "Debt test coverage" --logged-by test --source-phase 16 --source-plan 16-01',
+        tmpDir
+      );
+
+      // Create .planning/patterns/corrections.jsonl with 3 entries all having phase: 37
+      const patternsDir = path.join(tmpDir, '.planning', 'patterns');
+      fs.mkdirSync(patternsDir, { recursive: true });
+      const corrections = [
+        { phase: 37, retired_at: null, diagnosis_category: 'logic', component: 'state.cjs' },
+        { phase: 37, retired_at: null, diagnosis_category: 'logic', component: 'state.cjs' },
+        { phase: 37, retired_at: null, diagnosis_category: 'test', component: 'state.cjs' },
+      ];
+      fs.writeFileSync(
+        path.join(patternsDir, 'corrections.jsonl'),
+        corrections.map(c => JSON.stringify(c)).join('\n') + '\n',
+        'utf-8'
+      );
+
+      const result = runGsdTools('debt impact --raw', tmpDir);
+      assert.ok(result.success, `Command failed: ${result.error}`);
+      const out = JSON.parse(result.output);
+
+      const entries = Array.isArray(out) ? out : out.entries;
+      assert.ok(Array.isArray(entries), 'result should have entries array');
+      assert.ok(entries.length >= 2, 'should have at least 2 entries');
+
+      // TD-001 has source_phase 37 — 3 corrections match → high
+      const first = entries[0];
+      assert.strictEqual(first.id, 'TD-001', 'first entry should be TD-001 (3 corrections)');
+      assert.strictEqual(first.link_confidence, 'high', 'TD-001 should have high confidence');
+
+      // TD-002 has source_phase 16 — no matching corrections → low
+      const second = entries[1];
+      assert.strictEqual(second.id, 'TD-002', 'second entry should be TD-002');
+      assert.strictEqual(second.link_confidence, 'low', 'TD-002 should have low confidence');
+    });
+
+    test('debt impact link_confidence is medium for 1-2 corrections', () => {
+      runGsdTools(
+        'debt log --type code --severity high --component state.cjs --description "State parser issue" --logged-by test --source-phase 37 --source-plan 37-01',
+        tmpDir
+      );
+
+      const patternsDir = path.join(tmpDir, '.planning', 'patterns');
+      fs.mkdirSync(patternsDir, { recursive: true });
+      const corrections = [
+        { phase: 37, retired_at: null, diagnosis_category: 'logic', component: null },
+        { phase: 37, retired_at: null, diagnosis_category: 'test', component: null },
+      ];
+      fs.writeFileSync(
+        path.join(patternsDir, 'corrections.jsonl'),
+        corrections.map(c => JSON.stringify(c)).join('\n') + '\n',
+        'utf-8'
+      );
+
+      const result = runGsdTools('debt impact --raw', tmpDir);
+      assert.ok(result.success, `Command failed: ${result.error}`);
+      const out = JSON.parse(result.output);
+      const entries = Array.isArray(out) ? out : out.entries;
+      assert.strictEqual(entries[0].link_confidence, 'medium', 'should be medium for 2 corrections');
+    });
+
+    test('debt impact entries sorted by correction_count descending', () => {
+      // TD-001: source_phase 37 (1 match), TD-002: source_phase 16 (3 matches)
+      runGsdTools(
+        'debt log --type code --severity high --component state.cjs --description "State issue" --logged-by test --source-phase 37 --source-plan 37-01',
+        tmpDir
+      );
+      runGsdTools(
+        'debt log --type test --severity medium --component debt.cjs --description "Debt coverage" --logged-by test --source-phase 16 --source-plan 16-01',
+        tmpDir
+      );
+
+      const patternsDir = path.join(tmpDir, '.planning', 'patterns');
+      fs.mkdirSync(patternsDir, { recursive: true });
+      const corrections = [
+        { phase: 37, retired_at: null, diagnosis_category: 'logic', component: null },
+        { phase: 16, retired_at: null, diagnosis_category: 'logic', component: null },
+        { phase: 16, retired_at: null, diagnosis_category: 'test', component: null },
+        { phase: 16, retired_at: null, diagnosis_category: 'arch', component: null },
+      ];
+      fs.writeFileSync(
+        path.join(patternsDir, 'corrections.jsonl'),
+        corrections.map(c => JSON.stringify(c)).join('\n') + '\n',
+        'utf-8'
+      );
+
+      const result = runGsdTools('debt impact --raw', tmpDir);
+      assert.ok(result.success, `Command failed: ${result.error}`);
+      const out = JSON.parse(result.output);
+      const entries = Array.isArray(out) ? out : out.entries;
+
+      // TD-002 has 3 corrections (phase 16), TD-001 has 1 correction (phase 37)
+      assert.strictEqual(entries[0].id, 'TD-002', 'TD-002 should be first (3 corrections)');
+      assert.strictEqual(entries[1].id, 'TD-001', 'TD-001 should be second (1 correction)');
+    });
+
+    test('debt impact returns empty array when DEBT.md missing', () => {
+      const result = runGsdTools('debt impact --raw', tmpDir);
+      assert.ok(result.success, `Command should exit 0, got: ${result.error}`);
+      const out = JSON.parse(result.output);
+      // Accept either [] or { entries: [], total: 0 }
+      if (Array.isArray(out)) {
+        assert.strictEqual(out.length, 0, 'should be empty array');
+      } else {
+        assert.deepStrictEqual(out.entries, [], 'entries should be empty');
+        assert.strictEqual(out.total, 0, 'total should be 0');
+      }
+    });
+
+    test('debt impact is read-only (does not modify DEBT.md)', () => {
+      runGsdTools(
+        'debt log --type code --severity high --component state.cjs --description "State issue" --logged-by test --source-phase 37 --source-plan 37-01',
+        tmpDir
+      );
+
+      const debtPath = path.join(tmpDir, '.planning', 'DEBT.md');
+      const contentBefore = fs.readFileSync(debtPath, 'utf-8');
+
+      runGsdTools('debt impact --raw', tmpDir);
+
+      const contentAfter = fs.readFileSync(debtPath, 'utf-8');
+      assert.strictEqual(contentAfter, contentBefore, 'DEBT.md should not be modified by debt impact');
+    });
+  });
+
   // ─── getNextDebtId edge cases ───────────────────────────────────────────────
 
   describe('getNextDebtId edge cases', () => {
