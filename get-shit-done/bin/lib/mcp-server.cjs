@@ -1,5 +1,7 @@
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
 const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
 const { StreamableHTTPServerTransport } = require('@modelcontextprotocol/sdk/server/streamableHttp.js');
 const { z } = require('zod');
@@ -29,6 +31,39 @@ async function readBody(req) {
     });
     req.on('error', reject);
   });
+}
+
+/**
+ * Read gate health for a single project path.
+ * Returns { totalExecutions, outcomes, gates } or null if no data.
+ */
+function readProjectGateHealth(projectPath) {
+  const gateFile = path.join(projectPath, '.planning', 'observations', 'gate-executions.jsonl');
+  const VALID_GATES = ['codebase_scan', 'context7_lookup', 'test_baseline', 'test_gate', 'diff_review'];
+  const VALID_OUTCOMES = ['passed', 'warned', 'blocked', 'skipped'];
+  const outcomes = { passed: 0, warned: 0, blocked: 0, skipped: 0 };
+  const gates = {};
+  for (const g of VALID_GATES) gates[g] = { total: 0, passed: 0, warned: 0, blocked: 0, skipped: 0 };
+  let totalExecutions = 0;
+
+  let lines;
+  try {
+    lines = fs.readFileSync(gateFile, 'utf-8').trim().split('\n').filter(Boolean);
+  } catch {
+    return null;
+  }
+
+  for (const line of lines) {
+    let entry;
+    try { entry = JSON.parse(line); } catch { continue; }
+    if (!VALID_GATES.includes(entry.gate) || !VALID_OUTCOMES.includes(entry.outcome)) continue;
+    outcomes[entry.outcome]++;
+    gates[entry.gate].total++;
+    gates[entry.gate][entry.outcome]++;
+    totalExecutions++;
+  }
+
+  return { totalExecutions, outcomes, gates };
 }
 
 /**
