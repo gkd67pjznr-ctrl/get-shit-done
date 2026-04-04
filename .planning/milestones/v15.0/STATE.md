@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Plan 81-01 complete — revert subcommand + gate-fail flags committed at 366cd6b
-last_updated: "2026-04-04T13:58:49.555Z"
-last_activity: "2026-04-04 — Plan 81-01 executed: revertAutoApply(), auto_apply_failed flags, revert command doc, 7 integration tests"
+status: in_progress
+stopped_at: Plan 82-01 complete — generateReviewProfile module + 8 tests committed at 92aa705
+last_updated: "2026-04-04T00:00:00.000Z"
+last_activity: "2026-04-04 — Plan 82-01 executed: review-profile.cjs with generateReviewProfile(), 8 unit tests (all pass)"
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 3
-  completed_plans: 3
-  percent: 40
+  total_plans: 4
+  completed_plans: 4
+  percent: 60
 ---
 
 # Project State — Milestone v15.0 Autonomous Learning
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-04)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 81 — Auto-Apply User Control (COMPLETE — plan 81-01 done)
+**Current focus:** Phase 82 — Adaptive Review Profiles (plan 82-01 done)
 
 ## Current Position
 
-Phase: 81 of 4 (Auto-Apply User Control)
-Plan: 1 of 1 in current phase
-Status: Complete — Phase 81 plan 81-01 done
-Last activity: 2026-04-04 — Plan 81-01 executed: revertAutoApply(), auto_apply_failed flags, revert command doc, 7 integration tests
+Phase: 82 of 4 (Adaptive Review Profiles)
+Plan: 1 of 1 in current phase (plan 82-01 done)
+Status: In progress — Phase 82 plan 82-01 done; awaiting further plans if any
+Last activity: 2026-04-04 — Plan 82-01 executed: review-profile.cjs with generateReviewProfile(), 8 unit tests (all pass)
 
 Progress: [████░░░░░░] 40%
 
@@ -64,6 +64,7 @@ Recent decisions affecting current work:
 - Plan 80-02: .planning/config.json is gitignored and not tracked — config change documented but not committed
 - Plan 81-01: revertAutoApply appends audit entry inline (no import from auto-apply.cjs) to avoid circular dependency
 - Plan 81-01: test file placed at tests/ (project convention) rather than src/tests/ (plan spec) — src/tests/ does not exist
+- Plan 82-01: VALID_CATEGORIES defined inline in review-profile.cjs (not imported from write-correction.cjs) as write-correction.cjs does not export that set from module.exports
 
 ### Pending Todos
 
@@ -76,6 +77,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-04
-Stopped at: Plan 81-01 complete — revert subcommand + gate-fail flags committed at 366cd6b
+Stopped at: Plan 82-01 complete — generateReviewProfile module + 8 tests committed at 92aa705
 Resume file: None
-Next: Phase 82 (/gsd:settings auto_apply toggle)
+Next: Phase 82 continued (if additional plans exist) or Phase 83

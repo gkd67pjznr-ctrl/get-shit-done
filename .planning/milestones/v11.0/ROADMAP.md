@@ -11,7 +11,7 @@ v11.0 builds a mechanical brainstorming engine that enforces divergent thinking 
 - [x] **Phase 45: Enforcement Core** - brainstorm.cjs with eval detection, append-only store, SCAMPER cycling, quantity floors, saturation detection, and seed brief builder (completed 2026-04-04)
 - [x] **Phase 46: Converge and Output** - converge.cjs with clustering, scoring, ranking, user finalist selection, and all 4 output artifacts (completed 2026-04-04)
 - [x] **Phase 47: Workflow and Command** - brainstorm.md 3-stage pipeline, interactive expand techniques, perspective shifts, saturation handling, --wild flag, and /gsd:brainstorm command (completed 2026-04-04)
-- [ ] **Phase 48: Data-Driven Seeding** - --from-corrections, --from-debt, --for-milestone flags, prior FEATURE-IDEAS.md anti-retreading
+- [x] **Phase 48: Data-Driven Seeding** - --from-corrections, --from-debt, --for-milestone flags, prior FEATURE-IDEAS.md anti-retreading (completed 2026-04-04)
 - [ ] **Phase 49: History and Traceability** - session metadata tracking, idea-to-phase links, /gsd:new-milestone seed context integration
 
 ## Phase Details
@@ -81,5 +81,5 @@ v11.0 builds a mechanical brainstorming engine that enforces divergent thinking 
 | 45. Enforcement Core | 3/3 | Complete    | 2026-04-04 |
 | 46. Converge and Output | 2/2 | Complete    | 2026-04-04 |
 | 47. Workflow and Command | 2/2 | Complete    | 2026-04-04 |
-| 48. Data-Driven Seeding | 1/2 | In Progress|  |
-| 49. History and Traceability | 0/TBD | Not started | - |
+| 48. Data-Driven Seeding | 1/2 | Complete    | 2026-04-04 |
+| 49. History and Traceability | 1/2 | In Progress|  |

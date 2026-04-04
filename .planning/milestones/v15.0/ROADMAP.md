@@ -13,7 +13,7 @@ Close the gap between "captures data" and "acts on it." This milestone delivers 
 
 - [x] **Phase 80: Auto-Apply Safety Engine** - Core auto-apply logic with all safety guardrails (confidence gate, rate limiting, high-performer skip, audit log)
 - [x] **Phase 81: Auto-Apply User Control** - Revert command and manual fallback surface for failed auto-apply checks (completed 2026-04-04)
-- [ ] **Phase 82: Adaptive Review Profiles** - Per-project review profile generation, storage, and code-review skill integration
+- [ ] **Phase 82: Adaptive Review Profiles** - Per-project review profile generation, storage, and code-review skill integration (82-01 done 2026-04-04)
 - [ ] **Phase 83: Decision Audit Trail** - Decision tension detection via Jaccard matching and digest surfacing
 
 ## Phase Details
@@ -44,7 +44,7 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 81-01: Add revert subcommand to refine-skill and implement manual-suggestion fallback for failed auto-apply checks
+- [x] 81-01: Add revert subcommand to refine-skill and implement manual-suggestion fallback for failed auto-apply checks
 
 ### Phase 82: Adaptive Review Profiles
 **Goal**: Code review focus adapts per-project based on what Claude has historically gotten wrong, so reviews emphasize the areas that matter most
@@ -58,7 +58,7 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 82-01: Implement review profile generator (corrections.jsonl → review-profile.json) with 10-correction minimum guard
+- [x] 82-01: Implement review profile generator (corrections.jsonl → review-profile.json) with 10-correction minimum guard
 - [ ] 82-02: Update code-review skill to read review-profile.json and wire session-start hook refresh
 
 ### Phase 83: Decision Audit Trail
@@ -85,5 +85,5 @@ Phases execute in numeric order: 80 → 81 → 82 → 83
 |-------|----------------|--------|-----------|
 | 80. Auto-Apply Safety Engine | 2/2 | Complete    | 2026-04-04 |
 | 81. Auto-Apply User Control | 1/1 | Complete    | 2026-04-04 |
-| 82. Adaptive Review Profiles | 0/2 | Not started | - |
+| 82. Adaptive Review Profiles | 1/2 | In progress | - |
 | 83. Decision Audit Trail | 0/2 | Not started | - |

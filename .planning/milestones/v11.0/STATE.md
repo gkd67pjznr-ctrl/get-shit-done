@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: "48-02 complete — workflow seed stage displays excluded sources, 7 new source-filtering tests, 75/75 pass."
-last_updated: "2026-04-04T00:08:00.000Z"
-last_activity: "2026-04-04 — 48-02 complete: workflow seed step updated, 7 source-filtering tests added, 75/75 tests pass"
+stopped_at: 49-01 complete — session index and idea tagging, 5 CLI sub-commands, 87/87 tests pass.
+last_updated: "2026-04-04T14:30:00.000Z"
+last_activity: "2026-04-04 — 49-01 complete: HIST-01 and HIST-02 satisfied, 12 new tests, 87 total pass"
 progress:
   total_phases: 4
-  completed_phases: 1
-  total_plans: 3
-  completed_plans: 2
+  completed_phases: 2
+  total_plans: 4
+  completed_plans: 3
   percent: 100
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-04)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 48 plans 01 and 02 complete. SEED-01 through SEED-05 satisfied. Workflow and tests complete.
+**Current focus:** Phase 49 plan 01 complete. HIST-01 and HIST-02 satisfied. Session history and idea-to-phase traceability implemented.
 
 ## Current Position
 
-Phase: 48 (Data-Driven Seeding) — IN PROGRESS
-Plan: 48-02 complete
-Status: Plans 48-01 and 48-02 done
-Last activity: 2026-04-04 — 48-02 complete: workflow seed step updated, 7 source-filtering tests added, 75/75 tests pass
+Phase: 49 (History and Traceability) — IN PROGRESS
+Plan: 49-01 complete
+Status: Plan 49-01 done — HIST-01 and HIST-02 satisfied
+Last activity: 2026-04-04 — 49-01 complete: session index and idea tagging, 5 CLI sub-commands, 87/87 tests pass
 
 Progress: [██████████] 100% (Phase 48, plan 01)
 
@@ -88,6 +88,11 @@ Recent decisions affecting current work:
 - build-seed-brief CLI flag cascade: forMilestone > both flags > single flag > no flags (all sources)
 - Workflow seed stage shows excluded-source note only when excluded is non-empty (conditional display)
 - Source-filtering test assertions use deepStrictEqual against SOURCE_NAMES key order: corrections, sessions, debt, priorIdeas
+- cmdBrainstormLogSession appends JSONL to brainstorm-sessions.jsonl, reads back to count lines for session_count
+- cmdBrainstormTagIdea updates existing Implemented entries in-place using regex scoped to section (no duplicates)
+- cmdBrainstormListImplemented scans quick/ subdirs for FEATURE-IDEAS.md with ## Implemented section
+- cmdBrainstormRecentIdeas uses fs.statSync mtime for recency filtering against Date.now() cutoff
+- All history functions return graceful empty values when files/dirs absent (no throws)
 
 ### Pending Todos
 
