@@ -71,4 +71,4 @@ Phases execute in order: 84 → 85 → 86
 |-------|----------------|--------|-----------|
 | 84. Event Journaling | 3/3 | Complete    | 2026-04-04 |
 | 85. Context Budget Optimizer | 1/1 | Complete    | 2026-04-04 |
-| 86. MCP Server Selection | 2/2 | Complete    | 2026-04-04 |
+| 86. MCP Server Selection | 2/2 | Complete   | 2026-04-04 |
