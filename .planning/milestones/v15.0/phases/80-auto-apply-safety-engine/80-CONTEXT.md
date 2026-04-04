@@ -44,7 +44,6 @@ High-confidence skill refinements apply automatically without human intervention
 - Add `auto_apply: false` directly under `adaptive_learning` in config.json (boolean, default false)
 - Installer (install.cjs) auto-adds the key with default false during config migration
 - Missing key treated as false — feature is completely off unless explicitly enabled
-- `/gsd:settings` exposes auto_apply as a toggle alongside quality level
 - Session start notification: when auto-applied.jsonl has new entries since last session, show brief summary with skill names, suggestion IDs, confidence scores, and revert instructions
 
 ### Claude's Discretion
@@ -74,7 +73,7 @@ High-confidence skill refinements apply automatically without human intervention
 - SessionEnd hook (`gsd-analyze-patterns.cjs`): Auto-apply module called after analyze-patterns completes
 - Session start hook (`gsd-recall-corrections.cjs`): Extend to surface auto-apply notifications
 - `install.cjs`: Config migration to add auto_apply key
-- `/gsd:settings` command: Add auto_apply toggle display and modification
+- `/gsd:settings` command: Deferred to Phase 81 (see Deferred Ideas)
 
 </code_context>
 
@@ -88,7 +87,7 @@ No specific requirements — open to standard approaches
 <deferred>
 ## Deferred Ideas
 
-None — discussion stayed within phase scope
+- `/gsd:settings` auto_apply toggle — deferred to Phase 81 alongside the revert command (same user-facing control surface)
 
 </deferred>
 
