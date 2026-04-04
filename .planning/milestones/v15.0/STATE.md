@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Plan 82-02 complete — code-review skill + session-hook refresh + 2 integration tests committed at f1bf404
-last_updated: "2026-04-04T14:31:54.024Z"
-last_activity: "2026-04-04 — Plan 82-02 executed: Adaptive Review Focus in code-review SKILL.md, generateReviewProfile wired into gsd-recall-corrections.cjs, 2 integration tests (10 total pass)"
+stopped_at: Plan 83-01 complete — decision-audit.cjs (3 exports) + 13 tests committed at 5ca44cc
+last_updated: "2026-04-04T15:00:00.000Z"
+last_activity: "2026-04-04 — Plan 83-01 executed: parseDecisions, matchCorrectionsToDecision, detectTensions in decision-audit.cjs; 13 tests pass; 35 decisions parsed from live PROJECT.md"
 progress:
   total_phases: 0
   completed_phases: 0
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-04-04)
 
 ## Current Position
 
-Phase: 82 of 4 (Adaptive Review Profiles — COMPLETE)
-Plan: 82-02 done (phase complete)
-Status: Phase 82 complete — ready for Phase 83 or milestone close
-Last activity: 2026-04-04 — Plan 82-02 executed: Adaptive Review Focus in code-review SKILL.md, generateReviewProfile wired into gsd-recall-corrections.cjs, 2 integration tests (10 total pass)
+Phase: 83 of 4 (Decision Audit Trail — IN PROGRESS)
+Plan: 83-01 done (plan 1 of 2 complete)
+Status: Plan 83-01 complete — decision-audit.cjs implemented and tested; ready for 83-02
+Last activity: 2026-04-04 — Plan 83-01 executed: parseDecisions, matchCorrectionsToDecision, detectTensions in decision-audit.cjs; 13 tests pass; 35 decisions parsed from live PROJECT.md
 
 Progress: [███████░░░] 75%
 
@@ -70,6 +70,8 @@ Recent decisions affecting current work:
 - Plan 82-02: SKILL.md instructs Claude to read review-profile.json at review time — skill stays stateless, profile always fresh
 - Plan 82-02: Profile refresh inserted before body += '\n</system-reminder>' — cannot contaminate session output
 - Plan 82-02: Integration tests use execSync with { cwd: tmp } — hook's process.cwd() resolves to fixture dir, no CLI flag needed
+- Plan 83-01: .claude/ is in .gitignore — new hook lib files require `git add -f`; existing tracked files set the precedent
+- Plan 83-01: detectTensions returned 1 real tension against live project data (35 decisions, active corrections present) — system working correctly
 
 ### Pending Todos
 
@@ -82,6 +84,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-04
-Stopped at: Plan 82-02 complete — code-review skill + session-hook refresh + 2 integration tests committed at f1bf404
+Stopped at: Plan 83-01 complete — decision-audit.cjs (3 exports) + 13 tests committed at 5ca44cc
 Resume file: None
-Next: Phase 83 or milestone v15.0 completion check
+Next: Plan 83-02 — surface decision tensions in /gsd:digest with evidence formatting
