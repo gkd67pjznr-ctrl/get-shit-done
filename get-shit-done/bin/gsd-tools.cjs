@@ -130,6 +130,7 @@
  *     --quality-level <level>
  *     [--duration Xmin]
  *     [--milestone <version>]
+ *     [--test-count N]       Current total test count (integer)
  *   state update-progress              Recalculate progress bar
  *   state add-decision --summary "..."  Add decision to STATE.md
  *     [--phase N] [--rationale "..."]
@@ -306,6 +307,7 @@ async function main() {
         const qualityIdx = args.indexOf('--quality-level');
         const durationIdx = args.indexOf('--duration');
         const milestoneIdx = args.indexOf('--milestone');
+        const testCountIdx = args.indexOf('--test-count');
         benchmark.cmdBenchmarkPlan(cwd, {
           phase: phaseIdx !== -1 ? args[phaseIdx + 1] : null,
           plan: planIdx !== -1 ? args[planIdx + 1] : null,
@@ -313,6 +315,7 @@ async function main() {
           quality_level: qualityIdx !== -1 ? args[qualityIdx + 1] : null,
           duration_min: durationIdx !== -1 ? args[durationIdx + 1] : null,
           milestone_scope: milestoneIdx !== -1 ? args[milestoneIdx + 1] : (milestoneScope || null),
+          test_count: testCountIdx !== -1 ? args[testCountIdx + 1] : null,
         }, raw);
       } else {
         state.cmdStateLoad(cwd, raw);
