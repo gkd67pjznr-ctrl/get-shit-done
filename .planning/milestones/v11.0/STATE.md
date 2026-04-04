@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-04-04)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 45 — Enforcement Core
+**Current focus:** Phase 45 — Enforcement Core (COMPLETE)
 
 ## Current Position
 
 Phase: 45 of 5 (Enforcement Core)
-Plan: 2 completed (45-01, 45-02), ready for 45-03
-Status: In progress
-Last activity: 2026-04-04 — 45-02 complete: SCAMPER cycling, quantity floors, saturation detection, 33 tests pass
+Plan: 3 completed (45-01, 45-02, 45-03) — phase complete
+Status: Complete
+Last activity: 2026-04-04 — 45-03 complete: seed brief builder, full CLI namespace (10 sub-commands), 36 tests passing
 
-Progress: [██░░░░░░░░] 20%
+Progress: [████░░░░░░] 40%
 
 ## Performance Metrics
 
@@ -53,6 +53,8 @@ Recent decisions affecting current work:
 - velocity=null (not 0) when < 2 ideas — distinguishes no-data from measured zero
 - randomPerspectives caps at 7 silently — no error for count > PERSPECTIVES.length
 - All brainstorm analysis reads from JSONL via cmdBrainstormReadIdeas — single read path
+- Seed brief builder returns sources array for auditability — populated only on successful file reads
+- output() imported from core.cjs in gsd-tools.cjs to unify brainstorm namespace output with debt/roadmap pattern
 
 ### Pending Todos
 
@@ -65,5 +67,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-04
-Stopped at: 45-02 complete — SCAMPER cycling, quantity floors, saturation detection, perspective helpers. 33 tests passing. Ready for 45-03.
+Stopped at: 45-03 complete — seed brief builder (context blinding enforced), full brainstorm CLI namespace (10 sub-commands wired), 36 brainstorm tests passing. Phase 45 complete.
 Resume file: None

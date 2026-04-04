@@ -8,7 +8,7 @@ v11.0 builds a mechanical brainstorming engine that enforces divergent thinking 
 
 ## Phases
 
-- [ ] **Phase 45: Enforcement Core** - brainstorm.cjs with eval detection, append-only store, SCAMPER cycling, quantity floors, saturation detection, and seed brief builder
+- [x] **Phase 45: Enforcement Core** - brainstorm.cjs with eval detection, append-only store, SCAMPER cycling, quantity floors, saturation detection, and seed brief builder (completed 2026-04-04)
 - [ ] **Phase 46: Converge and Output** - converge.cjs with clustering, scoring, ranking, user finalist selection, and all 4 output artifacts
 - [ ] **Phase 47: Workflow and Command** - brainstorm.md 3-stage pipeline, interactive expand techniques, perspective shifts, saturation handling, --wild flag, and /gsd:brainstorm command
 - [ ] **Phase 48: Data-Driven Seeding** - --from-corrections, --from-debt, --for-milestone flags, prior FEATURE-IDEAS.md anti-retreading
@@ -78,7 +78,7 @@ v11.0 builds a mechanical brainstorming engine that enforces divergent thinking 
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 45. Enforcement Core | 2/3 | In Progress|  |
+| 45. Enforcement Core | 3/3 | Complete   | 2026-04-04 |
 | 46. Converge and Output | 0/TBD | Not started | - |
 | 47. Workflow and Command | 0/TBD | Not started | - |
 | 48. Data-Driven Seeding | 0/TBD | Not started | - |
