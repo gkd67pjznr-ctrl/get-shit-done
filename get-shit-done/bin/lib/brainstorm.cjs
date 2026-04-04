@@ -281,6 +281,136 @@ function cmdBrainstormCheckSaturation(sessionDir, windowSize) {
   return { saturated, velocity, suggestion };
 }
 
+/**
+ * Build a seed context brief for starting a brainstorm session.
+ *
+ * Reads correction patterns, session history, open debt, and prior
+ * brainstorm ideas from the planning root. Deliberately excludes
+ * ROADMAP.md, STATE.md, and any phase plan/summary files.
+ *
+ * @param {string} planningRoot - Absolute path to the planning root directory
+ * @returns {{ brief: string, sources: string[] }}
+ */
+function cmdBrainstormBuildSeedBrief(planningRoot) {
+  const sources = [];
+  const sections = [];
+
+  // Section 1: Correction Patterns from corrections.jsonl
+  const correctionsPath = path.join(planningRoot, 'corrections.jsonl');
+  let correctionSection = '## Correction Patterns\n\nNone found.';
+  if (fs.existsSync(correctionsPath)) {
+    try {
+      const raw = fs.readFileSync(correctionsPath, 'utf-8');
+      const lines = raw.split('\n').filter(l => l.trim() !== '');
+      const patterns = [];
+      for (const line of lines) {
+        try {
+          const entry = JSON.parse(line);
+          if (entry.pattern) patterns.push(entry.pattern);
+          else if (entry.description) patterns.push(entry.description);
+        } catch (_) {
+          // skip malformed lines
+        }
+      }
+      if (patterns.length > 0) {
+        correctionSection = '## Correction Patterns\n\n' + patterns.map(p => `- ${p}`).join('\n');
+        sources.push(correctionsPath);
+      } else {
+        correctionSection = '## Correction Patterns\n\nNone found.';
+        sources.push(correctionsPath);
+      }
+    } catch (_) {
+      // skip on read error
+    }
+  }
+  sections.push(correctionSection);
+
+  // Section 2: Session History from sessions.jsonl
+  const sessionsPath = path.join(planningRoot, 'sessions.jsonl');
+  let sessionSection = '## Session History\n\nNone found.';
+  if (fs.existsSync(sessionsPath)) {
+    try {
+      const raw = fs.readFileSync(sessionsPath, 'utf-8');
+      const lines = raw.split('\n').filter(l => l.trim() !== '');
+      const summaries = [];
+      for (const line of lines) {
+        try {
+          const entry = JSON.parse(line);
+          const parts = [];
+          if (entry.phase) parts.push(`phase ${entry.phase}`);
+          if (entry.plan) parts.push(`plan ${entry.plan}`);
+          if (entry.timestamp) parts.push(entry.timestamp);
+          if (entry.outcome) parts.push(`outcome: ${entry.outcome}`);
+          if (parts.length > 0) summaries.push(parts.join(', '));
+          else if (entry.summary) summaries.push(entry.summary);
+        } catch (_) {
+          // skip malformed lines
+        }
+      }
+      if (summaries.length > 0) {
+        sessionSection = '## Session History\n\n' + summaries.map(s => `- ${s}`).join('\n');
+        sources.push(sessionsPath);
+      } else {
+        sessionSection = '## Session History\n\nNone found.';
+        sources.push(sessionsPath);
+      }
+    } catch (_) {
+      // skip on read error
+    }
+  }
+  sections.push(sessionSection);
+
+  // Section 3: Open Debt from DEBT.md
+  const debtPath = path.join(planningRoot, 'DEBT.md');
+  let debtSection = '## Open Debt\n\nNone found.';
+  if (fs.existsSync(debtPath)) {
+    try {
+      const raw = fs.readFileSync(debtPath, 'utf-8');
+      const excerpt = raw.slice(0, 1000);
+      debtSection = `## Open Debt\n\n${excerpt}`;
+      sources.push(debtPath);
+    } catch (_) {
+      // skip on read error
+    }
+  }
+  sections.push(debtSection);
+
+  // Section 4: Prior Brainstorm Ideas from quick/*/FEATURE-IDEAS.md
+  let ideasSection = '## Prior Brainstorm Ideas\n\nNone found.';
+  const quickDir = path.join(planningRoot, 'quick');
+  const ideaExcerpts = [];
+  if (fs.existsSync(quickDir) && fs.statSync(quickDir).isDirectory()) {
+    try {
+      const subdirs = fs.readdirSync(quickDir).filter(name => {
+        const sub = path.join(quickDir, name);
+        return fs.statSync(sub).isDirectory();
+      });
+      for (const sub of subdirs) {
+        const ideaFile = path.join(quickDir, sub, 'FEATURE-IDEAS.md');
+        if (fs.existsSync(ideaFile)) {
+          try {
+            const raw = fs.readFileSync(ideaFile, 'utf-8');
+            const excerpt = raw.slice(0, 500);
+            ideaExcerpts.push(`### ${sub}\n\n${excerpt}`);
+            sources.push(ideaFile);
+          } catch (_) {
+            // skip on read error
+          }
+        }
+      }
+    } catch (_) {
+      // skip on read error
+    }
+  }
+  if (ideaExcerpts.length > 0) {
+    ideasSection = '## Prior Brainstorm Ideas\n\n' + ideaExcerpts.join('\n\n');
+  }
+  sections.push(ideasSection);
+
+  const brief = sections.join('\n\n');
+  return { brief, sources };
+}
+
 module.exports = {
   cmdBrainstormCheckEval,
   cmdBrainstormAppendIdea,
@@ -291,4 +421,5 @@ module.exports = {
   cmdBrainstormGetPerspective,
   cmdBrainstormRandomPerspectives,
   cmdBrainstormCheckSaturation,
+  cmdBrainstormBuildSeedBrief,
 };
