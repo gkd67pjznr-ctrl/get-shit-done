@@ -162,8 +162,14 @@ try {
     : null;
 
   const tracked = loadTrackedFiles();
+  // Deduplicate: only log one correction per file per session
+  const correctedKey = `/tmp/gsd-session-${sessionId}-corrected.json`;
+  let alreadyCorrected = {};
+  try { alreadyCorrected = JSON.parse(fs.readFileSync(correctedKey, 'utf-8')); } catch (e) {}
+
   for (const [trackedPath, lastStat] of Object.entries(tracked)) {
     if (trackedPath === currentWritePath) continue; // skip current Claude write
+    if (alreadyCorrected[trackedPath]) continue; // already logged this session
     const currentStat = getFileStat(trackedPath);
     if (!currentStat) continue;
     if (currentStat.mtime !== lastStat.mtime || currentStat.size !== lastStat.size) {
@@ -184,11 +190,25 @@ try {
         quality_level: qualityLevel,
         source: 'edit_detection',
       }, { cwd });
-      // Update tracked stat so we don't re-fire on the same edit
+      // Mark as corrected for this session so we don't re-fire
+      try {
+        const eventJournal = require(path.join(cwd, 'get-shit-done/bin/lib/event-journal.cjs'));
+        const { phase: ccPhase, milestone: ccMilestone } = getCurrentPhaseAndMilestone(cwd);
+        eventJournal.emitEvent('correction_captured', {
+          phase: ccPhase,
+          session_id: sessionId,
+        }, {
+          source: 'edit_detection',
+          diagnosis_category: 'process.convention_violation',
+          file: path.basename(trackedPath),
+        }, cwd);
+      } catch (e) {}
+      alreadyCorrected[trackedPath] = true;
       tracked[trackedPath] = currentStat;
     }
   }
   saveTrackedFiles(tracked);
+  try { fs.writeFileSync(correctedKey, JSON.stringify(alreadyCorrected)); } catch (e) {}
 
   // ─── Section 6: revert detection ─────────────────────────────────────────
 
@@ -217,6 +237,17 @@ try {
         quality_level: qualityLevel,
         source: 'revert_detection',
       }, { cwd });
+      try {
+        const eventJournal = require(path.join(cwd, 'get-shit-done/bin/lib/event-journal.cjs'));
+        const { phase: revPhase } = getCurrentPhaseAndMilestone(cwd);
+        eventJournal.emitEvent('correction_captured', {
+          phase: revPhase,
+          session_id: sessionId,
+        }, {
+          source: 'revert_detection',
+          diagnosis_category: 'process.regression',
+        }, cwd);
+      } catch (e) {}
     }
   }
 } catch (e) {
