@@ -15,6 +15,7 @@ export { collectTopologyData } from './topology-collector.js';
 export { collectStagingQueue } from './staging-collector.js';
 export { collectActivityFeed } from './activity-collector.js';
 export { collectConsoleData } from './console-collector.js';
+export { collectSkillLoads } from './skill-loads-collector.js';
 
 // Pipeline collectors
 export { PipelineStatusCollector } from './pipeline-status.js';
@@ -37,6 +38,10 @@ export type {
   StagingCollectorResult,
   ConsoleCollectorOptions,
   CollectorOptions,
+  SkillLoadEntry,
+  SkillLoadSummary,
+  SkillLoadsCollectorResult,
+  SkillLoadsCollectorOptions,
 } from './types.js';
 
 // Re-export dashboard types for convenience
