@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Plan 51-01 complete (DONE criteria parser — parseDoneCriteria and parseSinglePlan, 17 tests passing)
-last_updated: "2026-04-04T18:20:00.000Z"
-last_activity: 2026-04-04 — Plan 51-01 executed
+status: in-progress
+stopped_at: Plan 51-02 complete (verification engine — verifyAssertions, 32 tests passing across parser+engine)
+last_updated: "2026-04-04T19:00:00.000Z"
+last_activity: 2026-04-04 — Plan 51-02 executed
 progress:
   total_phases: 4
   completed_phases: 0
-  total_plans: 2
-  completed_plans: 0
-  percent: 20
+  total_plans: 3
+  completed_plans: 2
+  percent: 40
 ---
 
 # Project State — Milestone v12.0
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-04)
 ## Current Position
 
 Phase: 51 of 3 (Transition Guards)
-Plan: 1 of 3 in current phase
-Status: Plan 51-01 complete — ready for 51-02 (verification engine)
-Last activity: 2026-04-04 — Plan 51-01 executed
+Plan: 2 of 3 in current phase
+Status: Plan 51-02 complete — ready for 51-03 (integrator)
+Last activity: 2026-04-04 — Plan 51-02 executed
 
-Progress: [██░░░░░░░░] 20%
+Progress: [████░░░░░░] 40%
 
 ## Performance Metrics
 
@@ -69,10 +69,12 @@ None yet.
 - Phase 50: ESLint MCP server must be available in the user environment — graceful degradation required
 - Phase 51: DONE criteria format in `<done>` tags must be consistent enough to parse — parser handles partial assertions only
 - Plan 51-01: test-passes regex requires `all\s+tests?\s+.*pass` (not `all\s+tests?\s+pass`) to handle intervening words like "in the file"
+- Plan 51-02: verifyAssertions uses options.runTests gate (default false) — integrator in 51-03 controls test execution to prevent accidental full suite runs
+- Plan 51-02: test-passes with runTests=true extracts test file via backtick regex `/`([^`]*\.test\.[a-z]+)`/` — if no match, falls back to needs-human
 
 ## Session Continuity
 
 Last session: 2026-04-04
-Stopped at: Plan 51-01 complete (DONE criteria parser — parseDoneCriteria and parseSinglePlan, 17 tests passing)
-Resume at: Plan 51-02 (verification engine that consumes parseDoneCriteria output)
+Stopped at: Plan 51-02 complete (verification engine — verifyAssertions, 32 tests passing)
+Resume at: Plan 51-03 (integrator that wires parser + engine into CLI transition workflow)
 Resume file: None

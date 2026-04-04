@@ -11,7 +11,7 @@ Close the gap between "captures data" and "acts on it." This milestone delivers 
 **Phase Numbering:**
 - Integer phases (80-83): Planned milestone work
 
-- [ ] **Phase 80: Auto-Apply Safety Engine** - Core auto-apply logic with all safety guardrails (confidence gate, rate limiting, high-performer skip, audit log)
+- [x] **Phase 80: Auto-Apply Safety Engine** - Core auto-apply logic with all safety guardrails (confidence gate, rate limiting, high-performer skip, audit log)
 - [ ] **Phase 81: Auto-Apply User Control** - Revert command and manual fallback surface for failed auto-apply checks
 - [ ] **Phase 82: Adaptive Review Profiles** - Per-project review profile generation, storage, and code-review skill integration
 - [ ] **Phase 83: Decision Audit Trail** - Decision tension detection via Jaccard matching and digest surfacing
@@ -32,7 +32,7 @@ Close the gap between "captures data" and "acts on it." This milestone delivers 
 
 Plans:
 - [x] 80-01: Implement auto-apply engine in apply-skill-refinement hook path with confidence/change/flag/rate/quality guards
-- [ ] 80-02: Wire auto_apply config key, audit log (auto-applied.jsonl), and integration tests
+- [x] 80-02: Wire auto_apply config key, audit log (auto-applied.jsonl), and integration tests
 
 ### Phase 81: Auto-Apply User Control
 **Goal**: Users can revert any auto-applied change and failed auto-apply checks surface as normal manual suggestions
@@ -83,7 +83,7 @@ Phases execute in numeric order: 80 → 81 → 82 → 83
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 80. Auto-Apply Safety Engine | 1/2 | In progress | - |
+| 80. Auto-Apply Safety Engine | 2/2 | Complete    | 2026-04-04 |
 | 81. Auto-Apply User Control | 0/1 | Not started | - |
 | 82. Adaptive Review Profiles | 0/2 | Not started | - |
 | 83. Decision Audit Trail | 0/2 | Not started | - |
