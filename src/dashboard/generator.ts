@@ -42,6 +42,8 @@ import { renderBudgetGauge, renderBudgetGaugeStyles } from './budget-gauge.js';
 import { collectBudgetSiliconData } from './budget-silicon-collector.js';
 import { renderStagingQueuePanel, renderStagingQueueStyles } from './staging-queue-panel.js';
 import { collectStagingQueue } from './collectors/staging-collector.js';
+import { renderSkillLoadsPanel, renderSkillLoadsPanelStyles } from './skill-loads-panel.js';
+import { collectSkillLoads } from './collectors/skill-loads-collector.js';
 import { renderQuestionCardStyles } from './question-card.js';
 import { renderUploadZoneStyles } from './upload-zone.js';
 import { renderConfigFormStyles } from './config-form.js';
@@ -113,6 +115,7 @@ function renderIndexContent(
   feedEntries?: FeedEntry[],
   budgetSiliconHtml?: string,
   stagingQueueHtml?: string,
+  skillLoadsHtml?: string,
 ): string {
   const sections: string[] = [];
 
@@ -148,6 +151,11 @@ function renderIndexContent(
   // Staging queue panel
   if (stagingQueueHtml) {
     rightPanels.push(stagingQueueHtml);
+  }
+
+  // Skill loads panel
+  if (skillLoadsHtml) {
+    rightPanels.push(skillLoadsHtml);
   }
 
   // Live metrics sections
@@ -494,6 +502,18 @@ export async function generate(options: GenerateOptions): Promise<GenerateResult
     // Staging queue failure never blocks dashboard generation
   }
 
+  // Collect skill loads data (graceful — never fails the pipeline)
+  let skillLoadsHtml = '';
+  try {
+    const skillLoadsData = await collectSkillLoads({
+      loadsPath: join(options.planningDir, 'patterns', 'skill-loads.jsonl'),
+    });
+    const skillLoadsContent = renderSkillLoadsPanel(skillLoadsData);
+    skillLoadsHtml = `<div class="compact-card"><h3 class="compact-title">Skill Loads</h3>${skillLoadsContent}</div>`;
+  } catch {
+    // Skill loads failure never blocks dashboard generation
+  }
+
   // Collect console page data (graceful — never fails the pipeline)
   let consoleData: ConsolePageData = {
     status: null,
@@ -544,6 +564,7 @@ export async function generate(options: GenerateOptions): Promise<GenerateResult
   const siliconPanelStyles = renderSiliconPanelStyles();
   const budgetGaugeStyles = renderBudgetGaugeStyles();
   const stagingQueueStyles = renderStagingQueueStyles();
+  const skillLoadsStyles = renderSkillLoadsPanelStyles();
   const questionCardStyles = renderQuestionCardStyles();
   const uploadZoneStyles = renderUploadZoneStyles();
   const configFormStyles = renderConfigFormStyles();
@@ -557,7 +578,8 @@ export async function generate(options: GenerateOptions): Promise<GenerateResult
     + entityLegendStyles + entityShapeStyles + siliconPanelStyles
     + budgetGaugeStyles + stagingQueueStyles + questionCardStyles
     + uploadZoneStyles + configFormStyles + submitFlowStyles
-    + consoleSettingsStyles + consoleActivityStyles + consolePageStyles;
+    + consoleSettingsStyles + consoleActivityStyles + consolePageStyles
+    + skillLoadsStyles;
 
   // Page definitions: name, filename, content renderer, meta, jsonLd
   const pageDefinitions: {
@@ -570,7 +592,7 @@ export async function generate(options: GenerateOptions): Promise<GenerateResult
     {
       name: 'index',
       filename: 'index.html',
-      render: () => renderIndexContent(data, metricsHtml, topologySource, terminalHtml, feedEntries, budgetSiliconHtml, stagingQueueHtml),
+      render: () => renderIndexContent(data, metricsHtml, topologySource, terminalHtml, feedEntries, budgetSiliconHtml, stagingQueueHtml, skillLoadsHtml),
       meta: {
         description: data.project?.description ?? 'GSD Planning Docs Dashboard',
         ogTitle: projectName,
