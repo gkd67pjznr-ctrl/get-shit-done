@@ -726,3 +726,141 @@ describe('cmdBrainstormFormatResults', () => {
     }
   });
 });
+
+// ─── cmdBrainstormLogSession ────────────────────────────────────────────────
+
+describe('cmdBrainstormLogSession', () => {
+  let tmpDir;
+  beforeEach(() => { tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bs-log-')); });
+  afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
+
+  test('logs a session and returns session_count=1', () => {
+    const r = brainstorm.cmdBrainstormLogSession(tmpDir, { topic: 'auth', date: '2026-04-04', flags: '--wild', idea_count: 15, output_path: '/tmp/01' });
+    assert.strictEqual(r.logged, true);
+    assert.strictEqual(r.session_count, 1);
+  });
+
+  test('session_count increments on second log', () => {
+    brainstorm.cmdBrainstormLogSession(tmpDir, { topic: 'a', idea_count: 5 });
+    const r = brainstorm.cmdBrainstormLogSession(tmpDir, { topic: 'b', idea_count: 10 });
+    assert.strictEqual(r.session_count, 2);
+  });
+});
+
+// ─── cmdBrainstormListSessions ──────────────────────────────────────────────
+
+describe('cmdBrainstormListSessions', () => {
+  let tmpDir;
+  beforeEach(() => { tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bs-list-')); });
+  afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
+
+  test('returns empty array when no index exists', () => {
+    const r = brainstorm.cmdBrainstormListSessions(tmpDir);
+    assert.strictEqual(r.count, 0);
+    assert.deepStrictEqual(r.sessions, []);
+  });
+
+  test('returns all logged sessions', () => {
+    brainstorm.cmdBrainstormLogSession(tmpDir, { topic: 'cache', idea_count: 8 });
+    brainstorm.cmdBrainstormLogSession(tmpDir, { topic: 'auth', idea_count: 12 });
+    const r = brainstorm.cmdBrainstormListSessions(tmpDir);
+    assert.strictEqual(r.count, 2);
+    assert.strictEqual(r.sessions[0].topic, 'cache');
+    assert.strictEqual(r.sessions[1].topic, 'auth');
+  });
+});
+
+// ─── cmdBrainstormTagIdea ───────────────────────────────────────────────────
+
+describe('cmdBrainstormTagIdea', () => {
+  let tmpDir;
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bs-tag-'));
+    fs.writeFileSync(path.join(tmpDir, 'FEATURE-IDEAS.md'), '# Ideas\n\n- IDEA-001: thing\n- IDEA-002: other\n');
+  });
+  afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
+
+  test('creates Implemented section and tags idea', () => {
+    const r = brainstorm.cmdBrainstormTagIdea(tmpDir, 'IDEA-001', 42);
+    assert.strictEqual(r.tagged, true);
+    assert.strictEqual(r.idea_id, 'IDEA-001');
+    assert.strictEqual(r.phase, 42);
+    const content = fs.readFileSync(path.join(tmpDir, 'FEATURE-IDEAS.md'), 'utf-8');
+    assert.ok(content.includes('## Implemented'));
+    assert.ok(content.includes('**IDEA-001** → Phase 42'));
+  });
+
+  test('updates existing tag rather than duplicating', () => {
+    brainstorm.cmdBrainstormTagIdea(tmpDir, 'IDEA-001', 42);
+    brainstorm.cmdBrainstormTagIdea(tmpDir, 'IDEA-001', 50);
+    const content = fs.readFileSync(path.join(tmpDir, 'FEATURE-IDEAS.md'), 'utf-8');
+    const matches = (content.match(/\*\*IDEA-001\*\*/g) || []).length;
+    assert.strictEqual(matches, 1);
+    assert.ok(content.includes('Phase 50'));
+  });
+
+  test('throws when FEATURE-IDEAS.md does not exist', () => {
+    assert.throws(() => brainstorm.cmdBrainstormTagIdea('/nonexistent/path', 'IDEA-001', 1));
+  });
+});
+
+// ─── cmdBrainstormListImplemented ──────────────────────────────────────────
+
+describe('cmdBrainstormListImplemented', () => {
+  let tmpDir;
+  beforeEach(() => { tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bs-impl-')); });
+  afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
+
+  test('returns empty when quick/ does not exist', () => {
+    const r = brainstorm.cmdBrainstormListImplemented(tmpDir);
+    assert.strictEqual(r.count, 0);
+    assert.deepStrictEqual(r.implemented, []);
+  });
+
+  test('finds implemented ideas across subdirs', () => {
+    const quickDir = path.join(tmpDir, 'quick', '01-brainstorm-auth');
+    fs.mkdirSync(quickDir, { recursive: true });
+    fs.writeFileSync(path.join(quickDir, 'FEATURE-IDEAS.md'),
+      '# Ideas\n\n## Implemented\n\n- **IDEA-001** → Phase 42\n');
+    const r = brainstorm.cmdBrainstormListImplemented(tmpDir);
+    assert.strictEqual(r.count, 1);
+    assert.strictEqual(r.implemented[0].idea_id, 'IDEA-001');
+    assert.strictEqual(r.implemented[0].phase, '42');
+  });
+});
+
+// ─── cmdBrainstormRecentIdeas ───────────────────────────────────────────────
+
+describe('cmdBrainstormRecentIdeas', () => {
+  let tmpDir;
+  beforeEach(() => { tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bs-recent-')); });
+  afterEach(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
+
+  test('returns empty when quick/ does not exist', () => {
+    const r = brainstorm.cmdBrainstormRecentIdeas(tmpDir, 7);
+    assert.strictEqual(r.count, 0);
+    assert.deepStrictEqual(r.files, []);
+  });
+
+  test('finds recently modified FEATURE-IDEAS.md', () => {
+    const quickDir = path.join(tmpDir, 'quick', '01-brainstorm-test');
+    fs.mkdirSync(quickDir, { recursive: true });
+    const ideasPath = path.join(quickDir, 'FEATURE-IDEAS.md');
+    fs.writeFileSync(ideasPath, '# Ideas\n');
+    const r = brainstorm.cmdBrainstormRecentIdeas(tmpDir, 7);
+    assert.strictEqual(r.count, 1);
+    assert.ok(r.files[0].endsWith('FEATURE-IDEAS.md'));
+  });
+
+  test('excludes files older than dayWindow', () => {
+    const quickDir = path.join(tmpDir, 'quick', '01-brainstorm-old');
+    fs.mkdirSync(quickDir, { recursive: true });
+    const ideasPath = path.join(quickDir, 'FEATURE-IDEAS.md');
+    fs.writeFileSync(ideasPath, '# Ideas\n');
+    // Set mtime to 30 days ago
+    const oldTime = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    fs.utimesSync(ideasPath, oldTime, oldTime);
+    const r = brainstorm.cmdBrainstormRecentIdeas(tmpDir, 7);
+    assert.strictEqual(r.count, 0);
+  });
+});
