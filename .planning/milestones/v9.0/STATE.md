@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: "Plan 41-01 complete — skill-metrics.cjs module, CLI subcommand, /gsd:digest Step 3i"
-last_updated: "2026-04-04T06:44:40.612Z"
-last_activity: "2026-04-04 — Plan 41-01 complete: skill-metrics.cjs, CLI subcommand, digest Step 3i, SQLQ-01/02/03 marked complete"
+stopped_at: "Plan 42-01 complete — skill-scorer.cjs module, CLI subcommand, loading-protocol update, SREL-01/02/03/04 marked complete"
+last_updated: "2026-04-04T00:00:00.000Z"
+last_activity: "2026-04-04 — Plan 42-01 complete: skill-scorer.cjs, CLI subcommand, loading-protocol Stage 1 updated, SREL-01/02/03/04 complete"
 progress:
   total_phases: 6
-  completed_phases: 5
-  total_plans: 7
-  completed_plans: 7
-  percent: 60
+  completed_phases: 6
+  total_plans: 8
+  completed_plans: 8
+  percent: 100
 ---
 
 # Project State — Milestone v9.0 Signal Intelligence
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 41 — Skill Quality Metrics (plan 01 complete)
+**Current focus:** Phase 42 complete — Skill Relevance Scoring (all plans complete, milestone v9.0 complete)
 
 ## Current Position
 
-Phase: 41 of 42 (skill-quality-metrics)
+Phase: 42 of 42 (skill-relevance-scoring)
 Plan: 1 of 1 in current phase
-Status: Plan 01 complete
-Last activity: 2026-04-04 — Plan 41-01 complete: skill-metrics.cjs, CLI subcommand, digest Step 3i, SQLQ-01/02/03 marked complete
+Status: Plan 01 complete — Milestone v9.0 complete
+Last activity: 2026-04-04 — Plan 42-01 complete: skill-scorer.cjs, CLI subcommand, loading-protocol Stage 1 updated, SREL-01/02/03/04 complete
 
-Progress: [██████░░░░] 60% (6/10 plans)
+Progress: [██████████] 100% (8/8 plans)
 
 ## Performance Metrics
 
@@ -76,6 +76,9 @@ Progress: [██████░░░░] 60% (6/10 plans)
 - Plan 41-01: CATEGORY_SKILL_MAP is inlined in skill-metrics.cjs (not imported from analyze-patterns.cjs) to keep module independent
 - Plan 41-01: Tests use result.output not result.stdout — runGsdTools helper returns { success, output } not { success, stdout }
 - Plan 41-01: .planning/ is gitignored — REQUIREMENTS.md file changes staged in same commit as digest.md via git's gitignore behavior
+- Plan 42-01: SREL-03 test needed old session entry for dormant-skill — "no history = no penalty" means dormant-with-no-history actually outscores recently-loaded (tiny decay); test fixed by giving dormant-skill a 21-day-old session entry
+- Plan 42-01: extractSkillDescription uses three-case regex (block scalar, inline quoted, bare value) — block scalar is the live format for all 17 SKILL.md files
+- Plan 42-01: .claude/ is in .gitignore — git add -f required for loading-protocol.md (consistent with phases 39-01, 41-01)
 
 ### Blockers/Concerns
 
@@ -84,6 +87,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-04
-Stopped at: Plan 41-01 complete — skill-metrics.cjs module, CLI subcommand, /gsd:digest Step 3i
+Stopped at: Plan 42-01 complete — Milestone v9.0 Signal Intelligence complete
 Resume file: None
-Next step: Phase 41 complete — proceed to Phase 42
+Next step: Milestone v9.0 complete — all 8 plans done, all requirements satisfied

@@ -51,10 +51,10 @@ Requirements for Signal Intelligence milestone. Each maps to roadmap phases.
 
 ### Skill Relevance
 
-- [ ] **SREL-01**: Skill relevance scored against task description using keyword overlap at session start
-- [ ] **SREL-02**: Score floor of 0.3 for skills under 14 days old to prevent cold-start exclusion
-- [ ] **SREL-03**: Decay factor of 10% per week applied to dormant skills not loaded in recent sessions
-- [ ] **SREL-04**: Score cache invalidated on SKILL.md content change via content hash comparison
+- [x] **SREL-01**: Skill relevance scored against task description using keyword overlap at session start
+- [x] **SREL-02**: Score floor of 0.3 for skills under 14 days old to prevent cold-start exclusion
+- [x] **SREL-03**: Decay factor of 10% per week applied to dormant skills not loaded in recent sessions
+- [x] **SREL-04**: Score cache invalidated on SKILL.md content change via content hash comparison
 
 ## Future Requirements
 
@@ -102,10 +102,10 @@ Requirements for Signal Intelligence milestone. Each maps to roadmap phases.
 | SQLQ-01 | Phase 41 | Complete |
 | SQLQ-02 | Phase 41 | Complete |
 | SQLQ-03 | Phase 41 | Complete |
-| SREL-01 | Phase 42 | Pending |
-| SREL-02 | Phase 42 | Pending |
-| SREL-03 | Phase 42 | Pending |
-| SREL-04 | Phase 42 | Pending |
+| SREL-01 | Phase 42 | Complete |
+| SREL-02 | Phase 42 | Complete |
+| SREL-03 | Phase 42 | Complete |
+| SREL-04 | Phase 42 | Complete |
 
 **Coverage:**
 - v9.0 requirements: 25 total
