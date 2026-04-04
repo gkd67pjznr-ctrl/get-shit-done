@@ -117,6 +117,57 @@ try {
     body += '\n\n## Pending Skill Suggestions\n\n' + sugLines.join('\n');
     body += '\n\nRun `/gsd:refine-skill <skill-name>` to accept or dismiss.';
   }
+  // Auto-apply notification: surface new applied entries since last session
+  try {
+    const scanStatePath = path.join(cwd, '.planning', 'patterns', 'scan-state.json');
+    let sessionBoundary = null;
+    try {
+      const scanStateRaw = fs.readFileSync(scanStatePath, 'utf-8');
+      const scanState = JSON.parse(scanStateRaw);
+      sessionBoundary = scanState.last_analyzed_at || null;
+    } catch (e) {
+      // scan-state.json missing or invalid -- use 24h fallback
+    }
+
+    const boundaryTime = sessionBoundary
+      ? new Date(sessionBoundary).getTime()
+      : Date.now() - 24 * 60 * 60 * 1000;
+
+    const auditPath = path.join(cwd, '.planning', 'patterns', 'auto-applied.jsonl');
+    if (fs.existsSync(auditPath)) {
+      const lines = fs.readFileSync(auditPath, 'utf-8').split('\n');
+      const newEntries = [];
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        let entry;
+        try { entry = JSON.parse(line); } catch { continue; }
+        if (entry.action === 'applied') {
+          const entryTime = new Date(entry.timestamp).getTime();
+          if (!isNaN(entryTime) && entryTime > boundaryTime) {
+            newEntries.push(entry);
+          }
+        }
+      }
+
+      if (newEntries.length > 0) {
+        const MAX_SHOWN = 5;
+        const shown = newEntries.slice(0, MAX_SHOWN);
+        const autoApplyLines = shown.map(e =>
+          '- ' + e.skill + ' (suggestion ' + e.suggestion_id + ', confidence ' + e.confidence + ')' +
+          ' — revert with `/gsd:refine-skill revert ' + e.suggestion_id + '`'
+        );
+        if (newEntries.length > MAX_SHOWN) {
+          autoApplyLines.push('(+' + (newEntries.length - MAX_SHOWN) + ' more — see .planning/patterns/auto-applied.jsonl)');
+        }
+        body += '\n\n## Auto-Applied Skill Refinements\n\n' +
+          'The following skill refinements were applied automatically since your last session:\n' +
+          autoApplyLines.join('\n');
+      }
+    }
+  } catch (e) {
+    // Silent failure -- auto-apply notification must not affect existing recall output
+  }
+
   body += '\n</system-reminder>';
 
   const output = body.trim();
