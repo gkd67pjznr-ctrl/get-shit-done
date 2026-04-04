@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: 47-02 complete — commands/gsd/brainstorm.md slash command created. Phase 47 complete. Next: Phase 48 (Signal Seeding).
-last_updated: "2026-04-04T14:10:00.000Z"
-last_activity: "2026-04-04 — 47-02 complete: /gsd:brainstorm slash command, all verification OK, phase 47 Complete"
+status: completed
+stopped_at: "48-01 complete — source-filtered seed brief, CLI flags wired. SEED-01 through SEED-05 satisfied."
+last_updated: "2026-04-04T14:12:00.000Z"
+last_activity: "2026-04-04 — 48-01 complete: cmdBrainstormBuildSeedBrief options param, --from-corrections/--from-debt/--for-milestone CLI flags, 68/68 tests pass"
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 2
+  total_plans: 3
   completed_plans: 2
   percent: 100
 ---
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-04)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 47 complete. Phase 48 (Signal Seeding) is next.
+**Current focus:** Phase 48 plan 01 complete. SEED-01 through SEED-05 satisfied.
 
 ## Current Position
 
-Phase: 47 (Workflow and Command) — COMPLETE
-Plan: 47-02 complete
-Status: Phase 47 Done, awaiting Phase 48
-Last activity: 2026-04-04 — 47-02 complete: /gsd:brainstorm slash command, --wild + flag composition documented, all verification OK
+Phase: 48 (Data-Driven Seeding) — IN PROGRESS
+Plan: 48-01 complete
+Status: Plan 48-01 done
+Last activity: 2026-04-04 — 48-01 complete: cmdBrainstormBuildSeedBrief options param, --from-corrections/--from-debt/--for-milestone CLI flags, 68/68 tests pass
 
-Progress: [██████████] 100% (Phase 47)
+Progress: [██████████] 100% (Phase 48, plan 01)
 
 ## Performance Metrics
 
@@ -82,6 +82,10 @@ Recent decisions affecting current work:
 - check_saturation step is a subroutine called inline after each expand technique — not a standalone interactive step
 - LENS_IDEA_COUNT and ANGLE_COUNT reset to 0 per-unit (not cumulative) to enforce per-lens and per-angle floors
 - WILD_FLAG is an empty string or --wild — passed positionally to check-eval, check-floor, and random-perspectives
+- cmdBrainstormBuildSeedBrief options param: corrections/debt/sessions/priorIdeas booleans, all default true (backward compat)
+- priorIdeas is always true in CLI flag mapping — SEED-05: prior FEATURE-IDEAS.md always read to prevent retreading
+- Excluded sections render placeholder text so brief structure is consistent regardless of flags
+- build-seed-brief CLI flag cascade: forMilestone > both flags > single flag > no flags (all sources)
 
 ### Pending Todos
 
@@ -94,5 +98,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-04
-Stopped at: 47-02 complete — commands/gsd/brainstorm.md slash command. Phase 47 fully complete. Next: Phase 48 (Signal Seeding — --from-corrections, --from-debt, --for-milestone wiring).
+Stopped at: 48-01 complete — source-filtered seed brief, CLI flags wired. SEED-01 through SEED-05 satisfied.
 Resume file: None

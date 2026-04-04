@@ -109,6 +109,32 @@ PROGRESS_BAR=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" progress bar
 
 # Get current quality level
 QUALITY_LEVEL=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" config-get quality.level 2>/dev/null || echo 'fast')
+
+# Extract current test count and delta from most recent benchmark with non-null test_count (TEST-03)
+LATEST_BENCH=$(cat .planning/patterns/phase-benchmarks.jsonl 2>/dev/null | \
+  node -e "
+    const lines = require('fs').readFileSync('/dev/stdin','utf-8').trim().split('\n').filter(Boolean);
+    const entries = lines.map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+    const withCount = entries.filter(e => e.test_count != null && Number.isFinite(Number(e.test_count)));
+    if (withCount.length === 0) { process.stdout.write('none'); process.exit(0); }
+    const latest = withCount[withCount.length - 1];
+    process.stdout.write(JSON.stringify(latest));
+  " 2>/dev/null || echo "none")
+
+TEST_COUNT_DISPLAY=""
+if [ "$LATEST_BENCH" != "none" ] && [ -n "$LATEST_BENCH" ]; then
+  TEST_COUNT=$(echo "$LATEST_BENCH" | node -e "const d=require('fs').readFileSync('/dev/stdin','utf-8');const e=JSON.parse(d);process.stdout.write(String(e.test_count))" 2>/dev/null || echo "")
+  TEST_DELTA=$(echo "$LATEST_BENCH" | node -e "const d=require('fs').readFileSync('/dev/stdin','utf-8');const e=JSON.parse(d);process.stdout.write(e.test_delta != null ? String(e.test_delta) : 'null')" 2>/dev/null || echo "null")
+  if [ -n "$TEST_COUNT" ]; then
+    if [ "$TEST_DELTA" != "null" ] && [ -n "$TEST_DELTA" ]; then
+      SIGN=""
+      if [ "$TEST_DELTA" -gt 0 ] 2>/dev/null; then SIGN="+"; fi
+      TEST_COUNT_DISPLAY="Tests: ${TEST_COUNT} (${SIGN}${TEST_DELTA} since last entry)"
+    else
+      TEST_COUNT_DISPLAY="Tests: ${TEST_COUNT} (no prior delta)"
+    fi
+  fi
+fi
 ```
 
 Present:
@@ -119,6 +145,7 @@ Present:
 **Progress:** {PROGRESS_BAR}
 **Profile:** [quality/balanced/budget]
 **Quality:** $QUALITY_LEVEL
+{if TEST_COUNT_DISPLAY is non-empty}**$TEST_COUNT_DISPLAY**{end}
 
 ## Recent Work
 - [Phase X, Plan Y]: [what was accomplished - 1 line from summary-extract]
