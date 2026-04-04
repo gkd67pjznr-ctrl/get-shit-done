@@ -25,25 +25,27 @@ See [FORK-GUIDE.md](FORK-GUIDE.md) for installation and usage instructions.
 | Quality Observability | v7.0 | Gate execution persistence (JSONL), dashboard Gate Health page, gate-to-correction attribution |
 | Close the Loop | v8.0 | Skill feedback loop wired E2E, quality gates via deterministic PostToolUse hooks |
 | Signal Intelligence | v9.0 | Skill analytics pipeline, relevance scoring, session reports, benchmarking, debt impact analysis |
+| Shared MCP Dashboard | v10.0 | 8 read-only MCP query tools via StreamableHTTP, CORS + Origin validation, auto-config via installer, cross-project GSD data access from any Claude Code session |
+| Wild Brainstorming Engine | v11.0 | `/gsd:brainstorm` with 3-stage pipeline (Seed → Expand → Converge), SCAMPER cycling, quantity floors, saturation detection, idea-to-phase traceability, FEATURE-IDEAS.md output |
+| Quality Enforcement Evolution | v12.0 | ESLint MCP PostToolUse gate on .ts/.js/.cjs writes, mechanical DONE criteria verification via `<done>` tag parsing, test count trending in phase-benchmarks.jsonl |
+| Unified Observability & Context Routing | v13.0 (in progress) | Event journaling with central workflow.jsonl emitter, context budget optimizer with per-skill token cost measurement, MCP server task-type classifier (partial) |
+| Autonomous Learning | v15.0 | Auto-apply safety engine (confidence > 0.95, rate-limited), adaptive review profiles from corrections.jsonl, decision audit trail with Jaccard tension flagging |
 
-### v9.0 Signal Intelligence (latest)
+### v15.0 Autonomous Learning (latest)
 
-Extracts actionable signals from existing observability data to measure skill effectiveness and optimize context budget:
+Closes the feedback loop by making the system self-improving with guardrails:
 
-- **Skill call tracking** — `skills_loaded` in sessions.jsonl and `skills_active` in gate-executions.jsonl across all 6 workflow files, enabling downstream analytics to attribute outcomes to specific skills
-- **Skill iteration history** — SKILL-HISTORY.md audit trail with unified diffs appended on each refinement, 50-entry rotation with monthly archives, merge=union gitattributes for conflict-free merges
-- **Phase benchmarking** — Per-plan execution metrics (correction count, gate fire count, quality level, duration) written to phase-benchmarks.jsonl, surfaced in `/gsd:digest` with N>=5 sample guard
-- **Debt impact analysis** — `debt impact` CLI subcommand joins DEBT.md entries with corrections.jsonl by component-to-category mapping, ranks by correction count with link_confidence scoring, integrated into `/gsd:fix-debt` for prioritized resolution
-- **Session analytics** — `/gsd:session-report` command surfaces per-session correction density, gate fire count, skills loaded, and benchmark trends via Node.js pre-processing with `--last N` flag
-- **Skill quality metrics** — Per-skill correction rates computed using CATEGORY_SKILL_MAP attribution (not raw co-presence), stored in skill-metrics.json with attribution_confidence tiers (high/medium/low), surfaced in `/gsd:digest`
-- **Skill relevance scoring** — Jaccard keyword overlap between task descriptions and skill descriptions, cold-start floor (0.3 for skills <14 days old), dormancy decay (10% per week of inactivity), MD5 content-hash cache with per-skill invalidation, wired into skill-integration loading protocol
+- **Auto-apply safety engine** — High-confidence skill refinements auto-apply when confidence > 0.95, change < 20% of skill content, and rate limit (1 per skill per 7 days) is respected; high-performer bypass available
+- **Revert and fallback controls** — `/gsd:refine-skill revert <id>` undoes auto-applied refinements; failed safety checks fall back to manual suggestion mode
+- **Adaptive review profiles** — `review-profile.json` generated per-project from corrections.jsonl patterns, read by the code-review skill at session start, refreshed on each new session
+- **Decision audit trail** — Jaccard token overlap matches incoming corrections against PROJECT.md Key Decisions; tension flagged at 3+ matches with evidence surfaced in `/gsd:digest`
 
 ## Quick Stats
 
 | Dimension | Value |
 |-----------|-------|
-| Milestones shipped | 11 (v1.0 through v9.0) |
-| Tests passing | 1028+ across 23+ test suites |
+| Milestones shipped | 15 (v1.0–v9.0, v10.0, v11.0, v12.0, v15.0; v13.0 in progress) |
+| Tests passing | 20600+ across 23+ test suites |
 | Source modules | 17 CJS lib modules (~89K LOC total) |
 | Validated requirements | 205+ |
 | Skills | 17 auto-loading SKILL.md files |
