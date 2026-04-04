@@ -363,6 +363,74 @@ describe('cmdBrainstormBuildSeedBrief', () => {
       `sources should not include STATE.md, got: ${JSON.stringify(sourcePaths)}`
     );
   });
+
+  test('--from-corrections: only corrections and priorIdeas included', () => {
+    const opts = { corrections: true, debt: false, sessions: false, priorIdeas: true };
+    const r = brainstorm.cmdBrainstormBuildSeedBrief(tempDir, opts);
+    assert.deepStrictEqual(r.included, ['corrections', 'priorIdeas'],
+      `included should be ['corrections','priorIdeas'], got: ${JSON.stringify(r.included)}`);
+    assert.deepStrictEqual(r.excluded, ['sessions', 'debt'],
+      `excluded should be ['sessions','debt'], got: ${JSON.stringify(r.excluded)}`);
+    assert.ok(r.brief.includes('Correction Patterns'), 'brief should contain Correction Patterns section');
+    assert.ok(!r.brief.includes('(Not included in this seed.)') || r.brief.includes('Session History'),
+      'excluded sections use placeholder text');
+  });
+
+  test('--from-debt: only debt and priorIdeas included', () => {
+    const opts = { corrections: false, debt: true, sessions: false, priorIdeas: true };
+    const r = brainstorm.cmdBrainstormBuildSeedBrief(tempDir, opts);
+    assert.deepStrictEqual(r.included, ['debt', 'priorIdeas'],
+      `included should be ['debt','priorIdeas'], got: ${JSON.stringify(r.included)}`);
+    assert.deepStrictEqual(r.excluded, ['corrections', 'sessions'],
+      `excluded should be ['corrections','sessions'], got: ${JSON.stringify(r.excluded)}`);
+    assert.ok(r.brief.includes('Open Debt'), 'brief should contain Open Debt section');
+  });
+
+  test('--for-milestone: all sources included', () => {
+    const opts = { corrections: true, debt: true, sessions: true, priorIdeas: true };
+    const r = brainstorm.cmdBrainstormBuildSeedBrief(tempDir, opts);
+    assert.deepStrictEqual(r.included, ['corrections', 'sessions', 'debt', 'priorIdeas'],
+      `all four sources should be included, got: ${JSON.stringify(r.included)}`);
+    assert.deepStrictEqual(r.excluded, [],
+      `excluded should be empty, got: ${JSON.stringify(r.excluded)}`);
+  });
+
+  test('no options (default): all sources included', () => {
+    const r = brainstorm.cmdBrainstormBuildSeedBrief(tempDir);
+    assert.deepStrictEqual(r.included, ['corrections', 'sessions', 'debt', 'priorIdeas'],
+      `default should include all sources, got: ${JSON.stringify(r.included)}`);
+    assert.deepStrictEqual(r.excluded, [],
+      `default excluded should be empty, got: ${JSON.stringify(r.excluded)}`);
+  });
+
+  test('return value includes included and excluded arrays', () => {
+    const r = brainstorm.cmdBrainstormBuildSeedBrief(tempDir, { corrections: true, debt: false, sessions: true, priorIdeas: true });
+    assert.ok(Array.isArray(r.included), 'included should be an array');
+    assert.ok(Array.isArray(r.excluded), 'excluded should be an array');
+    assert.ok(r.included.includes('corrections'), 'corrections should be in included');
+    assert.ok(r.excluded.includes('debt'), 'debt should be in excluded');
+  });
+
+  test('brief header lists included sources', () => {
+    const opts = { corrections: true, debt: false, sessions: false, priorIdeas: true };
+    const r = brainstorm.cmdBrainstormBuildSeedBrief(tempDir, opts);
+    assert.ok(r.brief.includes('# Seed Brief'), 'brief should start with Seed Brief header');
+    assert.ok(r.brief.includes('corrections.jsonl'), 'header should mention corrections.jsonl as included');
+    assert.ok(r.brief.includes('ROADMAP.md'), 'header should mention ROADMAP.md as always excluded');
+    assert.ok(r.brief.includes('STATE.md'), 'header should mention STATE.md as always excluded');
+  });
+
+  test('prior FEATURE-IDEAS.md files read even with --from-corrections only', () => {
+    // Create a quick subdir with a FEATURE-IDEAS.md
+    const quickDir = path.join(tempDir, 'quick', '01-prior-brainstorm');
+    fs.mkdirSync(quickDir, { recursive: true });
+    fs.writeFileSync(path.join(quickDir, 'FEATURE-IDEAS.md'), '# Prior Feature Ideas\n\n- idea alpha\n- idea beta\n');
+    const opts = { corrections: true, debt: false, sessions: false, priorIdeas: true };
+    const r = brainstorm.cmdBrainstormBuildSeedBrief(tempDir, opts);
+    assert.ok(r.brief.includes('Prior Brainstorm Ideas'), 'brief should contain Prior Brainstorm Ideas section');
+    assert.ok(r.brief.includes('idea alpha') || r.brief.includes('01-prior-brainstorm'),
+      'brief should reference content from the prior FEATURE-IDEAS.md');
+  });
 });
 
 // ─── cmdBrainstormCluster ────────────────────────────────────────────────────
