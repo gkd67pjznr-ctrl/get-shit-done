@@ -390,11 +390,21 @@ node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" state record-metric \
 # PLAN_TYPE is sourced from PLAN.md frontmatter type: field (extracted in identify_plan step)
 # QUALITY_LEVEL is sourced from config.json quality.level
 QUALITY_LEVEL=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" config-get quality.level 2>/dev/null || echo "standard")
+
+# Extract current test count from test runner output (TEST-01)
+# Vitest prints a summary line like "Tests  X passed (Y)" — extract the first number after "Tests"
+TEST_COUNT=$(npm test 2>&1 | grep -E 'Tests\s+[0-9]+' | grep -oE '[0-9]+' | head -1 2>/dev/null || echo "")
+TEST_COUNT_FLAG=""
+if [ -n "$TEST_COUNT" ] && [ "$TEST_COUNT" -eq "$TEST_COUNT" ] 2>/dev/null; then
+  TEST_COUNT_FLAG="--test-count ${TEST_COUNT}"
+fi
+
 node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" state benchmark-plan \
   --phase "${PHASE}" --plan "${PLAN}" \
   --type "${PLAN_TYPE:-unknown}" \
   --quality-level "${QUALITY_LEVEL:-standard}" \
   --duration "${DURATION_MIN}" \
+  ${TEST_COUNT_FLAG} \
   ${MILESTONE_FLAG}
 ```
 </step>
