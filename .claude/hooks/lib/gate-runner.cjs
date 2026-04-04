@@ -6,6 +6,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 
 /**
  * Reads subdirectory names from .claude/skills/ as the active skill list.
@@ -26,6 +27,49 @@ function readSkillNames(cwd) {
     });
   } catch (e) {
     return [];
+  }
+}
+
+/**
+ * Runs ESLint on a single file path using the locally-installed eslint binary.
+ * Returns { exitCode, errorCount, output, unavailable }.
+ * unavailable=true means ESLint was not found — caller should log degradation.
+ *
+ * @param {string} filePath - Absolute path to the file
+ * @param {string} cwd - Project root directory
+ * @returns {{ exitCode: number, errorCount: number, output: string, unavailable: boolean }}
+ */
+function runEslint(filePath, cwd) {
+  try {
+    const result = spawnSync(
+      'npx',
+      ['--no-install', 'eslint', '--format', 'json', '--no-eslintrc', '--rule', '{}', filePath],
+      { cwd, encoding: 'utf-8', timeout: 10000 }
+    );
+
+    // ENOENT or spawn error means eslint unavailable
+    if (result.error) {
+      return { exitCode: -1, errorCount: 0, output: '', unavailable: true };
+    }
+
+    // Try to parse JSON output to get error count
+    let errorCount = 0;
+    try {
+      const parsed = JSON.parse(result.stdout || '[]');
+      errorCount = parsed.reduce((sum, f) => sum + (f.errorCount || 0), 0);
+    } catch (e) {
+      // Non-JSON output — use exit code as signal
+      errorCount = result.status !== 0 ? 1 : 0;
+    }
+
+    return {
+      exitCode: result.status || 0,
+      errorCount,
+      output: (result.stdout || '').slice(0, 500), // cap stored output
+      unavailable: false,
+    };
+  } catch (e) {
+    return { exitCode: -1, errorCount: 0, output: '', unavailable: true };
   }
 }
 
@@ -145,9 +189,10 @@ function detectGate(toolName, toolInput) {
       : '';
     if (/\.(ts|tsx|js|cjs|mjs)$/.test(filePath)) {
       return {
-        gate: 'diff_review',
-        rawOutcome: 'passed',
+        gate: 'eslint_gate',
+        rawOutcome: 'check_response',
         detail: 'code file written',
+        filePath,
       };
     }
     return null;
@@ -224,8 +269,22 @@ function evaluateGate(toolName, toolInput, toolResponse, options) {
 
       const hasFailed = failurePatterns.some(p => p.test(responseStr));
       rawOutcome = hasFailed ? 'blocked' : 'passed';
-    } else if (detection.gate === 'diff_review') {
-      rawOutcome = 'passed';
+    } else if (detection.gate === 'eslint_gate') {
+      const eslintFilePath = detection.filePath || '';
+      if (!eslintFilePath) {
+        rawOutcome = 'passed'; // no path to lint
+      } else {
+        const eslintResult = runEslint(eslintFilePath, cwd);
+        if (eslintResult.unavailable) {
+          rawOutcome = 'warned'; // degradation: ESLint not installed
+          detection.detail = 'eslint_unavailable';
+        } else if (eslintResult.errorCount > 0) {
+          rawOutcome = 'blocked';
+          detection.detail = `eslint_errors:${eslintResult.errorCount}`;
+        } else {
+          rawOutcome = 'passed';
+        }
+      }
     } else {
       rawOutcome = detection.rawOutcome || 'passed';
     }
