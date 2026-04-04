@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: "48-01 complete — source-filtered seed brief, CLI flags wired. SEED-01 through SEED-05 satisfied."
-last_updated: "2026-04-04T14:12:00.000Z"
-last_activity: "2026-04-04 — 48-01 complete: cmdBrainstormBuildSeedBrief options param, --from-corrections/--from-debt/--for-milestone CLI flags, 68/68 tests pass"
+stopped_at: "48-02 complete — workflow seed stage displays excluded sources, 7 new source-filtering tests, 75/75 pass."
+last_updated: "2026-04-04T00:08:00.000Z"
+last_activity: "2026-04-04 — 48-02 complete: workflow seed step updated, 7 source-filtering tests added, 75/75 tests pass"
 progress:
   total_phases: 4
   completed_phases: 1
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-04)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 48 plan 01 complete. SEED-01 through SEED-05 satisfied.
+**Current focus:** Phase 48 plans 01 and 02 complete. SEED-01 through SEED-05 satisfied. Workflow and tests complete.
 
 ## Current Position
 
 Phase: 48 (Data-Driven Seeding) — IN PROGRESS
-Plan: 48-01 complete
-Status: Plan 48-01 done
-Last activity: 2026-04-04 — 48-01 complete: cmdBrainstormBuildSeedBrief options param, --from-corrections/--from-debt/--for-milestone CLI flags, 68/68 tests pass
+Plan: 48-02 complete
+Status: Plans 48-01 and 48-02 done
+Last activity: 2026-04-04 — 48-02 complete: workflow seed step updated, 7 source-filtering tests added, 75/75 tests pass
 
 Progress: [██████████] 100% (Phase 48, plan 01)
 
@@ -86,6 +86,8 @@ Recent decisions affecting current work:
 - priorIdeas is always true in CLI flag mapping — SEED-05: prior FEATURE-IDEAS.md always read to prevent retreading
 - Excluded sections render placeholder text so brief structure is consistent regardless of flags
 - build-seed-brief CLI flag cascade: forMilestone > both flags > single flag > no flags (all sources)
+- Workflow seed stage shows excluded-source note only when excluded is non-empty (conditional display)
+- Source-filtering test assertions use deepStrictEqual against SOURCE_NAMES key order: corrections, sessions, debt, priorIdeas
 
 ### Pending Todos
 
