@@ -168,6 +168,14 @@ try {
     // Silent failure -- auto-apply notification must not affect existing recall output
   }
 
+  // Profile refresh: regenerate review-profile.json so next session has fresh weights
+  try {
+    const reviewProfileLib = require('./lib/review-profile.cjs');
+    reviewProfileLib.generateReviewProfile({ cwd });
+  } catch (e) {
+    // Silent failure -- profile refresh must never block session start
+  }
+
   body += '\n</system-reminder>';
 
   const output = body.trim();

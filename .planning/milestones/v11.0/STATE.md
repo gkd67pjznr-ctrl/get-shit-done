@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: 49-01 complete — session index and idea tagging, 5 CLI sub-commands, 87/87 tests pass.
-last_updated: "2026-04-04T14:30:00.000Z"
-last_activity: "2026-04-04 — 49-01 complete: HIST-01 and HIST-02 satisfied, 12 new tests, 87 total pass"
+stopped_at: 49-02 complete — workflow integration, brainstorm auto-logging and new-milestone seed prompt, 87/87 tests pass.
+last_updated: "2026-04-04T15:00:00.000Z"
+last_activity: "2026-04-04 — 49-02 complete: HIST-01 (workflow level) and HIST-03 satisfied"
 progress:
   total_phases: 4
   completed_phases: 2
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-04)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 49 plan 01 complete. HIST-01 and HIST-02 satisfied. Session history and idea-to-phase traceability implemented.
+**Current focus:** Phase 49 plans 01 and 02 complete. HIST-01 (lib + workflow), HIST-02, and HIST-03 satisfied. Session history, idea tagging, auto-logging, and seed-context offer implemented.
 
 ## Current Position
 
 Phase: 49 (History and Traceability) — IN PROGRESS
-Plan: 49-01 complete
-Status: Plan 49-01 done — HIST-01 and HIST-02 satisfied
-Last activity: 2026-04-04 — 49-01 complete: session index and idea tagging, 5 CLI sub-commands, 87/87 tests pass
+Plan: 49-02 complete
+Status: Plan 49-02 done — HIST-01 (workflow level) and HIST-03 satisfied
+Last activity: 2026-04-04 — 49-02 complete: brainstorm.md auto-logs sessions, new-milestone.md seeds from recent ideas
 
 Progress: [██████████] 100% (Phase 48, plan 01)
 
