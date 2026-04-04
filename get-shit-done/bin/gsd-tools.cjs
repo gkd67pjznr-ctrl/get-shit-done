@@ -174,6 +174,7 @@ const migrate = require('./lib/migrate.cjs');
 const benchmark = require('./lib/benchmark.cjs');
 const sessionReport = require('./lib/session-report.cjs');
 const skillMetrics = require('./lib/skill-metrics.cjs');
+const skillScorer = require('./lib/skill-scorer.cjs');
 const dashboard = require('./lib/dashboard.cjs');
 
 // ─── CLI Router ───────────────────────────────────────────────────────────────
@@ -340,6 +341,17 @@ async function main() {
         console.error('Unknown skill-metrics subcommand. Available: compute, show');
         process.exit(1);
       }
+      break;
+    }
+
+    case 'skill-score': {
+      const taskIdx = args.indexOf('--task');
+      const taskDescription = taskIdx !== -1 ? args[taskIdx + 1] : '';
+      if (!taskDescription) {
+        console.error('Usage: skill-score --task "description of current task"');
+        process.exit(1);
+      }
+      skillScorer.cmdSkillScore(cwd, taskDescription, raw);
       break;
     }
 
