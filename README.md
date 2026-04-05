@@ -495,7 +495,9 @@ Teach-phase replaces `discuss → plan → execute` when the goal is not just to
 
 Originated from the nrgy project — a Python/PySide6 desktop app built from scratch to learn coding, where every line was typed manually and the teaching style evolved across phases into a repeatable pattern worth codifying.
 
-See [docs/TEACH-PHASE.md](docs/TEACH-PHASE.md) for full documentation including the 6-step workflow, adaptive mode details, mastery memory system, and architecture overview.
+**Agent of Learning (AOL):** The teach-phase concept has evolved into a full intelligent tutoring system in a separate project. AOL adds Bayesian knowledge graphs, four pedagogical modes (PRIMM, Scaffolded, Socratic, Constructivist), structured observation systems, Bloom's Taxonomy tracking, scaffold fading, and spaced repetition — all grounded in learning science research. See Section 10 of the full docs for the complete comparison.
+
+See [docs/TEACH-PHASE.md](docs/TEACH-PHASE.md) for full documentation including the 6-step workflow, adaptive mode details, mastery memory system, architecture, and the AOL evolution.
 
 ---
 

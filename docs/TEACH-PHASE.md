@@ -231,3 +231,185 @@ This works perfectly for nrgy. For any other learning project, these paths would
 **The clean fix:** The workflow should resolve the active project's memory directory dynamically, using the same mechanism that GSD uses to resolve the active project path. Claude Code's project memory lives at `~/.claude/projects/{encoded-path}/memory/` — this path can be derived from the working directory at workflow start.
 
 This is a small improvement scoped to a future milestone. The teach-phase feature is fully functional today for nrgy, and adaptable to other projects with a minor path update.
+
+---
+
+## Section 10: The Agent of Learning (AOL) — The Next Evolution
+
+The teach-phase described above is the **v1 implementation** — effective but simple. A separate project, **Agent of Learning (AOL)** (`~/Projects/aol`), takes the same core philosophy and builds it into a full intelligent tutoring system (ITS) grounded in pedagogical research.
+
+AOL is not a replacement for GSD's teach-phase. It is what teach-phase grows into when the learning dimension becomes the primary concern rather than a mode within a project management system.
+
+### The Core Inversion (Shared with Teach-Phase)
+
+Both systems share the same fundamental insight:
+
+> Success criteria is NOT "make this code well, save it in context, and direct the learner to create exactly that." Success criteria IS: "Teach and guide the user to code the project to a functional state... while giving control of the exact form the code takes to the learner, and verify that the user did it themselves and displayed learning."
+
+The agent never writes source code. The learner types everything. The agent guides, explains, verifies, and adapts.
+
+### What AOL Adds Beyond Basic Teach-Phase
+
+| Capability | GSD Teach-Phase | AOL |
+|------------|-----------------|-----|
+| Teaching modes | 2 (line-by-line, Socratic) | 4+ (PRIMM, Scaffolded, Socratic, Constructivist) |
+| Mastery tracking | TEACH-PROGRESS.md per phase | Bayesian Knowledge Graph with continuous probability |
+| Concept ordering | Planner reads prior progress files | DAG with topological sort, prerequisite enforcement |
+| Scaffold management | Implicit (agent judgment) | Explicit 3-stage fading with thresholds and re-scaffolding |
+| Learning assessment | Skill observations in progress file | Bloom's Taxonomy levels per concept (Remember→Create) |
+| Session structure | Start→teach→wrap_up | State machine: INIT→WARMUP→TEACH→INSPECT→REFLECT→WRAP_UP→DONE |
+| Observation system | Notes in TEACH-PROGRESS.md | Append-only JSONL with typed signals and strength ratings |
+| Spaced repetition | None | Review scheduling woven into session warmups |
+| Cognitive load management | One file at a time | One new concept at a time against familiar background, graph-enforced |
+| State ownership | Agent writes markdown directly | Python engine owns all state; agents call CLI for reads/writes |
+
+### AOL's Four Teaching Modes
+
+GSD teach-phase has two modes (line-by-line and Socratic). AOL expands this to four research-grounded pedagogical approaches, selected dynamically per concept:
+
+**1. PRIMM** (Predict → Run → Investigate → Modify → Make)
+- For new syntax/patterns the learner hasn't seen
+- Five cognitive steps: predict what code does → run it → investigate structure → modify behavior → make something new
+- Natural progression from reading comprehension to creation
+
+**2. Scaffolded** (Structure-Fading)
+- For concepts in the learner's Zone of Proximal Development (can do with help)
+- Provides supports (function signatures, step outlines, test cases) then explicitly fades them
+- 3-stage fading: full → partial → minimal → none
+- Requires 3+ successes before fading; re-scaffolds after 2+ failures
+
+**3. Socratic** (Questioning/Deepening)
+- Same as GSD teach-phase's Socratic mode, but with structured escalation
+- If stuck after 2 attempts, auto-downgrades to PRIMM or Scaffolded
+- Selected when mastery probability is medium-high
+
+**4. Constructivist** (Discovery-Based)
+- For concepts best learned through experimentation
+- Creates situations where the learner encounters the concept naturally
+- Example: "Try using parentheses instead of square brackets. What changed? Why?"
+- Embraces productive failure as a learning mechanism
+
+Future modes planned: Live Demo, Navigator/Driver, Rubber Duck, Retrieval Practice.
+
+### Bayesian Knowledge Graph
+
+Where GSD teach-phase tracks mastery as notes in a markdown file, AOL uses a formal Bayesian knowledge graph:
+
+**Each concept node tracks:**
+- `mastery_probability` (0.0–1.0) — updated via Bayesian inference after every interaction
+- `bloom_level` — current demonstrated cognitive level (Remember through Create)
+- `scaffold_level` — current scaffolding intensity, tracked per concept
+- `demonstration_count` — successful demonstrations across varied contexts (not just one correct answer)
+- `next_review_date` — calculated from mastery probability for spaced repetition
+
+**Scaffold-weighted updates:** Success with full scaffolding barely moves mastery. Success without scaffolding moves it strongly. This prevents the illusion-of-learning where scaffolds do the thinking.
+
+```
+mastery_delta = learning_rate × step_size
+learning_rate = (4 - scaffold_level) / 4.0
+```
+
+**50+ Python concepts** organized as a DAG with prerequisite edges:
+- Foundation: variables, print, data_types, operators, strings, f-strings
+- Control flow: conditionals, for_loops, while_loops
+- Functions: functions → return_values → function_arguments → default_arguments → scope
+- Data structures: lists, tuples, dicts, sets → comprehensions
+- OOP: classes → instance_methods, inheritance, context_managers
+- Advanced: decorators, generators, lambda, type_hints, dataclasses, exceptions
+
+Topological sort enforces teaching order — the learner never encounters a concept whose prerequisites aren't mastered.
+
+### Observation System
+
+GSD teach-phase records skill observations as freeform notes in TEACH-PROGRESS.md. AOL replaces this with a structured, append-only observation system:
+
+**Typed observation signals with strength ratings:**
+
+| Signal | Strength | Example |
+|--------|----------|---------|
+| Correct Socratic answer | HIGH | Direct mastery evidence |
+| Independent debugging | HIGH | Problem-solving competence |
+| Unprompted "why" explanation | HIGH | Deep understanding |
+| Code passes first try | MEDIUM | May be mastery or luck |
+| "Just show me" request | MEDIUM | Mode mismatch or frustration |
+| 2+ wrong Socratic attempts | MEDIUM | Partial understanding |
+| Hesitation | LOW | Uncertainty signal |
+
+**Append-only JSONL** — crash-safe, never edited after write. Aggregation is a separate read-then-write step performed by the engine.
+
+**Teaching preference adaptation loop:**
+1. Accumulate 3+ observations of same pattern
+2. Generate preference: "For abstract concepts, default to Constructivist instead of Socratic"
+3. Store in `teaching-preferences.jsonl` (7-day cooldown between adaptations)
+4. Next session's curriculum planner reads preferences and adjusts mode selection
+
+### Session State Machine
+
+GSD teach-phase has a loose flow: start → teach through files → wrap up. AOL formalizes this as a state machine with explicit phases:
+
+```
+INIT → WARMUP → TEACH → INSPECT → REFLECT → WRAP_UP → DONE
+```
+
+- **WARMUP** — spaced repetition reviews woven naturally into session start
+- **INSPECT** — code inspection checkpoints (functional correctness + learning evidence + Bloom's level + independence score)
+- **REFLECT** — Kolb experiential learning cycle: "what happened? why? what did you learn?"
+
+Each state is recoverable — sessions can crash and resume from any point.
+
+### Learning Verification
+
+GSD teach-phase verifies by asking the user to run a command and report what they see. AOL adds a formal verification layer:
+
+**Learning Report (per phase):**
+- Functional correctness: does the code work?
+- Learning evidence: which concepts were demonstrated vs. need reinforcement?
+- Bloom's peak: highest cognitive level demonstrated this session
+- Independence score: ratio of independent vs. guided completions
+- Recommendation: ready for next phase, or specific concepts need more work
+
+### Architecture: Engine Authority
+
+The most significant architectural difference: AOL separates the Python engine from the Claude agent layer.
+
+```
+Claude Code Layer (Markdown agents/commands)
+    ↓ CLI calls (python -m aol.tools)
+Python Workflow Engine (owns all state, makes decisions)
+    ↓ reads/writes
+File System State (.aol/ directory)
+```
+
+Agents never directly read/write state files. The engine is the single source of truth. This makes the system testable, deterministic, and agent-independent — the markdown layer could be swapped for a different AI without changing the engine.
+
+State lives in `.aol/` (not `.planning/`) to avoid collision with GSD managing the build lifecycle.
+
+### Pedagogical Foundations
+
+AOL grounds its design in established learning science:
+
+- **Bloom's Taxonomy (Revised)** — tracks cognitive level per concept across six stages
+- **Zone of Proximal Development (Vygotsky)** — tasks stay challenging but achievable with guidance
+- **Scaffolding with Fading (Bruner)** — explicit support that is explicitly removed
+- **Mastery Learning (Bloom)** — 3+ demonstrations across varied contexts, not just one correct answer
+- **Constructivism (Piaget/Papert)** — learning through building and productive failure
+- **Kolb's Experiential Learning** — Experience → Reflect → Conceptualize → Experiment
+- **Cognitive Load Theory (Sweller)** — one new concept at a time against familiar background
+- **Spaced Repetition** — mastered concepts scheduled for review
+- **Deliberate Practice (Ericsson)** — targeted exercises for identified weaknesses
+
+### Implementation Status
+
+AOL has completed Phases 1–2:
+- **Phase 1:** CLI framework (Click), project init, config management, `.aol/` directory structure
+- **Phase 2:** Knowledge graph engine — 50+ concepts, Bayesian updates, prerequisite enforcement, readiness checking
+
+Remaining phases (3–7) cover: state management + observations, the core teaching loop (critical milestone), knowledge dashboard, spaced repetition + additional modes, and integration/milestones.
+
+### The Relationship Between Teach-Phase and AOL
+
+GSD teach-phase is the **working v1** — simple, effective, usable today. It proves the concept: an AI agent can teach rather than write code, and the learner retains more.
+
+AOL is the **research-grounded v2** — taking everything learned from teach-phase sessions and building formal systems around it. The Bayesian graph replaces freeform notes. The four teaching modes replace binary line-by-line/Socratic. The observation system replaces manual skill tracking. The engine authority pattern replaces agent-writes-everything.
+
+They share the same soul: the agent never writes source code, the learner types everything, "why" questions are the primary learning mechanism, and sessions can be interrupted and resumed.
