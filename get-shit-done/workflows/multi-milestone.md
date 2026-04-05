@@ -205,4 +205,144 @@ Do not commit this file — it is a session artifact, written but not committed 
 ---
 
 ## Stage 1 — Milestone Shell Creation
+
+### 1. Version Auto-Assignment
+
+Parse `MILESTONES.md` to find the highest existing version number. For each approved cluster (in cluster label order A, B, C...), assign the next version: `vX+1.0`, `vX+2.0`, etc.
+
+Present for confirmation before creating anything:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ GSD ► VERSION ASSIGNMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Proposed milestone versions:
+  Cluster A → v[X+1.0] [Cluster A Name]
+  Cluster B → v[X+2.0] [Cluster B Name]
+  Cluster C → v[X+3.0] [Cluster C Name]
+```
+
+AskUserQuestion: "Proceed with these versions?"
+Options:
+- "Yes, create these workspaces" — Continue to workspace creation
+- "Adjust milestone names" — Prompt for each name individually via plain text, then re-display
+- "Adjust version numbers" — Prompt for each version individually via plain text, then re-display
+
+Store confirmed versions as `$MILESTONE_VERSIONS` (array of {cluster, version, name}).
+
+### 2. Parallel Workspace Creation
+
+Once confirmed, issue all N workspace creation calls in parallel. Use N concurrent Task() calls (one per milestone) or N concurrent Bash calls:
+
+```
+For each milestone in $MILESTONE_VERSIONS:
+  Task(prompt="
+    Run: node $HOME/.claude/get-shit-done/bin/gsd-tools.cjs milestone new-workspace [VERSION] --raw
+    Write the raw JSON output to $TASK_DIR/workspace-[VERSION].json
+    Report success or failure.
+  ", description="Create workspace [VERSION]")
+```
+
+Wait for all N Tasks to complete. If any workspace creation fails, log the failure with the error message but continue creating the remaining workspaces.
+
+Display progress as tasks complete:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CREATING WORKSPACES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [VERSION] [Name] ... created ✓
+  [VERSION] [Name] ... created ✓
+  [VERSION] [Name] ... created ✓
+```
+
+### 3. Consolidated Conflict Check
+
+After ALL workspaces exist, run a single manifest check:
+
+```bash
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" milestone manifest-check --raw
+```
+
+Parse the JSON result. If `has_conflicts` is true, display:
+
+```
+Advisory: File conflicts detected across batch milestones.
+  [VERSION1] and [VERSION2] both touch: [file list]
+  This is informational only — execution will proceed normally.
+```
+
+If no conflicts, display:
+```
+No cross-milestone file conflicts detected.
+```
+
+### 4. Display Summary Table
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ MILESTONE WORKSPACES CREATED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Milestone                    | Version   | Workspace
+[Cluster A Name]             | v[X+1.0]  | .planning/milestones/v[X+1.0]/
+[Cluster B Name]             | v[X+2.0]  | .planning/milestones/v[X+2.0]/
+[Cluster C Name]             | v[X+3.0]  | .planning/milestones/v[X+3.0]/
+
+Phase slots will be assigned before roadmapping (Stage 4).
+```
+
+### 5. Write and Commit BATCH-SESSION.md
+
+Write `$TASK_DIR/BATCH-SESSION.md`:
+
+```markdown
+# Batch Session — [YYYY-MM-DD HH:MM]
+
+## Session Overview
+
+| Field | Value |
+|-------|-------|
+| Started | [ISO timestamp] |
+| Input mode | [inline / file / brainstorm] |
+| Ideas count | [N] |
+| Milestones | [N] |
+
+## Stage Status
+
+| Stage | Status | Completed At |
+|-------|--------|-------------|
+| 0 — Feature Intake | Complete | [ISO timestamp] |
+| 1 — Workspace Creation | Complete | [ISO timestamp] |
+| 2/3 — Research + Scoping | Pending | — |
+| 4 — Roadmapping + Synthesis | Pending | — |
+
+## Milestones
+
+| Version | Name | Workspace Created | Scoping | Roadmap |
+|---------|------|-------------------|---------|---------|
+| v[X+1.0] | [Name] | [timestamp] | Pending | Pending |
+| v[X+2.0] | [Name] | [timestamp] | Pending | Pending |
+
+## Failure Log
+
+(none)
+```
+
+Commit the file:
+
+```bash
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit \
+  "docs: create batch session for [N] milestones" \
+  --files "$TASK_DIR/BATCH-SESSION.md" "$TASK_DIR/BATCH-INTAKE.md"
+```
+
+After commit, append a comment placeholder: `## Stage 2/3 — Research and Scoping` (filled by Plan 88-03).
+
+---
+
+## Stage 2/3 — Research and Scoping
+
 </process>
