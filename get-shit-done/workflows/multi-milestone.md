@@ -343,6 +343,228 @@ After commit, append a comment placeholder: `## Stage 2/3 — Research and Scopi
 
 ---
 
-## Stage 2/3 — Research and Scoping
+## Stage 2/3 — Per-Milestone Research and Requirements Scoping
+
+Process each milestone in `$MILESTONE_VERSIONS` sequentially. For each milestone:
+
+### Per-Milestone Loop
+
+Display progress header:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ SCOPING: [VERSION] [Milestone Name] ([N] of [TOTAL])
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Ideas assigned to this milestone:
+  - [Idea 1 from this cluster]
+  - [Idea 2 from this cluster]
+  - [Idea 3 from this cluster]
+```
+
+#### Step A — Research Decision (SCOP-01)
+
+AskUserQuestion: "Research [VERSION] [Milestone Name] before scoping?"
+Options:
+- "Research first" — Spawn 4 researchers for this milestone, synthesize, then scope
+- "Skip research" — Scope from cluster ideas directly
+
+**If "Research first" (SCOP-02):**
+
+```bash
+mkdir -p .planning/milestones/[VERSION]/research
+```
+
+Display:
+```
+◆ Spawning 4 researchers for [VERSION] in parallel...
+  → Stack, Features, Architecture, Pitfalls
+```
+
+Spawn 4 parallel gsd-project-researcher agents. Use the same dimension-specific fields as `new-milestone.md` Step 8 but with milestone-scoped output paths:
+
+**Common Task() template for all 4 researchers:**
+```
+Task(prompt="
+<research_type>Project Research — {DIMENSION} for [VERSION] [Milestone Name].</research_type>
+
+<milestone_context>
+SUBSEQUENT MILESTONE — Adding the following features to the existing app:
+[cluster ideas for this milestone]
+
+{EXISTING_CONTEXT}
+Focus ONLY on what's needed for these features.
+</milestone_context>
+
+<question>{QUESTION}</question>
+
+<files_to_read>
+- .planning/PROJECT.md (Project context)
+- .planning/MILESTONES.md (What has shipped)
+</files_to_read>
+
+<downstream_consumer>{CONSUMER}</downstream_consumer>
+
+<quality_gate>{GATES}</quality_gate>
+
+<output>
+Write to: .planning/milestones/[VERSION]/research/{FILE}
+Use template: ~/.claude/get-shit-done/templates/research-project/{FILE}
+</output>
+", subagent_type="gsd-project-researcher", description="{DIMENSION} research for [VERSION]")
+```
+
+**Dimension-specific fields (copy from new-milestone.md Step 8):**
+
+| Field | Stack | Features | Architecture | Pitfalls |
+|-------|-------|----------|-------------|----------|
+| EXISTING_CONTEXT | Existing validated capabilities (DO NOT re-research): [from PROJECT.md] | Existing features (already built): [from PROJECT.md] | Existing architecture: [from PROJECT.md or codebase map] | Focus on common mistakes when ADDING these features to existing system |
+| QUESTION | What stack additions/changes are needed for [milestone features]? | How do [milestone features] typically work? Expected behavior? | How do [milestone features] integrate with existing architecture? | Common mistakes when adding [milestone features] to [domain]? |
+| CONSUMER | Specific libraries with versions for NEW capabilities, integration points, what NOT to add | Table stakes vs differentiators vs anti-features, complexity noted, dependencies on existing | Integration points, new components, data flow changes, suggested build order | Warning signs, prevention strategy, which phase should address it |
+| GATES | Versions current (verify with Context7), rationale explains WHY, integration considered | Categories clear, complexity noted, dependencies identified | Integration points identified, new vs modified explicit, build order considers deps | Pitfalls specific to adding these features, integration pitfalls covered, prevention actionable |
+| FILE | STACK.md | FEATURES.md | ARCHITECTURE.md | PITFALLS.md |
+
+After all 4 researchers complete, spawn synthesizer:
+
+```
+Task(prompt="
+Synthesize research outputs into SUMMARY.md.
+
+<files_to_read>
+- .planning/milestones/[VERSION]/research/STACK.md
+- .planning/milestones/[VERSION]/research/FEATURES.md
+- .planning/milestones/[VERSION]/research/ARCHITECTURE.md
+- .planning/milestones/[VERSION]/research/PITFALLS.md
+</files_to_read>
+
+Write to: .planning/milestones/[VERSION]/research/SUMMARY.md
+Use template: ~/.claude/get-shit-done/templates/research-project/SUMMARY.md
+Commit after writing.
+", subagent_type="gsd-research-synthesizer", description="Synthesize research for [VERSION]")
+```
+
+Display key findings from SUMMARY.md:
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ RESEARCH COMPLETE: [VERSION] ✓
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**Stack additions:** [from SUMMARY.md]
+**Feature table stakes:** [from SUMMARY.md]
+**Watch Out For:** [from SUMMARY.md]
+```
+
+**If "Skip research":** Continue directly to Step B.
+
+#### Step B — Requirements Scoping (SCOP-03)
+
+Display:
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ GSD ► DEFINING REQUIREMENTS: [VERSION]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**If research exists for this milestone:** Read `.planning/milestones/[VERSION]/research/FEATURES.md`, extract feature categories and table stakes/differentiators.
+
+Present features by category:
+```
+## [Category 1]
+**Table stakes:** Feature A, Feature B
+**Differentiators:** Feature C, Feature D
+**Research notes:** [any relevant notes]
+```
+
+**If no research:** Derive categories from the cluster's ideas. Ask in plain text: "What are the main things users need to do with [milestone features]?" Clarify and group into categories before presenting multiSelect.
+
+**Scope each category** via AskUserQuestion (multiSelect: true, header max 12 chars):
+- "[Feature 1]" — [brief description]
+- "[Feature 2]" — [brief description]
+- "None for this milestone" — Defer entire category
+
+Track: Selected → this milestone's requirements. Unselected table stakes → future. Unselected differentiators → out of scope.
+
+**Identify gaps** via AskUserQuestion:
+- "No, research covered it" — Proceed
+- "Yes, let me add some" — Capture additions as plain text, then continue
+
+**Generate REQUIREMENTS.md content:**
+- v1 Requirements grouped by category (checkboxes, REQ-IDs)
+- Future Requirements section (deferred items)
+- Out of Scope section (explicit exclusions)
+- Traceability section (empty table — filled by roadmapper)
+
+**REQ-ID format:** `[CATEGORY-ABBREVIATION]-[NUMBER]` (e.g., AUTH-01, NOTIF-02). Start numbering from 01 for each milestone.
+
+**Quality criteria for each requirement:**
+- Specific and testable: "User can X" not "System does Y"
+- Atomic: one capability per requirement
+- Independent: minimal dependencies on other requirements
+
+Present full requirements list for confirmation:
+
+```
+## [VERSION] [Milestone Name] Requirements
+
+### [Category 1]
+- [ ] **CAT1-01**: User can do X
+- [ ] **CAT1-02**: User can do Y
+
+...
+
+Does this capture what you're building? (yes / adjust)
+```
+
+If user says "adjust", accept plain-text corrections and re-present the list. Loop until confirmed.
+
+#### Step C — Commit REQUIREMENTS.md (SCOP-04)
+
+Write `.planning/milestones/[VERSION]/REQUIREMENTS.md` with the confirmed requirements.
+
+Commit:
+```bash
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit \
+  "docs: define [VERSION] requirements ([N] items)" \
+  --files .planning/milestones/[VERSION]/REQUIREMENTS.md
+```
+
+#### Step D — Update BATCH-SESSION.md
+
+Read `$TASK_DIR/BATCH-SESSION.md`. Update the row for `[VERSION]` in the Milestones table:
+- Set Scoping column to "[ISO timestamp]"
+
+Commit the updated BATCH-SESSION.md:
+```bash
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit \
+  "docs: batch session — [VERSION] scoping complete" \
+  --files "$TASK_DIR/BATCH-SESSION.md"
+```
+
+---
+
+After all N milestones have completed Steps A-D, display completion summary:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ ALL MILESTONES SCOPED ✓
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[N] milestone REQUIREMENTS.md files committed.
+Ready for roadmapping (Stage 4).
+
+Milestones scoped:
+  v[X+1.0] — [Name] ([N] requirements)
+  v[X+2.0] — [Name] ([N] requirements)
+  v[X+3.0] — [Name] ([N] requirements)
+
+## > Next Up
+Run `/gsd:multi-milestone --resume` to continue to Stage 4 (roadmapping + synthesis).
+(Stage 4 implementation: Phase 89)
+```
+
+## Stage 4 — Parallel Roadmapping and Synthesis
+
+Stage 4 is implemented in Phase 89. When Stage 3 completes, the session ends here.
+The BATCH-SESSION.md records stage completion; `/gsd:multi-milestone --resume NN` will load it and continue from Stage 4 once Phase 89 is built.
 
 </process>
