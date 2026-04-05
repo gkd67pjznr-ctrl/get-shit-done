@@ -31,6 +31,43 @@ See [FORK-GUIDE.md](FORK-GUIDE.md) for installation and usage instructions.
 | Unified Observability & Context Routing | v13.0 (in progress) | Event journaling with central workflow.jsonl emitter, context budget optimizer with per-skill token cost measurement, MCP server task-type classifier (partial) |
 | Autonomous Learning | v15.0 | Auto-apply safety engine (confidence > 0.95, rate-limited), adaptive review profiles from corrections.jsonl, decision audit trail with Jaccard tension flagging |
 
+### v11.0 Wild Brainstorming Engine
+
+A mechanical brainstorming system that enforces divergent thinking through code constraints, not prompts. The problem with asking an LLM to "brainstorm freely" is that it self-censors, evaluates ideas mid-stream, and converges too early. This system makes that structurally impossible.
+
+**Three stages, enforced in sequence:**
+
+**1. Seed** — Grounds the session in real project data while deliberately *blinding* the system from the roadmap (so it doesn't just suggest what's already planned):
+- `--from-corrections` — seeds from correction pattern analysis (what Claude keeps getting wrong)
+- `--from-debt` — seeds from open tech debt items
+- `--for-milestone` — combines all data sources for comprehensive seeding
+- Prior FEATURE-IDEAS.md files are loaded as "already explored" context to prevent retreading
+
+**2. Expand** — Four interactive techniques run in sequence, each with mechanical enforcement:
+- **Freeform dump** — minimum 15 ideas (30 in `--wild` mode), evaluation detector fires on any evaluative language ("that won't work", "too complex") and re-prompts before the idea is stored
+- **SCAMPER cycling** — all 7 creative lenses (Substitute, Combine, Adapt, Modify, Put to other use, Eliminate, Reverse) presented interactively, minimum 2 ideas per lens (4 in wild), session cannot advance until all 7 lenses produce ideas
+- **Starbursting** — forces who/what/where/when/why/how questioning with minimum 3 ideas per angle
+- **Perspective shifts** — 2-3 provocative framings injected during expand (all 7 in wild mode)
+- **Saturation detection** — measures idea velocity after each technique, suggests switching or moving to converge when output slows
+
+**3. Converge** — Reads from the frozen append-only store (no modifications possible):
+- Ideas clustered into 3-7 themes, every idea in exactly one cluster
+- Each idea scored on 4 dimensions: feasibility, impact, alignment, risk
+- Ranked presentation — user selects finalists (scores are signals, not verdicts)
+
+**Output:**
+- `FEATURE-IDEAS.md` — structured, scored, clustered finalist ideas
+- `BRAINSTORM-SESSION.md` — full session transcript
+- `ideas.jsonl` — raw append-only idea store
+- Session history with idea-to-phase traceability (which brainstormed ideas became implemented phases)
+- `/gsd:new-milestone` auto-detects recent FEATURE-IDEAS.md and offers to load as seed context
+
+**`--wild` mode** doubles all quantity floors, increases evaluation detector sensitivity, and activates all 7 perspective framings. Composable with other flags: `--wild --for-milestone`.
+
+```
+/gsd:brainstorm authentication --wild --from-corrections
+```
+
 ### v15.0 Autonomous Learning (latest)
 
 Closes the feedback loop by making the system self-improving with guardrails:
@@ -436,6 +473,29 @@ Use for: bug fixes, small features, config changes, one-off tasks.
 ```
 
 **Creates:** `.planning/quick/001-add-dark-mode-toggle/PLAN.md`, `SUMMARY.md`
+
+---
+
+### Teach Mode
+
+```
+/gsd:teach-phase N
+```
+
+**For learning projects where you write every line of code yourself.**
+
+Teach-phase replaces `discuss → plan → execute` when the goal is not just to ship code, but to understand it. The system researches the phase, builds a dependency-ordered teaching plan, then guides you through every file interactively — showing code in chat while you type it into your editor.
+
+**Key properties:**
+
+- Claude never writes source code to disk — all code appears in chat for you to type manually
+- Adaptive instruction: new concepts get line-by-line explanation with "why" before you type; familiar patterns get Socratic questioning ("what do you think we need here?")
+- TEACH-PROGRESS.md tracks completed steps and mastery observations — sessions can be interrupted and resumed with `/gsd:teach-phase N`
+- Mastery accumulates across phases: the planner reads prior progress files so it never re-teaches what you have already demonstrated
+
+Originated from the nrgy project — a Python/PySide6 desktop app built from scratch to learn coding, where every line was typed manually and the teaching style evolved across phases into a repeatable pattern worth codifying.
+
+See [docs/TEACH-PHASE.md](docs/TEACH-PHASE.md) for full documentation including the 6-step workflow, adaptive mode details, mastery memory system, and architecture overview.
 
 ---
 
