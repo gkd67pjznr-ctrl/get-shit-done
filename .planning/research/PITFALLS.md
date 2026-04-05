@@ -1,241 +1,180 @@
 # Pitfalls Research
 
-**Domain:** Adding MCP StreamableHTTP endpoints to an existing Node.js CJS dashboard server (v10.0 Shared MCP Dashboard)
+**Domain:** Adding planning intelligence (plan reuse, task composition, milestone decomposition, prompt quality scoring) to an existing GSD framework
 **Researched:** 2026-04-04
-**Confidence:** HIGH (SDK issues verified against official GitHub issues and closed PRs; spec requirements from official MCP specification; CORS pitfall confirmed against live server.cjs code)
+**Confidence:** HIGH (pitfalls derived from this project's own execution history, v14.0 milestone context, established research on automation bias and similarity scoring, and direct inspection of existing data structures)
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall 1: SDK v2 Alpha Is ESM-Only — Installing It Breaks CJS Require
+### Pitfall 1: Planner Anchoring — Treating Suggestions as Authoritative Rather Than Advisory
 
 **What goes wrong:**
-`@modelcontextprotocol/sdk` v2.x alpha dropped CJS builds entirely. Running `npm install @modelcontextprotocol/sdk` on a project using a v2.x dist tag will install an ESM-only package into a CJS server. The first `require('@modelcontextprotocol/sdk/...')` call crashes with `ERR_REQUIRE_ESM`. The dashboard server is pure CJS (`'use strict'`; all `require()` calls) — ESM is not an option without a full server rewrite.
+The planner agent receives a "suggested task sequence from historical performance" and stops reasoning about the new phase's actual requirements. It adopts the suggestion wholesale, including tasks that were needed in the historical phase but are not needed now, and misses tasks that are novel to this phase. The result is a plan that executes cleanly against the wrong goal — all suggested tasks are completed, but the phase requirements are not met because the template was wrong for this context.
+
+This is the highest-severity risk because it manifests as a quality failure at verification time, not at plan creation time. The plan looks correct and complete throughout execution.
 
 **Why it happens:**
-npm dist tags move forward automatically when a maintainer publishes a new major under the `latest` or `alpha` tag. Developers running `npm install @modelcontextprotocol/sdk` without pinning a version get whatever is current. The SDK changelog does not prominently warn CJS users in the install flow.
+Anchoring bias is well-documented: when an AI (or human planner) receives an initial suggestion, it anchors to that structure and adjusts rather than reasoning from scratch. Research on automation bias confirms that first-impression strengths of a system cause significantly more errors due to over-reliance. The composition assistant's framing — "here's what worked before" — is exactly the condition that triggers anchoring. If the suggestion looks plausible, the planner will not question it deeply.
 
 **How to avoid:**
-Pin the version explicitly: `npm install @modelcontextprotocol/sdk@1.29.0`. Verify CJS compatibility after install by checking `node_modules/@modelcontextprotocol/sdk/dist/cjs/` exists and the `package.json` exports map includes `"require"` conditions. Do not use the `@latest` tag or version ranges (`^1.x`) that could resolve to v2.
+Surface suggestions as context input, not as pre-filled plan drafts. Specifically:
+- The composition assistant should display matched tasks with their correction rates and source phases as a reference table, not as a draft task list.
+- The plan-phase workflow must still require the planner to write the task breakdown from scratch, using the suggestion table as a reference.
+- Frame all suggestions with explicit "adapt as needed" language and a reminder that the planner owns the final breakdown.
+- Never auto-populate the plan template fields with suggested tasks. The planner types the tasks; the assistant annotates which historical pattern each task resembles.
+
+The v14.0 milestone context (Key Decision Point #2) explicitly specifies "suggest as context input to the planner, not as a pre-filled plan template." This must be a hard architectural constraint, not a soft recommendation.
 
 **Warning signs:**
-- `node_modules/@modelcontextprotocol/sdk/dist/cjs/` directory is absent after install
-- `package.json` exports only show `"import"` conditions, no `"require"`
-- `require()` of SDK path throws `ERR_REQUIRE_ESM` at server startup
+- Plan task descriptions closely match historical plan descriptions word-for-word
+- A plan's task count exactly matches the historical "best match" plan's task count
+- The planner agent produces a plan without referencing the phase-specific requirements
+- Completed plans show 0 corrections but requirements verification fails at transition
 
-**Phase to address:** Phase 1 (MCP server scaffolding). Pin the version in the very first `npm install` command. Never leave this to the implementer's memory.
+**Phase to address:** Plan reuse and composition assistant phases (Phase 1 of v14.0). The suggestion surface format must be specified before the similarity engine is built, because the format determines whether planner anchoring is structurally prevented or structurally encouraged.
 
 ---
 
-### Pitfall 2: Single Server Instance Shared Across Multiple Sessions — Silent Response Routing Failure
+### Pitfall 2: Stale Index Producing Bad Matches at Critical Moments
 
 **What goes wrong:**
-The intuitive implementation creates one `McpServer` instance and one `StreamableHTTPServerTransport` at server startup, then calls `transport.handleRequest(req, res)` for every incoming `/mcp` POST. This works for the first Claude Code session. When a second session connects and initializes, the SDK's `Protocol.connect()` overwrites `this._transport` with the second session's transport. Responses destined for session 1 are now routed to session 2's HTTP response object, or silently dropped. Before SDK v1.26.0, this failure was silent — no error thrown, no warning logged. After v1.26.0, `connect()` throws if already connected, making the bug loud but still incorrect in architecture.
+The plan index is built at milestone completion and cached to a JSON file. A new phase is started, the index is queried, and a "85% similar" match is returned — but the matched plan is from a phase that has since been superseded by a refactoring in a later milestone. The structural pattern it represents is now an anti-pattern (e.g., a CLI subcommand wiring approach that was replaced in v3.1 when the legacy layout was stripped). The planner follows the suggestion and introduces a pattern that was explicitly removed.
+
+Staleness is especially dangerous when the best-match plan is one milestone old. The index was current when built, but the intervening milestone changed the pattern it encoded.
 
 **Why it happens:**
-The MCP spec says one `Server` handles many sessions. Developers assume "one server instance" means "one `McpServer` object." The SDK documentation does clarify this but the correct pattern — one `McpServer` per session — contradicts the natural instinct to share a single initialized server. The official SDK examples (e.g., `sseAndStreamableHttpCompatibleServer.js`) demonstrate the correct pattern but are not prominently linked from the basic setup docs.
+Build-time indexes are fast but drift. The plan index captures structural patterns at a point in time; it does not know when those patterns are superseded by later implementation changes. A "refactor the CLI subcommand wiring" milestone (like v3.1's legacy strip) invalidates many historical plans without updating their index entries. The index has no mechanism to detect this.
 
 **How to avoid:**
-Create a new `McpServer` instance for every incoming session initialization request. Store each `(sessionId → { server, transport })` pair in a `Map`. On each incoming POST, look up the session's transport from the Map, call `transport.handleRequest(req, res)`. On DELETE or session close, call `transport.close()` and remove from the Map.
+Two mechanisms, both required:
 
-```javascript
-const sessions = new Map(); // sessionId → { server, transport }
+1. **Index entry age gating:** Weight matches by recency. Matches from the two most recent milestones receive full weight; matches older than three milestones receive 50% weight; matches older than five milestones receive 25% weight. Never suppress old matches entirely (they may still be valid), but surface their age prominently.
 
-// On POST /mcp:
-const sessionId = req.headers['mcp-session-id'];
-if (sessionId && sessions.has(sessionId)) {
-  sessions.get(sessionId).transport.handleRequest(req, res);
-} else if (isInitializeRequest(body)) {
-  const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: () => randomUUID(),
-    onsessioninitialized: (id) => sessions.set(id, { server: mcpServer, transport }),
-  });
-  const mcpServer = new McpServer({ name: 'gsd-dashboard', version: '1.0.0' });
-  registerTools(mcpServer);
-  await mcpServer.connect(transport);
-  await transport.handleRequest(req, res);
-} else {
-  res.writeHead(400); res.end();
-}
-```
+2. **Invalidation markers:** When a plan is superseded by a later plan that explicitly replaces or refactors it, mark the older plan's index entry with `superseded_by: "plan_id"`. The similarity scorer skips superseded entries by default (with a `--include-superseded` flag for manual inspection). Superseded entries are identified during index rebuild by scanning SUMMARY.md files for phrases like "replaces," "refactors," or "removes" referencing earlier plans.
+
+3. **`--rebuild-index` trigger:** The existing recommendation (from v14.0 milestone context) to rebuild at `cmdMilestoneComplete` is correct. Add a `--rebuild-index` flag for manual refresh. Also add a stale-index warning: if the index mtime is more than 14 days old when `plan-phase` runs, warn before surfacing suggestions.
 
 **Warning signs:**
-- Only one session can use MCP tools at a time; the second session's tool calls time out
-- SDK v1.26.0+: server throws `"Already connected to a transport"` on the second session
-- Tool responses from one Claude Code session appear in a different session's context
+- Suggestions reference plans from milestones that predated a major refactoring milestone (v3.1, v4.0, etc.)
+- A suggestion references file paths that no longer exist in the codebase
+- The "best match" plan's `task_pattern` includes patterns like `detect-layout-style` or `legacy-compatibility` — patterns explicitly removed in v3.1
+- Index mtime is more than 30 days old in an active project
 
-**Phase to address:** Phase 1 (MCP server scaffolding). This is the foundational architectural decision. Getting it wrong requires a rewrite of the entire session routing layer.
+**Phase to address:** Plan indexer phase (Phase 1 of v14.0). Build age-weighting and superseded markers into the index schema from the first iteration. Retrofitting them later requires re-scanning all historical plans and rewriting the index format.
 
 ---
 
-### Pitfall 3: CORS Headers Missing POST, DELETE, and Mcp-Session-Id — All MCP Requests Blocked
+### Pitfall 3: Similarity Metrics That Measure Lexical Overlap, Not Structural Relevance
 
 **What goes wrong:**
-The existing `CORS_HEADERS` constant in `server.cjs` (line 1144) is:
-```javascript
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, PATCH, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-};
-```
-MCP StreamableHTTP requires POST (for tool calls), DELETE (for session termination), and the `Mcp-Session-Id` header in both `Access-Control-Allow-Headers` (so clients can send it) and `Access-Control-Expose-Headers` (so browser-based clients can read it from responses). The existing CORS config does not allow POST or DELETE and does not expose `Mcp-Session-Id`. The Claude Code client is not browser-based, but preflight OPTIONS requests from any web-based MCP client will be rejected. The bigger problem: the dashboard server already runs behind this CORS config, and adding the `/mcp` route without updating CORS breaks the entire MCP integration silently (no CORS error is logged server-side — the block happens in the client).
+The similarity scorer reports "78% match" between a new phase targeting "prompt quality scoring" and a historical phase targeting "skill quality metrics." Both involve the word "quality" prominently, both produce a numeric score, both read from JSONL files. The Jaccard token overlap is high. But the structural patterns are completely different: skill quality metrics involve CATEGORY_SKILL_MAP attribution logic and per-skill correction rate aggregation, while prompt quality scoring involves per-task correction attribution and prompt pattern extraction. A planner following this suggestion adopts the wrong task decomposition.
+
+The deeper version of this failure: two phases share the same file patterns (e.g., both touch `get-shit-done/bin/lib/*.cjs` and `tests/*.test.cjs`) but for entirely different reasons. The file pattern similarity is architectural coincidence, not structural equivalence.
 
 **Why it happens:**
-The existing server was built for a web dashboard (GET for data, PATCH for state updates). MCP requires a different HTTP method surface. Updating CORS is easy to forget because the server starts without error and the MCP route receives requests fine from Node.js-based clients, masking the browser-client breakage.
+Jaccard overlap on tokens is a surface-level signal. It measures shared vocabulary, not shared structure. "Quality," "score," "metric," and "JSONL" appear in many plans for very different reasons. File patterns are even more misleading — `*.cjs` and `*.test.cjs` appear in virtually every plan in this project because the entire codebase is CJS.
+
+This is the gap between keyword similarity and semantic similarity. The current GSD stack (CJS, no ML dependencies, zero-external-dependency constraint) cannot support embedding-based semantic similarity without violating the stack constraints.
 
 **How to avoid:**
-Update `CORS_HEADERS` before adding the `/mcp` route:
-```javascript
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, DELETE, PATCH, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Mcp-Session-Id',
-  'Access-Control-Expose-Headers': 'Mcp-Session-Id',
-};
-```
-Apply this to the OPTIONS preflight handler and all response paths. The `Mcp-Session-Id` must appear in both `Allow-Headers` and `Expose-Headers` — one without the other is insufficient.
+Enrich index entries with structural discriminators that keyword overlap cannot capture:
+
+1. **Task type composition:** The task type sequence is the primary structural fingerprint. `["test-setup", "lib-module", "cli-wiring"]` versus `["test-setup", "lib-module", "algorithm-implementation", "digest-integration"]` are structurally different even if the goal keywords overlap heavily. Weight task type sequence similarity higher than keyword overlap in the final score.
+
+2. **Require task type minimum threshold:** Only surface a match if the task type overlap is above a minimum threshold (suggest 50%) independent of keyword score. A high keyword score with low task type overlap is a false positive.
+
+3. **Exclude universal file patterns from scoring:** Remove file patterns that appear in more than 60% of all plans from the similarity computation. In this codebase: `get-shit-done/bin/lib/*.cjs`, `tests/*.test.cjs`, and `get-shit-done/bin/gsd-tools.cjs` are near-universal and contribute noise, not signal. Only project-specific or domain-specific file patterns carry discriminating information.
+
+4. **Show the confidence breakdown:** Surface the keyword overlap score, task type overlap score, and file pattern score separately. A "78% overall" that hides "keyword 95%, task type 40%" is dangerous. The planner can dismiss a false positive immediately when they see low task type overlap.
 
 **Warning signs:**
-- Claude Code connects fine but a browser-based MCP client cannot initialize
-- Preflight OPTIONS to `/mcp` returns 204 but the actual POST fails with a CORS error in browser devtools
-- `Mcp-Session-Id` header is not visible in response headers when inspecting from a browser
+- Multiple phases from different domains (analytics, CLI commands, JSONL persistence) all score above 70% similarity
+- The top match for a new phase shares only generic tokens ("score," "compute," "track") without specific domain tokens
+- File pattern matching contributes more than 30% of the total similarity score
+- Suggested task sequences from the match don't map to the new phase's specific requirements
 
-**Phase to address:** Phase 1 (MCP server scaffolding). Update CORS before writing the `/mcp` route handler — not after.
+**Phase to address:** Similarity scorer phase (Phase 1 of v14.0). The scoring formula must be defined with discriminating weights before implementation. A naive Jaccard-only scorer that produces plausible-looking numbers is harder to fix than no scorer at all.
 
 ---
 
-### Pitfall 4: Session Map Memory Leak — Transports Never Removed
+### Pitfall 4: Prompt Quality Score That Penalizes Necessary Complexity
 
 **What goes wrong:**
-Every Claude Code session that connects creates a new entry in the sessions `Map`. When a session ends (user closes the terminal, Claude Code exits), the client either sends a DELETE request to terminate the session or simply disconnects without cleanup. If the server only populates the Map (never removes entries), memory grows unbounded. Each transport entry holds references to request/response objects, event listeners, and the McpServer instance. A developer running 10 Claude Code sessions/day accumulates 300+ leaked entries per month. At the scale of this project (a local dev tool, not a web service), this means the dashboard server restarts become necessary every few days.
+The prompt quality score is calibrated against the median correction rate across all plans. A complex task — like implementing a similarity scoring algorithm, a milestone decomposition engine, or a safety gate pipeline — produces 2-3 corrections from genuine ambiguity in novel territory, not from a poorly-written prompt. The quality score flags this plan as "low quality" and the digest surfaces "Plan 86-01 task 3 had 3 corrections — action text may be ambiguous." The planner infers that complex technical tasks should be decomposed more aggressively to reduce per-task correction rates, leading to over-decomposition where each subtask is too narrow to be meaningful.
+
+The inverse also occurs: a simple, well-scoped task with 0 corrections scores as "high quality" even if the prompt was underspecified — the simplicity meant Claude had no opportunity to misinterpret, not that the prompt was good.
 
 **Why it happens:**
-The happy path — "Claude Code sends DELETE, server removes the session" — works correctly. The failure path — "Claude Code crashes or is force-killed without sending DELETE" — is never tested during development. The DELETE handling is added but the crash/disconnect path is not, leaving a Map that only grows. The MCP spec allows servers to respond to DELETE with `405 Method Not Allowed` (opting out of client-driven termination), which means some clients never send DELETE.
+Correction count is a proxy for prompt quality, but it conflates prompt quality with task novelty and task complexity. Novel domains inherently produce more corrections because Claude has less context about the project's conventions for that domain. Complex tasks have more ambiguous decision points. Neither is a prompt quality problem.
+
+The calibration baseline compounds this: if the median is computed across all milestones including early milestones (v1.0-v4.0) where the quality infrastructure was being built (higher corrections everywhere), the baseline is inflated. If computed only against recent milestones, it may be too tight.
 
 **How to avoid:**
-Three layers of cleanup:
-1. **DELETE handler:** When DELETE `/mcp` arrives with a valid `Mcp-Session-Id`, call `transport.close()` and `sessions.delete(sessionId)`.
-2. **Idle TTL:** On each session Map entry, record `lastActivity: Date.now()`. A `setInterval` running every 5 minutes scans the Map and removes entries idle for more than 2 hours.
-3. **Session cap:** If `sessions.size > 50`, reject new initialization requests with HTTP 429. Local dev tool will never legitimately have 50 concurrent sessions — this cap signals a leak, not a load spike.
+
+1. **Stratify by task type:** Compute separate correction baselines for each task type category. `lib-module` tasks have a different expected correction distribution than `algorithm-implementation` tasks. Flagging an algorithm task against a CLI wiring baseline is an apples-to-oranges comparison.
+
+2. **Track correction categories, not just counts:** A count of 3 corrections in `code.pattern_violation` (Claude used the wrong existing utility) is a prompt quality signal — the prompt should have specified which utilities to use. A count of 3 corrections in `code.scope_drift` (Claude added unrequested features) is also a prompt quality signal. But a count of 3 corrections in `process.planning_error` (requirements changed mid-execution) is not a prompt quality problem at all. Only count correction categories that are plausibly caused by prompt ambiguity.
+
+3. **Surface ratio with task type context:** Display the score as "3 corrections (2.1x median for algorithm-implementation tasks)" rather than "3 corrections (3.0x overall median)." This immediately disambiguates expected versus unexpected correction rates.
+
+4. **Avoid using score as a gate:** Prompt quality score is a diagnostic tool, not a quality gate. The plan-phase workflow must not block or require justification when a score is low. It surfaces as an observation in digest, never as a blocking condition.
 
 **Warning signs:**
-- `sessions.size` grows without bound — add a periodic `console.log` during development
-- Dashboard server process memory climbs from ~50MB at start to 200MB+ after a day of use
-- Tool calls from old sessions succeed when they should have been cleaned up
+- Plans for novel features consistently score lower than plans for routine CLI wiring, even when execution outcomes were equivalent
+- The digest flags every ambitious milestone's plans as "low quality" despite clean verification outcomes
+- Planners start writing artificially narrow task prompts to minimize correction exposure
+- Score distribution has no variance — everything clusters in a narrow band because the baseline absorbs legitimate complexity
 
-**Phase to address:** Phase 1 (MCP server scaffolding). The TTL cleanup and cap must be in the initial implementation. Adding cleanup retroactively requires tracking `lastActivity` timestamps from the start — if that field is not populated at session creation, retroactive cleanup has no data to work from.
+**Phase to address:** Prompt quality scoring phase (Phase 4 of v14.0). The scoring formula and calibration approach must be designed before implementation. Calibrating against raw correction counts without stratification produces a metric that is actively misleading.
 
 ---
 
-### Pitfall 5: pkce-challenge ESM Dependency Breaks CJS Require on SDK 1.7.x
+### Pitfall 5: Milestone Decomposition Proposal Replacing the Requirements Step
 
 **What goes wrong:**
-`@modelcontextprotocol/sdk@1.7.0` introduced `pkce-challenge` as a dependency. `pkce-challenge` is an ESM-only package. The SDK's CJS build attempts `require('pkce-challenge')` and throws `ERR_REQUIRE_ESM` on first import — even if the application code never uses OAuth or PKCE features. This is unrelated to whether the application needs PKCE; the SDK's CJS bundle unconditionally imports it.
+`/gsd:new-milestone` surfaces a draft phase breakdown: "Phase 1: indexer infrastructure, Phase 2: similarity scoring, Phase 3: planner integration." The user accepts the proposal during the questioning step without the planner deeply considering whether these phases match the actual milestone requirements. The requirements step produces a requirements list that conforms to the phase breakdown rather than the phase breakdown being derived from the requirements. Requirements are shaped to fit the template, not the other way around.
+
+This is the milestone-level version of Pitfall 1 (planner anchoring), and it is more severe because it affects the entire milestone roadmap, not just a single plan.
 
 **Why it happens:**
-The SDK added OAuth/PKCE support in 1.7.x and introduced an ESM-only transitive dependency in the CJS build path. This was not caught in the SDK's own CI because the SDK's tests run in ESM. The bug was reported (GitHub issue #217), fixed via PR #254, and resolved in a subsequent minor release.
+Once a draft exists, cognitive anchoring makes it the reference point for all subsequent questions. The questioning step asks "Does this look right?" rather than "What are the actual goals?" Users and planners edit the draft rather than deriving from scratch. The milestone context document (v14.0's Key Decision Point #3) explicitly warns: "specific with explicit 'adapt as needed' framing" — but this framing is easy to ignore under time pressure.
 
 **How to avoid:**
-Use `@modelcontextprotocol/sdk@1.29.0` specifically. This version is confirmed to have CJS builds with no ESM-only transitive dependency issues. Verify after install: `node -e "require('@modelcontextprotocol/sdk/server/mcp.js')"` should exit 0 without throwing. If it throws `ERR_REQUIRE_ESM`, the installed version has the pkce-challenge bug.
+Sequence is everything: the requirements step must complete before the decomposition proposal is shown.
+
+- Structure the new-milestone workflow as: (1) goal elicitation, (2) requirements definition, (3) decomposition proposal informed by requirements.
+- The decomposition proposal must reference specific requirements: "Phase 1 addresses REQ-001, REQ-002. Phase 2 addresses REQ-003, REQ-004." If a requirement is not covered by any proposed phase, that is a visible gap.
+- Make the proposal explicitly provisional: "This is one possible phase structure. You should add, remove, or reorder phases to match your actual requirements."
+- Never show the decomposition proposal before the requirements list is complete.
 
 **Warning signs:**
-- `require('@modelcontextprotocol/sdk/...')` throws `ERR_REQUIRE_ESM` at server startup even when no OAuth code is used
-- The error stack trace mentions `pkce-challenge` in the require chain
-- `node_modules/pkce-challenge/package.json` contains `"type": "module"` with no CJS build
+- Requirements list maps cleanly to proposed phases in a 1:1 correspondence (sign the requirements were written to fit the phases)
+- The requirements step is shorter than normal — fewer questions, faster agreement
+- Phase goals in the roadmap echo the decomposition proposal language rather than the user's own requirement language
 
-**Phase to address:** Phase 1 (MCP server scaffolding). Test the require() call in isolation before wiring anything else.
+**Phase to address:** Milestone decomposition phase (Phase 3 of v14.0). The new-milestone workflow integration must enforce the sequencing constraint structurally, not just in documentation.
 
 ---
 
-### Pitfall 6: Claude Code MCP Config Written to Wrong File — Server Never Connects
+### Pitfall 6: Index Rebuild Race — Milestone Complete Triggers Rebuild Before Summary Files Are Written
 
 **What goes wrong:**
-The installer (`bin/install.js`) needs to register the MCP server with Claude Code. There are three valid locations: `~/.claude.json` (user-scope, all projects), `.mcp.json` (project root, project-scope), and local scope via `claude mcp add`. Developers attempting to write to `~/.claude/settings.json` — which exists for other Claude settings — produce a silently-ignored MCP config. Claude Code does not read `mcpServers` from `settings.json`. Similarly, manual edits to `mcpServers` inside `settings.json` are ignored without any error logged.
+The index rebuild is triggered at `cmdMilestoneComplete`. This command runs the finalization sequence: it marks phases complete, updates MILESTONES.md, archives the workspace. If the index rebuild runs at the start of this sequence, the most recently completed plans' SUMMARY.md files may not yet be fully written or the phase-benchmarks.jsonl entry for the last plan may not yet be committed. The new index is built without the latest plan's data, and the next query returns a "best match" that is missing the most recent (and most relevant) historical example.
 
 **Why it happens:**
-`~/.claude/settings.json` is the natural place to configure Claude Code settings. The MCP configuration using a separate `~/.claude.json` at the home directory root (not inside `~/.claude/`) is counterintuitive and poorly documented. The installer copying its output to the wrong file produces no error — the file writes succeed, Claude Code starts, and MCP just never appears.
+Finalization sequences have dependencies that are not always obvious. `cmdMilestoneComplete` is a multi-step operation; the order of sub-operations matters for the index rebuild. Developers placing the rebuild "somewhere in complete" without checking the data availability invariants hit this silently — the rebuild succeeds but with incomplete data.
 
 **How to avoid:**
-Use the `claude mcp add` CLI command rather than writing config files directly. The command handles file placement and format correctly:
-```bash
-claude mcp add gsd-dashboard --transport http --scope user http://localhost:7778/mcp
-```
-- `--scope user` writes to `~/.claude.json` — available in all projects on the machine
-- `--scope project` writes to `.mcp.json` in the current project root
-- `--scope local` (default) writes to `~/.claude.json` under the current project's path
-
-If the installer must write config files directly (to avoid requiring the user to have `claude` in PATH during install), write to `~/.claude.json` at `mcpServers.gsd-dashboard`, not to `~/.claude/settings.json`.
+Trigger the index rebuild as the last step in `cmdMilestoneComplete`, after all SUMMARY.md files are written and all JSONL updates are committed. Add an explicit assertion: before rebuilding, verify that the last plan's SUMMARY.md exists and has `status: complete` in its frontmatter. If not, skip the rebuild and log a warning — the user can run `--rebuild-index` manually.
 
 **Warning signs:**
-- `claude mcp list` does not show `gsd-dashboard` after install runs
-- MCP tools are not visible in Claude Code's tool list
-- No error during install — the config file was written, just to the wrong location
+- Index entry count after rebuild is one fewer than expected
+- The most recent milestone's last plan is absent from the index
+- `plan-phase` queries immediately after milestone completion return the second-most-recent milestone's plans as top matches
 
-**Phase to address:** Phase 2 (auto-configuration via installer). Test the installer against a clean Claude Code install and verify `claude mcp list` shows the server.
-
----
-
-### Pitfall 7: Missing Origin Validation — DNS Rebinding Attack Surface
-
-**What goes wrong:**
-The MCP specification explicitly requires: "Servers MUST validate the `Origin` header on all incoming connections to prevent DNS rebinding attacks." The current dashboard server binds to `0.0.0.0` (all interfaces) by default (or at least does not explicitly bind to `127.0.0.1`). Without Origin validation, a malicious web page can make cross-origin requests to `http://localhost:7778/mcp` via DNS rebinding — the browser sends the request from the attacker's domain resolving to 127.0.0.1, bypassing the same-origin policy. The MCP tools expose cross-project data (corrections, preferences, session history) — sensitive enough to warrant this protection.
-
-**Why it happens:**
-Localhost servers feel safe because they're not on the internet. DNS rebinding is a non-obvious attack vector that most developers have not encountered directly. The spec's security warning is in the transport documentation, not in the SDK's `StreamableHTTPServerTransport` constructor — there is no default protection.
-
-**How to avoid:**
-Add Origin validation to the `/mcp` route handler before passing to `transport.handleRequest()`:
-```javascript
-const origin = req.headers['origin'];
-if (origin && origin !== 'http://localhost:7778' && origin !== 'http://127.0.0.1:7778') {
-  res.writeHead(403, { 'Content-Type': 'text/plain' });
-  res.end('Forbidden: invalid origin');
-  return;
-}
-```
-Also bind the server to `127.0.0.1` explicitly (or add a note that the server should not be exposed on external interfaces).
-
-**Warning signs:**
-- Server binds to `0.0.0.0` rather than `127.0.0.1`
-- The `/mcp` route does not inspect `req.headers.origin` before calling `transport.handleRequest()`
-- MCP tools are accessible from any origin (can verify with `curl -H "Origin: http://attacker.com" http://localhost:7778/mcp`)
-
-**Phase to address:** Phase 1 (MCP server scaffolding). Security must be in the initial implementation, not a follow-up.
-
----
-
-### Pitfall 8: Testing MCP Tool Handlers via HTTP — Race Conditions and Subprocess Overhead
-
-**What goes wrong:**
-Attempting to test MCP tool handlers by spawning the full dashboard server subprocess in tests, then making HTTP requests to `/mcp`, produces race conditions (server not ready when the first request arrives), requires port cleanup between tests, and makes tests slow (server startup takes 200-500ms). Parallel test runs collide on port 7778. The tests become integration tests of the entire server stack rather than unit tests of the tool logic.
-
-**Why it happens:**
-The natural instinct is to test the full stack end-to-end: "call the tool the same way Claude Code would." But the overhead and flakiness of HTTP-based subprocess testing is well-documented in the MCP community. The correct pattern — in-memory transport binding — tests the tool handler logic directly without HTTP.
-
-**How to avoid:**
-Test tool handlers directly by creating an MCP server in the test, registering the same tools, and calling them via an in-memory `InMemoryTransport` or direct handler invocation:
-```javascript
-// In test:
-const server = new McpServer({ name: 'test', version: '0.0.1' });
-registerGsdTools(server, mockCache); // same function used in server.cjs
-const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-await server.connect(serverTransport);
-const client = new McpClient({ name: 'test-client', version: '0.0.1' });
-await client.connect(clientTransport);
-const result = await client.callTool({ name: 'list-projects', arguments: {} });
-assert.ok(Array.isArray(result.content));
-```
-This tests the exact tool logic with no HTTP, no subprocess, no port conflicts.
-
-**Warning signs:**
-- Tests use `setTimeout` delays waiting for the server to start
-- Test cleanup requires `kill -9` of the server subprocess
-- Parallel test runs fail with `EADDRINUSE` on port 7778
-- Test suite takes >5 seconds for a handful of tool handler tests
-
-**Phase to address:** Phase 1 (MCP server scaffolding). The tool registration function must be extractable (not embedded in the HTTP route handler) so tests can call it directly. This is an architectural constraint, not a testing afterthought.
+**Phase to address:** Plan indexer phase (Phase 1 of v14.0). The `cmdMilestoneComplete` integration point and rebuild ordering must be specified in the initial design.
 
 ---
 
@@ -245,27 +184,27 @@ Shortcuts that seem reasonable but create long-term problems.
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Inline tool handler logic in route handler | Fewer files, faster initial implementation | Cannot unit test tool logic without HTTP; tool code mixed with transport code | Never — extract to `registerGsdTools(server, cache)` from day one |
-| Stateless mode (no session IDs) | No Map management, simpler code | Breaks resumability; stateless mode had a validated bug in SDK versions pre-1.10.1; requires each request to re-initialize | Never for this use case — tools query cache state, sessions add value |
-| `Access-Control-Allow-Origin: *` without Origin validation | Works immediately for all clients | DNS rebinding attack surface on localhost; spec violation | Acceptable temporarily if bound strictly to 127.0.0.1 |
-| Single shared McpServer instance | Fewer objects, feels cleaner | Silent response routing failure with concurrent sessions; throws on SDK v1.26.0+ | Never |
-| Writing MCP config directly to `~/.claude.json` with string manipulation | Avoids JSON parse/write complexity | Corrupts the file if the JSON is malformed; overwrites existing mcpServers config | Never — use `JSON.parse` → merge → `JSON.stringify` or use `claude mcp add` |
-| No session TTL cleanup | Less code to write | Memory leak accumulates with every session; dashboard restarts needed weekly | Never |
+| Single Jaccard score without task type weighting | Simpler implementation, easier to tune | False positives on keyword-similar but structurally different phases; planner gets bad suggestions | Never — task type weighting is the minimum viable discriminator |
+| Build-time index without age decay | Fast queries, simple implementation | Stale matches from superseded patterns become increasingly frequent as milestones accumulate | Never — add age decay from first version |
+| Prompt quality score as a blocking gate | Appears to enforce quality | Penalizes complexity and novel work; planners game the metric with narrow task decompositions | Never — diagnostic only, never blocking |
+| Auto-populate plan draft from template match | Faster plan creation for common patterns | Planner anchoring guaranteed; novel requirements get missed because the template looks "good enough" | Never — suggestions as context only |
+| Global correction baseline (no task type stratification) | Single formula, easy to explain | Algorithm tasks always look worse than CLI tasks; metric loses meaning as project complexity grows | Acceptable in MVP if clearly labeled "baseline not stratified — treat as directional only" |
+| Query-time index scanning (no pre-built index) | Always fresh data, no cache invalidation problem | Scans all PLAN.md and SUMMARY.md files on every `plan-phase` invocation; slow as plan count grows; blocks the planning workflow | Acceptable for first prototype only — switch to pre-built index before 50+ plans exist |
 
 ---
 
 ## Integration Gotchas
 
-Common mistakes when connecting to external services.
+Common mistakes when connecting to existing GSD framework components.
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| Claude Code `claude mcp add` | Using `--scope project` without running from the project root | `--scope project` writes `.mcp.json` in CWD; always run from the project directory |
-| Claude Code `claude mcp add` | Flags placed after server name: `claude mcp add gsd --transport http url` works but `claude mcp add gsd url --transport http` may not be parsed correctly | All flags must precede the server URL argument |
-| Claude Code MCP connection | Server not running when Claude Code starts → connection error → MCP tools silently absent | Add a startup check in the installer; document that `gsd-tools dashboard start` must run before Claude Code sessions |
-| Dashboard server CORS | Existing CORS_HEADERS used on `/mcp` route without update | MCP requires POST + DELETE + Mcp-Session-Id; the existing headers only allow GET + PATCH |
-| MCP SDK CJS require path | Using `require('@modelcontextprotocol/sdk')` (bare specifier) | Use explicit subpath: `require('@modelcontextprotocol/sdk/server/mcp.js')` and `require('@modelcontextprotocol/sdk/server/streamableHttp.js')` — the package exports map requires subpaths |
-| Tool input schema (zod) | Defining zod schemas inline in the route handler | zod is already a devDep in this project; import from the same zod instance to avoid version mismatch |
+| `phase-benchmarks.jsonl` | Reading the full file and computing stats at query time | Pre-aggregate per-plan stats during index build; `phase-benchmarks.jsonl` can grow to thousands of lines across milestones |
+| `plan-phase` workflow | Injecting suggestion context into the middle of an existing multi-step workflow | Surface suggestions in the research step (before plan writing begins), not inline during plan creation |
+| `cmdMilestoneComplete` | Triggering index rebuild before verifying all SUMMARY.md files are written | Rebuild as the final step; assert last plan completeness before rebuilding |
+| `corrections.jsonl` for prompt scoring | Joining all corrections without filtering by category | Only count prompt-attributable categories (pattern_violation, ambiguous_requirements, missing_context); exclude scope_drift and planning_error from the count |
+| Task type classifier | Classifying tasks by action keyword alone ("implement," "add," "create") | Action keywords are ambiguous; classify by the combination of action keyword plus target file pattern (e.g., "add" + `*.test.cjs` = `test-setup`, not `lib-module`) |
+| Milestone decomposition in `new-milestone` | Showing proposal before requirements step | Requirements must be complete before proposal is generated; proposal must reference specific requirement IDs |
 
 ---
 
@@ -275,40 +214,25 @@ Patterns that work at small scale but fail as usage grows.
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| Reading full `.planning/` files for every tool call | Tool calls take 500ms+; dashboard server CPU spikes during active sessions | Tool handlers should read from the existing `cache` object, not disk; use live file reads only for single-project detail queries | At 5+ concurrent sessions all calling tools simultaneously |
-| Returning all projects in `list-projects` with full detail | Response payload too large; client parsing slow | `list-projects` returns lightweight summary (name, status, phase count); separate `get-project-state` call for detail | At 20+ registered projects |
-| No session cap on the sessions Map | Memory grows to 500MB+; OOM kills the dashboard | Hard cap at 50 concurrent sessions; reject new init with HTTP 429 | At ~100 accumulated dead sessions (never happens in practice without the bug) |
-| Tool handler awaiting disk reads for every call | Latency accumulates; Claude Code waits for responses | Use the dashboard cache (already populated by chokidar watchers) for aggregate queries; cache-miss reads fall back to disk | At 3+ concurrent tool calls on the same data |
-
----
-
-## Security Mistakes
-
-Domain-specific security issues beyond general web security.
-
-| Mistake | Risk | Prevention |
-|---------|------|------------|
-| No Origin header validation on `/mcp` | DNS rebinding attack: malicious web page reads cross-project corrections, preferences, session data | Validate `req.headers.origin` against localhost; return 403 on mismatch |
-| Exposing write tools in v10.0 | Remote session modifying another project's STATE.md, DEBT.md, or skills | All v10.0 tools are read-only; defer write tools to a future milestone after auth design |
-| Binding to `0.0.0.0` instead of `127.0.0.1` | Server accessible on LAN; coworkers on same network can query all projects | Explicitly bind to `127.0.0.1` in `server.listen()` |
-| Session IDs not cryptographically random | Predictable session IDs can be guessed; attacker can hijack another session's tool responses | Use `crypto.randomUUID()` (built into Node.js 14.17+) — not `Math.random()` or sequential IDs |
-| MCP config in version control with internal URLs | `.mcp.json` committed to a public repo exposes internal server addresses | Install to `--scope user` (writes to `~/.claude.json`, not tracked by git) rather than `--scope project` |
+| Full PLAN.md scan at every `plan-phase` invocation | `plan-phase` startup latency grows from 100ms to 2+ seconds | Pre-build index at milestone completion; query is O(1) JSON lookup | At 100+ completed plans (~milestone v20+) |
+| Storing full PLAN.md content in index entries | Index file grows to 5MB+; JSON parse cost grows | Store only structural features (task types, file patterns, goal keywords) — never raw plan content | At 50+ plans (~milestone v15+) |
+| Recomputing prompt quality scores at every digest invocation | Digest generation becomes slow; `corrections.jsonl` scanned repeatedly | Cache per-plan scores in `phase-benchmarks.jsonl` entries at plan completion; digest reads cached values | At 200+ plans (not current concern) |
+| Task type classifier running regex against all historical plans on every query | Query time grows with plan count | Classify task types during index build, not at query time; store `task_types: []` in index entries | At 50+ plans |
 
 ---
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **MCP route:** POST `/mcp` returns valid `InitializeResult` with `Mcp-Session-Id` in response headers — not just HTTP 200
-- [ ] **Session routing:** Second Claude Code session can call tools independently while first session's tool calls are still working
-- [ ] **CORS:** OPTIONS preflight to `/mcp` includes `POST` and `DELETE` in `Access-Control-Allow-Methods` and `Mcp-Session-Id` in both `Access-Control-Allow-Headers` and `Access-Control-Expose-Headers`
-- [ ] **Session cleanup:** DELETE `/mcp` with valid session ID removes it from the Map and calls `transport.close()`
-- [ ] **TTL cleanup:** Sessions idle for 2+ hours are removed by the interval scan, verified by checking `sessions.size` before and after the interval fires
-- [ ] **CJS compatibility:** `node -e "require('@modelcontextprotocol/sdk/server/mcp.js')"` exits 0 with no error
-- [ ] **Tool isolation:** `registerGsdTools(server, cache)` is an exported function callable from tests, not embedded in the HTTP route handler
-- [ ] **Installer:** `claude mcp list` shows `gsd-dashboard` with correct URL after running `install.js`
-- [ ] **Tool tests:** Each tool handler has at least one unit test using in-memory transport (no HTTP subprocess)
-- [ ] **Origin validation:** POST to `/mcp` with `Origin: http://attacker.com` returns 403
-- [ ] **Read-only enforcement:** No MCP tool handler calls a write function (cmdStateSet, cmdPhaseComplete, etc.)
+- [ ] **Plan index:** Index entries include `superseded_by` field and age-weighted score — not just keyword overlap
+- [ ] **Similarity scorer:** Displays keyword score, task type score, and file pattern score separately — not just a single composite score
+- [ ] **Composition assistant:** Surfaces suggestions as a reference table, not as pre-filled plan task fields
+- [ ] **Milestone decomposition:** Only surfaces proposal after requirements list is complete; proposal references specific requirement IDs
+- [ ] **Prompt quality scoring:** Stratified by task type — not computed against a global correction baseline
+- [ ] **Prompt quality scoring:** Digest displays "Nx median for task-type" — not just raw correction count
+- [ ] **Index rebuild:** Fires as the last step in `cmdMilestoneComplete` after all SUMMARY.md files are written
+- [ ] **Index staleness:** `plan-phase` warns when index mtime is more than 14 days old
+- [ ] **False positive prevention:** Similarity matches with task type overlap < 50% are suppressed or clearly labeled as weak matches
+- [ ] **Planner anchoring guard:** `plan-phase` workflow language explicitly tells the planner to write tasks from requirements, using suggestions as reference only
 
 ---
 
@@ -318,12 +242,12 @@ When pitfalls occur despite prevention, how to recover.
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Wrong SDK version installed (v2 ESM-only) | LOW | `npm uninstall @modelcontextprotocol/sdk && npm install @modelcontextprotocol/sdk@1.29.0` |
-| Single-instance session collision | HIGH | Architectural rewrite of `/mcp` handler to Map-per-session pattern; all tool definitions remain the same, only routing changes |
-| CORS blocking MCP clients | LOW | Update `CORS_HEADERS` constant; no other code changes needed |
-| Session Map memory leak | LOW | Add TTL interval cleanup and DELETE handler; no change to tool logic |
-| MCP config in wrong file | LOW | Run `claude mcp add gsd-dashboard --transport http --scope user http://localhost:7778/mcp` to register correctly |
-| Tool logic untestable (embedded in route handler) | MEDIUM | Extract tool registration to a separate function; update the route handler to call it; update tests to import it directly |
+| Planner anchored to bad template — plan executed wrong structure | HIGH | Requirements step must be rerun; plan rewritten from requirements; new execution needed. No shortcut. |
+| Stale index produced bad match | LOW | Run `gsd-tools index --rebuild`; re-run `plan-phase` to get fresh suggestions |
+| Similarity false positive adopted | MEDIUM | Identify which tasks came from the bad match; rewrite those tasks from requirements; re-execute only affected tasks |
+| Prompt quality score penalizing good complex work | LOW | Adjust task type stratification thresholds; recompute cached scores with `gsd-tools digest --recompute-scores` |
+| Milestone decomposition proposal anchored requirements | HIGH | Discard the roadmap; redo the requirements elicitation step without showing the proposal first; rebuild roadmap from requirements |
+| Index rebuild missing last plan (race condition) | LOW | Run `gsd-tools index --rebuild` manually after confirming all SUMMARY.md files are written |
 
 ---
 
@@ -333,31 +257,26 @@ How roadmap phases should address these pitfalls.
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| SDK version (ESM-only v2) | Phase 1 — first step is `npm install @modelcontextprotocol/sdk@1.29.0`; verify CJS require succeeds | `node -e "require('@modelcontextprotocol/sdk/server/mcp.js')"` exits 0 |
-| Single shared McpServer instance | Phase 1 — session Map pattern in initial scaffolding | Two concurrent clients both get valid tool responses |
-| Missing CORS headers | Phase 1 — update CORS_HEADERS before writing `/mcp` handler | OPTIONS preflight to `/mcp` returns correct Allow-Methods and Allow-Headers |
-| Session Map memory leak | Phase 1 — TTL cleanup + session cap in initial implementation | `sessions.size` stays bounded over 24h of use |
-| pkce-challenge ESM dependency | Phase 1 — pinned version avoids the affected range | Same node -e require test |
-| Claude Code config wrong file | Phase 2 — installer uses `claude mcp add` or writes to correct `~/.claude.json` | `claude mcp list` shows gsd-dashboard after install |
-| Origin validation missing | Phase 1 — add before opening to connections | curl with bad Origin returns 403 |
-| Subprocess testing | Phase 1 — `registerGsdTools` extracted before any tests written | Unit tests for all 6 tools run in <1 second with no HTTP server |
+| Planner anchoring | Phase 1 (plan indexer + composition assistant) — specify suggestion format as reference table, not draft | Plan-phase test: provide a high-similarity suggestion; verify planner produces task list from requirements, not from suggestion |
+| Stale index | Phase 1 (plan indexer) — build age decay and superseded markers into index schema | Index rebuild test: verify entries include age weights; verify superseded entries are skipped |
+| Similarity false positives | Phase 1 (similarity scorer) — implement task type weighting and universal file pattern exclusion | Regression test: keyword-similar but structurally different phases score below 50% task type overlap |
+| Prompt quality penalizes complexity | Phase 4 (prompt quality scoring) — stratify baseline by task type; prompt-attributable categories only | Score distribution test: algorithm-implementation tasks do not systematically score lower than cli-wiring tasks |
+| Milestone decomposition anchoring | Phase 3 (automated decomposition) — enforce requirements-first sequencing in new-milestone integration | Workflow sequence test: decomposition proposal cannot be generated before requirements list is non-empty |
+| Index rebuild race | Phase 1 (plan indexer) — rebuild as last step in cmdMilestoneComplete with SUMMARY.md assertion | Integration test: run cmdMilestoneComplete and verify index includes the final plan's entry |
 
 ---
 
 ## Sources
 
-- Official MCP Specification (2025-03-26): [Transports — Streamable HTTP](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports) — session lifecycle, Origin validation requirement, DELETE termination spec, CORS requirements
-- SDK Issue #1405 (silent transport overwrite, fixed v1.26.0): [connect() overwrites transport silently](https://github.com/modelcontextprotocol/typescript-sdk/issues/1405)
-- SDK Issue #217 (pkce-challenge ESM-only dependency, fixed post-1.7.0): [ESM-only dependency breaks CJS](https://github.com/modelcontextprotocol/typescript-sdk/issues/217)
-- SDK Issue #340 (stateless mode validateSession bug, fixed v1.10.1): [stateless mode validateSession failure](https://github.com/modelcontextprotocol/typescript-sdk/issues/340)
-- Claude Code Issue #4976 (MCP config file location confusion): [Documentation incorrect about config location](https://github.com/anthropics/claude-code/issues/4976)
-- Claude Code Issue #33947 (MCP orphan process accumulation): [MCP server processes not cleaned up on session end](https://github.com/anthropics/claude-code/issues/33947)
-- MCPcat CORS Guide: [Implementing CORS Policies for Web-Based MCP Servers](https://mcpcat.io/guides/implementing-cors-policies-web-based-mcp-servers/)
-- MCPcat Testing Guide: [Unit Testing MCP Servers](https://mcpcat.io/guides/writing-unit-tests-mcp-servers/)
-- Claude Code MCP Docs: [Connect Claude Code to tools via MCP](https://code.claude.com/docs/en/mcp)
-- Codebase: `get-shit-done/bin/lib/server.cjs` lines 1144-1162 — existing CORS_HEADERS (missing POST, DELETE, Mcp-Session-Id)
-- Milestone context: `.planning/v10.0-MILESTONE-CONTEXT.md` — SDK compatibility notes, confirmed CJS support at v1.29.0
+- Project execution history: `.planning/milestones/v14.0-MILESTONE-CONTEXT.md` — Key Decision Points #2 and #3 explicitly identify anchoring and template over-adoption as risks; recommendation to suggest rather than auto-populate
+- Project execution history: `.planning/milestones/v9.0/phases/42-skill-relevance-scoring/42-RESEARCH.md` — Jaccard scoring implementation: documents lexical overlap limitations and the need for stratified baseline computation
+- Project execution history: `.planning/PROJECT.md` — v9.0 Skill Relevance Scoring (Jaccard + cold-start + decay): the scoring approach that v14.0 reuses and extends
+- Research on automation bias: [Exploring automation bias in human-AI collaboration (Springer, 2025)](https://link.springer.com/article/10.1007/s00146-025-02422-7) — anchoring effect: users rely on initial suggestions and make more errors when system strengths appear early
+- Research on anchoring: [Anchoring Bias Affects Mental Model Formation and User Reliance in Explainable AI Systems (ACM IUI 2021)](https://dl.acm.org/doi/10.1145/3397481.3450639) — algorithmic suggestions anchor and influence human judgments even when incorrect
+- Research on prompt evaluation: [Evaluating Prompt Effectiveness (Portkey AI, 2025)](https://portkey.ai/blog/evaluating-prompt-effectiveness-key-metrics-and-tools/) — single metrics are insufficient; chasing high scores leads to rigid prompts; metrics are proxies, not goals
+- Research on similarity systems: [One-Stop Guide for Production Recommendation Systems (Medium, 2025)](https://medium.com/@zaiinn440/one-stop-guide-for-production-recommendation-systems-9491f68d92e3) — content-based filtering over-specialization and cold-start problems; norm sensitivity in dot-product similarity
+- GSD framework constraints: `.planning/PROJECT.md` Constraints section — zero-external-dependency constraint eliminates embedding-based semantic similarity; Jaccard is the correct choice within the constraint but requires structural enrichment to avoid false positives
 
 ---
-*Pitfalls research for: v10.0 Shared MCP Dashboard — adding StreamableHTTP MCP endpoints to existing CJS dashboard server*
+*Pitfalls research for: v14.0 Planning Intelligence — adding plan reuse, task composition, milestone decomposition, and prompt quality scoring to GSD framework*
 *Researched: 2026-04-04*

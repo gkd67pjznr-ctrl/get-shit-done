@@ -1,174 +1,242 @@
-# Technology Stack — v10.0 Shared MCP Dashboard
+# Technology Stack — v14.0 Planning Intelligence
 
-**Project:** GSD — MCP Dashboard Integration milestone
+**Project:** GSD — Planning Intelligence milestone
 **Researched:** 2026-04-04
-**Confidence:** HIGH (SDK exports verified against v1.29.0 tag; pkce-challenge issue verified closed; transport API confirmed against source)
+**Confidence:** HIGH (all recommendations use existing Node.js built-ins or already-installed devDependencies; no new npm packages required)
 
 ---
 
 ## Executive Summary
 
-v10.0 adds MCP server endpoints to the existing `server.cjs` dashboard server. The critical constraint: the dashboard is a CJS Node.js server (`http.createServer`, no framework) and must remain so.
+v14.0 needs four capabilities: plan indexing, structural similarity scoring, task type classification, and milestone decomposition. After examining the full corpus size (80+ plans across v1.0-v15.0), the existing algorithmic infrastructure (Jaccard in `skill-scorer.cjs`, keyword classifier in `mcp-classifier.cjs`), and the strict file-based/zero-infrastructure philosophy of this codebase, the conclusion is:
 
-**One new runtime dependency.** `@modelcontextprotocol/sdk@1.29.0` is the only addition. It ships dual CJS/ESM builds, and `StreamableHTTPServerTransport` (the class that handles `/mcp` route integration) accepts Node.js `IncomingMessage` and `ServerResponse` directly — no Express, no Hono, no adapter layer needed by the consumer.
+**Zero new npm dependencies.** Every capability can be built from pure Node.js plus `gray-matter` (already a devDependency). The corpus is small enough that no index server, vector database, or ML library is needed or appropriate.
 
-`zod` is already a `devDependency`. The SDK requires `zod: ^3.25 || ^4.0` as a peer dependency, and the existing `zod@^4.3.6` satisfies it. No version conflict.
+The one algorithmic upgrade worth making: replace pure Jaccard with **TF-IDF weighted cosine similarity** for plan-to-plan structural matching. The plan corpus has 80+ documents where rare structural terms ("hook-integration", "jsonl-persistence", "tdd") are highly discriminating and should score higher than common terms ("file", "test", "update"). TF-IDF achieves this; Jaccard treats all tokens equally. The implementation is ~60 lines of pure JS, requires no dependency, and fits the existing scorer pattern.
 
 ---
 
 ## Stack Additions
 
-### New Runtime Dependency
+### No New Runtime Dependencies
 
-| Package | Version | Purpose | Why |
-|---------|---------|---------|-----|
-| `@modelcontextprotocol/sdk` | `1.29.0` (pin exact) | MCP server scaffolding, StreamableHTTP transport | Official Anthropic SDK; v1 stable branch; only package that provides `McpServer` + `StreamableHTTPServerTransport` with CJS support |
+| Capability | Implementation | Why Not a Package |
+|------------|---------------|-------------------|
+| Plan PLAN.md parsing | `gray-matter` (already `devDependencies@^4.0.3`) | Already installed; parses YAML frontmatter + body cleanly |
+| TF-IDF + cosine similarity | Pure Node.js, ~60 lines | Corpus is 80-150 docs; no index server overhead justified; no package adds value over inline impl |
+| Structural feature extraction | Pure Node.js regex + string ops | Extracting `task_pattern`, `tags`, `file_patterns` from PLAN.md is straightforward text parsing |
+| Task type classifier | Extend `mcp-classifier.cjs` pattern | Pattern already established and tested; add 8 new planning-domain task types |
+| Pre-built index file | Write JSON to `.planning/patterns/plan-index.json` | Consistent with `skill-scores.json`, `phase-benchmarks.jsonl` — file-based is the project standard |
+| Milestone pattern store | Write JSON to `.planning/patterns/milestone-patterns.json` | Same pattern as plan-index |
 
-### No Other New Dependencies
+### Existing Infrastructure Already Usable
 
-| Capability | How Covered |
-|------------|-------------|
-| Session ID generation | `node:crypto` built-in (`randomUUID()`) — already available in Node.js 25.x |
-| Session state (Map) | In-memory `Map` in `server.cjs` — same pattern as existing cache |
-| Tool input validation | `zod` already a devDependency; SDK peer dep satisfied |
-| HTTP request handling | `node:http` `IncomingMessage`/`ServerResponse` — already used by `server.cjs` |
-| CORS headers | Already implemented in `server.cjs`; add `Mcp-Session-Id` to expose list |
+| Asset | Where | What v14.0 Uses It For |
+|-------|-------|----------------------|
+| `extractFrontmatter()` | `frontmatter.cjs` | Parse `phase`, `plan`, `files_modified`, `requirements` from PLAN.md files |
+| `parseJsonlFile()` | `benchmark.cjs`, `skill-scorer.cjs` | Read `phase-benchmarks.jsonl` for correction_count per plan |
+| `jaccardScore()` + `tokenize()` | `skill-scorer.cjs` | Reusable as fallback scorer; export and share |
+| `classifyTask()` pattern | `mcp-classifier.cjs` | Template for planning-domain task type classifier |
+| `node:crypto` MD5 hash | `skill-scorer.cjs` | Content-hash cache invalidation for plan-index.json |
+| `node:fs` + `node:path` | Throughout | File scanning for completed PLAN.md and SUMMARY.md files |
 
 ---
 
-## SDK Integration API
+## Algorithm Selection
 
-### Imports (CJS)
+### Plan Similarity: TF-IDF Cosine (not pure Jaccard)
 
-```js
-const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
-const { StreamableHTTPServerTransport } = require('@modelcontextprotocol/sdk/server/streamableHttp.js');
-const { randomUUID } = require('node:crypto');
-const { z } = require('zod');
-```
+**Why TF-IDF over Jaccard for this corpus:**
 
-All four import paths resolve to `dist/cjs/` variants in the SDK's exports map. The wildcard export pattern `(.*)` in the SDK's `package.json` maps `./server/streamableHttp` to `./dist/cjs/server/streamableHttp.js` when `require()` is used.
+Jaccard treats all tokens equally. In a plan corpus, "test", "file", and "cli" appear in nearly every plan — they contribute noise without signal. Rare structural terms like "hook-integration", "jsonl-persistence", "tdd", "dashboard-page" are the discriminating features that define plan archetypes. TF-IDF down-weights common tokens and up-weights rare ones, making it substantially better for structural similarity across 80+ plans.
 
-### StreamableHTTPServerTransport Constructor
+Published comparison for small document sets (80-100 docs): TF-IDF cosine achieves 70-85% accuracy for semantic matching vs. Jaccard which is better suited to duplicate detection than recommendation (IJCA 2017, iq.opengenus.org 2024).
+
+**TF-IDF implementation plan (no package needed):**
 
 ```js
-const transport = new StreamableHTTPServerTransport({
-  sessionIdGenerator: () => randomUUID(),           // stateful mode
-  onsessioninitialized: (sessionId) => {            // callback when session is assigned
-    sessions.set(sessionId, transport);
-  },
-});
-```
-
-Setting `sessionIdGenerator: undefined` switches to stateless mode (no session tracking). Use stateful mode for the dashboard — sessions persist while the dashboard is running, matching the existing in-memory cache pattern.
-
-### handleRequest Signature
-
-```js
-await transport.handleRequest(req, res, parsedBody);
-// req:        http.IncomingMessage (no auth extension needed for localhost)
-// res:        http.ServerResponse
-// parsedBody: pre-parsed JSON body (object) — parse in route handler before calling
-```
-
-The transport internally uses `@hono/node-server` to convert between Node.js HTTP objects and the Web Standard Request/Response that the underlying transport implementation uses. This conversion is transparent to `server.cjs` — the consumer only sees `handleRequest(req, res, body)`.
-
-### Session Map Pattern
-
-```js
-// In server.cjs — add alongside existing cache Map
-const mcpSessions = new Map(); // sessionId -> { transport, server }
-
-// Route handler for POST /mcp
-async function handleMcpRequest(req, res) {
-  const sessionId = req.headers['mcp-session-id'];
-
-  if (sessionId && mcpSessions.has(sessionId)) {
-    const { transport } = mcpSessions.get(sessionId);
-    const body = await parseBody(req);
-    await transport.handleRequest(req, res, body);
-    return;
+// In plan-indexer.cjs — pure Node.js, ~60 lines
+function buildTfIdfIndex(planEntries) {
+  // planEntries = [{ plan_id, tokens: Set, ... }]
+  const N = planEntries.length;
+  const df = {};  // document frequency per token
+  for (const entry of planEntries) {
+    for (const t of entry.tokens) {
+      df[t] = (df[t] || 0) + 1;
+    }
   }
+  // idf(t) = log(N / df(t)) — standard smoothed IDF
+  const idf = {};
+  for (const [t, freq] of Object.entries(df)) {
+    idf[t] = Math.log(N / freq);
+  }
+  // tfidf vector per entry (sparse — only non-zero terms)
+  for (const entry of planEntries) {
+    const vec = {};
+    for (const t of entry.tokens) {
+      vec[t] = (1 / entry.tokens.size) * idf[t];  // tf * idf
+    }
+    entry.tfidf_vector = vec;
+  }
+  return { entries: planEntries, idf };
+}
 
-  // New session — create transport + McpServer
-  const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: () => randomUUID(),
-    onsessioninitialized: (id) => {
-      mcpSessions.set(id, { transport, server: mcpServer });
-    },
-  });
-  const body = await parseBody(req);
-  await mcpServer.connect(transport);
-  await transport.handleRequest(req, res, body);
+function cosineSimilarity(vecA, vecB) {
+  let dot = 0, magA = 0, magB = 0;
+  const allKeys = new Set([...Object.keys(vecA), ...Object.keys(vecB)]);
+  for (const k of allKeys) {
+    const a = vecA[k] || 0, b = vecB[k] || 0;
+    dot += a * b; magA += a * a; magB += b * b;
+  }
+  if (magA === 0 || magB === 0) return 0;
+  return dot / (Math.sqrt(magA) * Math.sqrt(magB));
 }
 ```
 
-### GET and DELETE Routes
+**Hybrid scoring for query-time search:**
 
-The same `/mcp` path handles three HTTP methods:
+When the planner provides a free-text new-phase goal, the corpus IDF is known but the query has no TF context. Use a hybrid:
 
-| Method | Purpose | Handler |
-|--------|---------|---------|
-| `POST` | Client-to-server messages (initialize, tool calls) | `transport.handleRequest(req, res, body)` |
-| `GET` | Server-to-client SSE stream (server-initiated messages) | `transport.handleRequest(req, res)` — no body |
-| `DELETE` | Session termination | `transport.handleRequest(req, res)` — no body |
-
-Route these in `server.cjs` by checking `req.method` in the existing `requestHandler` switch block.
-
-### CORS Headers
-
-Add to existing CORS response headers in `server.cjs`:
-
-```js
-'Access-Control-Expose-Headers': 'Mcp-Session-Id',
-'Access-Control-Allow-Headers': '..., mcp-session-id',
-'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+```
+final_score = 0.70 * tfidf_cosine(query, candidate)
+            + 0.20 * jaccard(query_tokens, candidate_tokens)
+            + 0.10 * tag_overlap(query_tags, candidate_tags)
 ```
 
-### Tool Definition Pattern
+Jaccard provides a fallback for new queries not represented in the IDF vocabulary. Tag overlap gives bonus weight to exact structural matches (e.g., both tagged "cli-subcommand").
 
-```js
-const { z } = require('zod');
+### Task Classification: Keyword Rules (not ML)
 
-mcpServer.tool(
-  'list-projects',
-  'List all registered GSD projects with current state',
-  {},                           // no input schema for this tool
-  async () => {
-    const registry = loadRegistry();
-    return {
-      content: [{ type: 'text', text: JSON.stringify(registry, null, 2) }],
-    };
-  }
-);
+The existing `mcp-classifier.cjs` pattern — keyword matching + file extension heuristics — is the right approach for planning-domain task types. The corpus is well-defined and the vocabulary is constrained. An ML classifier would need training data that doesn't yet exist and would add unnecessary complexity.
 
-mcpServer.tool(
-  'get-project-state',
-  'Get STATE.md data for a specific GSD project',
-  { name: z.string().describe('Project name from registry') },
-  async ({ name }) => {
-    const state = getProjectState(name);   // existing server.cjs function
-    return {
-      content: [{ type: 'text', text: JSON.stringify(state, null, 2) }],
-    };
-  }
-);
-```
+**Planning-domain task types to add** (extend the existing 5 MCP types with 8 new planning types):
 
-Tool handlers return `{ content: [{ type: 'text', text: string }] }`. All six planned tools follow this pattern with zod-validated inputs.
+| Task Type | Discriminating Keywords | File Patterns |
+|-----------|------------------------|---------------|
+| `test-first` | "write tests", "wave 0", "test stubs", "tdd" | `tests/*.test.cjs` |
+| `lib-module` | "lib module", "cjs module", "new module", "implement" | `get-shit-done/bin/lib/*.cjs` |
+| `cli-wiring` | "cli subcommand", "gsd-tools", "wire command", "route" | `get-shit-done/bin/gsd-tools.cjs` |
+| `hook-integration` | "hook", "posttooluse", "pretooluse", "sessionend" | `.claude/hooks/*.js` |
+| `workflow-update` | "workflow", "agent", "executor", "planner", "verifier" | `.claude/agents/*.md`, `skills/*/SKILL.md` |
+| `dashboard-page` | "dashboard", "panel", "page", "chart", "metric" | `desktop/src/**` |
+| `config-extension` | "config key", "config.json", "adaptive_learning", "schema" | `.planning/config.json` |
+| `jsonl-persistence` | "jsonl", "append-only", "persist", "write entry" | `*.jsonl` |
+
+### Milestone Decomposition: Pattern Extraction (not ML)
+
+Parse ROADMAP.md files from v1.0-v15.0, extract structural patterns:
+- Phase count per milestone
+- Phase goal keywords (tokenized)
+- Dependency chain shape (linear vs parallel vs mixed)
+- Effort distribution (plan count per phase)
+
+Store as `milestone-patterns.json`. At new-milestone time, score the user's goal description against historical milestone goals using the same TF-IDF cosine approach.
 
 ---
 
-## Installation
+## Index Strategy: Pre-Built File (not Query-Time Scan)
+
+**Decision: pre-built `plan-index.json` refreshed at `cmdMilestoneComplete`.**
+
+Rationale from v14.0 milestone context (Key Decision Point 1):
+- Query-time scanning of 80+ PLAN.md + SUMMARY.md files on every `/gsd:plan-phase` invocation is slow and wasteful
+- The corpus changes only at milestone completion — rebuilding then is exactly the right trigger
+- Pattern is already established: `skill-scores.json` is a pre-built cache refreshed when skills change
+
+The index file lives at `.planning/patterns/plan-index.json`:
+
+```json
+{
+  "metadata": {
+    "built_at": "2026-04-04T10:00:00Z",
+    "plan_count": 87,
+    "milestone_range": "v1.0-v15.0"
+  },
+  "plans": [
+    {
+      "plan_id": "42-01",
+      "milestone": "v9.0",
+      "phase_goal": "skill relevance scoring with jaccard and dormancy decay",
+      "task_pattern": ["test-first", "lib-module", "cli-wiring"],
+      "file_patterns": ["get-shit-done/bin/lib/*.cjs", "tests/*.test.cjs"],
+      "tags": ["tdd", "cli-subcommand", "jsonl-persistence"],
+      "requirement_count": 4,
+      "correction_rate": 0.12,
+      "tokens": ["skill", "relevance", "scoring", "jaccard", "dormancy"],
+      "tfidf_vector": { "jaccard": 0.82, "dormancy": 0.71, "scoring": 0.43 }
+    }
+  ],
+  "idf": { "jaccard": 1.23, "dormancy": 1.45, "test": 0.12 }
+}
+```
+
+**Manual rebuild flag:** `gsd-tools.cjs plan-index --rebuild` for use when adding historical milestones mid-development.
+
+---
+
+## What NOT to Add
+
+| Avoid | Why | Use Instead |
+|-------|-----|-------------|
+| `natural` npm package | 47KB, adds IDF/stemming but more than needed for 80-doc corpus; adds binary dep risk | Pure Node.js TF-IDF ~60 lines |
+| `compromise` npm package | NLP heavy-hitter, overkill for keyword matching; 1.3MB | Regex keyword rules as in `mcp-classifier.cjs` |
+| `vectra` (local vector DB) | Adds JSON-lines file format with separate index management; solves a scale problem that doesn't exist here | Write `plan-index.json` directly with same pattern as `skill-scores.json` |
+| Embeddings API (OpenAI, Cohere) | Requires network call per plan; adds API key management; semantic similarity beyond keyword overlap not needed for structured plan templates | TF-IDF cosine on structural tokens |
+| SQLite (`better-sqlite3`) | Binary native module; overkill for read-mostly 80-150 doc index | `plan-index.json` loaded into memory at query time |
+| `fuse.js` fuzzy search | Designed for UI autocomplete; not for structural plan similarity; scores don't translate to "85% similar plan" | TF-IDF + hybrid scoring above |
+| `gray-matter` as runtime dep | Already a devDep; keep it there — PLAN.md parsing only runs at index-build time (developer context), not in production hooks | Import from devDeps in `plan-indexer.cjs` which is build/CLI only |
+
+---
+
+## Integration Points
+
+### New Modules to Create
+
+| Module | Location | Purpose |
+|--------|----------|---------|
+| `plan-indexer.cjs` | `get-shit-done/bin/lib/` | Scan PLAN.md/SUMMARY.md files, build TF-IDF index, write `plan-index.json` |
+| `plan-similarity.cjs` | `get-shit-done/bin/lib/` | Query plan-index.json with cosine + Jaccard hybrid, return ranked matches |
+| `task-classifier.cjs` | `get-shit-done/bin/lib/` | Extend mcp-classifier pattern with 8 planning task types |
+| `milestone-analyzer.cjs` | `get-shit-done/bin/lib/` | Parse historical ROADMAP.md files, extract phase patterns, write milestone-patterns.json |
+
+### Existing Modules to Extend
+
+| Module | Change |
+|--------|--------|
+| `mcp-classifier.cjs` | Add 8 planning task types to `classifyTask()` OR extract into shared `task-classifier.cjs` that both consume |
+| `benchmark.cjs` | Export `parseJsonlFile` so `plan-indexer.cjs` can read correction counts without re-implementing |
+| `skill-scorer.cjs` | Export `tokenize()` and `jaccardScore()` — reused by `plan-similarity.cjs` as hybrid fallback |
+| `gsd-tools.cjs` | Wire `plan-index`, `plan-similar`, `task-classify`, `milestone-patterns` subcommands |
+
+### Trigger Points
+
+| Event | Action |
+|-------|--------|
+| `cmdMilestoneComplete` | Auto-rebuild `plan-index.json` and `milestone-patterns.json` |
+| `/gsd:plan-phase` (research step) | Call `plan-similar` to surface top-3 matches before planner runs |
+| `/gsd:new-milestone` (questioning step) | Call `milestone-patterns` to surface phase breakdown proposal |
+| `gsd-tools.cjs plan-index --rebuild` | Manual rebuild flag |
+
+---
+
+## No Installation Required
 
 ```bash
-# Single new runtime dependency (pin exact version — v2 is breaking, ESM-only)
-npm install @modelcontextprotocol/sdk@1.29.0
-
-# No other installs needed
-# zod already in devDependencies (^4.3.6 satisfies SDK peer dep ^3.25 || ^4.0)
-# node:crypto built-in (randomUUID available since Node.js 14.17)
+# No new installs. All capabilities use:
+# - node:fs, node:path, node:crypto (built-in)
+# - gray-matter (already devDependencies@^4.0.3)
+# - frontmatter.cjs, benchmark.cjs, skill-scorer.cjs (existing lib modules)
 ```
+
+---
+
+## Version Compatibility
+
+| Dependency | Current Version | Used By |
+|------------|----------------|---------|
+| Node.js | 25.x | All modules |
+| `gray-matter` (devDep) | `^4.0.3` | `plan-indexer.cjs` for PLAN.md YAML frontmatter parsing |
+| `node:crypto` | built-in | Content hash cache invalidation (same as `skill-scorer.cjs`) |
 
 ---
 
@@ -176,95 +244,25 @@ npm install @modelcontextprotocol/sdk@1.29.0
 
 | Recommended | Alternative | Why Not |
 |-------------|-------------|---------|
-| `@modelcontextprotocol/sdk@1.29.0` | `@modelcontextprotocol/sdk@2.x` (alpha) | v2 is pre-alpha, ESM-only — drops CJS, `package.json` has `"type": "module"`, no `dist/cjs/` — incompatible with `server.cjs` |
-| `@modelcontextprotocol/sdk@1.29.0` | Building stdio transport | stdio spawns one process per client session; cannot share data across sessions — fundamentally wrong for this use case |
-| Pin exact `1.29.0` | `^1.29.0` | Minor version bumps may introduce breaking changes in an active SDK; pin until v10.0 ships, then evaluate upgrading |
-| Stateful session Map | Stateless (no sessionIdGenerator) | Stateless requires clients to re-initialize on every request; the dashboard's in-memory cache only pays off with persistent sessions |
-| Raw `http.createServer` | Adding Express | Express is a 5MB framework addition for one route; `server.cjs` already handles routing with `switch(req.url)` — no new framework needed |
-
----
-
-## What NOT to Use
-
-| Avoid | Why | Use Instead |
-|-------|-----|-------------|
-| `@modelcontextprotocol/sdk@2.x` | Pre-alpha, ESM-only, breaking API changes; v2 README says "v1.x remains the recommended version" | `@modelcontextprotocol/sdk@1.29.0` |
-| stdio transport | Spawns isolated per-session subprocess; no shared state across Claude Code sessions | StreamableHTTP at `/mcp` |
-| `@modelcontextprotocol/node` package | This is a v2 package providing `NodeStreamableHTTPServerTransport`; does not exist as a separate v1 package | `StreamableHTTPServerTransport` from core SDK v1.29.0 |
-| `@modelcontextprotocol/express` | v2 package; ESM-only; also unnecessary since the SDK transport handles `IncomingMessage`/`ServerResponse` natively | Direct `handleRequest(req, res, body)` call |
-| Bearer token auth / OAuth | Overkill for a localhost-only server; adds the pkce-challenge dependency path that was previously problematic in CJS | No auth for localhost; scope to 127.0.0.1 binding if needed |
-
----
-
-## CJS Compatibility Notes
-
-**pkce-challenge issue (Issue #217) — resolved.** The SDK had a CJS incompatibility where `auth.js` used synchronous `require()` on `pkce-challenge`, an ESM-only package. This was fixed via PR #254 and merged before v1.29.0. The fix uses dynamic `import()` in `auth.js`.
-
-**Server-only import path avoids auth entirely.** Even if the fix weren't present, `require('@modelcontextprotocol/sdk/server/streamableHttp.js')` does not load `auth.js` — that module is only in the client auth path. The dashboard only uses server-side exports.
-
-**Verified export paths for v1.29.0:**
-
-| Import path | CJS resolution |
-|-------------|---------------|
-| `@modelcontextprotocol/sdk/server/mcp.js` | `./dist/cjs/server/mcp.js` |
-| `@modelcontextprotocol/sdk/server/streamableHttp.js` | `./dist/cjs/server/streamableHttp.js` |
-| `@modelcontextprotocol/sdk/types.js` | `./dist/cjs/types.js` |
-
-The wildcard `(.*)` export pattern in the SDK's `package.json` maps these paths correctly when `require()` is detected.
-
-**Transitive dependency note.** The SDK depends on `@hono/node-server@^1.19.9` and `hono@^4.11.4`. These are used internally by `StreamableHTTPServerTransport` to convert between Node.js HTTP objects and Web Standard APIs. They are transparent to `server.cjs` — no Hono APIs are called directly.
-
----
-
-## Version Compatibility
-
-| Package | Version | Satisfies |
-|---------|---------|-----------|
-| `@modelcontextprotocol/sdk` | `1.29.0` | zod peer dep: `^3.25 \|\| ^4.0` |
-| `zod` (existing devDep) | `^4.3.6` | Satisfies SDK peer dep |
-| Node.js | 25.x (current env) | `randomUUID()` available since 14.17; `http.createServer` stable since v0.1 |
-| `@hono/node-server` | `^1.19.9` (transitive) | Bundled with SDK; no direct installation needed |
-
----
-
-## Integration Points in server.cjs
-
-The MCP addition touches `server.cjs` in four places:
-
-1. **Top of file — imports** (~3 lines): `require` McpServer, StreamableHTTPServerTransport, randomUUID
-2. **After cache initialization — MCP server setup** (~40 lines): create `McpServer` instance, register 6 tool handlers using existing `loadRegistry()`, `cache.get()`, file read functions
-3. **Request router (`switch(req.url)`)** (~30 lines): add `case '/mcp':` branch that checks `req.method` (POST/GET/DELETE) and routes to `handleMcpRequest`
-4. **CORS headers** (~5 lines): add `Mcp-Session-Id` to expose and allow headers
-
-The existing `requestHandler` function already switches on `req.url`. The `/mcp` case slots in alongside `/api/projects`, `/api/events`, etc. No restructuring of the server is needed.
-
-**Session cleanup on server shutdown:** Add to the existing SIGTERM/SIGINT handler (or process exit) to close all transports in `mcpSessions` and clear the Map.
-
----
-
-## Claude Code Connection
-
-After the MCP endpoint is live at `http://localhost:7778/mcp`, Claude Code sessions connect with:
-
-```bash
-claude mcp add --transport http gsd-dashboard http://localhost:7778/mcp
-```
-
-The installer (`bin/install.js`) will run this command automatically unless `--no-mcp` is passed. The installer already writes to `~/.claude/` for skills and commands — adding an MCP config write follows the same pattern.
+| Pure JS TF-IDF cosine | `natural` npm package (TF-IDF class) | Package is 47KB; the `TfIdf` class in `natural` is ~200 LOC — implementing inline saves a dependency for equivalent functionality at this scale |
+| Pre-built JSON index | Query-time scan | Scanning 80+ files on every plan-phase invocation adds 50-200ms latency with no benefit; plan corpus changes only at milestone completion |
+| TF-IDF cosine + Jaccard hybrid | Pure Jaccard | Jaccard's term-frequency blindness means "test", "file", "cli" dominate every score — structural discriminators like "hook-integration" get swamped; TF-IDF fixes this |
+| Keyword rules for task classification | Training a classifier | No labeled training set exists; vocabulary is constrained and well-understood; rules match existing `mcp-classifier.cjs` pattern already working in production |
+| `plan-index.json` in `.planning/patterns/` | Separate `.planning/intelligence/` dir | Consistency with `skill-scores.json`, `phase-benchmarks.jsonl` — all analytical artifacts live in `patterns/`; no new directory needed |
 
 ---
 
 ## Sources
 
-- `@modelcontextprotocol/sdk` v1.29.0 `package.json` (verified via GitHub tag): CJS exports map, `@hono/node-server` dependency, zod peer dep, pkce-challenge@5.0.0 included
-- `src/server/streamableHttp.ts` at v1.29.0 tag: `handleRequest(req: IncomingMessage, res: ServerResponse, parsedBody?: unknown)` confirmed; `@hono/node-server` usage for Node.js HTTP conversion confirmed
-- GitHub Issue #217 (pkce-challenge CJS incompatibility): closed via PR #254, fixed in client auth path only; server imports unaffected
-- GitHub Issue #340 (stateless mode): confirmed `sessionIdGenerator: undefined` enables stateless mode
-- `examples/server/src/simpleStreamableHttp.ts` (main branch): Map-based session pattern, `onsessioninitialized` callback, POST/GET/DELETE handler pattern confirmed
-- v10.0-MILESTONE-CONTEXT.md: architecture decisions, tool list, estimated scope (~80 lines in server.cjs)
-- Live `package.json` inspection: `zod@^4.3.6` confirmed in devDependencies; `ws@^8.19.0` and `chokidar@^4.0.3` confirmed in dependencies
+- `get-shit-done/bin/lib/skill-scorer.cjs` — existing `jaccardScore()`, `tokenize()`, content-hash cache pattern (HIGH confidence — read directly)
+- `get-shit-done/bin/lib/mcp-classifier.cjs` — existing keyword-rule classification pattern (HIGH confidence — read directly)
+- `package.json` — confirmed `gray-matter@^4.0.3` in devDependencies, zero text-analysis dependencies in runtime (HIGH confidence — read directly)
+- `.planning/v14.0-MILESTONE-CONTEXT.md` — index strategy decision (pre-built vs query-time), composition vs template distinction (HIGH confidence — read directly)
+- [PyImageSearch: Jaccard vs Cosine Similarity](https://pyimagesearch.com/2024/07/22/implementing-semantic-search-jaccard-similarity-and-vector-space-models/) — Jaccard best for duplicate detection, cosine+TF-IDF better for recommendation (MEDIUM confidence — single source but consistent with information theory)
+- [OpenGenus: Document Similarity TF-IDF](https://iq.opengenus.org/document-similarity-tf-idf/) — TF-IDF cosine implementation pattern for small corpora (MEDIUM confidence)
+- [Leapcell: Pure Node.js Search Engine](https://leapcell.medium.com/step-by-step-build-a-lightweight-search-engine-using-only-node-js-106980d86f28) — confirms TF-IDF + inverted index implementable in ~100 lines of pure Node.js (MEDIUM confidence)
 
 ---
 
-*Stack research for: MCP server endpoints on existing CJS Node.js dashboard*
+*Stack research for: Planning Intelligence — plan indexing, similarity scoring, task classification, milestone decomposition*
 *Researched: 2026-04-04*

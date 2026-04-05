@@ -1,578 +1,448 @@
-# Architecture Research — v10.0 MCP Integration
+# Architecture Research
 
-**Domain:** Adding StreamableHTTP MCP endpoints to existing Node.js CJS dashboard server
+**Domain:** Planning intelligence integration — CJS module system, JSONL persistence, workflow agent injection
 **Researched:** 2026-04-04
-**Confidence:** HIGH — based on direct code inspection of server.cjs, MCP spec, and Azure/MS tutorial confirming CJS import paths
+**Confidence:** HIGH — based on direct codebase inspection of 25 lib modules, all workflow files, and 15 completed milestone artifacts
 
 ---
 
 ## Standard Architecture
 
-### System Overview (After v10.0)
+### System Overview
 
 ```
-Claude Code Sessions (N concurrent)
-  |
-  | POST/GET/DELETE http://localhost:7778/mcp
-  | (each session has mcp-session-id header)
-  v
-┌─────────────────────────────────────────────────────────────┐
-│                  server.cjs  :7778                           │
-├─────────────────────────────────────────────────────────────┤
-│  Route: /mcp           │  Route: /api/*     │  Static /     │
-│  MCP handler           │  Existing API      │  dashboard/   │
-│  (POST/GET/DELETE)     │  handlers          │  dist/        │
-├────────────────────────┤                    │               │
-│  McpServer instance    │  cache (Map)        │               │
-│  (created per-req or   │  loadRegistry()    │               │
-│   one shared)          │  parseProjectData  │               │
-│  6 tool definitions    │  aggregateGateHealth│               │
-│  zod input schemas     │  aggregatePatterns │               │
-├────────────────────────┴────────────────────┴───────────────┤
-│  Shared Infrastructure                                       │
-│  chokidar watchers │ SSE clients Set │ WebSocket (ws)        │
-│  in-memory cache Map<name, projectData>                      │
-│  loadRegistry() → ~/.gsd/dashboard.json                     │
-└─────────────────────────────────────────────────────────────┘
-             |                    |
-    .planning/ files          sessions.jsonl
-    per project               gate-executions.jsonl
-    (STATE.md, ROADMAP.md,    corrections.jsonl
-    gate-executions.jsonl,    skill-metrics.json
-    sessions.jsonl, etc.)
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                        WORKFLOW LAYER (Markdown agents)                       │
+│  plan-phase.md          new-milestone.md          complete-milestone.md       │
+│  (Step 8: spawn planner) (Step: spawn roadmapper)  (cmdMilestoneComplete)     │
+└──────────┬──────────────────────┬──────────────────────────┬──────────────────┘
+           │                      │                          │
+           │ plan_suggestions      │ decomposition_proposal   │ refreshIndex()
+           │ injected via init     │ injected via init        │ trigger
+           ▼                      ▼                          ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                  PLANNING INTELLIGENCE LAYER (new for v14.0)                  │
+│                                                                                │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌────────────────────────────┐  │
+│  │  plan-indexer    │  │  task-classifier │  │  milestone-decomposer      │  │
+│  │  (new module)    │  │  (new module)    │  │  (new module)              │  │
+│  │                  │  │                  │  │                            │  │
+│  │ buildIndex()     │  │ classifyTask()   │  │ proposeDecomposition()     │  │
+│  │ searchIndex()    │  │ rankByType()     │  │ matchHistoricalPattern()   │  │
+│  │ refreshIndex()   │  │ composeTasks()   │  │                            │  │
+│  └────────┬─────────┘  └────────┬─────────┘  └──────────────┬─────────────┘  │
+│           │                     │                            │                │
+│           └──────── plan-index.json (shared data store) ─────┘                │
+│                                                                                │
+│  ┌─────────────────────────────────────────────────────────────────────────┐  │
+│  │  prompt-scorer (new module)                                             │  │
+│  │  scoreRecentPlans() → reads phase-benchmarks.jsonl + PLAN.md task text │  │
+│  └─────────────────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────────────────┘
+           │
+           ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                        EXISTING PERSISTENCE LAYER                             │
+│  .planning/patterns/phase-benchmarks.jsonl    (correction_count, gate_fires)  │
+│  .planning/patterns/corrections.jsonl         (per-correction raw events)     │
+│  .planning/observations/workflow.jsonl        (v13.0 event journal)           │
+│  .planning/milestones/vX.Y/phases/*/          (PLAN.md, SUMMARY.md files)    │
+│  .planning/plan-index.json                    (NEW — built by plan-indexer)   │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Component Responsibilities
 
-| Component | Responsibility | Current State |
-|-----------|----------------|---------------|
-| `createHttpServer()` | Route dispatch via if/else on method+pathname | Existing — needs `/mcp` branch added |
-| `CORS_HEADERS` const | Cross-origin header object | Existing — needs `POST, DELETE` and `mcp-session-id` added |
-| MCP route handler | Parse body, delegate to transport, manage session map | **New** |
-| `McpServer` instance | Tool registry, protocol lifecycle | **New** |
-| `StreamableHTTPServerTransport` | JSON-RPC over HTTP, SSE streaming, session tracking | **New** |
-| Session map | `Map<sessionId, transport>` for stateful sessions | **New** — module-scoped |
-| Tool implementations | Thin wrappers calling existing server functions | **New** (6 tools) |
-| `bin/install.js` | Writes skills/hooks/CLAUDE.md to user projects | Existing — needs `claude mcp add` step added |
+| Component | Responsibility | Module |
+|-----------|---------------|--------|
+| `plan-indexer.cjs` | Scan all milestone phase dirs, extract structural features from PLAN.md frontmatter + task tags, write `plan-index.json`. Expose `buildIndex()`, `refreshIndex()`, `searchIndex()`. | NEW |
+| `task-classifier.cjs` | Parse `<task>` XML from PLAN.md files, classify by action keywords and file patterns into 8 canonical task types, join correction data from phase-benchmarks.jsonl, compose ranked task sequences. | NEW |
+| `milestone-decomposer.cjs` | Parse historical ROADMAP.md files across all milestones, extract phase count + phase goals + dependency chains. Given a goal string, match via keyword overlap and propose a draft phase breakdown. | NEW |
+| `prompt-scorer.cjs` | Count corrections per task via corrections.jsonl + phase-benchmarks.jsonl, compute quality score, identify outlier plans. Feed per-task attribution into digest. | NEW |
+| `gsd-tools.cjs` (router) | Wire new CLI subcommands: `plan-index build`, `plan-index search`, `task-compose`, `milestone-decompose`, `prompt-score`. | MODIFIED |
+| `init.cjs` (`cmdInitPlanPhase`) | Inject `plan_suggestions` JSON field into init output consumed by plan-phase.md Step 1. plan-indexer queried here with graceful degradation. | MODIFIED |
+| `init.cjs` (`cmdInitNewMilestone`) | Inject `decomposition_proposal` JSON field into new-milestone init output. milestone-decomposer queried here. | MODIFIED |
+| `milestone.cjs` (`cmdMilestoneComplete`) | Call `plan-indexer.refreshIndex(cwd)` at end of completion flow to keep index current. Silent on failure. | MODIFIED |
 
 ---
 
-## Integration Points with server.cjs
+## Plan Index: File Location and Schema
 
-### What Changes in server.cjs
+**File:** `.planning/plan-index.json`
 
-Three targeted modifications — no restructuring:
+Rationale: project-level (not milestone-scoped) because the index spans all historical milestones. Lives in `.planning/` alongside `config.json` and `MILESTONES.md` — the same access pattern used by other cross-milestone stores. NOT in `.planning/patterns/` (that directory holds session-level JSONL streams, not derived static indexes).
 
-**1. CORS_HEADERS constant (line ~1144)**
-
-Current:
-```javascript
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, PATCH, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-};
-```
-
-Required (add POST, DELETE, and mcp-session-id):
-```javascript
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, mcp-session-id',
-  'Access-Control-Expose-Headers': 'mcp-session-id',
-};
-```
-
-**2. Route handler in createHttpServer() (line ~1175)**
-
-Add before the `serveStatic()` fallback:
-```javascript
-if (pathname === '/mcp') {
-  await handleMcpRequest(req, res, cache, loadRegistry);
-  return;
-}
-```
-
-The `createHttpServer` callback must become `async` to use `await`. This is safe — Node.js HTTP
-server handles async callbacks by catching promise rejections via `'uncaughtException'` or
-unhandled rejections, but explicit try/catch in the async callback is required.
-
-**3. Body parsing for POST /mcp**
-
-`server.cjs` currently reads bodies only for `PATCH /api/projects/:name/tracking` using
-`req.on('data')` streaming. `StreamableHTTPServerTransport.handleRequest()` in CJS accepts
-`(req, res, body)` where body is the pre-parsed JSON object.
-
-Pattern used by the Azure tutorial (confirmed working with raw http.createServer):
-```javascript
-async function readBody(req) {
-  return new Promise((resolve, reject) => {
-    let data = '';
-    req.on('data', chunk => { data += chunk; });
-    req.on('end', () => {
-      try { resolve(data ? JSON.parse(data) : undefined); }
-      catch (e) { reject(e); }
-    });
-    req.on('error', reject);
-  });
-}
-```
-
-### New MCP Handler Module
-
-The MCP logic should live in a new file `get-shit-done/bin/lib/mcp-server.cjs` (not inlined in
-server.cjs) to keep server.cjs focused on routing. This module exports:
-
-- `createMcpServer(cache, loadRegistry)` — builds and returns the McpServer with all 6 tools
-- `handleMcpRequest(req, res, cache, loadRegistry)` — stateless per-request handler
-- `mcpSessions` Map — module-scoped session store (if stateful mode chosen)
-
----
-
-## Session Lifecycle
-
-### Stateless Mode (Recommended for v10.0)
-
-Each POST to `/mcp` creates a fresh `StreamableHTTPServerTransport` and `McpServer`. No session
-map. Simpler. Claude Code re-initializes every session start — this is fine for read-only tools
-that carry no server-side state.
-
-```
-POST /mcp (InitializeRequest)
-  → new McpServer() + new StreamableHTTPServerTransport({ sessionIdGenerator: undefined })
-  → server.connect(transport)
-  → transport.handleRequest(req, res, body)
-  → server responds with InitializeResult (no Mcp-Session-Id header)
-  → connection closes
-
-POST /mcp (tools/call)
-  → new McpServer() + new transport (again)
-  → tool executes, returns result
-  → connection closes
-```
-
-No DELETE handler needed in stateless mode. Server responds 405 if Claude Code sends DELETE.
-
-**Confidence:** HIGH — Confirmed by Azure tutorial code and MCP spec section 5.4.5 ("server MAY
-respond with HTTP 405 Method Not Allowed, indicating that the server does not allow clients to
-terminate sessions")
-
-### Stateful Mode (Deferred to v10.1 if needed)
-
-If streaming notifications or server-initiated messages are needed later:
-
-```
-POST /mcp (InitializeRequest) — no Mcp-Session-Id
-  → new McpServer() + new transport with sessionIdGenerator: () => randomUUID()
-  → transport.onsessioninitialized = (id) => sessions.set(id, transport)
-  → server.connect(transport)
-  → transport.handleRequest(req, res, body)
-  → server responds with InitializeResult + Mcp-Session-Id: <uuid>
-
-POST /mcp (tools/call) — Mcp-Session-Id: <uuid>
-  → sessions.get(sessionId) → existing transport
-  → transport.handleRequest(req, res, body)
-
-DELETE /mcp — Mcp-Session-Id: <uuid>
-  → sessions.get(sessionId).close()
-  → sessions.delete(sessionId)
-  → 200 OK
-```
-
----
-
-## MCP Route Handler Structure
-
-```javascript
-// get-shit-done/bin/lib/mcp-server.cjs
-'use strict';
-
-const { randomUUID } = require('crypto');
-const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
-const { StreamableHTTPServerTransport } =
-  require('@modelcontextprotocol/sdk/server/streamableHttp.js');
-const { z } = require('zod');
-
-async function handleMcpRequest(req, res, cache, loadRegistry) {
-  const { pathname } = new URL(req.url, 'http://localhost');
-  if (pathname !== '/mcp') return false; // not our route
-
-  try {
-    const server = new McpServer({ name: 'gsd-dashboard', version: '1.0.0' });
-    registerTools(server, cache, loadRegistry);
-
-    const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: undefined, // stateless
-    });
-
-    res.on('close', () => {
-      transport.close();
-      server.close();
-    });
-
-    await server.connect(transport);
-
-    const body = req.method === 'POST' ? await readBody(req) : undefined;
-    await transport.handleRequest(req, res, body);
-  } catch (err) {
-    if (!res.headersSent) {
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({
-        jsonrpc: '2.0',
-        error: { code: -32603, message: 'Internal server error' },
-        id: null,
-      }));
+```json
+{
+  "built_at": "2026-04-04T12:00:00Z",
+  "plan_count": 82,
+  "plans": [
+    {
+      "plan_id": "35-01",
+      "milestone": "v8.0",
+      "phase_goal": "Decide gate enforcement approach and implement the mechanism",
+      "phase_slug": "gate-enforcement",
+      "task_pattern": ["tdd", "lib-module", "hook-integration", "config-update"],
+      "file_patterns": [".cjs", ".json"],
+      "file_paths": [".claude/hooks/lib/gate-runner.cjs", ".claude/hooks/gsd-run-gates.cjs"],
+      "requirement_count": 2,
+      "correction_count": 0,
+      "correction_rate": 0.0,
+      "tags": ["hook", "quality-gates", "deterministic"],
+      "completed": "2026-04-02"
     }
-  }
-  return true;
+  ]
 }
 ```
 
----
+**Build time:** `plan-indexer.cjs` scans `.planning/milestones/*/phases/**/*-PLAN.md` and matching `*-SUMMARY.md` files. Joins `correction_count` from `phase-benchmarks.jsonl` by `plan_id` key.
 
-## Data Flow: Cache/Registry to MCP Tools
+**Refresh trigger:** `cmdMilestoneComplete` calls `refreshIndex()` after archiving. Also exposed as `plan-index build` CLI subcommand for manual rebuild.
 
-The 6 MCP tools are thin wrappers over existing server functions. No new data layer.
+**Query time:** Sub-second — JSON parse + linear scan of ~100 entries is negligible.
 
-```
-MCP Tool Call
-     |
-     v
-Tool implementation in mcp-server.cjs
-     |
-     ├── list-projects     → Array.from(cache.values())
-     |                        same data as GET /api/projects
-     |
-     ├── get-project-state → cache.get(name) or loadRegistry() + parseProjectData()
-     |                        same data as GET /api/projects/:name
-     |
-     ├── get-gate-health   → aggregateGateHealth(loadRegistry())
-     |                        same function as GET /api/gate-health
-     |
-     ├── get-observations  → fs.readFileSync(.planning/patterns/<type>.jsonl)
-     |                        live file read (not in cache — patterns/ not cached)
-     |
-     ├── get-sessions      → fs.readFileSync(.planning/patterns/sessions.jsonl)
-     |                        live file read, filter by since param
-     |
-     └── get-skill-metrics → fs.readFileSync(.planning/patterns/skill-metrics.json)
-                              live file read (computed output, not streamed)
-```
-
-**Cache vs. live-file decision:**
-- `list-projects`, `get-project-state`, `get-gate-health`: use cache — already computed, fast,
-  acceptable 300ms debounce lag for read-only queries
-- `get-observations`, `get-sessions`, `get-skill-metrics`: live file reads — patterns/ directory
-  is not cached by server.cjs today; adding cache for these would be a separate concern
+**Staleness policy:** Index may lag by up to one milestone. The milestone-completion trigger is sufficient because completed plans are stable history. In-progress plans are never indexed.
 
 ---
 
-## Tool Definitions
+## New Module Locations
 
-### list-projects
-Input: none  
-Output: `Array<{ name, path, health, state, milestones, gateHealth }>`  
-Data source: `Array.from(cache.values())`
-
-### get-project-state
-Input: `{ name: z.string() }`  
-Output: full project data object or `{ error: 'not found' }`  
-Data source: `cache.get(name)` (refresh from disk if not found)
-
-### get-gate-health
-Input: `{ name: z.string().optional() }`  
-Output: aggregated or per-project gate metrics  
-Data source: `aggregateGateHealth(registry)` or `getProjectGateHealth(project.path)`
-
-### get-observations
-Input: `{ name: z.string(), type: z.enum(['corrections', 'preferences', 'sessions', 'suggestions']) }`  
-Output: last N JSONL entries from `.planning/patterns/<type>.jsonl`  
-Data source: live file read, parse, return last 50 entries
-
-### get-sessions
-Input: `{ name: z.string().optional(), since: z.string().optional() }`  
-Output: session summaries from sessions.jsonl  
-Data source: live file read, filter by since timestamp
-
-### get-skill-metrics
-Input: `{ name: z.string().optional() }`  
-Output: skill-metrics.json content (per-skill correction rates)  
-Data source: live file read of `.planning/patterns/skill-metrics.json`
-
----
-
-## Recommended Project Structure
+All new modules follow the established pattern: `get-shit-done/bin/lib/<name>.cjs`.
 
 ```
 get-shit-done/bin/lib/
-├── mcp-server.cjs          # New: McpServer, tool defs, handleMcpRequest()
-├── server.cjs              # Modified: /mcp route + CORS headers
-├── dashboard.cjs           # Unchanged
-├── core.cjs                # Unchanged
-└── (others unchanged)
+├── plan-indexer.cjs          NEW — index builder, searcher, refresher (~250 lines)
+├── task-classifier.cjs       NEW — task type classifier + composition engine (~180 lines)
+├── milestone-decomposer.cjs  NEW — milestone structure analyzer + proposal generator (~220 lines)
+├── prompt-scorer.cjs         NEW — per-plan prompt quality scoring (~160 lines)
+├── benchmark.cjs             EXISTING — unchanged; plan-indexer reads its JSONL output
+├── core.cjs                  EXISTING — planningRoot(), parseJsonlFile() reused by new modules
+└── ... (21 other existing modules untouched)
+```
 
-bin/
-└── install.js              # Modified: add claude mcp add step for Claude runtime
+---
+
+## Data Flow
+
+### Flow 1: Historical Plans → Index (build-time)
+
+```
+cmdMilestoneComplete() in milestone.cjs
+    └── (after all archiving is complete)
+    ↓
+plan-indexer.refreshIndex(cwd)
+    ↓ scans
+.planning/milestones/vX.Y/phases/**/*-PLAN.md    (frontmatter: phase, files_modified, tags)
+.planning/milestones/vX.Y/phases/**/*-SUMMARY.md (frontmatter: status, completed)
+.planning/patterns/phase-benchmarks.jsonl         (correction_count per plan_id)
+    ↓ joins and atomically writes
+.planning/plan-index.json
+```
+
+### Flow 2: Index → Suggestion → Planner (plan-phase workflow)
+
+```
+/gsd:plan-phase <phase>
+    ↓
+plan-phase.md Step 1 calls:
+  node gsd-tools.cjs init plan-phase <phase>
+    ↓ in cmdInitPlanPhase() (init.cjs):
+    plan-indexer.searchIndex(cwd, { goal: phase_name, limit: 3 })
+    ↓ returns top matches with similarity scores
+    adds to init JSON:
+      "plan_suggestions": [
+        { "plan_id": "35-01", "similarity": 0.82, "task_pattern": [...], "correction_rate": 0.0 },
+        { "plan_id": "41-01", "similarity": 0.71, "task_pattern": [...], "correction_rate": 0.0 }
+      ]
+    ↓
+plan-phase.md Step 8 parses plan_suggestions from init JSON
+  and injects into the gsd-planner prompt:
+
+  <planning_intelligence>
+  Similar historical plans:
+  - 35-01 (gate-enforcement, 82% match, 0 corrections)
+    task pattern: tdd → lib-module → hook-integration → config-update
+  - 41-01 (skill-metrics, 71% match, 0 corrections)
+    task pattern: tdd → lib-module → cli-wiring → integration-update
+  Suggested task sequence (adapt as needed): ...
+  </planning_intelligence>
+```
+
+### Flow 3: Historical Milestones → Decomposition → Roadmapper (new-milestone workflow)
+
+```
+/gsd:new-milestone
+    ↓
+new-milestone.md Step 7: Load Context and Resolve Models calls:
+  node gsd-tools.cjs init new-milestone
+    ↓ in cmdInitNewMilestone() (init.cjs):
+    milestone-decomposer.proposeDecomposition(cwd, milestone_goal)
+    ↓ reads
+    .planning/milestones/vX.Y/ROADMAP.md  (for each completed milestone)
+    ↓ returns
+    {
+      "proposal": "Phase 1: Infrastructure (2 plans)...",
+      "similar_milestones": ["v7.0", "v9.0"],
+      "pattern": "analytics-pipeline"
+    }
+    adds "decomposition_proposal" to init JSON
+    ↓
+new-milestone.md roadmapper spawn injects:
+
+  <decomposition_proposal>
+  Based on similar milestones (v7.0 Signal Intelligence, v9.0 Signal Intelligence):
+  Phase 1: Infrastructure — index builder, data scanner (2 plans)
+  Phase 2: Core algorithms — classifier, scorer, similarity engine (2-3 plans)
+  Phase 3: Workflow integration — inject into plan-phase + new-milestone (2 plans)
+  Phase 4: Analytics surface — digest integration, prompt scoring (1-2 plans)
+  Adapt as needed. This is a starting point, not a prescription.
+  </decomposition_proposal>
+```
+
+### Flow 4: Execution Data → Prompt Quality Score → Digest
+
+```
+/gsd:execute-phase completes a plan
+    ↓ (plan-complete checkpoint in execute-phase.md)
+benchmark.cmdBenchmarkPlan() appends entry to phase-benchmarks.jsonl
+    ↓
+/gsd:digest workflow runs
+    ↓ calls
+  node gsd-tools.cjs prompt-score --milestone <version>
+    ↓ in prompt-scorer.cjs:
+    reads .planning/patterns/phase-benchmarks.jsonl
+    reads .planning/milestones/vX.Y/phases/**/*-PLAN.md (task action text)
+    ↓ returns
+    {
+      "score": 0.87,
+      "plan_count": 8,
+      "clean_plans": 6,
+      "outliers": [
+        { "plan": "42-01", "task": "T3", "corrections": 4 }
+      ]
+    }
+    ↓
+digest adds new section:
+  ## Prompt Quality
+  Score: 87% (6/8 plans had 0-1 corrections)
+  Outlier: Plan 42-01 Task 3 (4 corrections) — consider rephrasing action text
+```
+
+---
+
+## Integration Points: New vs. Modified
+
+### New Modules (no existing module is touched)
+
+| Module | Exports | Key Dependencies |
+|--------|---------|-----------------|
+| `plan-indexer.cjs` | `buildIndex`, `refreshIndex`, `searchIndex`, `cmdPlanIndex` | `core.cjs` (planningRoot, parseJsonlFile), `frontmatter.cjs` (extractFrontmatter) |
+| `task-classifier.cjs` | `classifyTask`, `composeTasks`, `rankByType`, `cmdTaskCompose` | `core.cjs`, `plan-indexer.cjs` (reads index JSON) |
+| `milestone-decomposer.cjs` | `proposeDecomposition`, `matchPattern`, `cmdMilestoneDecompose` | `core.cjs`, reads ROADMAP.md files directly |
+| `prompt-scorer.cjs` | `scoreRecentPlans`, `scoreAllPlans`, `cmdPromptScore` | `core.cjs`, reads phase-benchmarks.jsonl + PLAN.md files |
+
+### Modified Modules (additive-only)
+
+| Module | Change | Estimated lines added |
+|--------|--------|-----------------------|
+| `init.cjs` (`cmdInitPlanPhase`) | Add `plan_suggestions` field to init JSON. Try/catch wrap — returns `[]` on any failure. | ~12 |
+| `init.cjs` (`cmdInitNewMilestone`) | Add `decomposition_proposal` field to init JSON. Try/catch wrap — returns `null` on failure. | ~12 |
+| `milestone.cjs` (`cmdMilestoneComplete`) | Call `refreshIndex(cwd)` at end of completion, silent on failure. | ~6 |
+| `gsd-tools.cjs` (router) | Add `require()` for 4 new modules + case branches for `plan-index`, `task-compose`, `milestone-decompose`, `prompt-score`. | ~60 |
+
+### Modified Workflows (Markdown — the consumer side)
+
+| Workflow | Change | Location in file |
+|----------|--------|-----------------|
+| `plan-phase.md` | Step 1: parse `plan_suggestions` from init JSON. Step 8: inject as `<planning_intelligence>` block in planner prompt. | Steps 1 + 8 |
+| `new-milestone.md` | Parse `decomposition_proposal` from init JSON. Inject in roadmapper spawn prompt. | Step 7 + roadmapper spawn |
+| Digest workflow | Add `prompt-score` CLI call + new "Prompt Quality" section. | New digest section |
+
+---
+
+## Recommended Project Structure Changes
+
+```
+get-shit-done/bin/lib/
+├── plan-indexer.cjs         NEW
+├── task-classifier.cjs      NEW
+├── milestone-decomposer.cjs NEW
+├── prompt-scorer.cjs        NEW
+└── ... (25 existing modules untouched)
+
+.planning/
+├── plan-index.json          NEW — derived artifact, rebuilt at milestone completion
+└── ... (all existing files untouched)
 
 tests/
-└── mcp-server.test.cjs     # New: tool handler unit tests
+├── plan-indexer.test.cjs    NEW
+├── task-classifier.test.cjs NEW
+├── milestone-decomposer.test.cjs NEW
+└── prompt-scorer.test.cjs   NEW
 ```
-
----
-
-## Installer Changes
-
-The installer (`bin/install.js`) currently writes skills, hooks, agents, and CLAUDE.md to user
-projects. For v10.0 it needs to also configure the MCP connection in the user's Claude Code
-runtime.
-
-### How Claude Code stores MCP config (HIGH confidence, confirmed from official docs)
-
-- **User scope** (default): stored in `~/.claude.json` under `mcpServers` key
-- **Project scope**: stored in `.mcp.json` at project root, checked into version control
-- **CLI to add**: `claude mcp add gsd-dashboard --transport http http://localhost:7778/mcp`
-- **Programmatic**: edit `~/.claude.json` directly (JSON file, read/write like settings.json)
-
-### Installer integration pattern
-
-```javascript
-// In bin/install.js, after existing Claude runtime install steps:
-function installMcpConfig(globalDir, opts = {}) {
-  if (opts.noMcp) return; // --no-mcp opt-out
-
-  const claudeJsonPath = path.join(os.homedir(), '.claude.json');
-  let config = {};
-  try { config = JSON.parse(fs.readFileSync(claudeJsonPath, 'utf-8')); } catch {}
-
-  if (!config.mcpServers) config.mcpServers = {};
-
-  // Idempotent: only add if not present or if URL changed
-  config.mcpServers['gsd-dashboard'] = {
-    type: 'http',
-    url: 'http://localhost:7778/mcp',
-  };
-
-  fs.writeFileSync(claudeJsonPath, JSON.stringify(config, null, 2) + '\n');
-  console.log('  ✓ Configured GSD dashboard MCP server in ~/.claude.json');
-}
-```
-
-**Scope decision:** User scope (`~/.claude.json`) is correct for this installer — the MCP
-server is device-wide, not project-specific. Project-scoped `.mcp.json` would require every
-project repo to contain the config, which is wrong for a local server.
-
-**Opt-out flag:** `--no-mcp` added to installer CLI so users who don't run the dashboard can
-skip this step without breaking the install.
-
----
-
-## CORS Header Requirements for MCP
-
-MCP StreamableHTTP transport has specific CORS requirements beyond what server.cjs currently
-provides:
-
-| Header | Current | Required |
-|--------|---------|----------|
-| `Access-Control-Allow-Methods` | `GET, PATCH, OPTIONS` | + `POST, DELETE` |
-| `Access-Control-Allow-Headers` | `Content-Type` | + `mcp-session-id` |
-| `Access-Control-Expose-Headers` | (not set) | `mcp-session-id` (so client can read it) |
-
-The MCP spec requires clients to send `Accept: application/json, text/event-stream` — the
-server does not need to validate this, but must respond with `Content-Type: text/event-stream`
-for SSE responses. The SDK handles `Content-Type` on responses internally.
-
-**Origin validation warning (from MCP spec):** "Servers MUST validate the Origin header on
-all incoming connections to prevent DNS rebinding attacks." For a localhost-only server this
-risk is minimal — bind to `127.0.0.1` (already done in server.cjs via `--host` option) rather
-than `0.0.0.0`. Adding `Origin` header validation is a security hardening step for v10.1.
 
 ---
 
 ## Architectural Patterns
 
-### Pattern 1: Stateless Per-Request Transport (Primary)
+### Pattern 1: Init Injection
 
-**What:** Create new `McpServer` + `StreamableHTTPServerTransport` on every POST. No session
-map. Clean up on `res.close`.
+**What:** New intelligence features inject outputs into the compound `init` commands in `init.cjs`. The workflow parses the init JSON and injects results into subagent prompts.
 
-**When to use:** Read-only tools, no server-initiated messages, simplest deployment.
+**When to use:** Suggestions the planner needs as pre-planning context. The init command is the single integration point where all context is assembled before an agent spawns.
 
-**Trade-offs:** Slightly more object allocation per request. Tool definitions re-registered
-each time. Acceptable because tool registration is synchronous and cheap (~microseconds).
+**Why this pattern:** plan-phase.md already reads 7+ context fields from init JSON. Adding `plan_suggestions` as one more JSON key costs zero workflow restructuring — only Step 1 (parse) and Step 8 (use) need updating. No new workflow steps. No new CLI calls.
 
-### Pattern 2: Module-Scoped Tool Definitions
-
-**What:** Define all 6 tools once at module load time (not inside the handler). The handler
-just creates a new server instance and registers the pre-defined tools.
-
-**When to use:** Always — avoids re-parsing zod schemas on every request.
-
+**Concrete wiring in init.cjs:**
 ```javascript
-const TOOLS = [
-  { name: 'list-projects', schema: {}, handler: (args, ctx) => ... },
-  // ...
-];
-
-function registerTools(server, cache, registry) {
-  for (const tool of TOOLS) {
-    server.tool(tool.name, tool.schema, (args) => tool.handler(args, { cache, registry }));
-  }
+// In cmdInitPlanPhase(), after existing context assembly:
+try {
+  const { searchIndex } = require('./plan-indexer.cjs');
+  result.plan_suggestions = searchIndex(cwd, { goal: phaseGoal, limit: 3 });
+} catch {
+  result.plan_suggestions = [];  // graceful degradation — index not yet built
 }
 ```
 
-### Pattern 3: Cache-First with Live-File Fallback
+### Pattern 2: Pre-Built Index with Milestone-Completion Refresh
 
-**What:** For project-level detail queries, check cache first. If cache miss (project recently
-added), fall back to `loadRegistry() + parseProjectData()`.
+**What:** `cmdMilestoneComplete` in `milestone.cjs` calls `plan-indexer.refreshIndex()` as its final step, after all archiving is done.
 
-**When to use:** `get-project-state` tool — cache may not have the project if it was just added.
+**When to use:** Any time historical data needs to be refreshed at a natural checkpoint. Milestone completion marks when new completed plans become stable history.
 
----
+**Why this pattern:** Query-time scan of 80+ PLAN.md files on every `init plan-phase` call would add ~200ms latency to every planning session. Pre-built index is a JSON parse — negligible. The v14.0 Milestone Context (Key Decision 1) explicitly recommends this approach.
 
-## Build Order
+**Graceful degradation:** If `plan-index.json` doesn't exist (first run), `searchIndex()` returns `[]`. The planner proceeds normally without suggestions.
 
-Dependencies between new components:
+### Pattern 3: Jaccard Token Overlap for Similarity
 
-```
-Phase 1: MCP scaffolding on server (no installer changes needed to test)
-  1a. Write mcp-server.cjs (McpServer, tool skeletons, handleMcpRequest)
-  1b. Modify server.cjs (CORS headers, /mcp route, async handler)
-  1c. npm install @modelcontextprotocol/sdk@1.x (add to get-shit-done/package.json)
-  1d. Write tests for tool handlers
-  Deliverable: `claude mcp add gsd-dashboard --transport http http://localhost:7778/mcp`
-               works manually; all 6 tools callable
+**What:** Reuse the `jaccardScore()` / `tokenize()` pattern from `skill-scorer.cjs` for plan similarity scoring.
 
-Phase 2: Auto-configuration via installer
-  2a. Add --no-mcp flag parsing to install.js
-  2b. Add installMcpConfig() function (read ~/.claude.json, write mcpServers entry)
-  2c. Add MCP install step to Claude runtime flow (after hooks/skills)
-  2d. Test with fresh install: verify ~/.claude.json updated correctly
-  Deliverable: `node bin/install.js --claude --global` configures MCP automatically
+**When to use:** Keyword-based similarity is sufficient for matching phase goals to historical plans. The skill-scorer proved this works in production (v9.0).
 
-Phase 3 (optional): Extended tools
-  3a. Additional tools (brainstorm queries, benchmark data, debt queries)
-  Deliverable: richer cross-project data access
-```
+**Implementation note:** plan-indexer does NOT import skill-scorer.cjs — it duplicates the ~20-line tokenize + Jaccard implementation locally to keep modules independent. This is the established codebase pattern: benchmark.cjs, event-journal.cjs, and skill-scorer.cjs each have their own `parseJsonlFile()` copy.
 
-**Phase 1 can be verified immediately** using `claude mcp add` manually — no installer changes
-needed to prove the integration works.
+### Pattern 4: Task Type Taxonomy (8 canonical types)
+
+**What:** Classify historical tasks into 8 types by action verb + file pattern. These 8 types cover the full range observed across 80+ completed plans.
+
+| Type | Keywords | File indicators |
+|------|----------|-----------------|
+| `test-setup` | "write tests", "add tests", "tdd", "test suite" | `*.test.cjs` |
+| `lib-module` | "create module", "implement", "add function", "build" | `lib/*.cjs` |
+| `cli-wiring` | "add command", "wire", "route", "gsd-tools" | `gsd-tools.cjs` |
+| `hook-integration` | "hook", "PostToolUse", "SessionEnd", "PreToolUse" | `.claude/hooks/` |
+| `workflow-update` | "update workflow", "modify agent", "workflow step" | `workflows/*.md` |
+| `dashboard-page` | "dashboard", "page", "chart", "panel" | `desktop/src/` |
+| `config-extension` | "config", "setting", "schema", "json key" | `config.json` |
+| `documentation` | "document", "write docs", "update docs" | `*.md` |
 
 ---
 
-## Anti-Patterns
+## Build Order (Dependency-Driven)
 
-### Anti-Pattern 1: Inlining MCP Logic in server.cjs
+Phase ordering rationale: pure library modules first (no external dependencies), then consumer modules that import them, then CLI wiring, then workflow injection, then analytics surface.
 
-**What people do:** Add 80+ lines of McpServer code directly into `createHttpServer()`.
+```
+Phase 1: Foundation — plan-indexer.cjs + tests
+  No new dependencies. Reads PLAN.md files + phase-benchmarks.jsonl.
+  Delivers: plan-index.json building, searching, refreshing.
+             Milestone completion hook.
+  Validates: the core data model before anything consumes it.
+  Standalone test: node gsd-tools.cjs plan-index build → creates .planning/plan-index.json
 
-**Why it's wrong:** server.cjs is already 500+ lines. MCP logic (tool defs, session map,
-body parser) is a distinct concern. Inlining makes it untestable in isolation.
+Phase 2: Classification + Decomposition — task-classifier.cjs + milestone-decomposer.cjs + tests
+  Depends on: plan-indexer.cjs (Phase 1).
+  Delivers: task type taxonomy, composition engine, milestone pattern matching.
+  Classifier and decomposer can be built in parallel (independent algorithms,
+  different input files).
 
-**Do this instead:** New `mcp-server.cjs` module. server.cjs calls `handleMcpRequest()`.
+Phase 3: Workflow Integration — init.cjs changes + plan-phase.md + new-milestone.md changes
+  Depends on: all modules from Phases 1-2.
+  Delivers: suggestions surface in plan-phase, proposals surface in new-milestone.
+  First phase users see the feature.
 
-### Anti-Pattern 2: Importing SDK at v2 Alpha
-
-**What people do:** `npm install @modelcontextprotocol/sdk@latest` which may pull in v2 alpha.
-
-**Why it's wrong:** v2 alpha is ESM-only. CJS `require()` of an ESM-only package throws
-`ERR_REQUIRE_ESM`. server.cjs and all lib modules are CJS — ESM is incompatible.
-
-**Do this instead:** `npm install @modelcontextprotocol/sdk@1.x` — pin to v1 stable which
-ships explicit CJS builds.
-
-### Anti-Pattern 3: Caching patterns/ Files in the Dashboard Cache
-
-**What people do:** Add `sessions.jsonl`, `corrections.jsonl`, etc. to the `cache` Map in
-server.cjs alongside project data.
-
-**Why it's wrong:** The cache is project-data shaped (`parseProjectData()` output). JSONL
-entries are a different shape. Mixing them in the same Map with different value schemas
-makes cache consumers fragile.
-
-**Do this instead:** MCP tool handlers read patterns/ files directly from disk (live reads).
-Add a separate patterns cache only if profiling shows file reads are a bottleneck (unlikely).
-
-### Anti-Pattern 4: Using Project-Scoped .mcp.json for a Device-Wide Server
-
-**What people do:** Install `.mcp.json` at the user project root so the dashboard MCP is
-configured per-project.
-
-**Why it's wrong:** The dashboard is a device-wide shared server, not a per-project service.
-Scoping it to projects means each project repo needs the config, and teams that clone the
-repo get an `.mcp.json` pointing to someone else's `localhost:7778`.
-
-**Do this instead:** Write to `~/.claude.json` (user scope). The server is a local daemon,
-and the config belongs in user-level Claude Code settings.
-
-### Anti-Pattern 5: Stateful Sessions Without Need
-
-**What people do:** Implement stateful session map (UUID-keyed, transport reuse) for v10.0
-read-only tools.
-
-**Why it's wrong:** Stateful sessions add session leak risk (sessions that never receive
-DELETE accumulate in memory). Read-only tools don't need to push server-initiated messages,
-which is the only reason to maintain a persistent connection.
-
-**Do this instead:** Stateless per-request transport. The SDK's `sessionIdGenerator: undefined`
-is the correct config. Session state lives in Claude Code's MCP client, not the server.
+Phase 4: Analytics Surface — prompt-scorer.cjs + digest workflow integration + CLI commands
+  Depends on: benchmark.cjs pattern (existing), phase-benchmarks.jsonl (existing).
+  Independent of Phases 1-3 (entirely different data path — no index dependency).
+  Can be built in parallel with Phase 3 if capacity allows.
+```
 
 ---
 
 ## Scaling Considerations
 
-| Concern | At current scale (1-5 projects) | At 50 projects | At 500 projects |
-|---------|----------------------------------|----------------|-----------------|
-| Tool response time | Negligible — cache hits | Negligible — same cache | May need cache eviction |
-| Memory | ~0 MB (stateless transport) | ~0 MB | ~0 MB |
-| File reads (patterns/) | Fast — small files | Fast | May need caching |
-| Concurrent MCP sessions | 1-5 | 1-20 | May need connection limit |
+Local file system tool. Scale means "how does this hold up as the project grows."
 
-At current scale (1-5 concurrent Claude Code sessions, <10 projects), stateless mode with
-direct cache access is sufficient. No scaling changes needed for v10.0.
+| Concern | At 100 plans | At 500 plans | At 2000 plans |
+|---------|-------------|-------------|---------------|
+| plan-index.json size | ~50KB — negligible | ~250KB — fine | ~1MB — still fast JSON parse |
+| Index build time | <1 second | <3 seconds | <10 seconds (acceptable at milestone completion) |
+| searchIndex() time | <10ms | <50ms | <200ms — add caching if needed |
+| PLAN.md files scanned at build | 100 × ~5KB = 500KB read | 2.5MB total | Fine — Node.js handles this |
 
----
-
-## Integration Points Summary
-
-| Component | Action | New vs. Modified |
-|-----------|--------|-----------------|
-| `get-shit-done/bin/lib/mcp-server.cjs` | McpServer, 6 tools, handleMcpRequest | **New** |
-| `get-shit-done/bin/lib/server.cjs` | CORS headers, `/mcp` route dispatch, async callback | **Modified** |
-| `get-shit-done/package.json` | Add `@modelcontextprotocol/sdk@1.x` runtime dep | **Modified** |
-| `bin/install.js` | `installMcpConfig()`, `--no-mcp` flag, Claude flow step | **Modified** |
-| `tests/mcp-server.test.cjs` | Tool handler unit tests | **New** |
-
-**Not changed:** `dashboard.cjs`, `core.cjs`, `phase.cjs`, `roadmap.cjs`, all hooks, all
-workflow files, all agent files, all skills.
+No scaling concern for the foreseeable lifetime of this project. The pre-built index ensures query time is always fast regardless of plan count growth.
 
 ---
 
-## Confidence Assessment
+## Anti-Patterns
 
-| Area | Confidence | Notes |
-|------|------------|-------|
-| CJS import paths | HIGH | Confirmed: `require('@modelcontextprotocol/sdk/server/mcp.js')` and `server/streamableHttp.js` — Azure tutorial uses these exact paths |
-| `handleRequest(req, res, body)` signature | HIGH | Azure tutorial uses this exact 3-arg form; spec confirms POST body must be pre-parsed |
-| Stateless mode config | HIGH | `sessionIdGenerator: undefined` — confirmed by SDK README and tutorial |
-| CORS changes needed | HIGH | Confirmed from spec (mcp-session-id) and SDK example (exposed headers) |
-| `~/.claude.json` as install target | HIGH | Confirmed from official Claude Code MCP docs: user-scoped servers in `~/.claude.json` |
-| SDK v1 vs v2 CJS compatibility | HIGH | Milestone context explicitly states v1.29.0 has CJS builds; v2 alpha drops CJS |
-| Body parsing approach | MEDIUM | Azure tutorial uses Express (which pre-parses). Raw http.createServer needs manual body read. Pattern confirmed by reading server.cjs PATCH handler which already does manual body streaming. |
-| Session map needed for v10.0 | HIGH | No server-initiated messages required for read-only tools → stateless is correct |
+### Anti-Pattern 1: Scanning PLAN.md Files at Query Time
+
+**What people do:** Call `buildIndex()` inside `searchIndex()` on every query to ensure freshness.
+
+**Why it's wrong:** plan-phase.md calls `init plan-phase` synchronously. A 500ms scan of 80 PLAN.md files adds perceptible latency to every planning session. Users will notice.
+
+**Do this instead:** Pre-build at milestone completion. Expose `plan-index build` for manual rebuilds. Fall back gracefully to empty suggestions if index is missing.
+
+### Anti-Pattern 2: Blocking on Missing Index
+
+**What people do:** Error out in `cmdInitPlanPhase` when `plan-index.json` doesn't exist.
+
+**Why it's wrong:** The first time a user runs `/gsd:plan-phase` after installing v14.0, no index exists yet. Erroring out breaks the core planning workflow.
+
+**Do this instead:** Return `plan_suggestions: []` when index is absent. The planner proceeds normally without suggestions. Optionally surface a one-line note: "Run `gsd-tools plan-index build` to enable suggestions."
+
+### Anti-Pattern 3: Separate CLI Call Instead of Init Injection
+
+**What people do:** Add a new `plan-suggest` CLI command and have the workflow call it as a separate step before spawning the planner.
+
+**Why it's wrong:** The workflow already calls `init plan-phase` and receives all context as one JSON blob. Adding a second CLI call adds latency and a new failure surface. The init injection pattern is the established GSD convention (see cmdInitPlanPhase — already assembles 15+ fields from multiple sources).
+
+**Do this instead:** Inject suggestions into the existing init JSON output. One call, one JSON blob, one integration point.
+
+### Anti-Pattern 4: Storing Index in Milestone Scope
+
+**What people do:** Put `plan-index.json` at `.planning/milestones/vX.Y/plan-index.json`.
+
+**Why it's wrong:** The index spans all milestones. Milestone-scoped storage would require searching multiple scopes on every query and re-building per-milestone. The index is a cross-milestone artifact by definition.
+
+**Do this instead:** Store at `.planning/plan-index.json` — same level as `config.json` and `MILESTONES.md`.
+
+### Anti-Pattern 5: Importing New Modules Cross-Circularly
+
+**What people do:** Have task-classifier.cjs import plan-indexer.cjs which imports task-classifier.cjs for classification during build.
+
+**Why it's wrong:** Circular require() in CJS modules causes subtle initialization-order bugs and empty module exports.
+
+**Do this instead:** task-classifier.cjs reads the pre-built `plan-index.json` file directly (JSON.parse) rather than calling plan-indexer.cjs functions. plan-indexer.cjs has no knowledge of task-classifier.cjs.
 
 ---
 
 ## Sources
 
-- `/Users/tmac/Projects/gsdup/get-shit-done/bin/lib/server.cjs` — direct inspection: CORS_HEADERS (line ~1144), createHttpServer (line ~1150), existing route handlers, PATCH body parsing pattern
-- `/Users/tmac/Projects/gsdup/bin/install.js` — direct inspection: settings.json read/write pattern, Claude runtime install flow
-- `/Users/tmac/Projects/gsdup/.planning/v10.0-MILESTONE-CONTEXT.md` — SDK version (1.29.0), architecture decisions, tool list
-- [MCP Transports Specification (2025-03-26)](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports) — authoritative: session lifecycle, POST/GET/DELETE semantics, Mcp-Session-Id header protocol, `sessionIdGenerator: undefined` = stateless
-- [Azure App Service MCP Tutorial (Node.js)](https://learn.microsoft.com/en-us/azure/app-service/tutorial-ai-model-context-protocol-server-node) — confirmed: CJS require paths, stateless per-request pattern, `handleRequest(req, res, req.body)` signature
-- [Claude Code MCP Docs](https://code.claude.com/docs/en/mcp) — confirmed: `~/.claude.json` for user-scoped servers, `claude mcp add --transport http <name> <url>` command syntax
+- Direct inspection: `get-shit-done/bin/lib/skill-scorer.cjs` — Jaccard + tokenize pattern, v9.0 production code
+- Direct inspection: `get-shit-done/bin/lib/benchmark.cjs` — phase-benchmarks.jsonl schema (correction_count, gate_fire_count fields)
+- Direct inspection: `get-shit-done/bin/lib/mcp-classifier.cjs` — task classification keyword pattern, established in v13.0
+- Direct inspection: `get-shit-done/bin/lib/init.cjs` — existing init injection pattern, how `cmdInitPlanPhase` assembles context
+- Direct inspection: `get-shit-done/bin/lib/milestone.cjs` — `cmdMilestoneComplete` structure, where to hook refresh
+- Direct inspection: `~/.claude/get-shit-done/workflows/plan-phase.md` — Step 1 init parse + Step 8 planner prompt structure
+- Direct inspection: `~/.claude/get-shit-done/workflows/new-milestone.md` — Step 7 init + roadmapper spawn
+- Direct inspection: `.planning/milestones/v8.0/v8.0-phases/35-gate-enforcement/35-01-PLAN.md` — PLAN.md frontmatter schema (confirmed fields: phase, plan, files_modified, must_haves, requirements, wave, depends_on)
+- Direct inspection: `.planning/patterns/phase-benchmarks.jsonl` — confirmed correction_count + timestamp fields
+- Milestone context: `.planning/v14.0-MILESTONE-CONTEXT.md` — Key Decision Points 1-4 from project author (build-time vs query-time, suggest vs auto-populate, specificity of proposals)
+- Project context: `.planning/PROJECT.md` — Key Decisions table, established GSD patterns and constraints
 
 ---
-
-*Architecture research for: v10.0 Shared MCP Dashboard — adding MCP endpoints to existing dashboard server*
+*Architecture research for: v14.0 Planning Intelligence — CJS integration with existing GSD framework*
 *Researched: 2026-04-04*

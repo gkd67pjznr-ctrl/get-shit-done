@@ -1,185 +1,174 @@
 # Project Research Summary
 
-**Project:** GSD — v10.0 Shared MCP Dashboard
-**Domain:** Adding StreamableHTTP MCP endpoints to an existing Node.js CJS dashboard server
+**Project:** GSD — Planning Intelligence (v14.0)
+**Domain:** Planning intelligence layer for an adaptive project management CLI
 **Researched:** 2026-04-04
 **Confidence:** HIGH
 
 ## Executive Summary
 
-v10.0 adds MCP server endpoints to the existing `server.cjs` dashboard, enabling any Claude Code session to query cross-project GSD data (state, gate health, corrections, skill metrics) via tool calls rather than direct file reads. The implementation is narrowly scoped: one new runtime dependency (`@modelcontextprotocol/sdk@1.29.0`), one new module (`mcp-server.cjs`), three targeted edits to `server.cjs` (CORS headers, `/mcp` route dispatch, async callback), and a Phase 2 installer update. The server remains a plain `http.createServer` CJS process — no framework additions, no restructuring.
+v14.0 adds a planning intelligence layer to an existing, well-instrumented GSD framework. The project has 80+ completed PLAN.md files across v1.0-v15.0, JSONL execution history (phase-benchmarks.jsonl, corrections.jsonl), and a v13.0 event journal — all on disk, all readable. The intelligence features are purely additive consumers of this existing data. Nothing about the stack needs to change: zero new npm dependencies are required. Every capability (plan indexing, similarity scoring, task classification, milestone decomposition, prompt quality scoring) can be built with pure Node.js and gray-matter, which is already a devDependency.
 
-The recommended approach is stateless per-request transport: create a new `McpServer` + `StreamableHTTPServerTransport` on every POST, register 6 read-only tools as thin wrappers over existing server functions, and clean up on `res.close`. All six tools map directly onto data already computed by `server.cjs` (cache, registry, aggregation functions) plus live JSONL file reads for patterns data not currently in the cache. The MCP endpoint slots into the existing route switch block at `/mcp` alongside `/api/projects`, `/api/events`, etc. No restructuring of the server is needed.
+The recommended approach is four sequenced phases that build from foundation to surface. Phase 1 builds the plan indexer and its pre-built JSON index — this is the prerequisite for everything else. Phase 2 builds the similarity scorer, task classifier, and composition engine, delivering the first user-visible planning leverage. Phase 3 wires the intelligence into the existing plan-phase and new-milestone workflows through the established init-injection pattern. Phase 4 adds prompt quality scoring to the digest workflow, closing the feedback loop. The milestone decomposer fits into Phase 3 but should be deferred as a stretch goal until Phases 1-2 are validated in real usage.
 
-The dominant risk is a cluster of CJS compatibility and session routing pitfalls that are easy to introduce and, in some cases, hard to detect without deliberate testing. The SDK must be pinned to exactly `1.29.0` (v2 is ESM-only; earlier v1 versions have a pkce-challenge CJS bug). Session routing must use a per-session `McpServer` instance — sharing one instance across multiple Claude Code sessions silently misroutes responses or throws on SDK v1.26.0+. CORS headers must be updated before the route handler is wired. Origin validation must be added in Phase 1 per the MCP spec to prevent DNS rebinding. These are all Phase 1 constraints, not afterthoughts.
+The dominant risk is not technical — it is behavioral: planner anchoring. When the system surfaces a "similar plan found," the planner agent may anchor to that structure rather than reasoning from the new phase's requirements. This risk is present at the similarity surface (plan-phase) and at the milestone level (new-milestone decomposition proposal). The mitigation is architectural: suggestions must appear as reference tables with explicit "adapt as needed" framing, never as pre-filled drafts. Prompt quality scoring carries a secondary risk of penalizing legitimate complexity; stratifying the correction baseline by task type rather than computing a global ceiling is the correct fix and must be designed before implementation begins.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The only new runtime dependency is `@modelcontextprotocol/sdk@1.29.0` (pinned exact). This version is the current v1 stable release, ships explicit CJS builds at `dist/cjs/`, and satisfies the existing `zod@^4.3.6` peer dependency without conflict. All other capabilities — session ID generation (`node:crypto`), HTTP handling (`node:http`), body parsing — are already available in the runtime or in `server.cjs`. The SDK's `StreamableHTTPServerTransport` accepts `IncomingMessage`/`ServerResponse` directly, making framework additions (Express, Hono) unnecessary. The SDK internally uses `@hono/node-server` as a transitive dependency to convert between Node.js HTTP objects and Web Standard APIs, but this is transparent to `server.cjs`.
+The full capability set requires no new packages. TF-IDF weighted cosine similarity (~60 lines of pure Node.js) outperforms pure Jaccard for this corpus because rare structural terms ("hook-integration", "jsonl-persistence", "tdd") are highly discriminating and Jaccard treats them identically to common terms ("file", "test", "cli"). gray-matter handles PLAN.md frontmatter parsing and is already in devDependencies. All new modules follow the established `get-shit-done/bin/lib/*.cjs` pattern.
 
 **Core technologies:**
-- `@modelcontextprotocol/sdk@1.29.0`: MCP server + StreamableHTTP transport — the only v1 stable release with verified CJS exports and no pkce-challenge dependency issue; pin exact, not `^1.x`
-- `McpServer` + `StreamableHTTPServerTransport`: mounted on existing `http.createServer`; `handleRequest(req, res, body)` accepts Node.js HTTP objects directly
-- `zod` (existing devDep at `^4.3.6`): tool input validation — already satisfies SDK peer dep `^3.25 || ^4.0`; no version change needed
-- `node:crypto` `randomUUID()`: session ID generation — built-in since Node.js 14.17, no new dependency
-- `~/.claude.json` (user scope): MCP config install target for installer — not `~/.claude/settings.json`, which Claude Code does not read for MCP config
+- `node:fs` + `node:path` + `node:crypto`: file scanning, plan index writes, content-hash cache invalidation — built-in, zero cost
+- `gray-matter` (devDep, already installed at `^4.0.3`): PLAN.md YAML frontmatter parsing at index-build time only
+- Pure TF-IDF cosine (~60 lines inline): plan similarity scoring — outperforms Jaccard for discriminating rare structural terms across 80+ plans
+- Hybrid query-time scoring: `0.70 * tfidf_cosine + 0.20 * jaccard + 0.10 * tag_overlap` — graceful fallback for queries with tokens outside the IDF vocabulary
+- Existing modules reused: `skill-scorer.cjs` (tokenize/Jaccard), `benchmark.cjs` (parseJsonlFile), `frontmatter.cjs` (extractFrontmatter), `core.cjs` (planningRoot)
+
+**What NOT to add:** `natural`, `compromise`, `vectra`, OpenAI embeddings, `better-sqlite3`, `fuse.js` — all solve problems that don't exist at this corpus size or violate the zero-external-dependency constraint.
 
 ### Expected Features
 
-All 6 MCP tools are table stakes for the milestone — they are the feature. Differentiators are quality attributes on those tools (filtering, structured errors, auto-configuration). Everything write-facing is explicitly deferred to a future milestone after a concurrency safety model is designed.
+**Must have (table stakes — planning intelligence feels like a demo without these):**
+- Plan index built from all completed PLAN.md files across all milestones, joined with correction counts from phase-benchmarks.jsonl
+- Similarity search against plan index surfaced before plan-phase drafting begins (0.65+ threshold; below threshold emits no signal)
+- Task-type classification for historical tasks (8 canonical types: test-setup, lib-module, cli-wiring, hook-integration, workflow-update, dashboard-page, config-extension, documentation)
+- Per-task correction attribution with fallback to per-plan totals if v13.0 event journal is unavailable
+- Prompt quality score per plan surfaced in /gsd:digest with task-type-stratified baseline
+- Index rebuild triggered at `cmdMilestoneComplete` as the final step — index must stay current without manual intervention
 
-**Must have (table stakes — v10.0 Phase 1):**
-- `StreamableHTTPServerTransport` at `/mcp` (POST/GET/DELETE) — no transport means no tools callable
-- CORS headers updated: POST, DELETE, `mcp-session-id` allowed and exposed
-- `list-projects` tool — entry point; wraps `cache.values()`
-- `get-project-state` tool — per-project state, roadmap, requirements; wraps `cache.get(name)`
-- `get-gate-health` tool — per-project or aggregated gate metrics; wraps existing aggregation functions
-- `get-observations` tool — corrections/preferences/suggestions/benchmarks from JSONL files with `limit` + `since` params
-- `get-sessions` tool — session history per-project or cross-project; wraps `aggregatePatterns()`
-- `get-skill-metrics` tool — per-project skill correction rates; live file reads
-- Structured error responses (`{ error, code, available_projects }`) on all failure paths
-- Origin validation (`req.headers.origin` check returning 403 on mismatch) — required by MCP spec
+**Should have (differentiators — turn a lookup table into planning leverage):**
+- Skeleton adapter: substitute file paths, requirement IDs, phase numbers from matched PLAN.md into an adapted draft for the planner
+- Composition assistant: surface best-performing historical example per required task type ranked by correction rate
+- Milestone decomposition: propose phase breakdown for new milestones based on patterns extracted from completed ROADMAP.md files
+- Index entry age decay and superseded markers: weight recent milestones higher, skip invalidated patterns
 
-**Should have (differentiators — v10.0 Phase 2):**
-- Auto-configuration in `bin/install.js`: write `mcpServers.gsd-dashboard` to `~/.claude.json` with `--no-mcp` opt-out flag
-- Unit tests for all 6 tool handlers using in-memory transport (no HTTP subprocess)
-- Cross-project `get-skill-metrics` merge across all registered projects
-
-**Defer (v10.1+):**
-- Dedicated `get-benchmarks` tool (currently reachable via `get-observations` with `type: benchmarks`)
-- Write tools (mark correction resolved, promote preference) — requires concurrency safety model; explicitly out of scope per PROJECT.md
-- Stateful sessions with server-initiated messages — not needed for read-only tools
-- Semantic search over corrections — requires embedding model, out of scope for a lightweight Node.js daemon
+**Defer to v2+ (stretch / P3):**
+- Prompt pattern analysis: n-gram extraction from high-quality vs low-quality action text — high implementation cost, limited immediate leverage
+- Draft proposal auto-generation at new-milestone time — depends on decomposition parser being validated in real usage first
 
 ### Architecture Approach
 
-The MCP integration is additive: a new `mcp-server.cjs` module contains all MCP logic (`McpServer` instance creation, 6 tool registrations, `handleMcpRequest` function, Origin validation), and `server.cjs` gets three targeted edits — CORS header update, `/mcp` route case, and async callback wrapper. Tool implementations are thin wrappers: `list-projects` and `get-project-state` read from the existing `cache` Map; `get-gate-health` calls existing aggregation functions; `get-observations`, `get-sessions`, and `get-skill-metrics` do live JSONL/JSON file reads from registered project paths (patterns/ directory is not currently cached). The `registerGsdTools(server, cache)` function must be exported from `mcp-server.cjs` so tests can call it directly without an HTTP server.
+The architecture introduces four new CJS lib modules that integrate into the existing GSD framework through two proven patterns: init injection (intelligence outputs added as new JSON fields to `cmdInitPlanPhase` and `cmdInitNewMilestone`, both wrapped in try/catch for graceful degradation) and milestone-completion hooks (index rebuild as final step in `cmdMilestoneComplete`). No new workflow files are needed — existing plan-phase.md and new-milestone.md gain new JSON field parsing only. The plan index lives at `.planning/plan-index.json` (project-scope, not milestone-scoped) and is a derived artifact that is never committed to git.
 
 **Major components:**
-1. `mcp-server.cjs` (new) — `McpServer` instance creation per request, 6 tool definitions with zod schemas, `handleMcpRequest(req, res, cache, loadRegistry)`, stateless per-request transport, Origin validation, structured error responses; exported `registerGsdTools(server, cache)` for test isolation
-2. `server.cjs` (modified) — `CORS_HEADERS` update to add POST/DELETE/`mcp-session-id`, `/mcp` route case in existing request handler switch, async handler wrapper with explicit try/catch
-3. `bin/install.js` (modified, Phase 2) — `installMcpConfig()` writing idempotently to `~/.claude.json` under `mcpServers.gsd-dashboard`, `--no-mcp` opt-out flag
+1. `plan-indexer.cjs` — scans all milestone phase dirs, extracts structural features from PLAN.md frontmatter and task tags, builds TF-IDF index, writes `.planning/plan-index.json`; exposes `buildIndex`, `searchIndex`, `refreshIndex`
+2. `task-classifier.cjs` — classifies `<task>` XML by action keywords plus file patterns into 8 canonical task types, joins correction data from phase-benchmarks.jsonl, composes ranked task sequences; reads `plan-index.json` directly via JSON.parse (no circular import with indexer)
+3. `milestone-decomposer.cjs` — parses completed ROADMAP.md files across all milestones, matches milestone goal to historical structural patterns, produces a draft phase breakdown proposal
+4. `prompt-scorer.cjs` — reads phase-benchmarks.jsonl and corrections.jsonl, computes per-plan quality score stratified by task type, feeds a new digest section
+5. Modified: `init.cjs` (adds `plan_suggestions` and `decomposition_proposal` fields with try/catch graceful degradation), `milestone.cjs` (adds `refreshIndex()` call as final step), `gsd-tools.cjs` (wires 4 new CLI subcommands, ~60 lines)
 
 ### Critical Pitfalls
 
-1. **SDK v2 ESM-only crash** — `npm install @modelcontextprotocol/sdk` without pinning may pull v2 alpha, which drops CJS and throws `ERR_REQUIRE_ESM` on first `require()`. Pin to exactly `1.29.0` and verify with `node -e "require('@modelcontextprotocol/sdk/server/mcp.js')"` before any other implementation work.
+1. **Planner anchoring on similarity suggestions** — The planner agent anchors to the suggested task structure and stops reasoning from requirements. Prevention: surface suggestions as a reference table with source plan, similarity score, and correction rate — never as pre-filled plan fields. This is a hard architectural constraint, not a soft recommendation. The v14.0 milestone context doc explicitly identifies this as Key Decision Point #2.
 
-2. **Single shared McpServer instance — silent response misrouting** — One `McpServer` + one `StreamableHTTPServerTransport` shared across sessions routes all responses through the last-connected session's `res` object. Concurrent sessions get each other's responses or get no response. Use stateless per-request transport (new `McpServer` per POST) so session state lives in the MCP client, not the server.
+2. **Stale index producing superseded pattern matches** — Build-time index does not know when historical patterns are invalidated by later refactoring milestones. Prevention: add `superseded_by` field and age-decay weights to the index schema from day one. Warn in `plan-phase` when index mtime exceeds 14 days old.
 
-3. **CORS missing POST/DELETE/Mcp-Session-Id** — The existing `CORS_HEADERS` (line ~1144 in `server.cjs`) only allows GET and PATCH. MCP requires POST (tool calls), DELETE (session termination), and `mcp-session-id` in both `Access-Control-Allow-Headers` and `Access-Control-Expose-Headers`. Update CORS before wiring the `/mcp` route — CORS blocks all MCP requests silently from the client side.
+3. **Similarity false positives from lexical overlap without structural validation** — Jaccard-only scoring conflates keyword-similar but structurally different phases (e.g., "prompt quality scoring" vs "skill quality metrics" both score high on "quality"). Prevention: require task type overlap >= 50% independent of keyword score; exclude near-universal file patterns from scoring; surface keyword, task type, and file pattern score components separately rather than as a single composite score.
 
-4. **Origin validation absent — DNS rebinding attack surface** — The MCP spec requires Origin header validation on all connections. Without it, a malicious web page can exfiltrate cross-project corrections, preferences, and session data. Add `req.headers.origin` check returning 403 in Phase 1, not as a follow-up hardening task.
+4. **Prompt quality score penalizing necessary complexity** — Algorithm-implementation tasks naturally produce more corrections than CLI wiring tasks. A global baseline flags them as low quality, which causes planners to write artificially narrow tasks. Prevention: stratify the correction baseline by task type; only count prompt-attributable correction categories (pattern_violation, ambiguous_requirements, missing_context); never use the score as a blocking gate.
 
-5. **MCP config written to wrong file** — `~/.claude/settings.json` does not store MCP config; `~/.claude.json` (home directory root) does. Writing `mcpServers` to the wrong file produces no error but the server never appears in `claude mcp list`. Use `claude mcp add --scope user` or write to `~/.claude.json` with JSON parse-merge-stringify (never string manipulation).
+5. **Milestone decomposition proposal replacing the requirements step** — Showing a phase breakdown proposal before requirements are complete causes requirements to be written to fit the proposal (milestone-level version of Pitfall 1). Prevention: enforce requirements-first sequencing structurally in the new-milestone workflow; proposal must reference specific requirement IDs and must not be generated until requirements are non-empty.
+
+6. **Index rebuild race at cmdMilestoneComplete** — Rebuilding before all SUMMARY.md files are written produces an index missing the latest completed plan. Prevention: trigger rebuild as the absolute last step; assert last plan's SUMMARY.md has `status: complete` before rebuilding.
 
 ## Implications for Roadmap
 
-Based on combined research, two phases are sufficient. The dependency order is clear: transport and CORS must land together because CORS blocks every POST, security constraints are Phase 1 per the MCP spec, and auto-configuration is independent of tool correctness and can wait for manual verification. There are no inter-tool dependencies — the 6 tools can be implemented in any order once the transport is wired.
+Based on combined research, the suggested phase structure has 4 phases with an optional stretch phase.
 
-### Phase 1: MCP Server Scaffolding and Tools
+### Phase 1: Plan Indexer Foundation
 
-**Rationale:** The transport and CORS are co-dependent — neither is testable without the other. Session architecture (stateless per-request transport) is the foundational architectural decision; getting it wrong requires a full rewrite of the routing layer. Origin validation is a Phase 1 spec requirement. All 6 tools build on top of the verified transport with no inter-tool dependencies and no blocking on installer work.
+**Rationale:** Everything in v14.0 reads from the plan index. Nothing else can be built or validated without it. This is the unavoidable first dependency in the entire feature set.
+**Delivers:** `plan-indexer.cjs` with `buildIndex`, `searchIndex`, `refreshIndex`; `.planning/plan-index.json` schema with age-decay and `superseded_by` fields baked in from the start; `cmdMilestoneComplete` rebuild hook as final step; `gsd-tools plan-index --rebuild` CLI subcommand; full test coverage via `plan-indexer.test.cjs`.
+**Addresses features:** plan-index.json foundation, index rebuild at milestone completion, similarity search data layer, task-type classification data layer
+**Avoids pitfalls:** stale index (age-decay and superseded_by in schema from day one), index rebuild race (last-step assertion before rebuilding), performance trap (pre-built file, not query-time scan)
 
-**Delivers:** A working MCP server at `http://localhost:7778/mcp` with all 6 tools callable via manual `claude mcp add gsd-dashboard --transport http http://localhost:7778/mcp`; no installer change required to verify
+### Phase 2: Similarity Engine and Task Classifier
 
-**Addresses features:**
-- StreamableHTTP transport at `/mcp` (POST/GET/DELETE)
-- CORS headers updated (POST, DELETE, `mcp-session-id`)
-- All 6 tools: `list-projects`, `get-project-state`, `get-gate-health`, `get-observations`, `get-sessions`, `get-skill-metrics`
-- `limit` and `since` params on `get-observations` and `get-sessions`
-- Structured error responses on all failure paths
-- Origin validation
+**Rationale:** With the index available, similarity scoring and task classification can be built and validated against real plan data in isolation — not wired into live workflows yet. Validating the scoring logic independently before coupling it to workflow injection is the correct order. The suggestion format (reference table, not draft) must be specified here before wiring.
+**Delivers:** `plan-similarity.cjs` with TF-IDF cosine plus Jaccard hybrid scoring; `task-classifier.cjs` with 8 canonical types; composition engine ranking historical task sequences by type and correction rate; similarity threshold gating at 0.65; component score breakdown (keyword / task type / file pattern displayed separately).
+**Addresses features:** similarity search, task-type classification, composition assistant, skeleton adapter (partial)
+**Avoids pitfalls:** false positives (task type minimum threshold of 50%, universal file pattern exclusion, decomposed score display), planner anchoring (suggestion format specified as reference table before workflow integration begins)
 
-**Avoids pitfalls:**
-- Pitfall 1 (SDK v2 ESM-only): Pin `@modelcontextprotocol/sdk@1.29.0` as first step; verify CJS require before proceeding
-- Pitfall 2 (shared McpServer instance): Stateless per-request transport from the start; new `McpServer` on every POST
-- Pitfall 3 (CORS): Update `CORS_HEADERS` before writing the `/mcp` handler
-- Pitfall 4 (Origin validation): Add `req.headers.origin` check in `handleMcpRequest` before `transport.handleRequest()`
-- Pitfall 5 (pkce-challenge): Covered by pinning 1.29.0
-- Pitfall 8 (testing via HTTP subprocess): `registerGsdTools` exported from `mcp-server.cjs`, not embedded in the route handler
+### Phase 3: Workflow Integration
 
-**Recommended build order within Phase 1:**
-1. `npm install @modelcontextprotocol/sdk@1.29.0` + CJS require smoke test
-2. Update `CORS_HEADERS` in `server.cjs`
-3. Write `mcp-server.cjs` with `handleMcpRequest` skeleton and exported `registerGsdTools`
-4. Wire `/mcp` route case in `server.cjs` with async wrapper
-5. Implement all 6 tools with zod schemas and structured errors
-6. Add Origin validation in `handleMcpRequest`
-7. Manual end-to-end verification via `claude mcp add`
+**Rationale:** Only after scoring logic is validated independently can it be safely injected into live workflows. Init injection is the lowest-risk wiring pattern — additive JSON fields with try/catch graceful degradation mean the planning workflow never breaks if intelligence modules fail.
+**Delivers:** `cmdInitPlanPhase` gains `plan_suggestions` field; plan-phase.md injects `<planning_intelligence>` block before planner spawns; `cmdInitNewMilestone` gains `decomposition_proposal` field; new-milestone.md injects proposal only after requirements step completes.
+**Uses stack:** init injection pattern established in `init.cjs`, existing plan-phase.md Step 1 and Step 8 structure, existing new-milestone.md Step 7
+**Avoids pitfalls:** planner anchoring (explicit framing in workflow injection text), milestone decomposition anchoring (proposal shown only after requirements list is non-empty)
 
-### Phase 2: Auto-Configuration and Tests
+### Phase 4: Prompt Quality Scoring
 
-**Rationale:** Auto-configuration is independent of tool correctness — the right order is to prove the tools work manually before automating setup. Tests are unblocked by the `registerGsdTools` extraction done in Phase 1 (in-memory transport tests require the function to be importable without spinning up an HTTP server). The MCP config file location pitfall (writing to wrong file) is isolated to this phase.
+**Rationale:** Structurally independent of Phases 1-3 — reads phase-benchmarks.jsonl and corrections.jsonl directly without any plan-index dependency. Can be built in parallel with Phase 3 if capacity allows, but is lower priority because it adds analytical visibility rather than planning leverage.
+**Delivers:** `prompt-scorer.cjs` with task-type-stratified correction baseline; per-task correction attribution (timestamp matching with per-plan fallback); `/gsd:digest` "Prompt Quality" section showing "Nx median for task-type" framing; `gsd-tools prompt-score --milestone` CLI subcommand.
+**Addresses features:** per-task correction attribution, prompt quality score, digest integration
+**Avoids pitfalls:** complexity penalization (stratified baseline by task type, prompt-attributable categories only), prompt quality as gate (diagnostic only, never blocking)
 
-**Delivers:** `node bin/install.js --claude --global` configures MCP automatically; unit tests for all 6 tools run in under 1 second with no HTTP server; `claude mcp list` shows `gsd-dashboard` after a fresh install
+### Phase 5 (Stretch): Milestone Decomposer
 
-**Addresses features:**
-- Auto-configuration in `bin/install.js` with `--no-mcp` opt-out
-- Unit tests for all 6 tool handlers using `InMemoryTransport` (no subprocess, no port conflicts)
-- Cross-project `get-skill-metrics` merge function (if deferred from Phase 1)
-
-**Avoids pitfalls:**
-- Pitfall 6 (wrong config file): Use `claude mcp add --scope user` or write to `~/.claude.json` with JSON parse-merge-stringify; verify with `claude mcp list` in tests
-- Pitfall 8 (subprocess testing): All tests use in-memory transport; no `setTimeout` delays, no `EADDRINUSE` conflicts
+**Rationale:** Highest leverage but highest complexity. Depends on Phases 1-2 being validated in real planning usage to confirm that structural pattern matching works at the plan level before applying it to full milestone decomposition. Defer until core planning intelligence proves its value.
+**Delivers:** `milestone-decomposer.cjs`; parsed structural patterns from all completed ROADMAP.md files; new-milestone.md integration presenting draft proposal only after requirements are complete.
+**Avoids pitfalls:** milestone decomposition anchoring (requirements-first sequencing enforced structurally with proposal referencing specific requirement IDs)
 
 ### Phase Ordering Rationale
 
-- Security constraints (Origin validation, CORS) belong in Phase 1 per the MCP spec — they cannot be bolted on after real sessions connect without leaving a window of exposure
-- The session routing architecture decision (stateless vs. stateful, per-request vs. shared instance) must be made and implemented in Phase 1; changing it later requires rewriting the entire routing layer
-- Auto-configuration deferred to Phase 2 because manual `claude mcp add` is sufficient to verify Phase 1 works; installer complexity should not block core feature delivery
-- Tests deferred to Phase 2 because the `registerGsdTools` extraction (Phase 1 requirement) is what makes isolated unit tests possible; they cannot be written until the function boundary exists
-- There is no reason for a Phase 3 in v10.0 — the 6 tools, transport, security, installer, and tests are fully covered in two phases
+- **Foundation before consumers:** plan-index.json is the shared data store every other module reads. Building it first lets Phases 2-4 develop and test against real data.
+- **Schema decisions made in Phase 1:** Age decay, superseded_by markers, and component score breakdown are all index schema decisions. Retrofitting them after Phase 2 builds on the index is expensive. PITFALLS.md makes this explicit.
+- **Library modules before workflow coupling:** Phases 1-2 are pure library modules testable in isolation with low risk. Phase 3 touches live workflows — should not land until underlying modules are validated in real usage.
+- **Analytics last:** Prompt quality scoring (Phase 4) adds visibility, not planning leverage. The planning leverage features (Phases 1-3) deliver user value first.
 
 ### Research Flags
 
-No phases require `/gsd:research-phase` during planning. Research coverage is comprehensive and all API surfaces have been verified against live code or official sources.
+Phases with standard, well-documented patterns (skip research-phase):
+- **Phase 1:** pre-built JSON index pattern is identical to existing `skill-scores.json`; CJS module structure matches 25 existing lib modules; test structure follows established Node.js test-runner pattern
+- **Phase 2:** TF-IDF + Jaccard implementation fully specified in STACK.md with working code; task type taxonomy fully defined in both STACK.md and ARCHITECTURE.md
+- **Phase 4:** correction scoring reads from phase-benchmarks.jsonl following the exact `parseJsonlFile` pattern already in `benchmark.cjs`
 
-Phases with standard patterns (skip research-phase):
-- **Phase 1 (MCP scaffolding + tools):** SDK API verified against v1.29.0 tag source; `handleRequest(req, res, body)` signature confirmed; CORS requirements confirmed from MCP spec and live `server.cjs` code; all 6 tools mapped to existing functions. Implementation should proceed directly from ARCHITECTURE.md.
-- **Phase 2 (installer + tests):** `~/.claude.json` write target confirmed from official Claude Code MCP docs and GitHub issue #4976; in-memory transport test pattern confirmed from MCPcat testing guide. Standard work.
+Phases that may need deeper inspection during planning:
+- **Phase 3 (workflow integration):** plan-phase.md and new-milestone.md have complex multi-step structures with many existing context fields; inspect the current workflow files directly before writing Phase 3 plans to confirm exact injection points and field names
+- **Phase 5 (milestone decomposer):** ROADMAP.md format varies across early milestones (v1.0-v4.0 vs v5.0+); requires a pre-planning scan of ROADMAP.md format variance before implementing the parser
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | SDK v1.29.0 exports verified against GitHub tag; CJS import paths confirmed via Azure tutorial; zod peer dep confirmed; `@hono/node-server` transitive dep is transparent |
-| Features | HIGH | All 6 tools mapped to existing `server.cjs` functions; data files confirmed present on disk; SDK tool API confirmed; anti-features have documented rationale from PROJECT.md constraints |
-| Architecture | HIGH | `handleRequest(req, res, body)` 3-arg signature confirmed; stateless mode confirmed; `~/.claude.json` install target confirmed from official docs; body parsing pattern confirmed from existing PATCH handler in `server.cjs` line ~1162 |
-| Pitfalls | HIGH | Session routing bug verified against SDK issue #1405 (closed v1.26.0); pkce-challenge bug verified against issue #217 (closed); CORS gap confirmed against live `server.cjs` line 1144; MCP config file confusion confirmed against Claude Code issue #4976 |
+| Stack | HIGH | All conclusions derived from direct inspection of package.json, 25 existing lib modules, and the v14.0 milestone context doc. No external packages needed — confirmed by checking all runtime and devDeps. |
+| Features | HIGH | Feature set derived from v14.0-MILESTONE-CONTEXT.md (authored by project owner) plus confirmed data schemas inspected on disk. No ambiguity about what data is available to consume. |
+| Architecture | HIGH | Based on direct inspection of 25 lib modules, all workflow files, and 15 completed milestone artifacts. Integration patterns (init injection, milestone hook) are proven in production. |
+| Pitfalls | HIGH | Six critical pitfalls derived from this project's own execution history, the v14.0 milestone context doc's explicit warnings (Key Decision Points #2 and #3), and published research on automation bias and anchoring. |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **Body parsing for GET and DELETE:** ARCHITECTURE.md notes body parsing confidence as MEDIUM because the Azure tutorial used Express (which pre-parses). The correct handling for GET and DELETE is to pass `undefined` as the body argument — no body read needed. The existing PATCH handler in `server.cjs` confirms the streaming body read pattern for POST. Treat this as a known implementation detail, not a research gap.
-
-- **Cross-project `get-skill-metrics` aggregation:** No existing aggregation function in `server.cjs` for skill metrics. Requires merging `skill-metrics.json` across all registered project paths. Implementation is a straightforward file-read-and-merge; it just doesn't exist yet. Can ship per-project mode in Phase 1 and add cross-project aggregation in Phase 2 without any architectural dependency.
-
-- **Session TTL cleanup if stateful mode is ever needed:** The research recommends stateless per-request transport for v10.0. If stateful sessions are needed in a future milestone, the PITFALLS.md TTL cleanup patterns (2-hour idle TTL, 50-session cap, `lastActivity` timestamp) should be implemented from day one of that milestone — not retroactively.
+- **Task type taxonomy completeness:** 8 task types are derived from 80+ plans through v15.0. As the project enters novel territory (e.g., UI milestones or Tauri integration), new task types may be needed. Design the classifier to accept additional types without schema migration.
+- **Corrections.jsonl `task_index` field availability:** Per-task attribution assumes either a `task_index` field in corrections.jsonl or timestamp-based matching via the v13.0 workflow.jsonl. Validate this by inspecting a sample of corrections.jsonl entries during Phase 4 planning — the per-plan fallback is acceptable if per-task matching is not available.
+- **ROADMAP.md format variance across early milestones:** STACK.md and ARCHITECTURE.md focus on v5.0+ milestone structure. If Phase 5 is pursued, inspect v1.0-v4.0 ROADMAP.md files before writing parser code. Early milestones may use different phase structure conventions.
+- **Similarity scoring threshold calibration:** The 0.65 threshold is research-derived, not computed from this project's actual plan corpus. The first run of the similarity engine should validate that this threshold produces meaningful signal. Plan for a calibration pass after initial real usage.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- `@modelcontextprotocol/sdk` v1.29.0 source at GitHub tag — CJS exports map, `handleRequest(req, res, body)` signature, session patterns, zod peer dep, `@hono/node-server` transitive dep
-- MCP Specification 2025-03-26 (Transports section) — session lifecycle, CORS requirements, Origin validation requirement, DELETE semantics, stateless mode spec
-- `get-shit-done/bin/lib/server.cjs` (direct inspection) — `CORS_HEADERS` at line ~1144, route handler structure, PATCH body parsing pattern at line ~1162, existing aggregation functions (`getProjectGateHealth`, `aggregateGateHealth`, `aggregatePatterns`, `loadRegistry`)
-- `bin/install.js` (direct inspection) — `settings.json` read/write pattern, Claude runtime install flow structure
-- Claude Code MCP Docs — `~/.claude.json` for user-scoped servers, `claude mcp add --transport http --scope user` command syntax
-- Azure App Service MCP Tutorial (Node.js, Microsoft) — CJS require paths, stateless per-request pattern, 3-arg `handleRequest` form confirmed working with raw `http.createServer`
+- `.planning/v14.0-MILESTONE-CONTEXT.md` — feature specifications, key decision points (#1-#4), dependency analysis, anchoring risk warnings (project owner authorship)
+- `.planning/PROJECT.md` — existing system capabilities, zero-external-dependency constraint, established patterns
+- `get-shit-done/bin/lib/skill-scorer.cjs` — Jaccard + tokenize production code, content-hash cache pattern
+- `get-shit-done/bin/lib/mcp-classifier.cjs` — keyword classification pattern, established in v13.0
+- `get-shit-done/bin/lib/benchmark.cjs` — phase-benchmarks.jsonl schema, parseJsonlFile pattern
+- `get-shit-done/bin/lib/init.cjs` — init injection pattern, cmdInitPlanPhase context assembly
+- `.planning/patterns/phase-benchmarks.jsonl` — confirmed schema on disk: `{ phase, plan, phase_type, quality_level, correction_count, gate_fire_count, duration_min, test_count, test_delta, timestamp }`
+- `.planning/patterns/corrections.jsonl` — confirmed schema on disk: `{ correction_from, correction_to, diagnosis_category, scope, phase, milestone, session_id, timestamp }`
+- `.planning/milestones/v9.0/phases/42-skill-relevance-scoring/42-01-PLAN.md` — confirmed PLAN.md schema (YAML frontmatter + XML task tag structure)
 
 ### Secondary (MEDIUM confidence)
-- SDK Issue #1405 (connect() transport overwrite, fixed v1.26.0) — session routing pitfall confirmed
-- SDK Issue #217 (pkce-challenge ESM-only dependency, fixed post-1.7.0) — CJS compatibility pitfall confirmed
-- MCPcat Testing Guide — in-memory transport test pattern for MCP servers
-- MCPcat CORS Guide — CORS requirements for MCP servers (confirms spec requirements)
-- `.planning/v10.0-MILESTONE-CONTEXT.md` — milestone architecture decisions, tool list, scope estimate (~80 lines in `server.cjs`)
+- [OpenGenus: Document Similarity TF-IDF](https://iq.opengenus.org/document-similarity-tf-idf/) — TF-IDF cosine implementation pattern for small corpora
+- [Leapcell: Pure Node.js Search Engine](https://leapcell.medium.com/step-by-step-build-a-lightweight-search-engine-using-only-node-js-106980d86f28) — TF-IDF + inverted index in ~100 lines of pure Node.js
+- [PyImageSearch: Jaccard vs Cosine Similarity](https://pyimagesearch.com/2024/07/22/implementing-semantic-search-jaccard-similarity-and-vector-space-models/) — Jaccard better for duplicate detection, cosine+TF-IDF better for recommendation
+- [Portkey AI: Evaluating Prompt Effectiveness](https://portkey.ai/blog/evaluating-prompt-effectiveness-key-metrics-and-tools/) — single metrics insufficient; chasing scores leads to rigid prompts
 
-### Tertiary (reference)
-- SDK Issue #340 (stateless mode validateSession bug, fixed v1.10.1) — confirms 1.29.0 is past the affected range
-- Claude Code Issue #4976 (MCP config file location confusion) — confirms `~/.claude.json` vs `settings.json` confusion is a real and documented failure mode
-- Claude Code Issue #33947 (MCP orphan process accumulation) — confirms importance of session cleanup patterns
+### Tertiary (HIGH confidence, academic sources)
+- [Anchoring Bias in Explainable AI Systems (ACM IUI 2021)](https://dl.acm.org/doi/10.1145/3397481.3450639) — algorithmic suggestions anchor human judgment even when incorrect; directly supports planner anchoring prevention requirement
+- [Automation Bias in Human-AI Collaboration (Springer, 2025)](https://link.springer.com/article/10.1007/s00146-025-02422-7) — over-reliance on initial AI suggestions; directly supports suggestion-as-reference-not-draft architectural requirement
 
 ---
 *Research completed: 2026-04-04*
