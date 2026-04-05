@@ -41,7 +41,7 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 88-01: Feature intake parsing, affinity clustering, and cluster review UI
+- [x] 88-01: Feature intake parsing, affinity clustering, and cluster review UI (completed 2026-04-04)
 - [ ] 88-02: Workspace creation, conflict check, and BATCH-SESSION.md tracking
 - [ ] 88-03: Per-milestone research opt-in and requirements scoping loop
 
@@ -64,6 +64,6 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 87. Synthesizer Foundation | 1/1 | Complete   | 2026-04-04 |
-| 88. Batch Workflow Stages 0-3 | 0/3 | Not started | - |
+| 87. Synthesizer Foundation | 1/1 | Complete    | 2026-04-04 |
+| 88. Batch Workflow Stages 0-3 | 1/3 | In progress | - |
 | 89. Synthesis, Review, and Resume | 0/2 | Not started | - |
