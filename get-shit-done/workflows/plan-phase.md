@@ -348,6 +348,8 @@ Planner prompt:
 **Project skills:** Check .claude/skills/ or .agents/skills/ directory (if either exists) — read SKILL.md files, plans should account for project skill rules
 </planning_context>
 
+{INTELLIGENCE_BLOCK}
+
 <downstream_consumer>
 Output consumed by /gsd:execute-phase. Plans need:
 - Frontmatter (wave, depends_on, files_modified, autonomous)
@@ -364,6 +366,38 @@ Output consumed by /gsd:execute-phase. Plans need:
 - [ ] Waves assigned for parallel execution
 - [ ] must_haves derived from phase goal
 </quality_gate>
+```
+
+```bash
+# Build planning_intelligence block (conditionally injected into planner prompt)
+INTELLIGENCE_BLOCK=""
+SUGGESTION_COUNT=$(echo "$PLAN_SUGGESTIONS" | jq 'length')
+TASK_PERF_COUNT=$(echo "$TASK_PERFORMANCE" | jq 'length')
+if [ "$SUGGESTION_COUNT" -gt 0 ] || [ "$TASK_PERF_COUNT" -gt 0 ]; then
+  SIM_TABLE=""
+  if [ "$SUGGESTION_COUNT" -gt 0 ]; then
+    SIM_TABLE=$(echo "$PLAN_SUGGESTIONS" | jq -r '
+      "Similar plans from project history:\n| Plan | Phase | Match% | Corrections | Keyword% | Task-Type% | File-Pattern% |\n|------|-------|--------|-------------|----------|------------|---------------|\n" +
+      (map("| " + .plan_id + " | " + .phase_slug + " | " + (.composite_score * 100 | floor | tostring) + "% | " + (.correction_rate | tostring) + " | " + (.keyword_score * 100 | floor | tostring) + "% | " + (.task_type_score * 100 | floor | tostring) + "% | " + (.file_pattern_score * 100 | floor | tostring) + "% |") | join("\n"))
+    ')
+  fi
+  PERF_TABLE=""
+  if [ "$TASK_PERF_COUNT" -gt 0 ]; then
+    PERF_TABLE=$(echo "$TASK_PERFORMANCE" | jq -r '
+      "Best-performing task types by correction rate:\n| Task Type | Median Corrections | Best Example From |\n|-----------|-------------------|-------------------|\n" +
+      (map("| " + .type + " | " + (.median_correction_rate | tostring) + " | " + (.best_example.plan_id // "—") + " |") | join("\n"))
+    ')
+  fi
+  INTELLIGENCE_BLOCK="<planning_intelligence>
+**Historical Context** — reference only, adapt as needed for this phase's requirements
+
+${SIM_TABLE}
+
+${PERF_TABLE}
+
+NOTE: Write tasks from this phase's requirements. Use table as structural reference only — do not copy task descriptions.
+</planning_intelligence>"
+fi
 ```
 
 ```
