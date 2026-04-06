@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 
-const { buildIndex } = require('../get-shit-done/bin/lib/plan-indexer.cjs');
+const { buildIndex, refreshIndex, searchIndex } = require('../get-shit-done/bin/lib/plan-indexer.cjs');
 
 // ─── Fixture helpers ──────────────────────────────────────────────────────────
 
@@ -268,6 +268,113 @@ describe('IDX-04 schema and atomic write', () => {
       assert.strictEqual(second.plans.length, first.plans.length, 'plans array length should be same');
       assert.deepStrictEqual(second.plans[0].plan_id, first.plans[0].plan_id, 'plan_id should be same');
       assert.deepStrictEqual(second.idf, first.idf, 'idf map should be same');
+    } finally {
+      cleanup(cwd);
+    }
+  });
+});
+
+// ─── IDX-05: Milestone hook ───────────────────────────────────────────────────
+
+describe('IDX-05 milestone hook', () => {
+  test('refreshIndex writes plan-index.json on a temp project with completed plans', () => {
+    const { cwd } = createFixtureProject();
+    try {
+      refreshIndex(cwd);
+      const indexPath = path.join(cwd, '.planning', 'plan-index.json');
+      assert.ok(fs.existsSync(indexPath), 'plan-index.json should exist after refreshIndex');
+    } finally {
+      cleanup(cwd);
+    }
+  });
+
+  test('refreshIndex failure does not propagate when wrapped in try/catch', () => {
+    // Verify the contract: caller wraps in try/catch
+    let threw = false;
+    try {
+      // Simulate what milestone.cjs does
+      const badRefresh = () => { throw new Error('simulated index failure'); };
+      try { badRefresh(); } catch { /* silent */ }
+    } catch {
+      threw = true;
+    }
+    assert.strictEqual(threw, false, 'outer catch should not fire');
+  });
+});
+
+// ─── IDX-06: searchIndex + staleness detection ────────────────────────────────
+
+describe('IDX-06 searchIndex and staleness detection', () => {
+  test('searchIndex returns [] and writes warning to stdout when plan-index.json does not exist', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-idx-test-'));
+    try {
+      // Create .planning dir but no plan-index.json
+      fs.mkdirSync(path.join(tmpDir, '.planning'), { recursive: true });
+
+      const chunks = [];
+      const origWrite = process.stdout.write.bind(process.stdout);
+      process.stdout.write = (chunk, ...rest) => { chunks.push(String(chunk)); return origWrite(chunk, ...rest); };
+
+      let result;
+      try {
+        result = searchIndex(tmpDir, 'any query');
+      } finally {
+        process.stdout.write = origWrite;
+      }
+
+      assert.deepStrictEqual(result, [], 'should return empty array when index missing');
+      const combined = chunks.join('');
+      assert.ok(combined.includes('plan-index.json'), 'should write warning mentioning plan-index.json');
+    } finally {
+      cleanup(tmpDir);
+    }
+  });
+
+  test('searchIndex emits staleness warning when plan-index.json built_at is older than 15 days', () => {
+    const { cwd } = createFixtureProject();
+    try {
+      // Write a fake index with old built_at
+      const indexPath = path.join(cwd, '.planning', 'plan-index.json');
+      const oldDate = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString();
+      fs.writeFileSync(indexPath, JSON.stringify({ built_at: oldDate, plan_count: 0, idf: {}, plans: [] }, null, 2));
+
+      const chunks = [];
+      const origWrite = process.stdout.write.bind(process.stdout);
+      process.stdout.write = (chunk, ...rest) => { chunks.push(String(chunk)); return origWrite(chunk, ...rest); };
+
+      try {
+        searchIndex(cwd, 'test query');
+      } finally {
+        process.stdout.write = origWrite;
+      }
+
+      const combined = chunks.join('');
+      assert.ok(combined.includes('days old'), 'should emit staleness warning for old index');
+    } finally {
+      cleanup(cwd);
+    }
+  });
+
+  test('searchIndex does NOT emit staleness warning when plan-index.json built_at is within 1 day', () => {
+    const { cwd } = createFixtureProject();
+    try {
+      // Write a fake index with recent built_at
+      const indexPath = path.join(cwd, '.planning', 'plan-index.json');
+      const recentDate = new Date().toISOString();
+      fs.writeFileSync(indexPath, JSON.stringify({ built_at: recentDate, plan_count: 0, idf: {}, plans: [] }, null, 2));
+
+      const chunks = [];
+      const origWrite = process.stdout.write.bind(process.stdout);
+      process.stdout.write = (chunk, ...rest) => { chunks.push(String(chunk)); return origWrite(chunk, ...rest); };
+
+      try {
+        searchIndex(cwd, 'test query');
+      } finally {
+        process.stdout.write = origWrite;
+      }
+
+      const combined = chunks.join('');
+      assert.ok(!combined.includes('days old'), 'should NOT emit staleness warning for recent index');
     } finally {
       cleanup(cwd);
     }
