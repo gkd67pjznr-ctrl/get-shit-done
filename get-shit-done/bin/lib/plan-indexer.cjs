@@ -28,7 +28,37 @@ function tokenize(text) {
 // Input: array of { tokens: string[] } entries
 // Output: mutates each entry to add tfidf_vector; returns idf map
 function buildTfIdfIndex(entries) {
-  throw new Error('not implemented');
+  const N = entries.length;
+  if (N === 0) return {};
+
+  // Document frequency: how many entries contain each token
+  const df = {};
+  for (const entry of entries) {
+    const uniqueTokens = [...new Set(entry.tokens)];
+    for (const t of uniqueTokens) {
+      df[t] = (df[t] || 0) + 1;
+    }
+  }
+
+  // IDF: log(N / df[t])
+  const idf = {};
+  for (const [t, freq] of Object.entries(df)) {
+    idf[t] = Math.log(N / freq);
+  }
+
+  // TF-IDF vector per entry
+  for (const entry of entries) {
+    const vec = {};
+    const tokenCount = entry.tokens.length;
+    if (tokenCount === 0) { entry.tfidf_vector = {}; continue; }
+    for (const t of entry.tokens) {
+      const tf = 1 / tokenCount; // uniform TF (token frequency within doc)
+      vec[t] = tf * (idf[t] || 0);
+    }
+    entry.tfidf_vector = vec;
+  }
+
+  return idf;
 }
 
 // --- Age decay ---
