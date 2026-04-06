@@ -10,7 +10,7 @@ v16.0 delivers `/gsd:multi-milestone` — a single-session command that accepts 
 
 - [x] **Phase 87: Synthesizer Foundation** - Build `gsd-roadmap-synthesizer` agent and roadmapper proposal mode (completed 2026-04-04)
 - [x] **Phase 88: Batch Workflow Stages 0-3** - Feature intake, workspace creation, conflict check, session tracking, and per-milestone research + requirements scoping (completed 2026-04-05)
-- [ ] **Phase 89: Synthesis, Review, and Resume** - Synthesizer writes all artifacts, root file updates, user approval loop, and `--resume` capability
+- [x] **Phase 89: Synthesis, Review, and Resume** - Synthesizer writes all artifacts, root file updates, user approval loop, and `--resume` capability (completed 2026-04-04)
 
 ## Phase Details
 
@@ -42,8 +42,8 @@ Plans:
 
 Plans:
 - [x] 88-01: Feature intake parsing, affinity clustering, and cluster review UI (completed 2026-04-04)
-- [ ] 88-02: Workspace creation, conflict check, and BATCH-SESSION.md tracking
-- [ ] 88-03: Per-milestone research opt-in and requirements scoping loop
+- [x] 88-02: Workspace creation, conflict check, and BATCH-SESSION.md tracking (completed 2026-04-05)
+- [x] 88-03: Per-milestone research opt-in and requirements scoping loop (completed 2026-04-05)
 
 ### Phase 89: Synthesis, Review, and Resume
 **Goal**: After all milestones are scoped, the synthesizer produces every roadmap artifact in one pass, the user can review and adjust individual milestones before final commit, and any interrupted batch session can be resumed from the last completed stage
@@ -57,13 +57,13 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 89-01: Parallel roadmapper spawning and synthesizer artifact writing
-- [ ] 89-02: User approval loop and `--resume` flag implementation
+- [x] 89-01: Parallel roadmapper spawning and synthesizer artifact writing (completed 2026-04-04)
+- [x] 89-02: User approval loop and `--resume` flag implementation (completed 2026-04-04)
 
 ## Progress
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 87. Synthesizer Foundation | 1/1 | Complete    | 2026-04-04 |
-| 88. Batch Workflow Stages 0-3 | 3/3 | Complete   | 2026-04-05 |
-| 89. Synthesis, Review, and Resume | 0/2 | Not started | - |
+| 88. Batch Workflow Stages 0-3 | 3/3 | Complete    | 2026-04-05 |
+| 89. Synthesis, Review, and Resume | 2/2 | Complete    | 2026-04-04 |
