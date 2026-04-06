@@ -4,8 +4,8 @@ and produce committed REQUIREMENTS.md files for every milestone before roadmappi
 Single-session command that handles: intake → clustering → workspace creation →
 per-milestone research (optional) → requirements scoping → parallel roadmapping → synthesis.
 
-This workflow covers Stages 0-3 only. Stage 4 (roadmapping + synthesis) is handled
-by the synthesizer and continues in Phase 89.
+Single-session command that handles intake → clustering → workspace creation →
+per-milestone research (optional) → requirements scoping → parallel roadmapping → synthesis.
 </purpose>
 
 <required_reading>
@@ -564,7 +564,156 @@ Run `/gsd:multi-milestone --resume` to continue to Stage 4 (roadmapping + synthe
 
 ## Stage 4 — Parallel Roadmapping and Synthesis
 
-Stage 4 is implemented in Phase 89. When Stage 3 completes, the session ends here.
-The BATCH-SESSION.md records stage completion; `/gsd:multi-milestone --resume NN` will load it and continue from Stage 4 once Phase 89 is built.
+### Step 4.1 — Determine next_starting_phase
+
+Before spawning any roadmapper, call:
+
+```bash
+INIT_JSON=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" init new-milestone --raw 2>/dev/null)
+```
+
+Parse the JSON output to extract `next_starting_phase`. If the call fails or returns no valid integer, display an error and abort Stage 4.
+
+Store as `$NEXT_STARTING_PHASE`.
+
+### Step 4.2 — Display Stage 4 header
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ GSD ► ROADMAPPING [N] MILESTONES IN PARALLEL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Next starting phase: [NEXT_STARTING_PHASE]
+Spawning [N] roadmapper agents in proposal mode...
+```
+
+### Step 4.3 — Spawn N roadmapper agents in parallel (proposal mode)
+
+For each milestone in `$MILESTONE_VERSIONS`, issue a Task() call concurrently:
+
+```
+Task(
+  prompt="
+<execution_context>
+~/.claude/agents/gsd-roadmapper.md
+</execution_context>
+
+<mode>proposal</mode>
+
+<milestone_workspace>[MILESTONE_WORKSPACE_PATH]</milestone_workspace>
+
+<files_to_read>
+- [MILESTONE_WORKSPACE_PATH]/REQUIREMENTS.md
+- .planning/PROJECT.md
+- .planning/MILESTONES.md
+</files_to_read>
+
+<instructions>
+Produce an unnumbered phase proposal for [VERSION] [Milestone Name].
+Do NOT assign phase numbers. Use PHASE-A, PHASE-B, PHASE-C placeholder labels.
+Do NOT write ROADMAP.md. Write ONLY to [MILESTONE_WORKSPACE_PATH]/PROPOSAL.md.
+</instructions>
+  ",
+  subagent_type="gsd-roadmapper",
+  description="Proposal roadmap for [VERSION] [Milestone Name]"
+)
+```
+
+Wait for ALL N tasks to complete before proceeding to Step 4.4.
+
+Display progress as each roadmapper completes:
+```
+  [VERSION] [Name] ... proposal complete ✓
+```
+
+### Step 4.4 — Validate proposals
+
+For each milestone, check that `[MILESTONE_WORKSPACE_PATH]/PROPOSAL.md` exists and contains at least one `PHASE-A` entry.
+
+If a roadmapper returned `## ROADMAP BLOCKED` or produced an empty/invalid PROPOSAL.md:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ ROADMAP BLOCKED: [VERSION] [Milestone Name]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Blocker: [message from roadmapper]
+```
+
+Ask via plain text for clarification notes, then re-spawn that roadmapper with the clarification appended to its prompt. Only the blocked milestone needs re-spawning — do not discard valid proposals from other milestones.
+
+Re-validate after re-spawn. If still blocked after one retry, log to BATCH-SESSION.md Failure Log and ask the user: "Skip this milestone or abort batch?"
+
+### Step 4.5 — Spawn gsd-roadmap-synthesizer
+
+Once ALL N PROPOSAL.md files are valid, spawn the synthesizer:
+
+```
+Task(
+  prompt="
+<execution_context>
+~/.claude/agents/gsd-roadmap-synthesizer.md
+</execution_context>
+
+<files_to_read>
+[For each milestone in $MILESTONE_VERSIONS:]
+- [MILESTONE_WORKSPACE_PATH]/PROPOSAL.md
+- [MILESTONE_WORKSPACE_PATH]/REQUIREMENTS.md
+[End loop]
+- .planning/ROADMAP.md
+- .planning/STATE.md
+</files_to_read>
+
+<context>
+next_starting_phase: [NEXT_STARTING_PHASE]
+milestones_in_order: [[VERSION1], [VERSION2], ...]
+</context>
+  ",
+  subagent_type="gsd-roadmap-synthesizer",
+  description="Synthesize [N] milestone roadmaps into numbered phases"
+)
+```
+
+Wait for the synthesizer to return a `## SYNTHESIS COMPLETE` block.
+
+If the synthesizer returns `## SYNTHESIS BLOCKED`, display the block content and abort with instructions for the user to resolve the issue before re-running Stage 4.
+
+### Step 4.6 — Update BATCH-SESSION.md (Roadmapping stage)
+
+Read `$TASK_DIR/BATCH-SESSION.md`. Update the Stage Status table:
+
+- Set "4 — Roadmapping + Synthesis" row Status to "Complete" and Completed At to "[ISO timestamp]"
+
+For each milestone in `$MILESTONE_VERSIONS`, update the Milestones table:
+- Set Roadmap column to "[ISO timestamp]"
+
+Append an entry to the Stage Log:
+```
+| [ISO timestamp] | Roadmapping | all | Synthesizer complete — phases [start]–[end] assigned |
+```
+
+Commit the updated BATCH-SESSION.md:
+```bash
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit \
+  "docs: batch session — roadmapping complete (phases [start]-[end])" \
+  --files "$TASK_DIR/BATCH-SESSION.md"
+```
+
+### Step 4.7 — Display synthesis summary
+
+Display the structured summary returned by the synthesizer:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ MULTI-MILESTONE PLAN (synthesized)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[paste the Phase Allocation Summary from SYNTHESIS COMPLETE block here]
+
+Total: [N] milestones | [X] phases | [Y] requirements
+No phase gaps — sequential assignment by synthesizer.
+```
+
+Then proceed to Stage 5 (Plan 89-02).
 
 </process>
