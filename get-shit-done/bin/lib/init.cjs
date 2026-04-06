@@ -245,6 +245,20 @@ function cmdInitPlanPhase(cwd, phase, raw, milestoneScope) {
     } catch {}
   }
 
+  try {
+    const { searchSimilarPlans } = require('./plan-similarity.cjs');
+    const goal = result.phase_name || String(result.phase_number || '');
+    result.plan_suggestions = searchSimilarPlans(cwd, { goal, limit: 3, threshold: 0.65 });
+  } catch {
+    result.plan_suggestions = [];
+  }
+  try {
+    const { buildTypePerformanceTable } = require('./task-classifier.cjs');
+    result.task_performance = buildTypePerformanceTable(cwd);
+  } catch {
+    result.task_performance = [];
+  }
+
   output(result, raw);
 }
 
