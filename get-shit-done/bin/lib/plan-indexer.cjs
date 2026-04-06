@@ -137,9 +137,125 @@ function joinBenchmark(benchmarks, phase, plan) {
   };
 }
 
+// 8 canonical task types (per IDX-02 / TASK-01 spec)
+const TASK_TYPE_PATTERNS = [
+  { type: 'test-setup',  keywords: ['test', 'stub', 'fixture', 'spec', 'mock'] },
+  { type: 'lib-module',  keywords: ['lib', 'module', 'implement', 'create', 'build', 'indexer', 'scanner', 'extractor'] },
+  { type: 'cli-wiring',  keywords: ['cli', 'command', 'subcommand', 'route', 'wire', 'routing', 'case'] },
+  { type: 'schema',      keywords: ['schema', 'type', 'interface', 'model', 'struct', 'format', 'json'] },
+  { type: 'hook',        keywords: ['hook', 'trigger', 'callback', 'event', 'milestone', 'complete'] },
+  { type: 'integration', keywords: ['integration', 'e2e', 'end-to-end', 'workflow', 'inject', 'join'] },
+  { type: 'docs',        keywords: ['doc', 'readme', 'comment', 'gitignore', 'changelog'] },
+  { type: 'refactor',    keywords: ['refactor', 'rename', 'move', 'extract', 'split', 'cleanup', 'staleness'] },
+];
+
+function classifyTaskType(title) {
+  const lower = title.toLowerCase();
+  for (const { type, keywords } of TASK_TYPE_PATTERNS) {
+    if (keywords.some(k => lower.includes(k))) return type;
+  }
+  return 'lib-module'; // default
+}
+
 // --- Main build function ---
 function buildIndex(cwd) {
-  throw new Error('not implemented');
+  // 1. Scan all completed plans across milestone dirs
+  const scanResults = scanMilestonePlans(cwd);
+
+  // 2. Load benchmarks once
+  const benchmarkPath = path.join(cwd, '.planning', 'patterns', 'phase-benchmarks.jsonl');
+  const benchmarks = parseJsonlFile(benchmarkPath);
+
+  // 3. Extract entries
+  const entries = [];
+  for (const { milestoneVersion, planFile, summaryFm } of scanResults) {
+    const planContent = fs.readFileSync(planFile, 'utf-8');
+    const fm = extractFrontmatter(planContent);
+
+    // Skip if missing required fields
+    if (fm.phase === undefined || fm.phase === null || fm.plan === undefined || fm.plan === null) {
+      process.stderr.write(`plan-indexer: skipping ${planFile} — missing phase or plan in frontmatter\n`);
+      continue;
+    }
+
+    const phaseStr = String(fm.phase).padStart(2, '0');
+    const planStr = String(fm.plan).padStart(2, '0');
+    const planId = `${phaseStr}-${planStr}`;
+
+    // Extract task_pattern from <task> blocks in plan body
+    const taskTitles = [];
+    const taskTitleRe = /<title>([^<]+)<\/title>/g;
+    let m;
+    while ((m = taskTitleRe.exec(planContent)) !== null) {
+      taskTitles.push(m[1].trim());
+    }
+    const taskPattern = taskTitles.map(t => classifyTaskType(t));
+
+    // file_patterns: glob-style patterns derived from files_modified
+    const filesModified = Array.isArray(fm.files_modified) ? fm.files_modified : [];
+    const filePatterns = [...new Set(filesModified.map(f => {
+      const dir = path.dirname(f);
+      const ext = path.extname(f);
+      return ext ? `${dir}/*${ext}` : `${dir}/*`;
+    }))];
+
+    // Tokens: phase_goal words + tags + task types
+    const phaseGoal = (fm.phase_goal || fm.title || '').toLowerCase();
+    const tags = Array.isArray(fm.tags) ? fm.tags : [];
+    const rawTokens = [
+      ...tokenize(phaseGoal),
+      ...tags.map(t => t.toLowerCase()),
+      ...taskPattern,
+    ];
+
+    // Benchmark join
+    const bench = joinBenchmark(benchmarks, fm.phase, fm.plan);
+    const correctionRate = bench.correction_count > 0
+      ? bench.correction_count / Math.max(taskPattern.length, 1)
+      : 0;
+
+    // Age weight — use summary's completed_at
+    const completedAt = summaryFm.completed_at || null;
+    const ageWeight = calcAgeWeight(completedAt);
+
+    entries.push({
+      plan_id: planId,
+      milestone: milestoneVersion,
+      phase_goal: phaseGoal,
+      phase_slug: path.basename(path.dirname(planFile)).replace(/^\d+-/, ''),
+      task_pattern: taskPattern,
+      file_patterns: filePatterns,
+      files_modified: filesModified,
+      tags,
+      requirement_count: Array.isArray(fm.requirements) ? fm.requirements.length : 0,
+      correction_count: bench.correction_count,
+      gate_fire_count: bench.gate_fire_count,
+      correction_rate: correctionRate,
+      tokens: rawTokens,
+      tfidf_vector: {}, // populated by buildTfIdfIndex below
+      age_weight: ageWeight,
+      superseded_by: fm.superseded_by || null,
+      completed: completedAt,
+    });
+  }
+
+  // 4. Build TF-IDF vectors
+  const idf = buildTfIdfIndex(entries);
+
+  // 5. Atomic write
+  const indexFile = path.join(cwd, '.planning', 'plan-index.json');
+  const indexData = {
+    built_at: new Date().toISOString(),
+    plan_count: entries.length,
+    idf,
+    plans: entries,
+  };
+  const tmpPath = indexFile + '.tmp';
+  fs.mkdirSync(path.dirname(indexFile), { recursive: true });
+  fs.writeFileSync(tmpPath, JSON.stringify(indexData, null, 2));
+  fs.renameSync(tmpPath, indexFile);
+
+  return indexData;
 }
 
 // --- Refresh (alias for buildIndex, used by milestone hook) ---
