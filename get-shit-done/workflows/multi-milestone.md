@@ -716,4 +716,196 @@ No phase gaps — sequential assignment by synthesizer.
 
 Then proceed to Stage 5 (Plan 89-02).
 
+## Stage 5 — Review and Commit
+
+### Step 5.1 — Present consolidated review
+
+Display the full synthesized plan by reading each milestone's ROADMAP.md from its workspace:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ MULTI-MILESTONE PLAN (ready for commit)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[For each milestone in $MILESTONE_VERSIONS, display:]
+
+[VERSION] [Milestone Name] (Phases [start]–[end], [N] phases)
+[For each phase in this milestone's ROADMAP.md:]
+  Phase [N]: [Phase Name] — [one-line goal]
+
+[End loop]
+
+Total: [N] milestones | [X] phases | [Y] requirements
+```
+
+### Step 5.2 — AskUserQuestion: approval
+
+```
+AskUserQuestion: "How do you want to proceed?"
+Options:
+- "Approve all — commit everything"
+- "Adjust one milestone — tell me which"
+- "Re-roadmap one milestone — re-spawn roadmapper with notes, then re-synthesize"
+```
+
+### Step 5.3 — Handle: Approve all
+
+On "Approve all — commit everything":
+
+Issue commits in this order:
+
+**Per-milestone commits (one per milestone):**
+```bash
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit \
+  "docs: initialize [VERSION] [Milestone Name] ([N] phases, [start]–[end])" \
+  --files "[MILESTONE_WORKSPACE_PATH]/ROADMAP.md" \
+          "[MILESTONE_WORKSPACE_PATH]/STATE.md" \
+          "[MILESTONE_WORKSPACE_PATH]/REQUIREMENTS.md"
+```
+
+Repeat for each milestone. Record each commit SHA.
+
+**Root commit (after all per-milestone commits succeed):**
+```bash
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit \
+  "docs: add [N] milestones to root roadmap (multi-milestone batch, phases [start]–[end])" \
+  --files ".planning/ROADMAP.md" \
+          ".planning/STATE.md" \
+          ".planning/MILESTONES.md"
+```
+
+Record root commit SHA.
+
+Then go to Step 5.5 (finalize BATCH-SESSION.md).
+
+### Step 5.4a — Handle: Adjust one milestone
+
+On "Adjust one milestone — tell me which":
+
+Ask via plain text: "Which milestone do you want to adjust? (e.g. v16.0)"
+
+Read the specified milestone's ROADMAP.md from its workspace and display it in full.
+
+Ask via plain text: "Describe the adjustments you want to make."
+
+Apply the user's requested adjustments to the milestone's ROADMAP.md in the workspace using the Write tool. Re-read and redisplay the updated ROADMAP.md to confirm.
+
+Re-display the full consolidated plan summary (Step 5.1 format) with the updated milestone.
+
+Return to AskUserQuestion in Step 5.2.
+
+### Step 5.4b — Handle: Re-roadmap one milestone
+
+On "Re-roadmap one milestone — re-spawn roadmapper with notes, then re-synthesize":
+
+Ask via plain text: "Which milestone do you want to re-roadmap? (e.g. v16.0)"
+
+Ask via plain text: "What notes or changes should the roadmapper incorporate?"
+
+Re-spawn only the affected roadmapper in proposal mode with the notes:
+
+```
+Task(
+  prompt="
+<execution_context>
+~/.claude/agents/gsd-roadmapper.md
+</execution_context>
+
+<mode>proposal</mode>
+
+<milestone_workspace>[AFFECTED_MILESTONE_WORKSPACE_PATH]</milestone_workspace>
+
+<files_to_read>
+- [AFFECTED_MILESTONE_WORKSPACE_PATH]/REQUIREMENTS.md
+- .planning/PROJECT.md
+- .planning/MILESTONES.md
+</files_to_read>
+
+<revision_notes>
+[User's notes from plain-text input above]
+</revision_notes>
+
+<instructions>
+Re-produce an unnumbered phase proposal for [VERSION] [Milestone Name].
+Incorporate the revision notes above. The previous PROPOSAL.md will be overwritten.
+Do NOT assign phase numbers. Use PHASE-A, PHASE-B, PHASE-C placeholder labels.
+Write ONLY to [AFFECTED_MILESTONE_WORKSPACE_PATH]/PROPOSAL.md.
+</instructions>
+  ",
+  subagent_type="gsd-roadmapper",
+  description="Revised proposal for [VERSION] [Milestone Name]"
+)
+```
+
+Wait for the re-roadmapper to complete. Validate PROPOSAL.md has PHASE-X entries.
+
+Re-spawn gsd-roadmap-synthesizer with all N PROPOSAL.md files (unchanged milestones AND the re-roadmapped one) — the synthesizer re-numbers everything from scratch:
+
+```
+Task(
+  prompt="
+<execution_context>
+~/.claude/agents/gsd-roadmap-synthesizer.md
+</execution_context>
+
+<files_to_read>
+[For each milestone in $MILESTONE_VERSIONS:]
+- [MILESTONE_WORKSPACE_PATH]/PROPOSAL.md
+- [MILESTONE_WORKSPACE_PATH]/REQUIREMENTS.md
+[End loop]
+- .planning/ROADMAP.md
+- .planning/STATE.md
+</files_to_read>
+
+<context>
+next_starting_phase: [NEXT_STARTING_PHASE]
+milestones_in_order: [[VERSION1], [VERSION2], ...]
+</context>
+  ",
+  subagent_type="gsd-roadmap-synthesizer",
+  description="Re-synthesize after re-roadmap of [VERSION]"
+)
+```
+
+Re-display the full consolidated plan summary (Step 5.1 format) with updated phase numbers.
+
+Return to AskUserQuestion in Step 5.2.
+
+### Step 5.5 — Finalize BATCH-SESSION.md
+
+Read `$TASK_DIR/BATCH-SESSION.md`. Update:
+
+- Stage Status table: Set "5 — Review + Commit" Status to "Complete" and Completed At to "[ISO timestamp]"
+- Add a top-level `status: complete` field to the Session Overview table
+- Append commit SHAs to each milestone's row in the Milestones table
+
+Append to Stage Log:
+```
+| [ISO timestamp] | Commits | all | [N] per-milestone + 1 root commit issued |
+```
+
+Commit the final BATCH-SESSION.md:
+```bash
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit \
+  "docs: record batch session complete ([N] milestones, phases [start]-[end])" \
+  --files "$TASK_DIR/BATCH-SESSION.md"
+```
+
+### Step 5.6 — Display completion banner
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ MULTI-MILESTONE BATCH COMPLETE ✓
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[N] milestones committed:
+  [VERSION] — [Name] (Phases [start]–[end])
+  [VERSION] — [Name] (Phases [start]–[end])
+
+To start executing the first phase of any milestone:
+  /gsd:plan-phase [first-phase-number]
+
+Session artifacts: $TASK_DIR/
+```
+
 </process>
