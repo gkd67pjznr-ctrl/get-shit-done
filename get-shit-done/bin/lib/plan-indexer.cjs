@@ -261,4 +261,49 @@ function buildIndex(cwd) {
 // --- Refresh (alias for buildIndex, used by milestone hook) ---
 function refreshIndex(cwd) { return buildIndex(cwd); }
 
-module.exports = { buildIndex, refreshIndex };
+// --- Search (reads pre-built index from disk; never triggers rebuild) ---
+const STALENESS_DAYS = 14;
+
+function searchIndex(cwd, query) {
+  const indexFile = path.join(cwd, '.planning', 'plan-index.json');
+
+  if (!fs.existsSync(indexFile)) {
+    process.stdout.write('plan-indexer: plan-index.json not found — run `gsd plan-index --rebuild` to build\n');
+    return [];
+  }
+
+  let indexData;
+  try {
+    indexData = JSON.parse(fs.readFileSync(indexFile, 'utf-8'));
+  } catch {
+    process.stdout.write('plan-indexer: plan-index.json is corrupted — run `gsd plan-index --rebuild`\n');
+    return [];
+  }
+
+  // Staleness check
+  if (indexData.built_at) {
+    const ageMs = Date.now() - new Date(indexData.built_at).getTime();
+    const ageDays = ageMs / (1000 * 60 * 60 * 24);
+    if (ageDays > STALENESS_DAYS) {
+      process.stdout.write(`plan-indexer: index is ${Math.floor(ageDays)} days old — consider rebuilding with \`gsd plan-index --rebuild\`\n`);
+    }
+  }
+
+  return indexData.plans || [];
+}
+
+// --- CLI handler for plan-index subcommand ---
+function cmdPlanIndex(cwd, options, raw) {
+  if (options.rebuild) {
+    const result = buildIndex(cwd);
+    if (raw) {
+      process.stdout.write(JSON.stringify({ ok: true, plan_count: result.plan_count, built_at: result.built_at }) + '\n');
+    } else {
+      process.stdout.write(`plan-index: rebuilt ${result.plan_count} plans (${result.built_at})\n`);
+    }
+  } else {
+    process.stdout.write('Usage: plan-index --rebuild\n');
+  }
+}
+
+module.exports = { buildIndex, refreshIndex, searchIndex, cmdPlanIndex };
