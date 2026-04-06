@@ -4,8 +4,8 @@ milestone: v1.0
 milestone_name: milestone
 status: Defining requirements
 stopped_at: Phase 81 context gathered
-last_updated: "2026-04-04T23:52:03.618Z"
-last_activity: 2026-04-05 - Completed quick task 44: GSD teach-phase documentation (docs/TEACH-PHASE.md + README section)
+last_updated: "2026-04-06T04:37:43.755Z"
+last_activity: 2026-04-05 - Completed quick task 45: comprehensive command reference (docs/COMMAND-REFERENCE.md + gsd-tools list-commands)
 progress:
   total_phases: 4
   completed_phases: 1
@@ -20,15 +20,13 @@ progress:
 Phase: Not started (defining requirements)
 Plan: —
 Status: Defining requirements
-Last activity: 2026-04-05 - Completed quick task 44: GSD teach-phase documentation
+Last activity: 2026-04-05 — Milestone v16.0 shipped
 
 ## Active Milestones
 
 | Milestone | Status | Phases |
 |-----------|--------|--------|
-| v16.0 Multi-Milestone Batch Planner | Ready to plan | 87-89 |
 | v14.0 Planning Intelligence | Ready to plan | 90-92 |
-| v13.0 Unified Observability & Context Routing | Defining requirements | TBD |
 
 ## Completed Milestones
 
@@ -47,6 +45,9 @@ Last activity: 2026-04-05 - Completed quick task 44: GSD teach-phase documentati
 | v9.0 Signal Intelligence | 2026-04-04 | 37-42 |
 | v10.0 Shared MCP Dashboard | 2026-04-04 | 43-44 |
 | v12.0 Quality Enforcement Evolution | 2026-04-04 | 50-52 |
+| v15.0 Autonomous Learning | 2026-04-04 | 80-83 |
+| v13.0 Unified Observability & Context Routing | 2026-04-04 | 84-86 |
+| v16.0 Multi-Milestone Batch Planner | 2026-04-05 | 87-89 |
 
 ## Layout
 
@@ -90,10 +91,11 @@ See: .planning/PROJECT.md (updated 2026-04-03)
 | 41 | Research and design multi-milestone batch planning workflow | 2026-04-04 | be24f30 | Verified | [41-research-and-plan-multi-milestone-batch-](./quick/41-research-and-plan-multi-milestone-batch-/) |
 | 43 | Update README with v10.0–v15.0 milestone features | 2026-04-04 | dadac50 | Complete | [43-update-readme-with-v10-v15-milestone-fea](./quick/43-update-readme-with-v10-v15-milestone-fea/) |
 | 44 | Document GSD teach-phase: docs/TEACH-PHASE.md + README section | 2026-04-05 | 9a0b1b6 | Complete | [44-tell-me-all-about-the-gsd-teach-phase-wh](./quick/44-tell-me-all-about-the-gsd-teach-phase-wh/) |
+| 45 | Comprehensive command reference doc + CLI list-commands | 2026-04-05 | 0578a30 | Complete | [45-comprehensive-command-reference-doc-and-](./quick/45-comprehensive-command-reference-doc-and-/) |
 
 ## Session Continuity
 
 Last session: 2026-04-05
-Stopped at: Quick task 44 complete
-Resume file: .planning/quick/44-tell-me-all-about-the-gsd-teach-phase-wh/44-SUMMARY.md
-Next step: Continue with `/gsd:plan-phase 45` or `/gsd:new-milestone` to start v16.0
+Stopped at: Quick task 45 complete
+Resume file: .planning/quick/45-comprehensive-command-reference-doc-and-/45-SUMMARY.md
+Next step: Continue with `/gsd:plan-phase 45` or `/gsd:new-milestone` to start next milestone
