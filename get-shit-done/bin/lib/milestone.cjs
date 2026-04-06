@@ -310,6 +310,14 @@ function cmdMilestoneComplete(cwd, version, options, raw, milestoneScope) {
   };
 
   output(result, raw);
+
+  // Auto-rebuild plan index as final step — failure must never block milestone completion
+  try {
+    const { refreshIndex } = require('./plan-indexer.cjs');
+    refreshIndex(cwd);
+  } catch {
+    // Index rebuild failure is non-fatal
+  }
 }
 
 function cmdMilestoneNewWorkspace(cwd, version, options, raw) {
