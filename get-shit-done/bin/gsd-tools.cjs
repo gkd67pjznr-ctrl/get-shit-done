@@ -75,6 +75,9 @@
  *     [--name <name>]
  *     [--archive-phases]               Move phase dirs to milestones/vX.Y-phases/
  *
+ * Plan Index:
+ *   plan-index --rebuild               Rebuild .planning/plan-index.json from all milestone PLAN.md files
+ *
  * Validation:
  *   validate consistency               Check phase numbering, disk/roadmap sync
  *   validate health [--repair]         Check .planning/ integrity, optionally repair
@@ -386,6 +389,13 @@ async function main() {
         ? (args[extIdx + 1] || '').split(',').map(e => e.trim()).filter(Boolean)
         : [];
       mcpClassifier.cmdMcpClassify(cwd, taskDescription, fileExtensions, raw, planPath);
+      break;
+    }
+
+    case 'plan-index': {
+      const { cmdPlanIndex } = require('./lib/plan-indexer.cjs');
+      const rebuildFlag = args.includes('--rebuild');
+      cmdPlanIndex(cwd, { rebuild: rebuildFlag }, raw);
       break;
     }
 
