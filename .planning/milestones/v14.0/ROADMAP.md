@@ -41,7 +41,7 @@ Plans:
 
 Plans:
 - [ ] 91-01: plan-similarity.cjs — TF-IDF cosine + Jaccard hybrid scorer, threshold gating, component score breakdown
-- [ ] 91-02: task-classifier.cjs — 8 canonical types, per-type correction ranking, composition assistant
+- [x] 91-02: task-classifier.cjs — 8 canonical types, per-type correction ranking, composition assistant
 - [ ] 91-03: Workflow injection — cmdInitPlanPhase plan_suggestions field, plan-phase.md planning_intelligence block, skeleton adapter
 
 ### Phase 92: Prompt Quality Scoring
@@ -63,6 +63,6 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 90. Plan Indexer Foundation | 2/2 | Complete   | 2026-04-06 |
-| 91. Similarity, Task Intelligence & Workflow Integration | 0/3 | Not started | - |
+| 90. Plan Indexer Foundation | 2/2 | Complete    | 2026-04-06 |
+| 91. Similarity, Task Intelligence & Workflow Integration | 1/3 | In progress | - |
 | 92. Prompt Quality Scoring | 0/2 | Not started | - |

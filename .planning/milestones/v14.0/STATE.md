@@ -1,3 +1,19 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: executing
+stopped_at: Plan 91-02 complete — task-classifier.cjs implemented with buildTypePerformanceTable and getBestExampleByType; 9/9 tests pass
+last_updated: "2026-04-06T05:00:00.000Z"
+last_activity: "2026-04-06 — Plan 91-02 complete: task-classifier.cjs with 9 passing tests"
+progress:
+  total_phases: 3
+  completed_phases: 2
+  total_plans: 6
+  completed_plans: 6
+  percent: 43
+---
+
 # Project State — Milestone v14.0
 
 ## Project Reference
@@ -9,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-04-04)
 
 ## Current Position
 
-Phase: 90 of 92 (Plan Indexer Foundation) — COMPLETE
-Plan: 2 of 2 in current phase (90-02 complete)
-Status: In progress — Phase 90 complete, Phase 91 next
-Last activity: 2026-04-06 — Plan 90-02 complete: searchIndex, staleness detection, milestone hook, CLI subcommand
+Phase: 91 of 92 (Similarity, Task Intelligence & Workflow Integration) — In progress
+Plan: 2 of 3 in current phase (91-02 complete)
+Status: In progress — Phase 91 plan 91-02 complete, 91-03 next
+Last activity: 2026-04-06 — Plan 91-02 complete: task-classifier.cjs with 9 passing tests
 
 Progress: [██░░░░░░░░] 28%
 
@@ -47,6 +63,9 @@ Recent decisions affecting current work:
 - Prompt quality score is diagnostic only — never a blocking gate
 - Index lives at .planning/plan-index.json (project-scope, not milestone-scoped), never committed to git
 - Task-type baseline stratified by task type, not global, to avoid penalizing legitimate complexity
+- plan-similarity.cjs reads plan-index.json directly (not via plan-indexer.cjs) — avoids coupling, accesses both plans and idf in one read
+- TASK_TYPE_KEYWORDS inlined in plan-similarity.cjs rather than imported from plan-indexer.cjs
+- adaptSkeleton accepts currentPhase as plain string for flexibility at the call site
 
 ### Pending Todos
 
@@ -59,6 +78,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-06
-Stopped at: Plan 90-02 complete — searchIndex, cmdPlanIndex, milestone hook, and CLI subcommand all implemented; 16/16 plan-indexer tests pass
-Resume file: .planning/milestones/v14.0/phases/90-plan-indexer-foundation/90-02-SUMMARY.md
-Next step: Execute phase 91 (plan-similarity.cjs — TF-IDF cosine + Jaccard hybrid scorer)
+Stopped at: Plan 91-02 complete — task-classifier.cjs with buildTypePerformanceTable, getBestExampleByType; 9/9 tests pass
+Resume file: .planning/milestones/v14.0/phases/91-similarity-task-intelligence-workflow-integration/91-02-SUMMARY.md
+Next step: Execute plan 91-03 (Workflow injection — cmdInitPlanPhase plan_suggestions field, plan-phase.md planning_intelligence block, skeleton adapter)
