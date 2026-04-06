@@ -158,6 +158,11 @@
  *   init milestone-op                  All context for milestone operations
  *   init map-codebase                  All context for map-codebase workflow
  *   init progress                      All context for progress workflow
+ *
+ * Command Discovery:
+ *   list-commands                      Print structured summary of all slash commands and CLI groups
+ *   list-commands --json               Output as JSON with slash_commands, subgroups, cli_groups arrays
+ *   list-commands --count              Print total count of slash commands, subgroup commands, and CLI groups
  */
 
 const fs = require('fs');
@@ -1112,6 +1117,111 @@ async function main() {
         count: qCountIdx !== -1 ? parseInt(args[qCountIdx + 1], 10) : undefined,
       }, raw);
       break;
+    }
+
+    case 'list-commands': {
+      const wantJson = args.includes('--json');
+      const wantCount = args.includes('--count');
+
+      const slashCommands = [
+        { command: '/gsd:new-project', description: 'Initialize new project' },
+        { command: '/gsd:map-codebase', description: 'Map existing codebase' },
+        { command: '/gsd:discuss-phase', description: 'Discuss phase vision before planning' },
+        { command: '/gsd:research-phase', description: 'Research phase domain' },
+        { command: '/gsd:list-phase-assumptions', description: 'Preview Claude\'s planned approach' },
+        { command: '/gsd:plan-phase', description: 'Create execution plan for a phase' },
+        { command: '/gsd:execute-phase', description: 'Execute all plans in a phase' },
+        { command: '/gsd:quick', description: 'Execute small ad-hoc tasks' },
+        { command: '/gsd:add-phase', description: 'Add phase to current milestone' },
+        { command: '/gsd:insert-phase', description: 'Insert decimal phase between phases' },
+        { command: '/gsd:remove-phase', description: 'Remove and renumber a phase' },
+        { command: '/gsd:new-milestone', description: 'Start a new milestone' },
+        { command: '/gsd:complete-milestone', description: 'Archive completed milestone' },
+        { command: '/gsd:audit-milestone', description: 'Audit milestone completion' },
+        { command: '/gsd:plan-milestone-gaps', description: 'Create phases to close audit gaps' },
+        { command: '/gsd:multi-milestone', description: 'Batch-plan multiple milestones' },
+        { command: '/gsd:progress', description: 'Check project status' },
+        { command: '/gsd:resume-work', description: 'Resume from previous session' },
+        { command: '/gsd:pause-work', description: 'Pause and create context handoff' },
+        { command: '/gsd:debug', description: 'Systematic debugging with persistent state' },
+        { command: '/gsd:add-todo', description: 'Capture idea as todo' },
+        { command: '/gsd:check-todos', description: 'Review and work on todos' },
+        { command: '/gsd:verify-work', description: 'UAT validation for a phase' },
+        { command: '/gsd:validate-phase', description: 'Validate phase structure' },
+        { command: '/gsd:fix-debt', description: 'Work on tech debt entries' },
+        { command: '/gsd:brainstorm', description: '3-stage brainstorming session' },
+        { command: '/gsd:digest', description: 'Generate learning digest' },
+        { command: '/gsd:teach-phase', description: 'Teach Claude about a phase pattern' },
+        { command: '/gsd:settings', description: 'Configure workflow toggles' },
+        { command: '/gsd:set-profile', description: 'Quick-switch model profile' },
+        { command: '/gsd:set-quality', description: 'Set quality enforcement level' },
+        { command: '/gsd:help', description: 'Show command reference' },
+        { command: '/gsd:update', description: 'Update GSD to latest version' },
+        { command: '/gsd:health', description: 'Check GSD installation health' },
+        { command: '/gsd:cleanup', description: 'Clean stale planning artifacts' },
+        { command: '/gsd:reapply-patches', description: 'Reapply local patches after update' },
+        { command: '/gsd:add-tests', description: 'Add tests for existing code' },
+        { command: '/gsd:join-discord', description: 'Join GSD Discord community' },
+      ];
+
+      const subgroups = [
+        { command: '/consider:<subcommand>', description: 'Mental models: first-principles, 10-10-10, swot, one-thing, occams-razor, 5-whys, second-order, eisenhower-matrix, opportunity-cost, via-negativa, inversion, pareto' },
+        { command: '/research:<subcommand>', description: 'Research modes: deep-dive, landscape, history, competitive, options, technical, feasibility, open-source' },
+      ];
+
+      const cliGroups = [
+        { command: 'state', description: 'Load, read, update STATE.md fields' },
+        { command: 'phase', description: 'Add, insert, remove, complete phases' },
+        { command: 'roadmap', description: 'Get phase, analyze, update progress' },
+        { command: 'requirements', description: 'Mark requirements complete' },
+        { command: 'debt', description: 'Log, list, resolve tech debt' },
+        { command: 'migrate', description: 'Convert legacy to milestone-scoped layout' },
+        { command: 'milestone', description: 'Complete and archive milestones' },
+        { command: 'plan-index', description: 'Rebuild plan index' },
+        { command: 'validate', description: 'Check consistency and health' },
+        { command: 'progress', description: 'Render progress bar' },
+        { command: 'todo', description: 'Complete todo items' },
+        { command: 'scaffold', description: 'Create CONTEXT/UAT/VERIFICATION templates' },
+        { command: 'frontmatter', description: 'Get, set, merge, validate frontmatter' },
+        { command: 'verify', description: 'Verify plans, summaries, references' },
+        { command: 'template', description: 'Fill PLAN/SUMMARY/VERIFICATION templates' },
+        { command: 'init', description: 'Bootstrap context for workflow commands' },
+        { command: 'list-commands', description: 'Show this command listing' },
+      ];
+
+      if (wantJson) {
+        process.stdout.write(JSON.stringify({ slash_commands: slashCommands, subgroups, cli_groups: cliGroups }, null, 2) + '\n');
+        process.exit(0);
+      }
+
+      if (wantCount) {
+        const total = slashCommands.length + subgroups.length + cliGroups.length;
+        process.stdout.write(`slash_commands: ${slashCommands.length}  subgroups: ${subgroups.length}  cli_groups: ${cliGroups.length}  total: ${total}\n`);
+        process.exit(0);
+      }
+
+      const pad = (str, len) => str + ' '.repeat(Math.max(0, len - str.length));
+      const lines = [];
+
+      lines.push('=== GSD Slash Commands (/gsd: namespace) ===');
+      for (const { command: cmd, description: desc } of slashCommands) {
+        lines.push(`${pad(cmd, 40)}${desc}`);
+      }
+
+      lines.push('');
+      lines.push('=== Slash Command Subgroups ===');
+      for (const { command: cmd, description: desc } of subgroups) {
+        lines.push(`${pad(cmd, 40)}${desc}`);
+      }
+
+      lines.push('');
+      lines.push('=== gsd-tools CLI Command Groups ===');
+      for (const { command: cmd, description: desc } of cliGroups) {
+        lines.push(`${pad(cmd, 40)}${desc}`);
+      }
+
+      process.stdout.write(lines.join('\n') + '\n');
+      process.exit(0);
     }
 
     default:
