@@ -29,8 +29,38 @@ Before doing anything else, inspect `$ARGUMENTS`:
 - Else if `$ARGUMENTS` contains `--resume NN`:
   - Set `$INPUT_MODE=resume`
   - Set `$RESUME_ID=NN`
-  - Display: "Resume coming in Phase 89 — this capability is not yet implemented."
-  - Exit gracefully (do not continue to further steps).
+  - Locate the task directory:
+    ```bash
+    TASK_DIR=$(find .planning/quick -maxdepth 1 -type d -name "${RESUME_ID}-multi-milestone-*" | head -1)
+    ```
+  - If no directory found, display: "No batch session found with task ID NN. Check .planning/quick/ for available sessions." and exit.
+  - Read `$TASK_DIR/BATCH-SESSION.md`.
+  - Read `$TASK_DIR/BATCH-INTAKE.md` to restore `$MILESTONE_VERSIONS` (version, name, workspace path for each milestone).
+  - Parse the Stage Status table from BATCH-SESSION.md to determine `$LAST_COMPLETED_STAGE`:
+    - Scan each row; the highest stage with Status "Complete" is the last completed stage.
+    - Valid stages: 0 (Intake), 1 (Workspace Creation), 2/3 (Research + Scoping), 4 (Roadmapping + Synthesis), 5 (Review + Commit).
+  - Display:
+    ```
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     GSD ► RESUMING BATCH SESSION [NN]
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    Last completed stage: [LAST_COMPLETED_STAGE]
+    Milestones in this batch:
+      [VERSION] — [Name] (workspace: [path])
+      ...
+    Resuming from [next stage name]...
+    ```
+  - Jump to the appropriate stage based on `$LAST_COMPLETED_STAGE`:
+    - Stage 0 complete → jump to Stage 1 (Milestone Shell Creation)
+    - Stage 1 complete → jump to Stage 2/3 (Per-Milestone Research and Scoping)
+    - Stage 2/3 complete → jump to Stage 4 (Parallel Roadmapping and Synthesis)
+    - Stage 4 complete → jump to Stage 5 (Review and Commit)
+    - Stage 5 complete → display "This batch session is already complete." and exit.
+    - No stages complete → restart from Stage 0 (re-display clusters from BATCH-INTAKE.md, skip affinity grouping)
+  - When resuming Stage 2/3: check each milestone's Scoping column in the Milestones table. Milestones with a timestamp are already scoped — skip them. Only run Steps A-D for milestones with Scoping = "Pending".
+  - When resuming Stage 4: all PROPOSAL.md files may or may not exist. Validate each — if valid, skip re-spawning that roadmapper. Only re-spawn roadmappers whose PROPOSAL.md is missing or invalid. Then spawn synthesizer for all N milestones regardless.
+  - When resuming Stage 5: the synthesizer has already written files — skip to Step 5.1 (display consolidated review).
 - Otherwise:
   - Set `$INPUT_MODE=inline`
   - Treat the full `$ARGUMENTS` value as raw idea text.
