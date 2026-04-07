@@ -137,6 +137,13 @@ export function GateHealthPage() {
           <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${QUALITY_COLORS.strict}; margin-right:4px;"></span>Strict ${qlPct('strict')}%</span>
           <span style="color:var(--text-muted); font-size:13px;">Fast mode sessions skip gate enforcement and are not tracked.</span>
         </div>
+        ${data.configQualityLevels ? html`
+          <div style="font-size:13px; color:var(--text-muted); margin-top:6px;">
+            Current config: ${Object.entries(data.configQualityLevels).map(([level, count]) =>
+              html`<span style="color:${QUALITY_COLORS[level] || 'var(--text-secondary)'}; margin-right:8px;">${count} project${count !== 1 ? 's' : ''} → ${level}</span>`
+            )}
+          </div>
+        ` : null}
       </section>
 
       <!-- Section 2a: Global Outcome Distribution (DASH-02) -->

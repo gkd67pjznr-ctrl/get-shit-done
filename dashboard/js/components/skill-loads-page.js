@@ -20,9 +20,18 @@ export function SkillLoadsPage() {
         setData(d);
         setLoading(false);
       })
-      .catch((err) => {
-        setError(err.message);
-        setLoading(false);
+      .catch(() => {
+        // Fallback: try legacy endpoint if /api/skills not available (server restart needed)
+        fetch('/api/skill-loads')
+          .then((r) => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
+          .then((skills) => {
+            setData({ skillLoads: skills, observations: {} });
+            setLoading(false);
+          })
+          .catch((err) => {
+            setError(err.message + ' — restart dashboard server to enable full Skills view');
+            setLoading(false);
+          });
       });
   }, []);
 

@@ -852,8 +852,11 @@ function aggregateGateHealth(registry) {
       if (!VALID_GATES.includes(gate) || !VALID_OUTCOMES.includes(outcome)) continue;
 
       outcomes[outcome]++;
-      if (ql === 'standard' || ql === 'strict') {
+      if (ql === 'standard' || ql === 'strict' || ql === 'fast') {
         qualityLevels[ql]++;
+      } else {
+        // Legacy entries without quality_level — count as unknown
+        qualityLevels._unknown = (qualityLevels._unknown || 0) + 1;
       }
       gates[gate].total++;
       gates[gate][outcome]++;
@@ -890,6 +893,17 @@ function aggregateGateHealth(registry) {
     if (projectHasData) reportingCount++;
   }
 
+  // Collect current config quality levels from all projects for context
+  const configQualityLevels = {};
+  for (const project of registry) {
+    try {
+      const cfgPath = path.join(project.path, '.planning', 'config.json');
+      const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf-8'));
+      const ql = cfg.quality?.level || 'unknown';
+      configQualityLevels[ql] = (configQualityLevels[ql] || 0) + 1;
+    } catch { /* skip */ }
+  }
+
   const hasData = totalExecutions > 0 || c7TotalCalls > 0;
 
   return {
@@ -898,6 +912,7 @@ function aggregateGateHealth(registry) {
     totalExecutions,
     outcomes,
     qualityLevels,
+    configQualityLevels,
     gates,
     context7: {
       totalCalls: c7TotalCalls,
