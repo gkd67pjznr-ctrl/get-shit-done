@@ -404,6 +404,14 @@ async function main() {
       break;
     }
 
+    case 'prompt-score': {
+      const { cmdPromptScore } = require('./lib/prompt-scorer.cjs');
+      const milestoneIdx = args.indexOf('--milestone');
+      const milestoneVersion = milestoneIdx !== -1 ? args[milestoneIdx + 1] : null;
+      cmdPromptScore(cwd, { milestone: milestoneVersion }, raw);
+      break;
+    }
+
     case 'skill-score': {
       const taskIdx = args.indexOf('--task');
       const taskDescription = taskIdx !== -1 ? args[taskIdx + 1] : '';
@@ -875,7 +883,9 @@ async function main() {
         }
         milestone.cmdMilestoneComplete(cwd, args[2], { name: milestoneName, archivePhases }, raw, milestoneScope);
       } else if (subcommand === 'new-workspace') {
-        milestone.cmdMilestoneNewWorkspace(cwd, args[2], {}, raw);
+        const nameIdx = args.indexOf('--name');
+        const wsName = nameIdx !== -1 ? args.slice(nameIdx + 1).filter(a => !a.startsWith('--')).join(' ') || null : null;
+        milestone.cmdMilestoneNewWorkspace(cwd, args[2], { name: wsName }, raw);
       } else if (subcommand === 'update-manifest') {
         const filesIndex = args.indexOf('--files');
         const files = filesIndex !== -1 ? args.slice(filesIndex + 1).filter(a => !a.startsWith('--')) : [];
