@@ -305,6 +305,46 @@
   font-family: var(--font-data);
 }
 
+/* Phase dropdown inside milestone */
+.card-phase-dropdown {
+  padding-left: 24px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.card-phase-row {
+  display: grid;
+  grid-template-columns: 16px 36px 1fr minmax(60px, 100px);
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-data);
+  font-size: 14px;
+  padding: 1px 0;
+}
+
+.card-phase-check {
+  font-size: 13px;
+  text-align: center;
+}
+
+.card-phase-num {
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.card-phase-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.card-phase-bar {
+  display: flex;
+  align-items: center;
+  justify-self: end;
+}
+
 /* Rainbow dashed separator — animated multicolor wave */
 @keyframes rainbow-wave {
   0%   { background-position: 100% 50%; }

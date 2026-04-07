@@ -4,8 +4,8 @@ milestone: v1.0
 milestone_name: milestone
 status: Defining requirements
 stopped_at: Phase 81 context gathered
-last_updated: "2026-04-07T00:26:15.331Z"
-last_activity: 2026-04-07 - Completed quick task 46: Audit all GSD commands from v9.0+ milestones and ensure CLI integration
+last_updated: "2026-04-07T04:34:28.305Z"
+last_activity: 2026-04-07 - Completed quick task 49: Install all GSD modifications and additions globally
 progress:
   total_phases: 4
   completed_phases: 1
@@ -20,7 +20,7 @@ progress:
 Phase: Not started (defining requirements)
 Plan: —
 Status: Defining requirements
-Last activity: 2026-04-07 - Completed quick task 46: Audit all GSD commands from v9.0+ milestones and ensure CLI integration
+Last activity: 2026-04-07 - Completed quick task 48: Fix debt workflow (full mode, verified)
 
 ## Active Milestones
 
@@ -43,11 +43,11 @@ Last activity: 2026-04-07 - Completed quick task 46: Audit all GSD commands from
 | v9.0 Signal Intelligence | 2026-04-04 | 37-42 |
 | v10.0 Shared MCP Dashboard | 2026-04-04 | 43-44 |
 | v12.0 Quality Enforcement Evolution | 2026-04-04 | 50-52 |
-| v15.0 Autonomous Learning | 2026-04-04 | 80-83 |
-| v13.0 Unified Observability & Context Routing | 2026-04-04 | 84-86 |
-| v16.0 Multi-Milestone Batch Planner | 2026-04-05 | 87-89 |
+| v15.0 Autonomous Learning | 2026-04-04 | 53-56 |
+| v13.0 Unified Observability & Context Routing | 2026-04-04 | 57-59 |
+| v16.0 Multi-Milestone Batch Planner | 2026-04-05 | 60-62 |
 | v11.0 Wild Brainstorming Engine | 2026-04-04 | 45-49 |
-| v14.0 Planning Intelligence | 2026-04-07 | 90-92 |
+| v14.0 Planning Intelligence | 2026-04-07 | 63-65 |
 
 ## Layout
 
@@ -93,10 +93,13 @@ See: .planning/PROJECT.md (updated 2026-04-03)
 | 44 | Document GSD teach-phase: docs/TEACH-PHASE.md + README section | 2026-04-05 | 9a0b1b6 | Complete | [44-tell-me-all-about-the-gsd-teach-phase-wh](./quick/44-tell-me-all-about-the-gsd-teach-phase-wh/) |
 | 45 | Comprehensive command reference doc + CLI list-commands | 2026-04-06 | 0578a30 | Verified | [45-comprehensive-command-reference-doc-and-](./quick/45-comprehensive-command-reference-doc-and-/) |
 | 46 | Audit GSD commands v9.0–v16.0 and fix CLI integration gaps | 2026-04-06 | — | Complete | [46-audit-all-gsd-commands-from-v9-0-milesto](./quick/46-audit-all-gsd-commands-from-v9-0-milesto/) |
+| 47 | Audit debt workflow files, integrations, and hooks | 2026-04-06 | — | Complete | [47-audit-debt-workflow-files-integrations-h](./quick/47-audit-debt-workflow-files-integrations-h/) |
+| 48 | Fix debt workflow: 12-column schema, enum validation, resolved_date, --status filter, routing | 2026-04-07 | 6487101 | Verified | [48-fix-debt-workflow-full-integration-routi](./quick/48-fix-debt-workflow-full-integration-routi/) |
+| 49 | Install all GSD modifications and additions globally | 2026-04-07 | f234496 | Complete | [49-install-all-gsd-modifications-and-additi](./quick/49-install-all-gsd-modifications-and-additi/) |
 
 ## Session Continuity
 
-Last session: 2026-04-07
-Stopped at: v14.0 milestone archived
+Last session: 2026-04-06
+Stopped at: Quick task 47 complete — debt system audit
 Resume file: —
 Next step: `/gsd:new-milestone` to start next milestone

@@ -408,7 +408,7 @@ describe('parseProjectData includes multi-milestone data', () => {
     }
   });
 
-  it('milestones array is empty for project with flat .planning/ layout', () => {
+  it('flat project with roadmap gets synthetic root milestone', () => {
     const { projectDir, gsdHome } = createRegistryProject();
     try {
       const serverModule = require(path.join(__dirname, '..', 'get-shit-done', 'bin', 'lib', 'server.cjs'));
@@ -419,7 +419,10 @@ describe('parseProjectData includes multi-milestone data', () => {
         added: new Date().toISOString(),
       });
       assert.ok(Array.isArray(data.milestones), 'milestones should be an array');
-      assert.equal(data.milestones.length, 0, 'should have 0 milestone entries for flat layout');
+      assert.equal(data.milestones.length, 1, 'should have 1 synthetic root milestone');
+      assert.equal(data.milestones[0].name, 'root', 'synthetic milestone name should be "root"');
+      assert.ok(data.milestones[0].roadmap, 'root milestone should include roadmap data');
+      assert.ok(data.milestones[0].roadmap.phases.length > 0, 'root milestone should have phases');
     } finally {
       cleanup(projectDir);
       cleanup(gsdHome);

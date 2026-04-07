@@ -8,13 +8,13 @@ v16.0 delivers `/gsd:multi-milestone` — a single-session command that accepts 
 
 ## Phases
 
-- [x] **Phase 87: Synthesizer Foundation** - Build `gsd-roadmap-synthesizer` agent and roadmapper proposal mode (completed 2026-04-04)
-- [x] **Phase 88: Batch Workflow Stages 0-3** - Feature intake, workspace creation, conflict check, session tracking, and per-milestone research + requirements scoping (completed 2026-04-05)
-- [x] **Phase 89: Synthesis, Review, and Resume** - Synthesizer writes all artifacts, root file updates, user approval loop, and `--resume` capability (completed 2026-04-04)
+- [x] **Phase 60: Synthesizer Foundation** - Build `gsd-roadmap-synthesizer` agent and roadmapper proposal mode (completed 2026-04-04)
+- [x] **Phase 61: Batch Workflow Stages 0-3** - Feature intake, workspace creation, conflict check, session tracking, and per-milestone research + requirements scoping (completed 2026-04-05)
+- [x] **Phase 62: Synthesis, Review, and Resume** - Synthesizer writes all artifacts, root file updates, user approval loop, and `--resume` capability (completed 2026-04-04)
 
 ## Phase Details
 
-### Phase 87: Synthesizer Foundation
+### Phase 60: Synthesizer Foundation
 **Goal**: The roadmap synthesizer agent exists and the roadmapper can produce unnumbered proposals — two new capabilities that the batch workflow depends on before anything else is built
 **Depends on**: Nothing (first phase)
 **Requirements**: RSYN-01, RSYN-02
@@ -25,11 +25,11 @@ v16.0 delivers `/gsd:multi-milestone` — a single-session command that accepts 
 **Plans**: TBD
 
 Plans:
-- [x] 87-01: Define `gsd-roadmap-synthesizer` agent and extend roadmapper proposal mode
+- [x] 60-01: Define `gsd-roadmap-synthesizer` agent and extend roadmapper proposal mode
 
-### Phase 88: Batch Workflow Stages 0-3
+### Phase 61: Batch Workflow Stages 0-3
 **Goal**: The `/gsd:multi-milestone` command guides the user from a raw feature dump through cluster review, workspace creation, and full per-milestone requirements scoping — producing committed REQUIREMENTS.md files for every milestone before any roadmapping begins
-**Depends on**: Phase 87
+**Depends on**: Phase 60
 **Requirements**: INTK-01, INTK-02, INTK-03, INTK-04, INTK-05, WKSP-01, WKSP-02, WKSP-03, WKSP-04, SCOP-01, SCOP-02, SCOP-03, SCOP-04
 **Success Criteria** (what must be TRUE):
   1. User can start the command with inline text, `--from-file <path>`, or `--from-brainstorm NN` and see the ideas counted and clustered into 3-6 milestone themes
@@ -41,13 +41,13 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [x] 88-01: Feature intake parsing, affinity clustering, and cluster review UI (completed 2026-04-04)
-- [x] 88-02: Workspace creation, conflict check, and BATCH-SESSION.md tracking (completed 2026-04-05)
-- [x] 88-03: Per-milestone research opt-in and requirements scoping loop (completed 2026-04-05)
+- [x] 61-01: Feature intake parsing, affinity clustering, and cluster review UI (completed 2026-04-04)
+- [x] 61-02: Workspace creation, conflict check, and BATCH-SESSION.md tracking (completed 2026-04-05)
+- [x] 61-03: Per-milestone research opt-in and requirements scoping loop (completed 2026-04-05)
 
-### Phase 89: Synthesis, Review, and Resume
+### Phase 62: Synthesis, Review, and Resume
 **Goal**: After all milestones are scoped, the synthesizer produces every roadmap artifact in one pass, the user can review and adjust individual milestones before final commit, and any interrupted batch session can be resumed from the last completed stage
-**Depends on**: Phase 88
+**Depends on**: Phase 61
 **Requirements**: RSYN-03, RSYN-04, RSYN-05, WKSP-05
 **Success Criteria** (what must be TRUE):
   1. After all N roadmappers complete their proposals, the synthesizer writes ROADMAP.md, STATE.md, and REQUIREMENTS.md traceability to every milestone workspace with correct sequential phase numbers
@@ -57,13 +57,13 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [x] 89-01: Parallel roadmapper spawning and synthesizer artifact writing (completed 2026-04-04)
-- [x] 89-02: User approval loop and `--resume` flag implementation (completed 2026-04-04)
+- [x] 62-01: Parallel roadmapper spawning and synthesizer artifact writing (completed 2026-04-04)
+- [x] 62-02: User approval loop and `--resume` flag implementation (completed 2026-04-04)
 
 ## Progress
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 87. Synthesizer Foundation | 1/1 | Complete    | 2026-04-04 |
-| 88. Batch Workflow Stages 0-3 | 3/3 | Complete    | 2026-04-05 |
-| 89. Synthesis, Review, and Resume | 2/2 | Complete    | 2026-04-04 |
+| 60. Synthesizer Foundation | 1/1 | Complete    | 2026-04-07 |
+| 61. Batch Workflow Stages 0-3 | 3/3 | Complete    | 2026-04-07 |
+| 62. Synthesis, Review, and Resume | 2/2 | Complete    | 2026-04-07 |

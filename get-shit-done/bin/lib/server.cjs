@@ -70,17 +70,67 @@ function parseRoadmapFile(content) {
   try {
     const phases = [];
     const lines = content.split('\n');
-    for (const line of lines) {
-      // Match: - [x] Phase 01 - Name or - [ ] 01: Name
+    // Track header-based phases to determine completion from plan checkboxes
+    let currentHeaderPhase = null;
+    let headerPlanTotal = 0;
+    let headerPlanDone = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+
+      // Match header-style phases: ### Phase 172: Name or ### Phase 172.1: Name
+      const headerMatch = line.match(/^###\s+Phase\s+(\d+(?:\.\d+)*)[\s:-]+(.+)$/i);
+      if (headerMatch) {
+        // Finalize previous header phase if exists
+        if (currentHeaderPhase) {
+          currentHeaderPhase.status = (headerPlanTotal > 0 && headerPlanDone === headerPlanTotal) ? 'complete' : 'pending';
+          phases.push(currentHeaderPhase);
+        }
+        currentHeaderPhase = { number: headerMatch[1], name: headerMatch[2].trim(), status: 'pending', goal: null };
+        headerPlanTotal = 0;
+        headerPlanDone = 0;
+        // Check for **Plans:** line in next few lines
+        for (let j = i + 1; j < Math.min(i + 8, lines.length); j++) {
+          const plansMatch = lines[j].match(/\*\*Plans:\*\*\s*(\d+)\/(\d+)\s+plans?\s+complete/i);
+          if (plansMatch) {
+            headerPlanDone = parseInt(plansMatch[1], 10);
+            headerPlanTotal = parseInt(plansMatch[2], 10);
+            break;
+          }
+          // Also check plan checkboxes under this header
+          if (/^###\s/.test(lines[j])) break; // hit next header, stop
+        }
+        continue;
+      }
+
+      // Match checkbox-style phases: - [x] Phase 01 - Name or - [ ] 01: Name
       const checkMatch = line.match(/^[-*]\s+\[([ xX])\]\s+(.+)$/);
       if (checkMatch) {
         const done = checkMatch[1].trim().toLowerCase() === 'x';
         const rest = checkMatch[2].trim();
-        // Skip plan-level checkboxes — two formats found in older ROADMAPs:
-        //   "- [x] 01-01-PLAN.md — ..." (contains PLAN.md)
-        //   "- [x] 07-01: Delete ..."   (NN-NN: plan number format)
-        if (/PLAN\.md/i.test(rest)) continue;
-        if (/^\d{2}-\d{2}[\s:-]/.test(rest)) continue;
+        // Skip plan-level checkboxes
+        if (/PLAN\.md/i.test(rest)) {
+          // Count toward current header phase if active
+          if (currentHeaderPhase) {
+            headerPlanTotal++;
+            if (done) headerPlanDone++;
+          }
+          continue;
+        }
+        if (/^\d+-\d{2}[\s:-]/.test(rest)) {
+          // Plan-level checkbox (e.g. "172-01: ..." or "07-01: ...")
+          if (currentHeaderPhase) {
+            headerPlanTotal++;
+            if (done) headerPlanDone++;
+          }
+          continue;
+        }
+        // This is a phase-level checkbox — finalize any pending header phase first
+        if (currentHeaderPhase) {
+          currentHeaderPhase.status = (headerPlanTotal > 0 && headerPlanDone === headerPlanTotal) ? 'complete' : 'pending';
+          phases.push(currentHeaderPhase);
+          currentHeaderPhase = null;
+        }
         // Strip markdown bold formatting before numeric extraction
         const cleanRest = rest.replace(/\*\*/g, '').trim();
         // Extract phase number if present (supports integers and decimals like 16.1)
@@ -92,6 +142,13 @@ function parseRoadmapFile(content) {
         }
       }
     }
+
+    // Finalize last header phase
+    if (currentHeaderPhase) {
+      currentHeaderPhase.status = (headerPlanTotal > 0 && headerPlanDone === headerPlanTotal) ? 'complete' : 'pending';
+      phases.push(currentHeaderPhase);
+    }
+
     // Deduplicate by phase number — keep first occurrence; null-number entries always kept
     const seen = new Set();
     const deduped = phases.filter(p => {
@@ -389,6 +446,7 @@ function parseAllMilestones(projectPath) {
       const milestoneRoot = path.join(milestonesDir, dir.name);
       const entry = {
         name: dir.name,
+        milestone_name: null, // human-readable name from STATE.md frontmatter
         active: false,   // will be set after state is parsed
         state: null,
         roadmap: null,
@@ -411,6 +469,8 @@ function parseAllMilestones(projectPath) {
         if (fmMatch) {
           const statusLine = fmMatch[1].match(/^status:\s*(.+)$/m);
           if (statusLine) canonicalStatus = statusLine[1].trim();
+          const nameLine = fmMatch[1].match(/^milestone_name:\s*(.+)$/m);
+          if (nameLine) entry.milestone_name = nameLine[1].trim();
         }
       } catch { /* already read above, ignore */ }
 
@@ -790,7 +850,35 @@ function parseProjectData(project, tmuxCache) {
     } catch { phases_summary = []; }
   } catch { /* project path unresolvable */ }
 
-  const milestones = parseAllMilestones(project.path);
+  let milestones = parseAllMilestones(project.path);
+
+  // For projects without milestones dir (e.g. teaching projects), synthesize
+  // a root-level entry from .planning/ROADMAP.md + STATE.md so they show phases
+  if (milestones.length === 0 && roadmap && roadmap.phases && roadmap.phases.length > 0) {
+    const totalPhases = roadmap.phases.length;
+    const completedPhases = roadmap.phases.filter(p => p.status === 'complete').length;
+    const allDone = completedPhases === totalPhases;
+    const pct = totalPhases > 0 ? Math.round((completedPhases / totalPhases) * 100) : 0;
+    // Extract milestone_name from STATE.md frontmatter if available
+    let milestoneName = null;
+    try {
+      const stateContent = fs.readFileSync(path.join(planningRoot(project.path, null), 'STATE.md'), 'utf-8');
+      const fmMatch = stateContent.match(/^---\n([\s\S]*?)\n---/);
+      if (fmMatch) {
+        const nameLine = fmMatch[1].match(/^milestone_name:\s*(.+)$/m);
+        if (nameLine && nameLine[1].trim() !== 'milestone') milestoneName = nameLine[1].trim();
+      }
+    } catch { /* ignore */ }
+    milestones = [{
+      name: 'root',
+      milestone_name: milestoneName,
+      active: !allDone,
+      state: state ? { ...state, progress: `[${completedPhases}/${totalPhases} phases] ${pct}%` } : { current_phase: null, status: null, progress: `[${completedPhases}/${totalPhases} phases] ${pct}%`, last_activity: null },
+      roadmap,
+      requirements,
+      phases_summary,
+    }];
+  }
 
   // Health score (null for paused projects)
   const tracking = project.tracking !== false; // default true
@@ -1722,4 +1810,5 @@ module.exports = {
   _tmuxStateHash: tmuxStateHash,
   _computeHealthScore: computeHealthScore,
   setupTerminalWebSocket,
+  parseRoadmapFile,
 };

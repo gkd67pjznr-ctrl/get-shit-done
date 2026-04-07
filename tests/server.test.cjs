@@ -402,3 +402,69 @@ describe('getProjectGateHealth', () => {
     fs2.rmSync(dir, { recursive: true });
   });
 });
+
+// ─── parseRoadmapFile tests ──────────────────────────────────────────────────
+
+describe('parseRoadmapFile', () => {
+  const { parseRoadmapFile } = require('../get-shit-done/bin/lib/server.cjs');
+
+  it('parses checkbox-style phases', () => {
+    const content = '# Roadmap\n\n- [x] **Phase 1: Setup** - Project scaffold\n- [ ] **Phase 2: Core** - Main features\n';
+    const result = parseRoadmapFile(content);
+    assert.equal(result.phases.length, 2);
+    assert.equal(result.phases[0].number, '1');
+    assert.equal(result.phases[0].name, 'Setup - Project scaffold');
+    assert.equal(result.phases[0].status, 'complete');
+    assert.equal(result.phases[1].status, 'pending');
+  });
+
+  it('parses header-style phases with plan completion', () => {
+    const content = [
+      '# Roadmap',
+      '',
+      '### Phase 172: Workout Flow Polish',
+      '**Plans:** 3/3 plans complete',
+      '',
+      'Plans:',
+      '- [x] 172-01-PLAN.md — First plan',
+      '- [x] 172-02-PLAN.md — Second plan',
+      '- [x] 172-03-PLAN.md — Third plan',
+      '',
+      '### Phase 172.1: Intra-Workout Polish',
+      '**Plans:** 2/3 plans complete',
+      '',
+      'Plans:',
+      '- [x] 172.1-01-PLAN.md — First',
+      '- [x] 172.1-02-PLAN.md — Second',
+      '- [ ] 172.1-03-PLAN.md — Third',
+    ].join('\n');
+    const result = parseRoadmapFile(content);
+    assert.equal(result.phases.length, 2);
+    assert.equal(result.phases[0].number, '172');
+    assert.equal(result.phases[0].name, 'Workout Flow Polish');
+    assert.equal(result.phases[0].status, 'complete');
+    assert.equal(result.phases[1].number, '172.1');
+    assert.equal(result.phases[1].name, 'Intra-Workout Polish');
+    assert.equal(result.phases[1].status, 'pending');
+  });
+
+  it('handles mixed checkbox and header phases', () => {
+    const content = [
+      '# Roadmap',
+      '',
+      '- [x] **Phase 1: Setup** - Done',
+      '',
+      '### Phase 2: Advanced',
+      '**Plans:** 1/1 plans complete',
+      '',
+      'Plans:',
+      '- [x] 02-01-PLAN.md — Only plan',
+    ].join('\n');
+    const result = parseRoadmapFile(content);
+    assert.equal(result.phases.length, 2);
+    assert.equal(result.phases[0].number, '1');
+    assert.equal(result.phases[0].status, 'complete');
+    assert.equal(result.phases[1].number, '2');
+    assert.equal(result.phases[1].status, 'complete');
+  });
+});

@@ -2,17 +2,17 @@
 
 ## Overview
 
-Turn 15 milestones of execution history into planning inputs. Phase 90 builds the plan index that everything reads from. Phase 91 builds the similarity scorer and task classifier, then immediately wires them into live planning workflows so the planner sees relevant historical context before writing a single task. Phase 92 closes the feedback loop by scoring prompt quality in digest, surfacing which plans produced corrections and why.
+Turn 15 milestones of execution history into planning inputs. Phase 63 builds the plan index that everything reads from. Phase 64 builds the similarity scorer and task classifier, then immediately wires them into live planning workflows so the planner sees relevant historical context before writing a single task. Phase 65 closes the feedback loop by scoring prompt quality in digest, surfacing which plans produced corrections and why.
 
 ## Phases
 
-- [x] **Phase 90: Plan Indexer Foundation** - Build the shared plan-index.json that all planning intelligence reads from (completed 2026-04-06)
-- [x] **Phase 91: Similarity, Task Intelligence & Workflow Integration** - Score similarity, classify tasks, and inject intelligence into plan-phase and new-milestone workflows (completed 2026-04-06)
-- [x] **Phase 92: Prompt Quality Scoring** - Score prompt quality per plan and surface outliers in /gsd:digest (completed 2026-04-07)
+- [x] **Phase 63: Plan Indexer Foundation** - Build the shared plan-index.json that all planning intelligence reads from (completed 2026-04-06)
+- [x] **Phase 64: Similarity, Task Intelligence & Workflow Integration** - Score similarity, classify tasks, and inject intelligence into plan-phase and new-milestone workflows (completed 2026-04-06)
+- [x] **Phase 65: Prompt Quality Scoring** - Score prompt quality per plan and surface outliers in /gsd:digest (completed 2026-04-07)
 
 ## Phase Details
 
-### Phase 90: Plan Indexer Foundation
+### Phase 63: Plan Indexer Foundation
 **Goal**: A pre-built plan index exists on disk that captures structural features, correction counts, and age-decay weights for every completed plan across all milestones
 **Depends on**: Nothing (first phase)
 **Requirements**: IDX-01, IDX-02, IDX-03, IDX-04, IDX-05, IDX-06
@@ -24,12 +24,12 @@ Turn 15 milestones of execution history into planning inputs. Phase 90 builds th
 **Plans**: TBD
 
 Plans:
-- [x] 90-01: plan-indexer.cjs — scanner, extractor, TF-IDF index builder, and plan-index.json schema
-- [x] 90-02: milestone-complete hook, CLI subcommand wiring, and index staleness detection
+- [x] 63-01: plan-indexer.cjs — scanner, extractor, TF-IDF index builder, and plan-index.json schema
+- [x] 63-02: milestone-complete hook, CLI subcommand wiring, and index staleness detection
 
-### Phase 91: Similarity, Task Intelligence & Workflow Integration
+### Phase 64: Similarity, Task Intelligence & Workflow Integration
 **Goal**: The plan-phase workflow surfaces a reference table of similar historical plans and best-performing task examples before the planner agent drafts anything; the new-milestone workflow gains the same signal after requirements are complete
-**Depends on**: Phase 90
+**Depends on**: Phase 63
 **Requirements**: SIM-01, SIM-02, SIM-03, SIM-04, SIM-05, TASK-01, TASK-02, TASK-03
 **Success Criteria** (what must be TRUE):
   1. When starting a new plan phase, the planner receives a planning_intelligence block showing up to 3 similar historical plans with similarity score, correction rate, and component score breakdown (keyword / task-type / file-pattern shown separately — never a single composite)
@@ -40,13 +40,13 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [x] 91-01: plan-similarity.cjs — TF-IDF cosine + Jaccard hybrid scorer, threshold gating, component score breakdown
-- [x] 91-02: task-classifier.cjs — 8 canonical types, per-type correction ranking, composition assistant
-- [x] 91-03: Workflow injection — cmdInitPlanPhase plan_suggestions field, plan-phase.md planning_intelligence block, skeleton adapter
+- [x] 64-01: plan-similarity.cjs — TF-IDF cosine + Jaccard hybrid scorer, threshold gating, component score breakdown
+- [x] 64-02: task-classifier.cjs — 8 canonical types, per-type correction ranking, composition assistant
+- [x] 64-03: Workflow injection — cmdInitPlanPhase plan_suggestions field, plan-phase.md planning_intelligence block, skeleton adapter
 
-### Phase 92: Prompt Quality Scoring
+### Phase 65: Prompt Quality Scoring
 **Goal**: /gsd:digest surfaces a Prompt Quality section showing per-plan correction scores stratified by task type, with outliers flagged for review — never as a blocking gate
-**Depends on**: Phase 90
+**Depends on**: Phase 63
 **Requirements**: PROM-01, PROM-02, PROM-03
 **Success Criteria** (what must be TRUE):
   1. Running /gsd:digest shows a "Prompt Quality" section with a per-plan score expressed as "Nx median for task-type" (not a raw number), covering the current milestone's completed plans
@@ -56,13 +56,13 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 92-01: prompt-scorer.cjs — task-type-stratified baseline, per-task attribution with per-plan fallback, CLI subcommand
-- [ ] 92-02: /gsd:digest Prompt Quality section integration
+- [ ] 65-01: prompt-scorer.cjs — task-type-stratified baseline, per-task attribution with per-plan fallback, CLI subcommand
+- [ ] 65-02: /gsd:digest Prompt Quality section integration
 
 ## Progress
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 90. Plan Indexer Foundation | 2/2 | Complete    | 2026-04-07 |
-| 91. Similarity, Task Intelligence & Workflow Integration | 3/3 | Complete    | 2026-04-07 |
-| 92. Prompt Quality Scoring | 2/2 | Complete    | 2026-04-07 |
+| 63. Plan Indexer Foundation | 2/2 | Complete    | 2026-04-07 |
+| 64. Similarity, Task Intelligence & Workflow Integration | 3/3 | Complete    | 2026-04-07 |
+| 65. Prompt Quality Scoring | 2/2 | Complete    | 2026-04-07 |

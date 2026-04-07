@@ -22,7 +22,7 @@
 
 **Delivered:** Unified event journaling, context budget optimization, and advisory MCP server selection — three independent observability systems that share a root cause (fragmented data silos) now unified through workflow.jsonl, cost tracking, and task classification.
 
-**Phases:** 3 phases (84-86), 6 plans
+**Phases:** 3 phases (57-59), 6 plans
 **Code:** 63 files changed (+7,762 / -771)
 **Timeline:** 1 day (2026-04-04)
 **Git range:** 59bd764 → 242b043
@@ -412,19 +412,19 @@
 **Updated:** 2026-04-04
 ## v15.0
 
-**Phase:** 83 | **Plan:** 2 | **Status:** Complete
+**Phase:** 56 | **Plan:** 2 | **Status:** Complete
 **Progress:** 2/2 plans (100%)
 **Updated:** 2026-04-04
 ## v13.0
 
-**Phase:** 86 | **Plan:** 2 | **Status:** Complete
+**Phase:** 59 | **Plan:** 2 | **Status:** Complete
 **Progress:** 2/2 plans (100%)
 **Updated:** 2026-04-04
 ## v16.0 Multi-Milestone Batch Planner (Shipped: 2026-04-05)
 
 **Delivered:** `/gsd:multi-milestone` command with 941-line 5-stage pipeline — takes a feature dump (inline, file, or brainstorm), clusters into milestone themes, creates N workspaces in parallel, runs per-milestone research + full requirements scoping, spawns N parallel roadmappers in proposal mode, then a roadmap synthesizer assigns all version and phase numbers sequentially and writes every artifact.
 
-**Phases:** 3 phases (87-89), 6 plans
+**Phases:** 3 phases (60-62), 6 plans
 **Code:** 30 files changed (+4,367 / -1,190)
 **Timeline:** 2 days (2026-04-04 → 2026-04-05)
 **Git range:** feac1fd → f82318a
@@ -439,6 +439,6 @@
 6. Parallel workspace creation — N milestones (cap N<=20) with consolidated conflict check after all workspaces exist
 ## v14.0
 
-**Phase:** 92 | **Plan:** 2 | **Status:** Complete
+**Phase:** 65 | **Plan:** 2 | **Status:** Complete
 **Progress:** 2/2 plans (100%)
 **Updated:** 2026-04-07

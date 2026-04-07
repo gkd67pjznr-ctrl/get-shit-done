@@ -339,11 +339,12 @@ function cmdMilestoneNewWorkspace(cwd, version, options, raw) {
   const dirs = ['phases', 'research'];
 
   // Create scaffold files only if not already present (idempotency)
+  const milestoneName = options.name || version;
   const statePath = path.join(workspaceDir, 'STATE.md');
   if (!fs.existsSync(statePath)) {
     fs.writeFileSync(
       statePath,
-      `# Project State — Milestone ${version}\n\n**Created:** ${today}\n**Status:** Initializing\n`,
+      `---\ngsd_state_version: 1.0\nmilestone: ${version}\nmilestone_name: ${milestoneName}\nstatus: initializing\nstopped_at: Workspace created\nlast_updated: "${new Date().toISOString()}"\nlast_activity: ${today} — Workspace created\nprogress:\n  total_phases: 0\n  completed_phases: 0\n  total_plans: 0\n  completed_plans: 0\n  percent: 0\n---\n\n# Project State — Milestone ${version} ${milestoneName !== version ? milestoneName : ''}\n\n**Created:** ${today}\n**Status:** Initializing\n`,
       'utf-8'
     );
     files.push('STATE.md');

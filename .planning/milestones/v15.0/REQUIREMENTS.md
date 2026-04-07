@@ -49,22 +49,22 @@ None deferred — all features from MILESTONE-CONTEXT.md included in v15.0.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTO-01 | Phase 80 | Pending |
-| AUTO-02 | Phase 80 | Pending |
-| AUTO-03 | Phase 80 | Pending |
-| AUTO-04 | Phase 80 | Pending |
-| AUTO-05 | Phase 80 | Pending |
-| AUTO-06 | Phase 81 | Pending |
-| AUTO-07 | Phase 81 | Pending |
-| REVP-01 | Phase 82 | Pending |
-| REVP-02 | Phase 82 | Pending |
-| REVP-03 | Phase 82 | Pending |
-| REVP-04 | Phase 82 | Pending |
-| REVP-05 | Phase 82 | Pending |
-| DAUD-01 | Phase 83 | Pending |
-| DAUD-02 | Phase 83 | Pending |
-| DAUD-03 | Phase 83 | Pending |
-| DAUD-04 | Phase 83 | Pending |
+| AUTO-01 | Phase 53 | Pending |
+| AUTO-02 | Phase 53 | Pending |
+| AUTO-03 | Phase 53 | Pending |
+| AUTO-04 | Phase 53 | Pending |
+| AUTO-05 | Phase 53 | Pending |
+| AUTO-06 | Phase 54 | Pending |
+| AUTO-07 | Phase 54 | Pending |
+| REVP-01 | Phase 55 | Pending |
+| REVP-02 | Phase 55 | Pending |
+| REVP-03 | Phase 55 | Pending |
+| REVP-04 | Phase 55 | Pending |
+| REVP-05 | Phase 55 | Pending |
+| DAUD-01 | Phase 56 | Pending |
+| DAUD-02 | Phase 56 | Pending |
+| DAUD-03 | Phase 56 | Pending |
+| DAUD-04 | Phase 56 | Pending |
 
 **Coverage:**
 - v15.0 requirements: 16 total

@@ -11,14 +11,14 @@ Close the gap between "captures data" and "acts on it." This milestone delivers 
 **Phase Numbering:**
 - Integer phases (80-83): Planned milestone work
 
-- [x] **Phase 80: Auto-Apply Safety Engine** - Core auto-apply logic with all safety guardrails (confidence gate, rate limiting, high-performer skip, audit log)
-- [x] **Phase 81: Auto-Apply User Control** - Revert command and manual fallback surface for failed auto-apply checks (completed 2026-04-04)
-- [x] **Phase 82: Adaptive Review Profiles** - Per-project review profile generation, storage, and code-review skill integration (completed 2026-04-04)
-- [x] **Phase 83: Decision Audit Trail** - Decision tension detection via Jaccard matching and digest surfacing (completed 2026-04-04)
+- [x] **Phase 53: Auto-Apply Safety Engine** - Core auto-apply logic with all safety guardrails (confidence gate, rate limiting, high-performer skip, audit log)
+- [x] **Phase 54: Auto-Apply User Control** - Revert command and manual fallback surface for failed auto-apply checks (completed 2026-04-04)
+- [x] **Phase 55: Adaptive Review Profiles** - Per-project review profile generation, storage, and code-review skill integration (completed 2026-04-04)
+- [x] **Phase 56: Decision Audit Trail** - Decision tension detection via Jaccard matching and digest surfacing (completed 2026-04-04)
 
 ## Phase Details
 
-### Phase 80: Auto-Apply Safety Engine
+### Phase 53: Auto-Apply Safety Engine
 **Goal**: High-confidence skill refinements apply automatically without human intervention, subject to all safety guardrails
 **Depends on**: Nothing (first phase — v8.0 skill loop and v9.0 metrics are prerequisites already shipped)
 **Requirements**: AUTO-01, AUTO-02, AUTO-03, AUTO-04, AUTO-05
@@ -31,12 +31,12 @@ Close the gap between "captures data" and "acts on it." This milestone delivers 
 **Plans**: TBD
 
 Plans:
-- [x] 80-01: Implement auto-apply engine in apply-skill-refinement hook path with confidence/change/flag/rate/quality guards
-- [x] 80-02: Wire auto_apply config key, audit log (auto-applied.jsonl), and integration tests
+- [x] 53-01: Implement auto-apply engine in apply-skill-refinement hook path with confidence/change/flag/rate/quality guards
+- [x] 53-02: Wire auto_apply config key, audit log (auto-applied.jsonl), and integration tests
 
-### Phase 81: Auto-Apply User Control
+### Phase 54: Auto-Apply User Control
 **Goal**: Users can revert any auto-applied change and failed auto-apply checks surface as normal manual suggestions
-**Depends on**: Phase 80
+**Depends on**: Phase 53
 **Requirements**: AUTO-06, AUTO-07
 **Success Criteria** (what must be TRUE):
   1. `/gsd:refine-skill revert <id>` restores the skill to its pre-auto-apply state using the reversal instructions in auto-applied.jsonl
@@ -44,11 +44,11 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [x] 81-01: Add revert subcommand to refine-skill and implement manual-suggestion fallback for failed auto-apply checks
+- [x] 54-01: Add revert subcommand to refine-skill and implement manual-suggestion fallback for failed auto-apply checks
 
-### Phase 82: Adaptive Review Profiles
+### Phase 55: Adaptive Review Profiles
 **Goal**: Code review focus adapts per-project based on what Claude has historically gotten wrong, so reviews emphasize the areas that matter most
-**Depends on**: Phase 81
+**Depends on**: Phase 54
 **Requirements**: REVP-01, REVP-02, REVP-03, REVP-04, REVP-05
 **Success Criteria** (what must be TRUE):
   1. After 10+ corrections have been captured for a project, `.planning/patterns/review-profile.json` exists with category weights derived from corrections.jsonl distribution
@@ -58,12 +58,12 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [x] 82-01: Implement review profile generator (corrections.jsonl → review-profile.json) with 10-correction minimum guard
-- [x] 82-02: Update code-review skill to read review-profile.json and wire session-start hook refresh
+- [x] 55-01: Implement review profile generator (corrections.jsonl → review-profile.json) with 10-correction minimum guard
+- [x] 55-02: Update code-review skill to read review-profile.json and wire session-start hook refresh
 
-### Phase 83: Decision Audit Trail
+### Phase 56: Decision Audit Trail
 **Goal**: When correction patterns contradict a recorded decision in PROJECT.md, /gsd:digest surfaces the tension so the user can re-evaluate the decision or address the recurring mistake
-**Depends on**: Phase 82
+**Depends on**: Phase 55
 **Requirements**: DAUD-01, DAUD-02, DAUD-03, DAUD-04
 **Success Criteria** (what must be TRUE):
   1. The system parses the Key Decisions table from PROJECT.md and extracts decision text and rationale for each row
@@ -73,8 +73,8 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [x] 83-01: Implement decision parser (PROJECT.md Key Decisions table) and Jaccard correction matcher with 3-correction threshold
-- [x] 83-02: Surface decision tensions in /gsd:digest with evidence formatting
+- [x] 56-01: Implement decision parser (PROJECT.md Key Decisions table) and Jaccard correction matcher with 3-correction threshold
+- [x] 56-02: Surface decision tensions in /gsd:digest with evidence formatting
 
 ## Progress
 
@@ -83,7 +83,7 @@ Phases execute in numeric order: 80 → 81 → 82 → 83
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 80. Auto-Apply Safety Engine | 2/2 | Complete    | 2026-04-04 |
-| 81. Auto-Apply User Control | 1/1 | Complete    | 2026-04-04 |
-| 82. Adaptive Review Profiles | 2/2 | Complete    | 2026-04-04 |
-| 83. Decision Audit Trail | 2/2 | Complete    | 2026-04-04 |
+| 53. Auto-Apply Safety Engine | 2/2 | Complete    | 2026-04-04 |
+| 54. Auto-Apply User Control | 1/1 | Complete    | 2026-04-04 |
+| 55. Adaptive Review Profiles | 2/2 | Complete    | 2026-04-04 |
+| 56. Decision Audit Trail | 2/2 | Complete    | 2026-04-04 |

@@ -1,11 +1,11 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
+milestone: v14.0
+milestone_name: Planning Intelligence
 status: completed
-stopped_at: Plan 91-03 complete — workflow injection done; plan_suggestions and task_performance in cmdInitPlanPhase; planning_intelligence block in plan-phase.md Step 8
+stopped_at: Plan 64-03 complete — workflow injection done; plan_suggestions and task_performance in cmdInitPlanPhase; planning_intelligence block in plan-phase.md Step 8
 last_updated: "2026-04-07T03:14:43.795Z"
-last_activity: "2026-04-06 — Plan 92-02 complete: Step 3k prompt quality section in /gsd:digest; milestone v14.0 all plans done"
+last_activity: "2026-04-06 — Plan 65-02 complete: Step 3k prompt quality section in /gsd:digest; milestone v14.0 all plans done"
 progress:
   total_phases: 3
   completed_phases: 3
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-04)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** Phase 90 — Plan Indexer Foundation
+**Current focus:** Phase 63 — Plan Indexer Foundation
 
 ## Current Position
 
-Phase: 92 of 92 (Prompt Quality Scoring) — Complete
-Plan: 2 of 2 in current phase (92-02 complete)
+Phase: 65 of 65 (Prompt Quality Scoring) — Complete
+Plan: 2 of 2 in current phase (65-02 complete)
 Status: Complete — All plans in milestone v14.0 done
-Last activity: 2026-04-06 — Plan 92-02 complete: Step 3k prompt quality section in /gsd:digest; milestone v14.0 all plans done
+Last activity: 2026-04-06 — Plan 65-02 complete: Step 3k prompt quality section in /gsd:digest; milestone v14.0 all plans done
 
 Progress: [██████████] 100%
 
@@ -78,6 +78,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-06
-Stopped at: Plan 91-03 complete — workflow injection done; plan_suggestions and task_performance in cmdInitPlanPhase; planning_intelligence block in plan-phase.md Step 8
-Resume file: .planning/milestones/v14.0/phases/92-prompt-quality-scoring/92-02-SUMMARY.md
+Stopped at: Plan 64-03 complete — workflow injection done; plan_suggestions and task_performance in cmdInitPlanPhase; planning_intelligence block in plan-phase.md Step 8
+Resume file: .planning/milestones/v14.0/phases/92-prompt-quality-scoring/65-02-SUMMARY.md
 Next step: Milestone v14.0 complete — all phases and plans done; run milestone completion ceremony

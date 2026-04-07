@@ -7,7 +7,7 @@ v10.0 mounts MCP tool endpoints on the existing dashboard server so every Claude
 ## Phases
 
 - [x] **Phase 43: MCP Server Scaffolding and Tools** - Transport, CORS, Origin validation, SDK pin, and all 8 read-only query tools
-- [ ] **Phase 44: Auto-Configuration and Tests** - Installer writes `~/.claude.json` MCP config; unit + integration tests for all tool handlers
+- [x] **Phase 44: Auto-Configuration and Tests** - Installer writes `~/.claude.json` MCP config; unit + integration tests for all tool handlers
 
 ## Phase Details
 
@@ -40,8 +40,8 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 44-01: Update `bin/install.js` to write `mcpServers.gsd-dashboard` to `~/.claude.json` with `--no-mcp` opt-out
-- [ ] 44-02: Write unit tests for all 8 tool handlers using `registerGsdTools` + in-memory transport; write integration test for `/mcp` endpoint
+- [x] 44-01: Update `bin/install.js` to write `mcpServers.gsd-dashboard` to `~/.claude.json` with `--no-mcp` opt-out
+- [x] 44-02: Write unit tests for all 8 tool handlers using `registerGsdTools` + in-memory transport; write integration test for `/mcp` endpoint
 
 ## Progress
 
@@ -51,4 +51,4 @@ Phases execute in order: 43 → 44
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 43. MCP Server Scaffolding and Tools | 3/3 | Complete | 2026-04-04 |
-| 44. Auto-Configuration and Tests | 0/2 | Not started | - |
+| 44. Auto-Configuration and Tests | 2/2 | Complete | 2026-04-04 |

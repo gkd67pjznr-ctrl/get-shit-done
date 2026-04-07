@@ -53,19 +53,19 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| JRNL-01 | Phase 84 | Pending |
-| JRNL-02 | Phase 84 | Pending |
-| JRNL-03 | Phase 84 | Pending |
-| JRNL-04 | Phase 84 | Pending |
-| JRNL-05 | Phase 84 | Pending |
-| BUDG-01 | Phase 85 | Pending |
-| BUDG-02 | Phase 85 | Pending |
-| BUDG-03 | Phase 85 | Pending |
-| BUDG-04 | Phase 85 | Pending |
-| MCPS-01 | Phase 86 | Pending |
-| MCPS-02 | Phase 86 | Pending |
-| MCPS-03 | Phase 86 | Complete |
-| MCPS-04 | Phase 86 | Complete |
+| JRNL-01 | Phase 57 | Pending |
+| JRNL-02 | Phase 57 | Pending |
+| JRNL-03 | Phase 57 | Pending |
+| JRNL-04 | Phase 57 | Pending |
+| JRNL-05 | Phase 57 | Pending |
+| BUDG-01 | Phase 58 | Pending |
+| BUDG-02 | Phase 58 | Pending |
+| BUDG-03 | Phase 58 | Pending |
+| BUDG-04 | Phase 58 | Pending |
+| MCPS-01 | Phase 59 | Pending |
+| MCPS-02 | Phase 59 | Pending |
+| MCPS-03 | Phase 59 | Complete |
+| MCPS-04 | Phase 59 | Complete |
 
 **Coverage:**
 - v13.0 requirements: 13 total
