@@ -24,9 +24,7 @@ Last activity: 2026-04-07 - Completed quick task 46: Audit all GSD commands from
 
 ## Active Milestones
 
-| Milestone | Status | Phases |
-|-----------|--------|--------|
-| v14.0 Planning Intelligence | Ready to plan | 90-92 |
+(None — all milestones shipped. Start next with `/gsd:new-milestone`.)
 
 ## Completed Milestones
 
@@ -49,6 +47,7 @@ Last activity: 2026-04-07 - Completed quick task 46: Audit all GSD commands from
 | v13.0 Unified Observability & Context Routing | 2026-04-04 | 84-86 |
 | v16.0 Multi-Milestone Batch Planner | 2026-04-05 | 87-89 |
 | v11.0 Wild Brainstorming Engine | 2026-04-04 | 45-49 |
+| v14.0 Planning Intelligence | 2026-04-07 | 90-92 |
 
 ## Layout
 
@@ -66,7 +65,7 @@ Each milestone has its own workspace under `.planning/milestones/<version>/` con
 See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core value:** Claude writes code like a senior engineer who always checks the codebase first, always reads the docs, always writes tests, and never takes shortcuts — enforced by the framework, not dependent on ad-hoc prompting.
-**Current focus:** v14.0 Planning Intelligence — Phases 90-92 (ready to plan)
+**Current focus:** Planning next milestone (all milestones shipped)
 
 ### Quick Tasks Completed
 
@@ -97,7 +96,7 @@ See: .planning/PROJECT.md (updated 2026-04-03)
 
 ## Session Continuity
 
-Last session: 2026-04-06
-Stopped at: Quick task 46 complete
+Last session: 2026-04-07
+Stopped at: v14.0 milestone archived
 Resume file: —
-Next step: `/gsd:new-milestone` to start next milestone, or `/gsd:plan-phase 90` for v14.0
+Next step: `/gsd:new-milestone` to start next milestone

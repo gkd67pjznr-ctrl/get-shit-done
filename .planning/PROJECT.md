@@ -161,21 +161,21 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 - ✓ Parallel workspace creation (N milestones, cap N<=20) with consolidated conflict check — v16.0
 - ✓ Session continuity via BATCH-SESSION.md and --resume NN re-entrant protocol — v16.0
 
+- ✓ Plan indexer scans all completed plans across milestones, builds TF-IDF vectors, persists to plan-index.json with age-decay and superseded tracking — v14.0
+- ✓ TF-IDF cosine + Jaccard hybrid similarity scorer surfaces top matching plans during plan-phase pre-planning — v14.0
+- ✓ Task-type classifier categorizes tasks into canonical types, ranks by correction rate, surfaces best-performing examples — v14.0
+- ✓ Prompt quality scoring with task-type-stratified baselines, 2x median outlier detection, diagnostic-only — v14.0
+- ✓ /gsd:digest Step 3k surfaces per-plan quality scores with outlier callouts — v14.0
+
 ### Active
 
-(No active requirements — all milestones except v14.0 shipped. Next requirements defined during `/gsd:new-milestone`.)
-
-## Next Milestone: v14.0 Planning Intelligence
-
-**Goal:** Turn historical execution data into planning inputs — the planner learns from 18 milestones and 90+ plans instead of starting from scratch every time.
-
-**Target features:**
-- Phase Reuse / Template Library (index completed plans, detect structural similarity, suggest reusing plan skeletons)
-- Phase Composition Assistant (classify tasks by type, rank by performance, compose optimal task sequences)
-- Automated Milestone Decomposition (propose phase breakdowns for new milestones using structural patterns)
-- Prompt Quality Scoring (score task prompts against correction frequency, surface patterns in digest)
+(No active requirements — next requirements defined during `/gsd:new-milestone`.)
 
 ## Completed Milestones
+
+### v14.0 Planning Intelligence — SHIPPED 2026-04-07
+
+**Delivered:** Turns historical execution data into planning inputs — plan indexer scans 51+ completed plans across all milestones building TF-IDF vectors with age-decay, similarity scorer (TF-IDF cosine + Jaccard hybrid) surfaces matching plans during plan-phase, task-type classifier ranks canonical types by correction rate with best-example surfacing, prompt quality scorer computes task-type-stratified correction scores with 2x-median outlier detection (diagnostic only, never blocking), /gsd:digest Step 3k integration. 3 phases, 7 plans, 17/17 requirements satisfied.
 
 ### v16.0 Multi-Milestone Batch Planner — SHIPPED 2026-04-05
 
@@ -239,9 +239,9 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 
 ## Context
 
-Shipped v16.0 (18 milestones total) with ~106K LOC across 21 CJS source modules + 31 test suites, plus workflow/agent Markdown specifications, 16 skills, 4 teams, a TypeScript dashboard with Gate Health page and MCP server, adaptive learning pipeline, skill feedback loop, gate enforcement hooks (including ESLint gate), transition guards, signal intelligence analytics, cross-session MCP query tools, brainstorming engine, adaptive review profiles, decision audit trail, unified event journaling, context budget optimization, and advisory MCP server selection.
+Shipped v14.0 (19 milestones total) with ~108K LOC across 25 CJS source modules + 35 test suites, plus workflow/agent Markdown specifications, 16 skills, 4 teams, a TypeScript dashboard with Gate Health page and MCP server, adaptive learning pipeline, skill feedback loop, gate enforcement hooks (including ESLint gate), transition guards, signal intelligence analytics, cross-session MCP query tools, brainstorming engine, adaptive review profiles, decision audit trail, unified event journaling, context budget optimization, advisory MCP server selection, and planning intelligence (plan indexing, similarity search, task classification, prompt quality scoring).
 Tech stack: Node.js, CJS modules, TypeScript (dashboard), Markdown agent specifications, Context7 MCP, @modelcontextprotocol/sdk v1.29.0.
-Tests: 1243 passing across 31 test suites.
+Tests: 1290 passing across 35 test suites.
 
 **Quality enforcement** (v1.0-v1.1): Full Plan→Execute→Verify loop with Quality Sentinel, Context7 library lookup, mandatory testing, quality dimensions, config-gated enforcement levels (fast/standard/strict), and observability.
 
@@ -272,6 +272,8 @@ Tests: 1243 passing across 31 test suites.
 **Autonomous learning** (v15.0): Auto-apply engine with 5 safety gates (CONFIG, RATE, QUALITY, CONFIDENCE, SIZE) applies high-confidence skill refinements at SessionEnd, revert command restores pre-auto-apply state, failed checks surface as pending suggestions with `auto_apply_failed` flag, per-project review profiles generated from correction category distribution, code-review skill adapts focus automatically, decision audit trail detects correction-decision tensions via Jaccard overlap and surfaces in /gsd:digest.
 
 **Multi-milestone batch planner** (v16.0): `/gsd:multi-milestone` command with 941-line 5-stage pipeline — feature intake (freeform/file/brainstorm) with affinity clustering, parallel workspace creation (N<=20), per-milestone research + full requirements scoping, parallel roadmappers in proposal mode producing unnumbered PROPOSAL.md, `gsd-roadmap-synthesizer` agent with sequential cursor algorithm for gap-free phase numbering, session continuity via BATCH-SESSION.md with `--resume NN`.
+
+**Planning intelligence** (v14.0): Plan indexer scans 51+ completed plans building TF-IDF vectors with age-decay weights and superseded tracking (`plan-index.json`). Similarity scorer (TF-IDF cosine + Jaccard hybrid) surfaces matching plans during plan-phase. Task-type classifier categorizes into canonical types, ranks by correction rate, surfaces best-performing examples. Prompt quality scorer computes task-type-stratified correction scores with 2x-median outlier detection (diagnostic only). `/gsd:digest` Step 3k integration.
 
 **Known tech debt:** See `.planning/DEBT.md` and MILESTONES.md for remaining items.
 
@@ -323,6 +325,10 @@ Tests: 1243 passing across 31 test suites.
 | Cross-project promotion at 3+ projects | Ensures preferences are truly universal before elevating | ✓ Good — project-specific quirks don't pollute global store |
 | Roadmap synthesizer pattern (not pre-assignment) | Roadmappers produce unnumbered proposals; synthesizer assigns all numbers in one pass | ✓ Good — zero collision risk, no buffer math, no gaps; re-run one roadmapper and re-synthesize on failure |
 | Fully separate /gsd:multi-milestone workflow | Not an extension of new-milestone — owns the entire funnel from intake to commit | ✓ Good — 941-line workflow with its own stages, no coupling to single-milestone path |
+| TF-IDF + Jaccard hybrid over embeddings | No binary deps, no API latency, no data exfiltration; sufficient for corpus of ~50 plans | ✓ Good — fast, deterministic, local-only |
+| Inline median() per module (no sibling imports) | Prevents coupling between lib modules; each module is self-contained | ✓ Good — task-classifier, plan-similarity, prompt-scorer each have own copy |
+| Prompt quality diagnostic-only (never a gate) | Penalizes necessary complexity if used as blocker; diagnostic surfaces patterns without blocking execution | ✓ Good — REQUIREMENTS.md explicitly excludes blocking behavior |
+| milestoneScope from global router (not re-parsed) | Global router strips --milestone from args; cases must use pre-parsed milestoneScope | ✓ Good — caught and fixed during v14.0 verification |
 
 ---
-*Last updated: 2026-04-06 after v16.0 milestone archived*
+*Last updated: 2026-04-07 after v14.0 milestone archived*

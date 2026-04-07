@@ -7,8 +7,8 @@ Turn 15 milestones of execution history into planning inputs. Phase 90 builds th
 ## Phases
 
 - [x] **Phase 90: Plan Indexer Foundation** - Build the shared plan-index.json that all planning intelligence reads from (completed 2026-04-06)
-- [ ] **Phase 91: Similarity, Task Intelligence & Workflow Integration** - Score similarity, classify tasks, and inject intelligence into plan-phase and new-milestone workflows
-- [ ] **Phase 92: Prompt Quality Scoring** - Score prompt quality per plan and surface outliers in /gsd:digest
+- [x] **Phase 91: Similarity, Task Intelligence & Workflow Integration** - Score similarity, classify tasks, and inject intelligence into plan-phase and new-milestone workflows (completed 2026-04-06)
+- [x] **Phase 92: Prompt Quality Scoring** - Score prompt quality per plan and surface outliers in /gsd:digest (completed 2026-04-07)
 
 ## Phase Details
 
@@ -40,9 +40,9 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 91-01: plan-similarity.cjs — TF-IDF cosine + Jaccard hybrid scorer, threshold gating, component score breakdown
+- [x] 91-01: plan-similarity.cjs — TF-IDF cosine + Jaccard hybrid scorer, threshold gating, component score breakdown
 - [x] 91-02: task-classifier.cjs — 8 canonical types, per-type correction ranking, composition assistant
-- [ ] 91-03: Workflow injection — cmdInitPlanPhase plan_suggestions field, plan-phase.md planning_intelligence block, skeleton adapter
+- [x] 91-03: Workflow injection — cmdInitPlanPhase plan_suggestions field, plan-phase.md planning_intelligence block, skeleton adapter
 
 ### Phase 92: Prompt Quality Scoring
 **Goal**: /gsd:digest surfaces a Prompt Quality section showing per-plan correction scores stratified by task type, with outliers flagged for review — never as a blocking gate
@@ -63,6 +63,6 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 90. Plan Indexer Foundation | 2/2 | Complete    | 2026-04-06 |
-| 91. Similarity, Task Intelligence & Workflow Integration | 1/3 | In progress | - |
-| 92. Prompt Quality Scoring | 0/2 | Not started | - |
+| 90. Plan Indexer Foundation | 2/2 | Complete    | 2026-04-07 |
+| 91. Similarity, Task Intelligence & Workflow Integration | 3/3 | Complete    | 2026-04-07 |
+| 92. Prompt Quality Scoring | 2/2 | Complete    | 2026-04-07 |

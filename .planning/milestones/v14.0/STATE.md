@@ -1,11 +1,11 @@
 ---
 gsd_state_version: 1.0
-milestone: v14.0
-milestone_name: Planning Intelligence
-status: executing
-stopped_at: Plan 92-02 complete — Step 3k prompt quality section added to digest.md, success_criteria updated
-last_updated: "2026-04-06T01:00:00.000Z"
-last_activity: "2026-04-06 — Plan 92-02 complete: Step 3k (prompt quality scoring) integrated into /gsd:digest; milestone v14.0 all plans done"
+milestone: v1.0
+milestone_name: milestone
+status: completed
+stopped_at: Plan 91-03 complete — workflow injection done; plan_suggestions and task_performance in cmdInitPlanPhase; planning_intelligence block in plan-phase.md Step 8
+last_updated: "2026-04-07T03:14:43.795Z"
+last_activity: "2026-04-06 — Plan 92-02 complete: Step 3k prompt quality section in /gsd:digest; milestone v14.0 all plans done"
 progress:
   total_phases: 3
   completed_phases: 3

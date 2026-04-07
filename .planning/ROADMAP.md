@@ -21,7 +21,7 @@ This project uses **milestone-scoped layout**. Each milestone has its own ROADMA
 - ✅ **v13.0 Unified Observability & Context Routing** — Phases 84-86 (shipped 2026-04-04)
 - ✅ **v15.0 Autonomous Learning** — Phases 80-83 (shipped 2026-04-04)
 - ✅ **v16.0 Multi-Milestone Batch Planner** — Phases 87-89 (shipped 2026-04-05)
-- 🔨 **v14.0 Planning Intelligence** — Phases 90-92
+- ✅ **v14.0 Planning Intelligence** — Phases 90-92 (shipped 2026-04-07)
 
 ## Completed Milestones
 
@@ -44,12 +44,7 @@ This project uses **milestone-scoped layout**. Each milestone has its own ROADMA
 | v13.0 Unified Observability & Context Routing | 2026-04-04 | 3 phases | 6 plans | `milestones/v13.0/ROADMAP.md` |
 | v15.0 Autonomous Learning | 2026-04-04 | 4 phases | 7 plans | `milestones/v15.0/ROADMAP.md` |
 | v16.0 Multi-Milestone Batch Planner | 2026-04-05 | 3 phases | 6 plans | `milestones/v16.0/ROADMAP.md` |
-
-## Active Milestone
-
-| Milestone | Status | Phases | Plans | Workspace |
-|-----------|--------|--------|-------|-----------|
-| v14.0 Planning Intelligence | Not started | 90-92 (3 phases) | 7 plans | `milestones/v14.0/ROADMAP.md` |
+| v14.0 Planning Intelligence | 2026-04-07 | 3 phases | 7 plans | `milestones/v14.0/ROADMAP.md` |
 
 See `.planning/MILESTONES.md` for detailed milestone history.
 

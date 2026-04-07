@@ -463,6 +463,46 @@
 
 ---
 
+## Milestone: v14.0 — Planning Intelligence
+
+**Shipped:** 2026-04-07
+**Phases:** 3 | **Plans:** 7 | **Sessions:** ~2
+
+### What Was Built
+- Plan indexer scanning 51+ completed plans across all milestones, building TF-IDF vectors with age-decay weights and superseded tracking (plan-index.json)
+- TF-IDF cosine + Jaccard hybrid similarity scorer surfacing matching plans during plan-phase pre-planning context
+- Task-type classifier categorizing historical tasks into 8 canonical types, ranking by correction rate, surfacing best-performing examples
+- Prompt quality scorer computing task-type-stratified correction scores with 2x-median outlier detection (diagnostic only)
+- /gsd:digest Step 3k integration rendering per-plan quality table with outlier callouts
+- 4 new lib modules (plan-indexer.cjs, plan-similarity.cjs, task-classifier.cjs, prompt-scorer.cjs) + 4 test suites
+
+### What Worked
+- Phase 90/91 completion (from prior session) provided solid foundation — Phase 92 built cleanly on top
+- Verifier caught a real bug: global CLI router strips `--milestone` from args, so `prompt-score` case re-parsing `args.indexOf('--milestone')` always returned -1. Fixed before milestone completion.
+- All modules followed the established pattern from task-classifier.cjs: inline median(), direct JSON.parse of plan-index.json, try/catch returning empty struct. Zero architectural decisions needed.
+- Test-first approach (Wave 0 stubs before implementation) caught edge cases early (division-by-zero with 0.01 floor)
+
+### What Was Inefficient
+- REQUIREMENTS.md traceability checkboxes never updated during execution (17/17 show "Pending" despite all being implemented) — same systemic pattern as v8.0, v11.0, v16.0
+- All 24 workflow.jsonl `correction_captured` entries have `task: null` — per-task attribution (PROM-01) code path is untestable in production. The fallback path is the real path.
+
+### Patterns Established
+- Inline utility pattern: each lib module copies median(), loadIndex() locally rather than importing from siblings. Prevents coupling.
+- Score normalization: express metrics as "Nx baseline" rather than raw numbers. More interpretable across different plan sizes.
+- Division-by-zero guard at 0.01 floor for median denominators — correct behavior when baseline is zero.
+
+### Key Lessons
+1. CLI flag parsing must use the pre-parsed global variable, not re-scan args — the global router modifies args in place
+2. When all real data has a field as null (task attribution), the fallback path IS the production path. Test it accordingly.
+3. 2,158 LOC across 8 files in 2 days is a good pace for pure-computation modules with no new dependencies
+
+### Cost Observations
+- Model mix: ~60% sonnet (executor/researcher/verifier), ~30% opus (orchestration), ~10% sonnet (plan-checker)
+- Sessions: ~2
+- Notable: 7 plans across 3 phases; all modules are pure arithmetic over existing data structures — no network calls, no new dependencies
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -480,6 +520,7 @@
 | v8.0 Close the Loop | ~4 | 4 | Skill loop wired E2E, gate enforcement via hooks, both systems verified |
 | v9.0 Signal Intelligence | ~2 | 6 | Skill analytics pipeline, relevance scoring, session reports, benchmarking |
 | v16.0 Multi-Milestone Batch | ~3 | 3 | Batch milestone planning, synthesizer pattern, proposal mode, session continuity |
+| v14.0 Planning Intelligence | ~2 | 3 | Plan indexing, similarity search, task classification, prompt quality scoring |
 
 ### Cumulative Quality
 
@@ -496,6 +537,7 @@
 | v8.0 | 960+ | N/A | 8 plans; +3.0K lines (SessionEnd hook, recall surfacing, refine-skill, gate hooks, E2E verification) |
 | v9.0 | 1028+ | N/A | 8 plans; +4.7K lines (skill-scorer, skill-metrics, session-report, benchmark, debt-impact, state fix) |
 | v16.0 | 1243 | N/A | 6 plans; +4.4K lines (synthesizer agent, proposal mode, multi-milestone workflow, batch session) |
+| v14.0 | 1290 | N/A | 7 plans; +2.2K lines (plan-indexer, plan-similarity, task-classifier, prompt-scorer, digest integration) |
 
 ### Top Lessons (Verified Across Milestones)
 

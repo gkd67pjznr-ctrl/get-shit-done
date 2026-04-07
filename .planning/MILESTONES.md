@@ -1,5 +1,14 @@
 # Milestones
 
+## v14.0 Planning Intelligence (Shipped: 2026-04-07)
+
+**Phases completed:** 3 phases, 7 plans, 0 tasks
+
+**Key accomplishments:**
+- searchIndex with 14-day staleness detection, plan-index CLI subcommand, and auto-rebuild hook in cmdMilestoneComplete
+
+---
+
 ## v16.0 Multi-Milestone Batch Planner (Shipped: 2026-04-07)
 
 **Phases completed:** 3 phases, 6 plans, 2 tasks
@@ -430,6 +439,6 @@
 6. Parallel workspace creation — N milestones (cap N<=20) with consolidated conflict check after all workspaces exist
 ## v14.0
 
-**Phase:** 91 | **Plan:** 3 | **Status:** Complete
-**Progress:** 3/3 plans (100%)
-**Updated:** 2026-04-06
+**Phase:** 92 | **Plan:** 2 | **Status:** Complete
+**Progress:** 2/2 plans (100%)
+**Updated:** 2026-04-07
