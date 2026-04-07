@@ -424,6 +424,45 @@
 
 ---
 
+## Milestone: v16.0 — Multi-Milestone Batch Planner
+
+**Shipped:** 2026-04-05
+**Phases:** 3 | **Plans:** 6
+
+### What Was Built
+- `gsd-roadmap-synthesizer` agent with sequential cursor algorithm for gap-free phase numbering
+- Roadmapper proposal mode (unnumbered PROPOSAL.md with PHASE-A/B placeholders)
+- 941-line `/gsd:multi-milestone` workflow: intake → workspaces → scoping → synthesis → review
+- Three input modes: inline freeform, `--from-file`, `--from-brainstorm NN`
+- Per-milestone research opt-in with parallel researchers
+- BATCH-SESSION.md with `--resume NN` for session continuity
+
+### What Worked
+- Two-phase synthesis pattern (N parallel proposal-mode roadmappers, then one serializing synthesizer) eliminated all numbering collision risks
+- Building the synthesizer foundation first (Phase 87) before the workflow (88-89) meant the hardest technical risk was retired early
+- Workflow appending pattern — each plan appended stages to the same file rather than creating separate files, keeping the workflow cohesive
+
+### What Was Inefficient
+- REQUIREMENTS.md traceability checkboxes were never updated during execution (19/19 show "Pending" despite all being implemented) — same systemic documentation debt pattern seen in v8.0, v11.0
+- No milestone audit before completion — skipped due to yolo mode, but would have caught the traceability gap
+
+### Patterns Established
+- Proposal mode pattern: agents produce unnumbered artifacts; a dedicated synthesizer serializes numbering in a second pass
+- Stage-appending workflow: multi-plan workflows append to a single file rather than creating per-stage files
+- Parallel workspace creation with post-hoc consolidated checks (conflict manifest)
+
+### Key Lessons
+1. The synthesizer pattern (parallel produce, serial number) is the right abstraction for any N-entity coordination where ordering matters
+2. Stage-appending keeps large workflows navigable — 941 lines in one file is cleaner than 5 separate stage files
+3. REQUIREMENTS.md checkbox updates need a process fix, not vigilance — 4th milestone in a row with this gap
+
+### Cost Observations
+- Model mix: ~70% sonnet (executor), ~10% haiku (plan-checker), ~20% opus (orchestration)
+- Sessions: ~3
+- Notable: 6 plans across 3 phases in 2 days; workflow-heavy (941 lines of Markdown specification vs minimal code)
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -440,6 +479,7 @@
 | v7.0 Quality Observability | ~4 | 5 | Gate persistence, dashboard Gate Health page, attribution analytics |
 | v8.0 Close the Loop | ~4 | 4 | Skill loop wired E2E, gate enforcement via hooks, both systems verified |
 | v9.0 Signal Intelligence | ~2 | 6 | Skill analytics pipeline, relevance scoring, session reports, benchmarking |
+| v16.0 Multi-Milestone Batch | ~3 | 3 | Batch milestone planning, synthesizer pattern, proposal mode, session continuity |
 
 ### Cumulative Quality
 
@@ -455,6 +495,7 @@
 | v7.0 | 960+ | N/A | 7 plans; +10.5K lines (JSONL writers, Gate Health page, attribution) |
 | v8.0 | 960+ | N/A | 8 plans; +3.0K lines (SessionEnd hook, recall surfacing, refine-skill, gate hooks, E2E verification) |
 | v9.0 | 1028+ | N/A | 8 plans; +4.7K lines (skill-scorer, skill-metrics, session-report, benchmark, debt-impact, state fix) |
+| v16.0 | 1243 | N/A | 6 plans; +4.4K lines (synthesizer agent, proposal mode, multi-milestone workflow, batch session) |
 
 ### Top Lessons (Verified Across Milestones)
 
@@ -472,7 +513,8 @@
 12. Silent failure in hooks is non-negotiable for user-facing pipelines — verified in v6.0 (correction capture wraps all code in try/catch, never crashes user workflow)
 13. Test scaffolding phases (stubs with it.todo) catch import issues early and provide green baselines — verified in v6.0 (Phases 22-01, 23-01, 24-01)
 14. Bounded learning guardrails should be designed upfront, not retrofitted — verified in v6.0 (6-guardrail framework kept entire pipeline safe)
-15. Documentation debt (REQUIREMENTS.md checkboxes, SUMMARY frontmatter, VALIDATION.md) is systemic — called out in v4.0, v7.0, v8.0 retrospectives; needs a process fix, not per-milestone vigilance
+15. Documentation debt (REQUIREMENTS.md checkboxes, SUMMARY frontmatter, VALIDATION.md) is systemic — called out in v4.0, v7.0, v8.0, v16.0 retrospectives; needs a process fix, not per-milestone vigilance
 16. PostToolUse hooks are the only truly deterministic enforcement mechanism for quality gates — verified in v8.0 (agent instructions are suggestions, hooks are guarantees)
 17. Single-day milestones with linear dependencies are highly efficient — verified in v9.0 (6 phases, 8 plans in ~8 hours with no cross-session context loss)
 18. Opening a milestone with a blocking debt fix maximizes tracking accuracy for all subsequent work — verified in v9.0 (MISS-01 fix enabled accurate progress visibility)
+19. Parallel-produce then serial-serialize is the right pattern for N-entity coordination where ordering matters — verified in v16.0 (N roadmappers produce proposals, synthesizer assigns all numbers in one pass)

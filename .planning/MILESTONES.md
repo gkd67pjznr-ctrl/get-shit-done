@@ -1,5 +1,33 @@
 # Milestones
 
+## v16.0 Multi-Milestone Batch Planner (Shipped: 2026-04-07)
+
+**Phases completed:** 3 phases, 6 plans, 2 tasks
+
+**Key accomplishments:**
+- (none recorded)
+
+---
+
+## v13.0 Unified Observability & Context Routing (Shipped: 2026-04-04)
+
+**Delivered:** Unified event journaling, context budget optimization, and advisory MCP server selection — three independent observability systems that share a root cause (fragmented data silos) now unified through workflow.jsonl, cost tracking, and task classification.
+
+**Phases:** 3 phases (84-86), 6 plans
+**Code:** 63 files changed (+7,762 / -771)
+**Timeline:** 1 day (2026-04-04)
+**Git range:** 59bd764 → 242b043
+**Requirements:** 13/13 satisfied
+**Tests:** 38 new (1243 total passing)
+
+**Key accomplishments:**
+1. Event journaling — `emitEvent` writes structured events to `workflow.jsonl`, integrated into gate-runner, correction hooks, and session hooks, with reader/query API and digest timeline
+2. Context budget optimizer — per-skill token cost (chars/4), session recording, aggregation (avg cost, load freq, cost-per-fire), digest section with deferral recommendations
+3. MCP server selection — task-type classifier with 5 types, recommendation mapping, advisory step in execute-plan workflow, optional dashboard validation
+4. 38 new tests across 3 test suites (event-journal unit/integration, context-budget, mcp-classifier)
+
+---
+
 ## v15.0 Autonomous Learning (Shipped: 2026-04-04)
 
 **Phases completed:** 1 phases, 1 plans, 0 tasks
@@ -380,11 +408,28 @@
 **Updated:** 2026-04-04
 ## v13.0
 
-**Phase:** 86 | **Plan:** 0 | **Status:** In Progress
-**Progress:** 0/2 plans (0%)
+**Phase:** 86 | **Plan:** 2 | **Status:** Complete
+**Progress:** 2/2 plans (100%)
 **Updated:** 2026-04-04
-## v16.0
+## v16.0 Multi-Milestone Batch Planner (Shipped: 2026-04-05)
 
-**Phase:** 87 | **Plan:** 0 | **Status:** In Progress
-**Progress:** 0/1 plans (0%)
-**Updated:** 2026-04-04
+**Delivered:** `/gsd:multi-milestone` command with 941-line 5-stage pipeline — takes a feature dump (inline, file, or brainstorm), clusters into milestone themes, creates N workspaces in parallel, runs per-milestone research + full requirements scoping, spawns N parallel roadmappers in proposal mode, then a roadmap synthesizer assigns all version and phase numbers sequentially and writes every artifact.
+
+**Phases:** 3 phases (87-89), 6 plans
+**Code:** 30 files changed (+4,367 / -1,190)
+**Timeline:** 2 days (2026-04-04 → 2026-04-05)
+**Git range:** feac1fd → f82318a
+**Requirements:** 19/19 satisfied
+
+**Key accomplishments:**
+1. Roadmap synthesizer agent — `gsd-roadmap-synthesizer` with sequential cursor algorithm for gap-free phase numbering across N milestones
+2. Proposal mode — roadmapper produces unnumbered PROPOSAL.md with PHASE-A/PHASE-B placeholders; synthesizer assigns all numbers in one pass
+3. 5-stage workflow — feature intake (freeform/file/brainstorm) → workspace creation → per-milestone scoping → parallel roadmapping → synthesis + review
+4. Per-milestone research opt-in — 4 parallel researcher agents + synthesizer before scoping, independently skippable
+5. Session continuity — BATCH-SESSION.md tracks stage completion; `--resume NN` re-enters from last completed stage
+6. Parallel workspace creation — N milestones (cap N<=20) with consolidated conflict check after all workspaces exist
+## v14.0
+
+**Phase:** 91 | **Plan:** 3 | **Status:** Complete
+**Progress:** 3/3 plans (100%)
+**Updated:** 2026-04-06

@@ -152,29 +152,22 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 - ✓ Output artifacts: FEATURE-IDEAS.md, BRAINSTORM-SESSION.md, ideas.jsonl in sequential quick/ dirs — v11.0
 - ✓ Session history tracking with auto-logging, idea-to-phase tagging, and new-milestone seed integration — v11.0
 
+- ✓ /gsd:multi-milestone command with 5-stage pipeline (intake → workspaces → scoping → synthesis → review) — v16.0
+- ✓ gsd-roadmap-synthesizer agent with sequential cursor algorithm for gap-free phase numbering across N milestones — v16.0
+- ✓ Roadmapper proposal mode producing unnumbered PROPOSAL.md with PHASE-A/PHASE-B placeholders — v16.0
+- ✓ Three input modes: inline freeform, --from-file, --from-brainstorm NN with affinity clustering — v16.0
+- ✓ Per-milestone research opt-in with 4 parallel researchers + synthesizer before scoping — v16.0
+- ✓ Full per-milestone requirements scoping (same UX as new-milestone) with committed REQUIREMENTS.md — v16.0
+- ✓ Parallel workspace creation (N milestones, cap N<=20) with consolidated conflict check — v16.0
+- ✓ Session continuity via BATCH-SESSION.md and --resume NN re-entrant protocol — v16.0
+
 ### Active
 
-## Current Milestone: v12.0 Quality Enforcement Evolution
+(No active requirements — all milestones except v14.0 shipped. Next requirements defined during `/gsd:new-milestone`.)
 
-**Goal:** Close remaining quality enforcement gaps — static analysis via ESLint MCP gate, mechanical DONE verification at phase transitions, and test coverage trending across milestones.
+## Next Milestone: v14.0 Planning Intelligence
 
-**Target features:**
-- ESLint MCP gate integration (PostToolUse hook on .ts/.js/.cjs writes, quality-level gated)
-- State machine guards for phase transitions (verify DONE criteria mechanically before completion)
-- Test coverage trending (track test count per plan, surface delta in progress/digest)
-
-## Current Milestone: v13.0 Unified Observability & Context Routing
-
-**Goal:** Unify fragmented event streams into a single chronological journal, track per-skill context budget costs, and add advisory MCP server selection based on task type.
-
-**Target features:**
-- Workflow event journaling (unified workflow.jsonl with emitEvent, reader function, digest integration)
-- Context budget optimizer (per-skill token cost, cost-per-relevance ratio, deferral recommendations)
-- MCP server selection intelligence (task-type classifier, advisory recommendations before executor spawn)
-
-## Current Milestone: v14.0 Planning Intelligence
-
-**Goal:** Turn historical execution data into planning inputs — the planner learns from 15 milestones and 80+ plans instead of starting from scratch every time.
+**Goal:** Turn historical execution data into planning inputs — the planner learns from 18 milestones and 90+ plans instead of starting from scratch every time.
 
 **Target features:**
 - Phase Reuse / Template Library (index completed plans, detect structural similarity, suggest reusing plan skeletons)
@@ -182,21 +175,11 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 - Automated Milestone Decomposition (propose phase breakdowns for new milestones using structural patterns)
 - Prompt Quality Scoring (score task prompts against correction frequency, surface patterns in digest)
 
-## Current Milestone: v16.0 Multi-Milestone Batch Planner
-
-**Goal:** A `/gsd:multi-milestone` command that takes a dump of feature ideas, clusters them into milestone themes, creates N workspaces, runs per-milestone research + full requirements scoping, spawns N parallel roadmappers producing unnumbered proposals, then a roadmap synthesizer assigns all version and phase numbers and writes every artifact — all in one session.
-
-**Target features:**
-- Freeform, file-based, or brainstorm-sourced feature intake with affinity clustering
-- `--from-brainstorm NN` flag to consume `/gsd:brainstorm` output directly
-- Parallel workspace creation (N milestones, cap N<=20)
-- Per-milestone research (skip/include choice per milestone)
-- Full per-milestone requirements scoping (same UX as new-milestone)
-- Parallel roadmapping in PROPOSAL mode (unnumbered phases)
-- `gsd-roadmap-synthesizer` agent: assigns all milestone versions and phase numbers
-- Session continuity via BATCH-SESSION.md and `--resume` flag
-
 ## Completed Milestones
+
+### v16.0 Multi-Milestone Batch Planner — SHIPPED 2026-04-05
+
+**Delivered:** `/gsd:multi-milestone` command with 941-line 5-stage pipeline — takes a feature dump (inline, file, or brainstorm), clusters into milestone themes, creates N workspaces in parallel, runs per-milestone research + full requirements scoping, spawns N parallel roadmappers in proposal mode, then a roadmap synthesizer assigns all version and phase numbers sequentially and writes every artifact. Session continuity via BATCH-SESSION.md with `--resume NN`. 3 phases, 6 plans, 19/19 requirements satisfied.
 
 ### v15.0 Autonomous Learning — SHIPPED 2026-04-04
 
@@ -209,6 +192,10 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 ### v12.0 Quality Enforcement Evolution — SHIPPED 2026-04-04
 
 **Delivered:** Closed remaining quality enforcement gaps — ESLint gate fires on every code file write via PostToolUse hook with quality-level gating and graceful degradation, transition guards mechanically verify DONE criteria before phase completion (no more trust-based transitions), test coverage trending tracks test count per plan and surfaces delta in progress/digest. 3 phases, 7 plans, 14/14 requirements satisfied.
+
+### v13.0 Unified Observability & Context Routing — SHIPPED 2026-04-04
+
+**Delivered:** Unified event journaling (workflow.jsonl with emitEvent, hook integrations, reader/query API, digest timeline), context budget optimizer (per-skill token cost, aggregation, deferral recommendations), and advisory MCP server selection (task-type classifier, recommendation mapping, workflow integration, dashboard validation). 3 phases, 6 plans, 13/13 requirements satisfied.
 
 ### v10.0 Shared MCP Dashboard — SHIPPED 2026-04-04
 
@@ -252,9 +239,9 @@ Claude writes code like a senior engineer who always checks the codebase first, 
 
 ## Context
 
-Shipped v15.0 with ~100K LOC across 20+ CJS source modules + 30 test suites, plus workflow/agent Markdown specifications, 16 skills, 4 teams, a TypeScript dashboard with Gate Health page and MCP server, adaptive learning pipeline with autonomous auto-apply engine, skill feedback loop, gate enforcement hooks (including ESLint gate), transition guards, signal intelligence analytics, cross-session MCP query tools, brainstorming engine, per-project adaptive review profiles, and decision audit trail with Jaccard tension detection.
+Shipped v16.0 (18 milestones total) with ~106K LOC across 21 CJS source modules + 31 test suites, plus workflow/agent Markdown specifications, 16 skills, 4 teams, a TypeScript dashboard with Gate Health page and MCP server, adaptive learning pipeline, skill feedback loop, gate enforcement hooks (including ESLint gate), transition guards, signal intelligence analytics, cross-session MCP query tools, brainstorming engine, adaptive review profiles, decision audit trail, unified event journaling, context budget optimization, and advisory MCP server selection.
 Tech stack: Node.js, CJS modules, TypeScript (dashboard), Markdown agent specifications, Context7 MCP, @modelcontextprotocol/sdk v1.29.0.
-Tests: 1220+ passing across 30 test suites.
+Tests: 1243 passing across 31 test suites.
 
 **Quality enforcement** (v1.0-v1.1): Full Plan→Execute→Verify loop with Quality Sentinel, Context7 library lookup, mandatory testing, quality dimensions, config-gated enforcement levels (fast/standard/strict), and observability.
 
@@ -278,9 +265,13 @@ Tests: 1220+ passing across 30 test suites.
 
 **Shared MCP dashboard** (v10.0): StreamableHTTP MCP server at `/mcp` on existing dashboard — 8 read-only query tools for cross-session/cross-project data access, stateless per-request transport, Origin validation, installer auto-configuration to `~/.claude.json`.
 
+**Unified observability** (v13.0): Workflow event journaling (unified workflow.jsonl with emitEvent, hook integrations, reader/query, digest timeline), context budget optimizer (per-skill token cost, aggregation, deferral recommendations), and advisory MCP server selection (task-type classifier, recommendation mapping, dashboard validation).
+
 **Quality enforcement evolution** (v12.0): ESLint gate fires on code file writes via PostToolUse hook (extending gate-runner.cjs), transition guards mechanically verify `<done>` criteria before phase completion (parseDoneCriteria + verifyAssertions wired into cmdVerifyPhaseCompleteness), test coverage trending tracks test count per plan with delta computation in phase-benchmarks.jsonl and surfaces in progress/digest.
 
 **Autonomous learning** (v15.0): Auto-apply engine with 5 safety gates (CONFIG, RATE, QUALITY, CONFIDENCE, SIZE) applies high-confidence skill refinements at SessionEnd, revert command restores pre-auto-apply state, failed checks surface as pending suggestions with `auto_apply_failed` flag, per-project review profiles generated from correction category distribution, code-review skill adapts focus automatically, decision audit trail detects correction-decision tensions via Jaccard overlap and surfaces in /gsd:digest.
+
+**Multi-milestone batch planner** (v16.0): `/gsd:multi-milestone` command with 941-line 5-stage pipeline — feature intake (freeform/file/brainstorm) with affinity clustering, parallel workspace creation (N<=20), per-milestone research + full requirements scoping, parallel roadmappers in proposal mode producing unnumbered PROPOSAL.md, `gsd-roadmap-synthesizer` agent with sequential cursor algorithm for gap-free phase numbering, session continuity via BATCH-SESSION.md with `--resume NN`.
 
 **Known tech debt:** See `.planning/DEBT.md` and MILESTONES.md for remaining items.
 
@@ -330,6 +321,8 @@ Tests: 1220+ passing across 30 test suites.
 | 6 bounded learning guardrails | Prevents runaway auto-modification of skills | ✓ Good — user always in control of skill changes |
 | Recall exclusion for baked preferences | Skills are the durable layer; recall is staging | ✓ Good — prevents double-surfacing of already-incorporated learnings |
 | Cross-project promotion at 3+ projects | Ensures preferences are truly universal before elevating | ✓ Good — project-specific quirks don't pollute global store |
+| Roadmap synthesizer pattern (not pre-assignment) | Roadmappers produce unnumbered proposals; synthesizer assigns all numbers in one pass | ✓ Good — zero collision risk, no buffer math, no gaps; re-run one roadmapper and re-synthesize on failure |
+| Fully separate /gsd:multi-milestone workflow | Not an extension of new-milestone — owns the entire funnel from intake to commit | ✓ Good — 941-line workflow with its own stages, no coupling to single-milestone path |
 
 ---
-*Last updated: 2026-04-04 after v14.0 Planning Intelligence milestone started*
+*Last updated: 2026-04-06 after v16.0 milestone archived*

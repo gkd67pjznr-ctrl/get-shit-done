@@ -18,9 +18,10 @@ This project uses **milestone-scoped layout**. Each milestone has its own ROADMA
 - ✅ **v10.0 Shared MCP Dashboard** — Phases 43-44 (shipped 2026-04-04)
 - ✅ **v11.0 Wild Brainstorming Engine** — Phases 45-49 (shipped 2026-04-04)
 - ✅ **v12.0 Quality Enforcement Evolution** — Phases 50-52 (shipped 2026-04-04)
-- 🔨 **v13.0 Unified Observability & Context Routing** — Phases 84-86
+- ✅ **v13.0 Unified Observability & Context Routing** — Phases 84-86 (shipped 2026-04-04)
 - ✅ **v15.0 Autonomous Learning** — Phases 80-83 (shipped 2026-04-04)
-- 🔨 **v16.0 Multi-Milestone Batch Planner** — Phases 87-89
+- ✅ **v16.0 Multi-Milestone Batch Planner** — Phases 87-89 (shipped 2026-04-05)
+- 🔨 **v14.0 Planning Intelligence** — Phases 90-92
 
 ## Completed Milestones
 
@@ -40,15 +41,15 @@ This project uses **milestone-scoped layout**. Each milestone has its own ROADMA
 | v10.0 Shared MCP Dashboard | 2026-04-04 | 2 phases | 5 plans | `milestones/v10.0/ROADMAP.md` |
 | v11.0 Wild Brainstorming Engine | 2026-04-04 | 5 phases | 11 plans | `milestones/v11.0/ROADMAP.md` |
 | v12.0 Quality Enforcement Evolution | 2026-04-04 | 3 phases | 7 plans | `milestones/v12.0/ROADMAP.md` |
+| v13.0 Unified Observability & Context Routing | 2026-04-04 | 3 phases | 6 plans | `milestones/v13.0/ROADMAP.md` |
+| v15.0 Autonomous Learning | 2026-04-04 | 4 phases | 7 plans | `milestones/v15.0/ROADMAP.md` |
+| v16.0 Multi-Milestone Batch Planner | 2026-04-05 | 3 phases | 6 plans | `milestones/v16.0/ROADMAP.md` |
 
 ## Active Milestone
 
 | Milestone | Status | Phases | Plans | Workspace |
 |-----------|--------|--------|-------|-----------|
-| v11.0 Wild Brainstorming Engine | Not started | 45-49 (5 phases) | TBD | `milestones/v11.0/ROADMAP.md` |
-| v13.0 Unified Observability & Context Routing | Not started | 84-86 (3 phases) | TBD | `milestones/v13.0/ROADMAP.md` |
-| v15.0 Autonomous Learning | Not started | 80-83 (4 phases) | 7 plans | `milestones/v15.0/ROADMAP.md` |
-| v16.0 Multi-Milestone Batch Planner | Not started | 87-89 (3 phases) | 6 plans | `milestones/v16.0/ROADMAP.md` |
+| v14.0 Planning Intelligence | Not started | 90-92 (3 phases) | 7 plans | `milestones/v14.0/ROADMAP.md` |
 
 See `.planning/MILESTONES.md` for detailed milestone history.
 
