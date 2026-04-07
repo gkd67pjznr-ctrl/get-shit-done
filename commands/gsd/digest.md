@@ -469,4 +469,5 @@ _Run `/gsd:session-start` for session briefing | `/gsd:digest` again for updated
 - Correction analysis section (Step 3g) appears with category grouping table, sorted by count descending, with bold rows and callout for categories >= 3 corrections
 - Benchmark trends present (or 'insufficient data' message shown) in Step 3h after correction analysis
 - Decision Tensions section (Step 3j) appears with tension table and callouts when tensions exist, or "No decision tensions detected." when none
+- Prompt Quality section (Step 3k) appears after Decision Tensions; shows per-plan score table with "Nx median for task-type" labels; outlier callout present when outliers exist; always ends with diagnostic-only disclaimer
 </success_criteria>
