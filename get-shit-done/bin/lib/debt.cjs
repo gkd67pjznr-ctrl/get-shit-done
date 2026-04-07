@@ -31,7 +31,7 @@ function getNextDebtId(content) {
  * Finds header by '| id |', skips separator row, parses remaining rows.
  *
  * @param {string} content - Full DEBT.md file content
- * @returns {Array<Object>} Array of debt entry objects with 10 fields each
+ * @returns {Array<Object>} Array of debt entry objects with 12 fields each
  */
 function parseDebtRows(content) {
   const entries = [];
@@ -44,7 +44,7 @@ function parseDebtRows(content) {
     const line = lines[i].trim();
     if (!line.startsWith('|') || !line.endsWith('|')) continue;
     const cells = line.slice(1, -1).split('|').map(c => c.trim());
-    if (cells.length < 10) continue;
+    if (cells.length < 12) continue;
     entries.push({
       id: cells[0],
       type: cells[1],
@@ -54,8 +54,10 @@ function parseDebtRows(content) {
       date_logged: cells[5],
       logged_by: cells[6],
       status: cells[7],
-      source_phase: cells[8],
-      source_plan: cells[9],
+      resolved_date: cells[8],
+      resolution: cells[9],
+      source_phase: cells[10],
+      source_plan: cells[11],
     });
   }
   return entries;
@@ -81,21 +83,31 @@ function cmdDebtLog(cwd, opts, raw) {
       '',
       'Project-level tracker for structured tech debt. Entries logged by `gsd-tools debt log`.',
       '',
-      '| id | type | severity | component | description | date_logged | logged_by | status | source_phase | source_plan |',
-      '|----|------|----------|-----------|-------------|-------------|-----------|--------|--------------|-------------|',
+      '| id | type | severity | component | description | date_logged | logged_by | status | resolved_date | resolution | source_phase | source_plan |',
+      '|----|------|----------|-----------|-------------|-------------|-----------|--------|---------------|------------|--------------|-------------|',
       '',
     ].join('\n');
     fs.writeFileSync(debtPath, header, 'utf-8');
   }
 
   const content = fs.readFileSync(debtPath, 'utf-8');
+
+  const validTypes = ['code', 'test', 'design', 'doc', 'structural', 'performance'];
+  const validSeverities = ['critical', 'high', 'medium', 'low'];
+  if (opts.type && !validTypes.includes(opts.type)) {
+    error(`Invalid type "${opts.type}". Must be one of: ${validTypes.join(', ')}`);
+  }
+  if (opts.severity && !validSeverities.includes(opts.severity)) {
+    error(`Invalid severity "${opts.severity}". Must be one of: ${validSeverities.join(', ')}`);
+  }
+
   const id = getNextDebtId(content);
   const date = new Date().toISOString().split('T')[0];
 
   // Sanitize pipe characters from all free-text fields (pipe is the table delimiter)
   const sanitize = (v) => (v || '').replace(/\|/g, '/');
 
-  const row = `| ${id} | ${sanitize(opts.type)} | ${sanitize(opts.severity)} | ${sanitize(opts.component)} | ${sanitize(opts.description)} | ${date} | ${sanitize(opts.logged_by)} | open | ${sanitize(opts.source_phase)} | ${sanitize(opts.source_plan)} |\n`;
+  const row = `| ${id} | ${sanitize(opts.type)} | ${sanitize(opts.severity)} | ${sanitize(opts.component)} | ${sanitize(opts.description)} | ${date} | ${sanitize(opts.logged_by)} | open |  |  | ${sanitize(opts.source_phase)} | ${sanitize(opts.source_plan)} |\n`;
 
   fs.appendFileSync(debtPath, row, 'utf-8');
   output({ id, logged: true }, raw, id);
@@ -149,10 +161,10 @@ function cmdDebtResolve(cwd, opts, raw) {
   const idEscaped = escapeRegex(opts.id);
 
   // Match the row with this ID and replace the status column (8th pipe-delimited cell).
-  // Row format: | TD-NNN | type | severity | component | description | date | logged_by | STATUS | source_phase | source_plan |
+  // Row format: | TD-NNN | type | severity | component | description | date | logged_by | STATUS | resolved_date | resolution | source_phase | source_plan |
   // Use [^|]* (not .*) for each cell to avoid matching across cell boundaries.
   const rowPattern = new RegExp(
-    `(\\|\\s*${idEscaped}\\s*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|)\\s*[^|]+\\s*(\\|[^|]*\\|[^|]*\\|)`,
+    `(\\|\\s*${idEscaped}\\s*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|)\\s*[^|]+\\s*(\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|)`,
     'i'
   );
 
@@ -162,6 +174,17 @@ function cmdDebtResolve(cwd, opts, raw) {
   }
 
   content = content.replace(rowPattern, `$1 ${opts.status} $2`);
+
+  if (opts.status === 'resolved') {
+    const today = new Date().toISOString().split('T')[0];
+    // Fill in resolved_date cell (9th cell) if currently blank
+    const resolvedDatePattern = new RegExp(
+      `(\\|\\s*${idEscaped}\\s*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|[^|]*\\|\\s*resolved\\s*\\|)\\s*\\|`,
+      'i'
+    );
+    content = content.replace(resolvedDatePattern, `$1 ${today} |`);
+  }
+
   fs.writeFileSync(debtPath, content, 'utf-8');
   output({ id: opts.id, status: opts.status, updated: true }, raw, 'true');
 }
@@ -182,7 +205,8 @@ function cmdDebtImpact(cwd, opts, raw) {
   }
 
   const debtContent = fs.readFileSync(debtPath, 'utf-8');
-  const debtEntries = parseDebtRows(debtContent);
+  let debtEntries = parseDebtRows(debtContent);
+  if (opts.status) debtEntries = debtEntries.filter(e => e.status === opts.status);
 
   // Load active corrections
   const correctionsPath = path.join(cwd, '.planning', 'patterns', 'corrections.jsonl');

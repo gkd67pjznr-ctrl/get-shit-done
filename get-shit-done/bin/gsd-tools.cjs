@@ -64,6 +64,7 @@
  *     --status <open|in-progress|resolved|deferred>
  *   debt impact                        List debt entries ranked by correction count
  *                                      with link_confidence field
+ *     [--status <open|in-progress|resolved|deferred>]
  *
  * Migration:
  *   migrate --dry-run [--version <v>]  Preview legacy→milestone conversion
@@ -656,7 +657,10 @@ async function main() {
           status: statusIdx !== -1 ? args[statusIdx + 1] : null,
         }, raw);
       } else if (subcommand === 'impact') {
-        debt.cmdDebtImpact(cwd, {}, raw);
+        const impactStatusIdx = args.indexOf('--status');
+        debt.cmdDebtImpact(cwd, {
+          status: impactStatusIdx !== -1 ? args[impactStatusIdx + 1] : null,
+        }, raw);
       } else {
         error('Unknown debt subcommand. Available: log, list, resolve, impact');
       }
