@@ -33,10 +33,10 @@ describe('debt commands', () => {
       const debtPath = path.join(tmpDir, '.planning', 'DEBT.md');
       assert.ok(fs.existsSync(debtPath), 'DEBT.md should be created');
 
-      // Header must contain 10-column header row
+      // Header must contain 12-column header row
       const content = fs.readFileSync(debtPath, 'utf-8');
-      assert.ok(content.includes('| id | type | severity | component | description | date_logged | logged_by | status | source_phase | source_plan |'),
-        'DEBT.md should have 10-column header');
+      assert.ok(content.includes('| id | type | severity | component | description | date_logged | logged_by | status | resolved_date | resolution | source_phase | source_plan |'),
+        'DEBT.md should have 12-column header');
 
       // Must have separator row
       assert.ok(content.includes('|----|'), 'DEBT.md should have separator row');
@@ -81,9 +81,9 @@ describe('debt commands', () => {
       const lines = content.split('\n');
       const dataLine = lines.find(l => l.includes('TD-001'));
       assert.ok(dataLine, 'Should have TD-001 row');
-      // Count pipes: a valid 10-column row has exactly 11 pipes (|col|col...|)
+      // Count pipes: a valid 12-column row has exactly 13 pipes (|col|col...|)
       const pipeCount = (dataLine.match(/\|/g) || []).length;
-      assert.strictEqual(pipeCount, 11, `TD-001 row should have exactly 11 pipes (10 columns), got ${pipeCount}: ${dataLine}`);
+      assert.strictEqual(pipeCount, 13, `TD-001 row should have exactly 13 pipes (12 columns), got ${pipeCount}: ${dataLine}`);
     });
 
     test('debt log with minimal fields still creates valid entry', () => {
@@ -95,6 +95,24 @@ describe('debt commands', () => {
       const out = JSON.parse(result.output);
       assert.strictEqual(out.id, 'TD-001');
       assert.strictEqual(out.logged, true);
+    });
+
+    test('debt log rejects invalid type with exit 1', () => {
+      const result = runGsdToolsFull(
+        'debt log --type invalid-type --severity high --component foo --description "bad type"',
+        tmpDir
+      );
+      assert.strictEqual(result.success, false, 'Should exit with failure');
+      assert.ok(result.stderr.includes('Invalid type'), `stderr should mention Invalid type, got: ${result.stderr}`);
+    });
+
+    test('debt log rejects invalid severity with exit 1', () => {
+      const result = runGsdToolsFull(
+        'debt log --type code --severity ultra-high --component foo --description "bad severity"',
+        tmpDir
+      );
+      assert.strictEqual(result.success, false, 'Should exit with failure');
+      assert.ok(result.stderr.includes('Invalid severity'), `stderr should mention Invalid severity, got: ${result.stderr}`);
     });
   });
 
@@ -190,7 +208,7 @@ describe('debt commands', () => {
       assert.strictEqual(out.entries[0].type, 'code');
     });
 
-    test('returned entries have all 10 expected fields', () => {
+    test('returned entries have all 12 expected fields', () => {
       runGsdTools(
         'debt log --type code --severity high --component mymodule.cjs --description "Check all fields" --logged-by agent --source-phase 16 --source-plan 16-01',
         tmpDir
@@ -212,6 +230,8 @@ describe('debt commands', () => {
       assert.ok('status' in entry, 'entry should have status');
       assert.ok('source_phase' in entry, 'entry should have source_phase');
       assert.ok('source_plan' in entry, 'entry should have source_plan');
+      assert.ok('resolved_date' in entry, 'entry should have resolved_date');
+      assert.ok('resolution' in entry, 'entry should have resolution');
 
       assert.strictEqual(entry.id, 'TD-001');
       assert.strictEqual(entry.type, 'code');
@@ -311,6 +331,35 @@ describe('debt commands', () => {
       const out = JSON.parse(result.output);
       assert.strictEqual(out.status, 'deferred');
       assert.strictEqual(out.updated, true);
+    });
+
+    test('debt resolve sets resolved_date when transitioning to resolved', () => {
+      runGsdTools(
+        'debt log --type code --severity high --component a.cjs --description "Test" --logged-by test --source-phase 16 --source-plan 16-01',
+        tmpDir
+      );
+      runGsdTools('debt resolve --id TD-001 --status resolved', tmpDir);
+
+      const listResult = runGsdTools('debt list', tmpDir);
+      const out = JSON.parse(listResult.output);
+      const entry = out.entries[0];
+      assert.ok(entry.resolved_date, 'resolved_date should be set');
+      // Should match YYYY-MM-DD format
+      assert.match(entry.resolved_date, /^\d{4}-\d{2}-\d{2}$/, 'resolved_date should be ISO date');
+    });
+
+    test('debt resolve to non-resolved status does not set resolved_date', () => {
+      runGsdTools(
+        'debt log --type code --severity high --component a.cjs --description "Test" --logged-by test --source-phase 16 --source-plan 16-01',
+        tmpDir
+      );
+      runGsdTools('debt resolve --id TD-001 --status in-progress', tmpDir);
+
+      const listResult = runGsdTools('debt list', tmpDir);
+      const out = JSON.parse(listResult.output);
+      const entry = out.entries[0];
+      // resolved_date should remain empty
+      assert.strictEqual(entry.resolved_date.trim(), '', 'resolved_date should be empty for non-resolved status');
     });
   });
 
@@ -432,6 +481,25 @@ describe('debt commands', () => {
         assert.deepStrictEqual(out.entries, [], 'entries should be empty');
         assert.strictEqual(out.total, 0, 'total should be 0');
       }
+    });
+
+    test('debt impact --status open excludes resolved entries', () => {
+      runGsdTools(
+        'debt log --type code --severity high --component a.cjs --description "Open debt" --logged-by test --source-phase 10 --source-plan 10-01',
+        tmpDir
+      );
+      runGsdTools(
+        'debt log --type test --severity medium --component b.cjs --description "Resolved debt" --logged-by test --source-phase 10 --source-plan 10-01',
+        tmpDir
+      );
+      runGsdTools('debt resolve --id TD-002 --status resolved', tmpDir);
+
+      const result = runGsdTools('debt impact --status open', tmpDir);
+      assert.ok(result.success, `Command failed: ${result.error}`);
+      const out = JSON.parse(result.output);
+      const entries = Array.isArray(out) ? out : out.entries;
+      assert.strictEqual(entries.length, 1, 'Only 1 open entry');
+      assert.strictEqual(entries[0].id, 'TD-001');
     });
 
     test('debt impact is read-only (does not modify DEBT.md)', () => {
