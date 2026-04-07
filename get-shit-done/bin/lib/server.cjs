@@ -593,37 +593,56 @@ function aggregatePatterns(registry) {
  * @returns {Array}
  */
 function aggregateSkillLoads(registry) {
-  /** @type {Map<string, { count: number, projects: Set<string>, lastSeen: string|null }>} */
+  /** @type {Map<string, { count: number, projects: Set<string>, lastSeen: string|null, source: Set<string> }>} */
   const bySkill = new Map();
 
+  function addSkill(skill, projectName, ts, source) {
+    if (!bySkill.has(skill)) {
+      bySkill.set(skill, { count: 0, projects: new Set(), lastSeen: null, sources: new Set() });
+    }
+    const bucket = bySkill.get(skill);
+    bucket.count++;
+    bucket.projects.add(projectName);
+    bucket.sources.add(source);
+    if (ts && (!bucket.lastSeen || ts > bucket.lastSeen)) {
+      bucket.lastSeen = ts;
+    }
+  }
+
   for (const project of registry) {
-    const loadsFile = path.join(project.path, '.planning', 'patterns', 'skill-loads.jsonl');
-    let lines;
+    const patternsDir = path.join(project.path, '.planning', 'patterns');
+
+    // Source 1: skill-loads.jsonl (PostToolUse Skill hook — going forward)
     try {
-      lines = fs.readFileSync(loadsFile, 'utf-8').trim().split('\n').filter(Boolean);
-    } catch {
-      continue; // project has no skill-loads.jsonl -- skip
-    }
+      const lines = fs.readFileSync(path.join(patternsDir, 'skill-loads.jsonl'), 'utf-8').trim().split('\n').filter(Boolean);
+      for (const line of lines) {
+        try {
+          const entry = JSON.parse(line);
+          addSkill(entry.skill || 'unknown', project.name, entry.ts, 'hook');
+        } catch { /* skip malformed */ }
+      }
+    } catch { /* no file */ }
 
-    for (const line of lines) {
-      let entry;
-      try {
-        entry = JSON.parse(line);
-      } catch {
-        continue; // malformed JSONL -- skip
+    // Source 2: sessions.jsonl skills_loaded arrays (historical + ongoing)
+    try {
+      const lines = fs.readFileSync(path.join(patternsDir, 'sessions.jsonl'), 'utf-8').trim().split('\n').filter(Boolean);
+      for (const line of lines) {
+        try {
+          const entry = JSON.parse(line);
+          const skills = entry.skills_loaded || [];
+          const ts = entry.timestamp || entry.ts || null;
+          for (const skill of skills) {
+            addSkill(skill, project.name, ts, 'session');
+          }
+          // Also track workflow type as a skill activation
+          if (entry.type === 'workflow' && entry.wrapper) {
+            addSkill('gsd:' + entry.wrapper, project.name, ts, 'workflow');
+          } else if (entry.type && entry.type.startsWith('wrapper_') && entry.wrapper) {
+            addSkill('gsd:' + entry.wrapper, project.name, ts, 'workflow');
+          }
+        } catch { /* skip malformed */ }
       }
-
-      const skill = entry.skill || 'unknown';
-      if (!bySkill.has(skill)) {
-        bySkill.set(skill, { count: 0, projects: new Set(), lastSeen: null });
-      }
-      const bucket = bySkill.get(skill);
-      bucket.count++;
-      bucket.projects.add(project.name);
-      if (entry.ts && (!bucket.lastSeen || entry.ts > bucket.lastSeen)) {
-        bucket.lastSeen = entry.ts;
-      }
-    }
+    } catch { /* no file */ }
   }
 
   return Array.from(bySkill.entries())
@@ -634,6 +653,7 @@ function aggregateSkillLoads(registry) {
       projects: Array.from(data.projects).sort(),
       projectCount: data.projects.size,
       lastSeen: data.lastSeen,
+      sources: Array.from(data.sources),
     }));
 }
 

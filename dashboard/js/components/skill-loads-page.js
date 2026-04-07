@@ -224,16 +224,24 @@ export function SkillLoadsPage() {
                 </tr>
               </thead>
               <tbody>
-                ${skills.map((s) => html`
+                ${skills.map((s) => {
+                  const src = s.sources || [];
+                  const isWorkflow = s.skill.startsWith('gsd:') || src.includes('workflow');
+                  const sourceColor = isWorkflow ? 'var(--term-cyan)' : 'var(--color-observation, #39d2c0)';
+                  const barColor = isWorkflow ? 'var(--term-cyan)' : 'var(--color-observation, #39d2c0)';
+                  return html`
                   <tr key=${s.skill} style="border-bottom:1px solid var(--border-subtle, #2a2a2a);">
-                    <td style="padding:6px 8px; font-family:var(--font-data); color:var(--text-primary);">${s.skill}</td>
+                    <td style="padding:6px 8px; font-family:var(--font-data); color:var(--text-primary);">
+                      ${s.skill}
+                      ${src.length > 0 ? html`<span style="font-size:11px; color:${sourceColor}; margin-left:6px; opacity:0.7;">${isWorkflow ? 'workflow' : src.includes('hook') ? 'hook' : 'session'}</span>` : null}
+                    </td>
                     <td style="padding:6px 8px;">
-                      <div style="width:${Math.round((s.count / maxCount) * 120)}px; height:5px; background:var(--color-observation, #39d2c0); border-radius:3px; min-width:2px;" />
+                      <div style="width:${Math.round((s.count / maxCount) * 120)}px; height:5px; background:${barColor}; border-radius:3px; min-width:2px;" />
                     </td>
                     <td style="padding:6px 8px; text-align:right; font-family:var(--font-data); color:var(--text-secondary);">${s.count}</td>
                     <td style="padding:6px 8px; text-align:right; color:var(--text-muted); font-size:14px;">${s.lastSeen ? formatRelativeTime(s.lastSeen) : '—'}</td>
                   </tr>
-                `)}
+                `; })}
               </tbody>
             </table>
           `}
