@@ -49,6 +49,8 @@ export function SkillLoadsPage() {
   const suggestions = obs.suggestions || {};
   const categories = obs.correctionsByCategory || [];
   const projects = obs.projects || [];
+  const preferences = obs.preferences || [];
+  const refinedItems = suggestions.refinedItems || [];
 
   const maxCount = skills[0]?.count ?? 1;
   const totalLoads = skills.reduce((sum, s) => sum + s.count, 0);
@@ -110,6 +112,94 @@ export function SkillLoadsPage() {
             <span style="margin:0 8px; color:var(--term-dim);">|</span>
             <code style="color:var(--term-cyan);">/gsd:digest</code> for full pattern analysis
           </div>
+        </div>
+      ` : null}
+
+      <!-- Preferences learned -->
+      ${preferences.length > 0 ? html`
+        <div style="margin-bottom:24px;">
+          <h3 style="font-size:17px; color:var(--text-muted); margin-bottom:12px;">Preferences Learned</h3>
+          <p style="font-size:14px; color:var(--text-muted); margin-bottom:12px;">
+            Patterns promoted from repeated corrections. These shape how Claude behaves in future sessions.
+          </p>
+          ${preferences.map((p, i) => html`
+            <div key=${i} style="
+              background:rgba(255,255,255,0.03);
+              border:1px solid var(--border-subtle, #2a2a2a);
+              border-radius:8px;
+              padding:14px 18px;
+              margin-bottom:10px;
+            ">
+              <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:6px;">
+                <span style="
+                  font-size:12px;
+                  padding:2px 8px;
+                  border-radius:4px;
+                  background:rgba(57,210,192,0.12);
+                  color:var(--color-observation, #39d2c0);
+                  font-family:var(--font-data);
+                ">${p.category}</span>
+                <span style="font-size:13px; color:var(--text-muted);">${p.scope} scope</span>
+                <span style="font-size:13px; color:var(--text-muted);">${p.sourceCount} correction${p.sourceCount !== 1 ? 's' : ''}</span>
+                <span style="font-size:13px; color:var(--signal-success);">${Math.round((p.confidence || 0) * 100)}% confidence</span>
+              </div>
+              <div style="font-size:15px; color:var(--text-primary); line-height:1.5;">
+                ${p.text}
+              </div>
+              <div style="font-size:13px; color:var(--text-muted); margin-top:6px;">
+                ${p.project} · learned ${p.createdAt ? formatRelativeTime(p.createdAt) : '—'}${p.updatedAt && p.updatedAt !== p.createdAt ? html` · updated ${formatRelativeTime(p.updatedAt)}` : ''}
+              </div>
+            </div>
+          `)}
+        </div>
+      ` : null}
+
+      <!-- Refinements applied -->
+      ${refinedItems.length > 0 ? html`
+        <div style="margin-bottom:24px;">
+          <h3 style="font-size:17px; color:var(--text-muted); margin-bottom:12px;">Refinements Applied</h3>
+          <p style="font-size:14px; color:var(--text-muted); margin-bottom:12px;">
+            Skill instructions that were modified based on pattern analysis of recurring corrections.
+          </p>
+          ${refinedItems.map((r, i) => html`
+            <div key=${r.id || i} style="
+              background:rgba(255,255,255,0.03);
+              border:1px solid var(--border-subtle, #2a2a2a);
+              border-radius:8px;
+              padding:14px 18px;
+              margin-bottom:10px;
+            ">
+              <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:6px;">
+                <span style="
+                  font-size:14px;
+                  font-family:var(--font-data);
+                  color:var(--text-primary);
+                  font-weight:600;
+                ">${r.targetSkill}</span>
+                <span style="
+                  font-size:12px;
+                  padding:2px 8px;
+                  border-radius:4px;
+                  background:rgba(255,179,71,0.12);
+                  color:var(--signal-warning);
+                  font-family:var(--font-data);
+                ">${r.category}</span>
+                <span style="font-size:13px; color:var(--signal-warning);">${r.correctionCount} corrections triggered this</span>
+              </div>
+              ${r.sampleCorrections && r.sampleCorrections.length > 0 ? html`
+                <div style="font-size:14px; color:var(--text-secondary); margin-top:4px; line-height:1.5;">
+                  ${[...new Set(r.sampleCorrections)].map((s, j) => html`
+                    <div key=${j} style="padding:2px 0;">
+                      <span style="color:var(--text-muted); margin-right:6px;">·</span>${s}
+                    </div>
+                  `)}
+                </div>
+              ` : null}
+              <div style="font-size:13px; color:var(--text-muted); margin-top:6px;">
+                ${r.project} · refined ${r.refinedAt ? formatRelativeTime(r.refinedAt) : '—'}
+              </div>
+            </div>
+          `)}
         </div>
       ` : null}
 

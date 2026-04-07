@@ -648,6 +648,7 @@ function aggregateObservations(registry) {
   let totalPreferences = 0;
   let totalGateExecutions = 0;
   const allSuggestions = [];
+  const allPreferences = [];
   const correctionsByCategory = new Map();
   const projectStats = [];
 
@@ -676,9 +677,18 @@ function aggregateObservations(registry) {
       sessions = fs.readFileSync(path.join(patternsDir, 'sessions.jsonl'), 'utf-8').trim().split('\n').filter(Boolean).length;
     } catch { /* no file */ }
 
-    // Count preferences
+    // Read preferences
     try {
-      preferences = fs.readFileSync(path.join(patternsDir, 'preferences.jsonl'), 'utf-8').trim().split('\n').filter(Boolean).length;
+      const prefLines = fs.readFileSync(path.join(patternsDir, 'preferences.jsonl'), 'utf-8').trim().split('\n').filter(Boolean);
+      preferences = prefLines.length;
+      for (const line of prefLines) {
+        try {
+          const p = JSON.parse(line);
+          if (!p.retired_at) {
+            allPreferences.push({ ...p, project: project.name });
+          }
+        } catch { /* skip malformed */ }
+      }
     } catch { /* no file */ }
 
     // Count gate executions
@@ -734,9 +744,30 @@ function aggregateObservations(registry) {
         targetSkill: s.target_skill,
         category: s.category,
         correctionCount: s.correction_count,
+        sampleCorrections: (s.sample_corrections || []).slice(0, 3),
         project: s.project,
+        createdAt: s.created_at,
+      })),
+      refinedItems: refinedSuggestions.map(s => ({
+        id: s.id,
+        targetSkill: s.target_skill,
+        category: s.category,
+        correctionCount: s.correction_count,
+        sampleCorrections: (s.sample_corrections || []).slice(0, 3),
+        project: s.project,
+        refinedAt: s.refined_at || s.accepted_at,
       })),
     },
+    preferences: allPreferences.map(p => ({
+      category: p.category,
+      text: p.preference_text,
+      confidence: p.confidence,
+      sourceCount: p.source_count,
+      scope: p.scope,
+      project: p.project,
+      createdAt: p.created_at,
+      updatedAt: p.updated_at,
+    })),
     projects: projectStats.sort((a, b) => b.corrections - a.corrections),
   };
 }
