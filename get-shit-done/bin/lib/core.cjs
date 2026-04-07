@@ -532,6 +532,98 @@ function getMilestonePhaseFilter(cwd, milestoneScope) {
   return isDirInMilestone;
 }
 
+/**
+ * Return the .planning directory path for a project.
+ * Upstream modules (uat.cjs, workstream.cjs) expect this helper.
+ */
+function planningDir(cwd) {
+  return path.join(cwd, '.planning');
+}
+
+/**
+ * Return commonly used planning paths for a project.
+ * Upstream workstream.cjs expects this helper.
+ */
+function planningPaths(cwd) {
+  const base = planningDir(cwd);
+  return {
+    base,
+    phases: path.join(base, 'phases'),
+    state: path.join(base, 'STATE.md'),
+    roadmap: path.join(base, 'ROADMAP.md'),
+    requirements: path.join(base, 'REQUIREMENTS.md'),
+    config: path.join(base, 'config.json'),
+    project: path.join(base, 'PROJECT.md'),
+  };
+}
+
+/**
+ * Get the active workstream name. Returns null when not in workstream mode.
+ * Upstream workstream.cjs expects this helper.
+ */
+function getActiveWorkstream(cwd) {
+  const pointer = path.join(planningDir(cwd), '.active-workstream');
+  if (!fs.existsSync(pointer)) return null;
+  return fs.readFileSync(pointer, 'utf8').trim() || null;
+}
+
+/**
+ * Set the active workstream name.
+ * Upstream workstream.cjs expects this helper.
+ */
+function setActiveWorkstream(cwd, name) {
+  const pointer = path.join(planningDir(cwd), '.active-workstream');
+  if (!name) {
+    if (fs.existsSync(pointer)) fs.unlinkSync(pointer);
+    return;
+  }
+  fs.writeFileSync(pointer, name + '\n');
+}
+
+/**
+ * Read immediate subdirectory names from a directory.
+ * Upstream modules (workstream.cjs) expect this helper.
+ */
+function readSubdirectories(dirPath) {
+  if (!fs.existsSync(dirPath)) return [];
+  return fs.readdirSync(dirPath, { withFileTypes: true })
+    .filter(e => e.isDirectory())
+    .map(e => e.name);
+}
+
+/**
+ * Filter plan files from a list of filenames.
+ * Upstream modules (workstream.cjs) expect this helper.
+ */
+function filterPlanFiles(files) {
+  return files.filter(f => /-PLAN\.md$/i.test(f));
+}
+
+/**
+ * Filter summary files from a list of filenames.
+ * Upstream modules (workstream.cjs) expect this helper.
+ */
+function filterSummaryFiles(files) {
+  return files.filter(f => /-SUMMARY\.md$/i.test(f));
+}
+
+/**
+ * Clean up stale temp files. Upstream profile-pipeline.cjs expects this.
+ * No-op in our fork — we don't create the temp files it targets.
+ */
+function reapStaleTempFiles() {}
+
+/**
+ * Check whether agents are installed. Upstream docs.cjs expects this.
+ * Returns simplified result for our fork.
+ */
+function checkAgentsInstalled() {
+  const agentsDir = path.join(__dirname, '..', '..', '..', 'agents');
+  if (!fs.existsSync(agentsDir)) return { installed: false, agents: [] };
+  const agents = fs.readdirSync(agentsDir).filter(f => f.endsWith('.md'));
+  return { installed: agents.length > 0, agents };
+}
+
 module.exports = {
   MODEL_PROFILES,
   output,
@@ -551,8 +643,17 @@ module.exports = {
   generateSlugInternal,
   getMilestoneInfo,
   planningRoot,
+  planningDir,
+  planningPaths,
+  getActiveWorkstream,
+  setActiveWorkstream,
   compareVersions,
   resolveActiveMilestone,
   getMilestonePhaseFilter,
   toPosixPath,
+  readSubdirectories,
+  filterPlanFiles,
+  filterSummaryFiles,
+  reapStaleTempFiles,
+  checkAgentsInstalled,
 };
