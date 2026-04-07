@@ -5,6 +5,14 @@ const path = require('path');
 
 const MAX_ENTRIES = 500;
 
+function readQualityFromConfig(cwd) {
+  try {
+    const cfgPath = path.join(cwd, '.planning', 'config.json');
+    const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf-8'));
+    return cfg.quality?.level || null;
+  } catch { return null; }
+}
+
 function rotateFile(filePath, dir) {
   const dateStr = new Date().toISOString().slice(0, 10);
   let archiveName = `phase-benchmarks-${dateStr}.jsonl`;
@@ -85,7 +93,7 @@ function cmdBenchmarkPlan(cwd, opts, raw) {
     phase: opts.phase,
     plan: opts.plan,
     phase_type: opts.phase_type || 'unknown',
-    quality_level: opts.quality_level || 'standard',
+    quality_level: opts.quality_level || readQualityFromConfig(cwd) || 'standard',
     correction_count,
     gate_fire_count,
     duration_min: opts.duration_min != null ? Number(opts.duration_min) : null,

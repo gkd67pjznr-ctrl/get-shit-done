@@ -360,8 +360,14 @@ async function main() {
         }, raw);
       } else if (subcommand === 'show') {
         skillMetrics.cmdSkillMetricsShow(cwd, raw);
+      } else if (subcommand === 'bridge-suggestion') {
+        // Bridge a refined suggestion to the global learnings store
+        const dataIdx = args.indexOf('--data');
+        if (dataIdx === -1) { error('Missing --data for bridge-suggestion'); }
+        const suggestion = JSON.parse(args[dataIdx + 1]);
+        skillMetrics.bridgeSuggestionToLearning(cwd, suggestion, raw);
       } else {
-        console.error('Unknown skill-metrics subcommand. Available: compute, show');
+        console.error('Unknown skill-metrics subcommand. Available: compute, show, bridge-suggestion');
         process.exit(1);
       }
       break;

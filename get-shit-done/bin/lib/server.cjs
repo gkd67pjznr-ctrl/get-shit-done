@@ -638,6 +638,110 @@ function aggregateSkillLoads(registry) {
 }
 
 /**
+ * Aggregates observation/pattern stats and suggestions across all projects.
+ * Powers the Skills dashboard page with correction counts, session counts,
+ * preference counts, and pending skill refinement suggestions.
+ */
+function aggregateObservations(registry) {
+  let totalCorrections = 0;
+  let totalSessions = 0;
+  let totalPreferences = 0;
+  let totalGateExecutions = 0;
+  const allSuggestions = [];
+  const correctionsByCategory = new Map();
+  const projectStats = [];
+
+  for (const project of registry) {
+    const patternsDir = path.join(project.path, '.planning', 'patterns');
+    const obsDir = path.join(project.path, '.planning', 'observations');
+    let corrections = 0, sessions = 0, preferences = 0, gates = 0;
+
+    // Count corrections
+    try {
+      const lines = fs.readFileSync(path.join(patternsDir, 'corrections.jsonl'), 'utf-8').trim().split('\n').filter(Boolean);
+      corrections = lines.length;
+      for (const line of lines) {
+        try {
+          const entry = JSON.parse(line);
+          const cat = entry.diagnosis_category || entry.diagnosis;
+          if (cat) {
+            correctionsByCategory.set(cat, (correctionsByCategory.get(cat) || 0) + 1);
+          }
+        } catch { /* skip malformed */ }
+      }
+    } catch { /* no file */ }
+
+    // Count sessions
+    try {
+      sessions = fs.readFileSync(path.join(patternsDir, 'sessions.jsonl'), 'utf-8').trim().split('\n').filter(Boolean).length;
+    } catch { /* no file */ }
+
+    // Count preferences
+    try {
+      preferences = fs.readFileSync(path.join(patternsDir, 'preferences.jsonl'), 'utf-8').trim().split('\n').filter(Boolean).length;
+    } catch { /* no file */ }
+
+    // Count gate executions
+    try {
+      gates = fs.readFileSync(path.join(obsDir, 'gate-executions.jsonl'), 'utf-8').trim().split('\n').filter(Boolean).length;
+    } catch { /* no file */ }
+
+    // Read suggestions
+    try {
+      const sugData = JSON.parse(fs.readFileSync(path.join(patternsDir, 'suggestions.json'), 'utf-8'));
+      if (sugData.suggestions && Array.isArray(sugData.suggestions)) {
+        for (const s of sugData.suggestions) {
+          allSuggestions.push({ ...s, project: project.name });
+        }
+      }
+    } catch { /* no file */ }
+
+    totalCorrections += corrections;
+    totalSessions += sessions;
+    totalPreferences += preferences;
+    totalGateExecutions += gates;
+
+    if (corrections > 0 || sessions > 0) {
+      projectStats.push({
+        name: project.name,
+        corrections,
+        sessions,
+        preferences,
+        gates,
+      });
+    }
+  }
+
+  const pendingSuggestions = allSuggestions.filter(s => s.status === 'pending' || (!s.accepted_at && !s.dismissed_at && s.status !== 'refined'));
+  const refinedSuggestions = allSuggestions.filter(s => s.status === 'refined' || s.accepted_at);
+
+  return {
+    totals: {
+      corrections: totalCorrections,
+      sessions: totalSessions,
+      preferences: totalPreferences,
+      gateExecutions: totalGateExecutions,
+    },
+    correctionsByCategory: Array.from(correctionsByCategory.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([category, count]) => ({ category, count })),
+    suggestions: {
+      pending: pendingSuggestions.length,
+      refined: refinedSuggestions.length,
+      total: allSuggestions.length,
+      items: pendingSuggestions.slice(0, 10).map(s => ({
+        id: s.id,
+        targetSkill: s.target_skill,
+        category: s.category,
+        correctionCount: s.correction_count,
+        project: s.project,
+      })),
+    },
+    projects: projectStats.sort((a, b) => b.corrections - a.corrections),
+  };
+}
+
+/**
  * Returns gate health metrics for a single project.
  *
  * Reads .planning/observations/gate-executions.jsonl and returns compact
@@ -1413,6 +1517,19 @@ function createHttpServer(port, cache, clients, dashboardDir, tmuxCache) {
       return;
     }
 
+    if (req.method === 'GET' && pathname === '/api/skills') {
+      const registry = loadRegistry();
+      const skillLoads = aggregateSkillLoads(registry);
+      const observations = aggregateObservations(registry);
+      res.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'no-cache',
+      });
+      res.end(JSON.stringify({ skillLoads, observations }));
+      return;
+    }
+
     if (req.method === 'GET' && pathname === '/api/events') {
       handleSSE(req, res, clients);
       return;
@@ -1800,6 +1917,7 @@ module.exports = {
   parseAllMilestones,
   aggregatePatterns,
   aggregateSkillLoads,
+  aggregateObservations,
   getProjectGateHealth,
   aggregateGateHealth,
   formatSSE,

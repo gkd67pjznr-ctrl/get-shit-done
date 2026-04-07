@@ -131,9 +131,9 @@ export function ProjectCard({ project, onOpenTerminal = () => {} }) {
           >[${isPaused ? 'resume' : 'pause'}]</button>
         ` : null}
 
-        ${(project.gateHealth && project.gateHealth.hasData ? project.gateHealth.qualityLevel : quality) ? html`
+        ${(quality || (project.gateHealth && project.gateHealth.qualityLevel)) ? html`
           <${Sep} />
-          <span class="quality-badge">${project.gateHealth && project.gateHealth.hasData ? project.gateHealth.qualityLevel : quality}</span>
+          <span class="quality-badge">${quality || project.gateHealth?.qualityLevel}</span>
         ` : null}
 
         <span style="flex:1"></span>

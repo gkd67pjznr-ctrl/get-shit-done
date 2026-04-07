@@ -1,6 +1,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const { learningsWrite } = require('./learnings.cjs');
 
 const CATEGORY_SKILL_MAP = {
   'code.wrong_pattern': 'typescript-patterns',
@@ -166,4 +167,36 @@ function cmdSkillMetricsShow(cwd, raw) {
   }
 }
 
-module.exports = { cmdSkillMetricsCompute, cmdSkillMetricsShow };
+/**
+ * Bridge: when a suggestion is accepted/refined, also write it as a global learning.
+ * Called by the /gsd:suggest workflow after updating suggestions.json.
+ *
+ * @param {string} cwd - Project root
+ * @param {object} suggestion - The accepted suggestion object
+ * @param {string} suggestion.target_skill - Skill being refined
+ * @param {string} suggestion.category - Correction category
+ * @param {number} suggestion.correction_count - How many corrections triggered this
+ * @param {string[]} suggestion.sample_corrections - Sample correction descriptions
+ */
+function bridgeSuggestionToLearning(cwd, suggestion, raw) {
+  const projectName = path.basename(cwd);
+  const learning = `Skill "${suggestion.target_skill}" needed refinement for ${suggestion.category} pattern (${suggestion.correction_count} corrections). ` +
+    `Samples: ${(suggestion.sample_corrections || []).slice(0, 2).join('; ')}`;
+
+  const result = learningsWrite({
+    source_project: projectName,
+    learning,
+    context: `Promoted from skill refinement suggestion in ${projectName}`,
+    tags: ['skill-refinement', suggestion.category, suggestion.target_skill],
+  });
+
+  if (raw) {
+    process.stdout.write(JSON.stringify({ bridged: true, learning_id: result.id, created: result.created }) + '\n');
+  } else if (result.created) {
+    console.log(`Learning created: ${result.id} (bridged from suggestion for ${suggestion.target_skill})`);
+  } else {
+    console.log(`Learning already exists (deduplicated): ${result.id}`);
+  }
+}
+
+module.exports = { cmdSkillMetricsCompute, cmdSkillMetricsShow, bridgeSuggestionToLearning };

@@ -22,10 +22,10 @@ export function inferWorkflowStep(status) {
   return null;
 }
 
-// Map config.quality_level to display string
+// Map config quality level to display string (nested at config.quality.level)
 export function fmtQuality(config) {
   if (!config) return null;
-  return config.quality_level || config.mode || null;
+  return config.quality?.level || config.quality_level || null;
 }
 
 // Map status string to CSS class

@@ -78,7 +78,7 @@ function App() {
       <a href="#/" style="color:var(--text-muted); text-decoration:none; margin-right:16px;">Overview</a>
       <a href="#/patterns" style="color:var(--text-muted); text-decoration:none; margin-right:16px;">Patterns</a>
       <a href="#/gate-health" style="color:var(--text-muted); text-decoration:none; margin-right:16px;">Gate Health</a>
-      <a href="#/skill-loads" style="color:var(--text-muted); text-decoration:none; margin-right:16px;">Skill Loads</a>
+      <a href="#/skill-loads" style="color:var(--text-muted); text-decoration:none; margin-right:16px;">Skills</a>
       <${TotalCost} />
     </nav>
     <div class="page-layout">
