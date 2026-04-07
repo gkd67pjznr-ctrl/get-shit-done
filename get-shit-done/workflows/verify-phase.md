@@ -13,6 +13,7 @@ Goal-backward verification:
 1. What must be TRUE for the goal to be achieved?
 2. What must EXIST for those truths to hold?
 3. What must be WIRED for those artifacts to function?
+4. What must TESTS PROVE for those truths to be evidenced?
 
 Then verify each level against the actual codebase.
 </core_principle>
@@ -37,11 +38,16 @@ Extract from init JSON: `phase_dir`, `phase_number`, `phase_name`, `has_plans`, 
 Then load phase details and list plans/summaries:
 ```bash
 node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" roadmap get-phase "${phase_number}"
-grep -E "^| ${phase_number}" .planning/REQUIREMENTS.md 2>/dev/null
-ls "$phase_dir"/*-SUMMARY.md "$phase_dir"/*-PLAN.md 2>/dev/null
+grep -E "^| ${phase_number}" .planning/REQUIREMENTS.md 2>/dev/null || true
+ls "$phase_dir"/*-SUMMARY.md "$phase_dir"/*-PLAN.md 2>/dev/null || true
 ```
 
-Extract **phase goal** from ROADMAP.md (the outcome to verify, not tasks) and **requirements** from REQUIREMENTS.md if it exists.
+Load full milestone phases for deferred-item filtering (Step 9b):
+```bash
+node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" roadmap analyze
+```
+
+Extract **phase goal** from ROADMAP.md (the outcome to verify, not tasks), **requirements** from REQUIREMENTS.md if it exists, and **all milestone phases** from roadmap analyze (for cross-referencing gaps against later phases).
 </step>
 
 <step name="establish_must_haves">
@@ -126,6 +132,17 @@ WIRED = imported AND used. ORPHANED = exists but not imported/used.
 | ✓ | ✓ | ✗ | ⚠️ ORPHANED |
 | ✓ | ✗ | - | ✗ STUB |
 | ✗ | - | - | ✗ MISSING |
+
+**Export-level spot check (WARNING severity):**
+
+For artifacts that pass Level 3, spot-check individual exports:
+- Extract key exported symbols (functions, constants, classes — skip types/interfaces)
+- For each, grep for usage outside the defining file
+- Flag exports with zero external call sites as "exported but unused"
+
+This catches dead stores like `setPlan()` that exist in a wired file but are
+never actually called. Report as WARNING — may indicate incomplete cross-plan
+wiring or leftover code from plan revisions.
 </step>
 
 <step name="verify_wiring">
@@ -160,7 +177,7 @@ Record status and evidence for each key link.
 <step name="verify_requirements">
 If REQUIREMENTS.md exists:
 ```bash
-grep -E "Phase ${PHASE_NUM}" .planning/REQUIREMENTS.md 2>/dev/null
+grep -E "Phase ${PHASE_NUM}" .planning/REQUIREMENTS.md 2>/dev/null || true
 ```
 
 For each requirement: parse description → identify supporting truths/artifacts → status: ✓ SATISFIED / ✗ BLOCKED / ? NEEDS HUMAN.
@@ -179,42 +196,91 @@ Extract files modified in this phase from SUMMARY.md, scan each:
 Categorize: 🛑 Blocker (prevents goal) | ⚠️ Warning (incomplete) | ℹ️ Info (notable).
 </step>
 
-<step name="log_tech_debt">
-Log non-critical gaps as tech debt so they are tracked for future resolution via `/gsd:fix-debt`.
+<step name="audit_test_quality">
+**Verify that tests PROVE what they claim to prove.**
 
-After completing artifact verification, wiring checks, and anti-pattern scanning, review all findings. For each **non-critical** gap (warnings, not blockers), log it as tech debt:
+This step catches test-level deceptions that pass all prior checks: files exist, are substantive, are wired, and tests pass — but the tests don't actually validate the requirement.
+
+**1. Identify requirement-linked test files**
+
+From PLAN and SUMMARY files, map each requirement to the test files that are supposed to prove it.
+
+**2. Disabled test scan**
+
+For ALL test files linked to requirements, search for disabled/skipped patterns:
 
 ```bash
-node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" debt log \
-  --type <code|test|docs|config|arch> \
-  --severity <critical|high|medium|low> \
-  --component "<file path>" \
-  --description "Verifier: <concise description of the issue>" \
-  --logged-by verifier \
-  --source-phase "${PHASE_NUM}" \
-  --source-plan "phase-verification"
+grep -rn -E "it\.skip|describe\.skip|test\.skip|xit\(|xdescribe\(|xtest\(|@pytest\.mark\.skip|@unittest\.skip|#\[ignore\]|\.pending|it\.todo|test\.todo" "$TEST_FILE"
 ```
 
-**What to log as debt:**
-- Duplicated code across files (type: code, severity: medium)
-- Missing tests for non-critical paths (type: test, severity: medium)
-- Orphaned exports not imported anywhere (type: code, severity: low)
-- TODO/FIXME/HACK comments that don't block functionality (type: code, severity: low)
-- Stubs that work but could be more robust (type: code, severity: medium)
-- Missing documentation for public APIs (type: docs, severity: low)
+**Rule:** A disabled test linked to a requirement = requirement NOT tested.
+- 🛑 BLOCKER if the disabled test is the only test proving that requirement
+- ⚠️ WARNING if other active tests also cover the requirement
 
-**Do NOT log as debt (these go in Gaps Summary as blockers instead):**
-- Missing artifacts that block the phase goal
-- Stub implementations that prevent core functionality
-- Broken wiring that makes features non-functional
-- Anti-patterns with severity 🛑 Blocker
+**3. Circular test detection**
 
-After logging all debt entries, get the count for the verification report:
+Search for scripts/utilities that generate expected values by running the system under test:
+
 ```bash
-node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" debt list --status open
+grep -rn -E "writeFileSync|writeFile|fs\.write|open\(.*w\)" "$TEST_DIRS"
 ```
 
-Include logged debt entries in the verification report's "Tech Debt Logged" section.
+For each match, check if it also imports the system/service/module being tested. If a script both imports the system-under-test AND writes expected output values → CIRCULAR.
+
+**Circular test indicators:**
+- Script imports a service AND writes to fixture files
+- Expected values have comments like "computed from engine", "captured from baseline"
+- Script filename contains "capture", "baseline", "generate", "snapshot" in test context
+- Expected values were added in the same commit as the test assertions
+
+**Rule:** A test comparing system output against values generated by the same system is circular. It proves consistency, not correctness.
+
+**4. Expected value provenance** (for comparison/parity/migration requirements)
+
+When a requirement demands comparison with an external source ("identical to X", "matches Y", "same output as Z"):
+
+- Is the external source actually invoked or referenced in the test pipeline?
+- Do fixture files contain data sourced from the external system?
+- Or do all expected values come from the new system itself or from mathematical formulas?
+
+**Provenance classification:**
+- VALID: Expected value from external/legacy system output, manual capture, or independent oracle
+- PARTIAL: Expected value from mathematical derivation (proves formula, not system match)
+- CIRCULAR: Expected value from the system being tested
+- UNKNOWN: No provenance information — treat as SUSPECT
+
+**5. Assertion strength**
+
+For each test linked to a requirement, classify the strongest assertion:
+
+| Level | Examples | Proves |
+|-------|---------|--------|
+| Existence | `toBeDefined()`, `!= null` | Something returned |
+| Type | `typeof x === 'number'` | Correct shape |
+| Status | `code === 200` | No error |
+| Value | `toEqual(expected)`, `toBeCloseTo(x)` | Specific value |
+| Behavioral | Multi-step workflow assertions | End-to-end correctness |
+
+If a requirement demands value-level or behavioral-level proof and the test only has existence/type/status assertions → INSUFFICIENT.
+
+**6. Coverage quantity**
+
+If a requirement specifies a quantity of test cases (e.g., "30 calculations"), check if the actual number of active (non-skipped) test cases meets the requirement.
+
+**Reporting — add to VERIFICATION.md:**
+
+```markdown
+### Test Quality Audit
+
+| Test File | Linked Req | Active | Skipped | Circular | Assertion Level | Verdict |
+|-----------|-----------|--------|---------|----------|----------------|---------|
+
+**Disabled tests on requirements:** {N} → {BLOCKER if any req has ONLY disabled tests}
+**Circular patterns detected:** {N} → {BLOCKER if any}
+**Insufficient assertions:** {N} → {WARNING}
+```
+
+**Impact on status:** Any BLOCKER from test quality audit ��� overall status = `gaps_found`, regardless of other checks passing.
 </step>
 
 <step name="identify_human_verification">
@@ -226,13 +292,39 @@ Format each as: Test Name → What to do → Expected result → Why can't verif
 </step>
 
 <step name="determine_status">
-**passed:** All truths VERIFIED, all artifacts pass levels 1-3, all key links WIRED, no blocker anti-patterns.
+Classify status using this decision tree IN ORDER (most restrictive first):
 
-**gaps_found:** Any truth FAILED, artifact MISSING/STUB, key link NOT_WIRED, or blocker found.
+1. IF any truth FAILED, artifact MISSING/STUB, key link NOT_WIRED, blocker found, **or test quality audit found blockers (disabled requirement tests, circular tests)**:
+   → **gaps_found**
 
-**human_needed:** All automated checks pass but human verification items remain.
+2. IF the previous step produced ANY human verification items:
+   → **human_needed** (even if all truths VERIFIED and score is N/N)
+
+3. IF all checks pass AND no human verification items:
+   → **passed**
+
+**passed is ONLY valid when no human verification items exist.**
 
 **Score:** `verified_truths / total_truths`
+</step>
+
+<step name="filter_deferred_items">
+Before reporting gaps, cross-reference each gap against later phases in the milestone using the full roadmap data loaded in load_context (from `roadmap analyze`).
+
+For each potential gap identified in determine_status:
+1. Check if the gap's failed truth or missing item is covered by a later phase's goal or success criteria
+2. **Match criteria:** The gap's concern appears in a later phase's goal text, success criteria text, or the later phase's name clearly suggests it covers this area
+3. If a clear match is found → move the gap to a `deferred` list with the matching phase reference and evidence text
+4. If no match in any later phase → keep as a real `gap`
+
+**Important:** Be conservative. Only defer a gap when there is clear, specific evidence in a later phase. Vague or tangential matches should NOT cause deferral — when in doubt, keep it as a real gap.
+
+**Deferred items do NOT affect the status determination.** Recalculate after filtering:
+- If gaps list is now empty and no human items exist → `passed`
+- If gaps list is now empty but human items exist → `human_needed`
+- If gaps list still has items → `gaps_found`
+
+Include deferred items in VERIFICATION.md frontmatter (`deferred:` section) and body (Deferred Items table) for transparency. If no deferred items exist, omit these sections.
 </step>
 
 <step name="generate_fix_plans">
@@ -242,7 +334,7 @@ If gaps_found:
 
 2. **Generate plan per cluster:** Objective, 2-3 tasks (files/action/verify each), re-verify step. Keep focused: single concern per plan.
 
-3. **Order by dependency:** Fix missing → fix stubs → fix wiring → verify.
+3. **Order by dependency:** Fix missing → fix stubs → fix wiring → **fix test evidence** → verify.
 </step>
 
 <step name="create_report">
@@ -273,9 +365,11 @@ Orchestrator routes: `passed` → update_roadmap | `gaps_found` → create/execu
 - [ ] All key links verified
 - [ ] Requirements coverage assessed (if applicable)
 - [ ] Anti-patterns scanned and categorized
+- [ ] Test quality audited (disabled tests, circular patterns, assertion strength, provenance)
 - [ ] Human verification items identified
 - [ ] Overall status determined
-- [ ] Fix plans generated (if gaps_found)
+- [ ] Deferred items filtered against later milestone phases (if gaps found)
+- [ ] Fix plans generated (if gaps_found after filtering)
 - [ ] VERIFICATION.md created with complete report
 - [ ] Results returned to orchestrator
 </success_criteria>

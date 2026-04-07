@@ -190,6 +190,13 @@ const skillScorer = require('./lib/skill-scorer.cjs');
 const dashboard = require('./lib/dashboard.cjs');
 const contextBudget = require('./lib/context-budget.cjs');
 const mcpClassifier = require('./lib/mcp-classifier.cjs');
+const security = require('./lib/security.cjs');
+const intel = require('./lib/intel.cjs');
+const learnings = require('./lib/learnings.cjs');
+const modelProfiles = require('./lib/model-profiles.cjs');
+const uat = require('./lib/uat.cjs');
+const docs = require('./lib/docs.cjs');
+const workstream = require('./lib/workstream.cjs');
 
 // ─── CLI Router ───────────────────────────────────────────────────────────────
 
@@ -1234,6 +1241,98 @@ async function main() {
 
       process.stdout.write(lines.join('\n') + '\n');
       process.exit(0);
+    }
+
+    // ── Upstream modules (v1.23–v1.34) ────────────────────────────────────────
+
+    case 'intel': {
+      const subcommand = args[1];
+      if (subcommand === 'query') {
+        const result = intel.intelQuery(cwd, args.slice(2).join(' '));
+        output(result, raw);
+      } else if (subcommand === 'status') {
+        const result = intel.intelStatus(cwd);
+        output(result, raw);
+      } else if (subcommand === 'update') {
+        intel.intelUpdate(cwd, args.slice(2));
+        output({ ok: true }, raw);
+      } else if (subcommand === 'snapshot') {
+        intel.intelSnapshot(cwd);
+        output({ ok: true }, raw);
+      } else if (subcommand === 'extract-exports') {
+        const result = intel.intelExtractExports(args[2]);
+        output(result, raw);
+      } else {
+        error('Unknown intel subcommand. Available: query, status, update, snapshot, extract-exports');
+      }
+      break;
+    }
+
+    case 'learnings': {
+      const subcommand = args[1];
+      if (subcommand === 'list') {
+        learnings.cmdLearningsList(cwd, raw);
+      } else if (subcommand === 'query') {
+        const tagIdx = args.indexOf('--tag');
+        const tag = tagIdx !== -1 ? args[tagIdx + 1] : null;
+        learnings.cmdLearningsQuery(cwd, { tag }, raw);
+      } else if (subcommand === 'copy') {
+        learnings.cmdLearningsCopy(cwd, raw);
+      } else if (subcommand === 'write') {
+        const tagIdx = args.indexOf('--tag');
+        const contentIdx = args.indexOf('--content');
+        const tag = tagIdx !== -1 ? args[tagIdx + 1] : 'general';
+        const content = contentIdx !== -1 ? args.slice(contentIdx + 1).filter(a => !a.startsWith('--')).join(' ') : args.slice(2).filter(a => !a.startsWith('--')).join(' ');
+        learnings.learningsWrite(content, { tags: [tag] });
+        output({ ok: true, tag }, raw);
+      } else if (subcommand === 'delete') {
+        learnings.cmdLearningsDelete(args[2], raw);
+      } else if (subcommand === 'prune') {
+        learnings.cmdLearningsPrune(raw);
+      } else {
+        error('Unknown learnings subcommand. Available: list, query, copy, write');
+      }
+      break;
+    }
+
+    case 'workstream': {
+      const subcommand = args[1];
+      if (subcommand === 'create') {
+        workstream.cmdWorkstreamCreate(cwd, args[2], raw);
+      } else if (subcommand === 'list') {
+        workstream.cmdWorkstreamList(cwd, raw);
+      } else if (subcommand === 'switch' || subcommand === 'set') {
+        workstream.cmdWorkstreamSet(cwd, args[2], raw);
+      } else if (subcommand === 'status') {
+        workstream.cmdWorkstreamStatus(cwd, raw);
+      } else {
+        error('Unknown workstream subcommand. Available: create, list, switch, status');
+      }
+      break;
+    }
+
+    case 'uat': {
+      uat.cmdAuditUat(cwd, raw);
+      break;
+    }
+
+    case 'docs-init': {
+      docs.cmdDocsInit(cwd, raw);
+      break;
+    }
+
+    case 'security': {
+      const subcommand = args[1];
+      if (subcommand === 'validate-path') {
+        const result = security.requireSafePath(args[2], cwd);
+        output(result, raw);
+      } else if (subcommand === 'sanitize') {
+        const result = security.sanitizeForDisplay(args.slice(2).join(' '));
+        output(result, raw);
+      } else {
+        error('Unknown security subcommand. Available: validate-path, sanitize');
+      }
+      break;
     }
 
     default:

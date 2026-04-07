@@ -314,6 +314,35 @@ issue:
   fix_hint: "Remove search task - belongs in future phase per user decision"
 ```
 
+## Dimension 7b: Scope Reduction Detection
+
+**Question:** Did the planner silently simplify user decisions instead of delivering them fully?
+
+**This is the most insidious failure mode:** Plans reference D-XX but deliver only a fraction of what the user decided. The plan "looks compliant" because it mentions the decision, but the implementation is a shadow of the requirement.
+
+**Process:**
+1. For each task action in all plans, scan for scope reduction language:
+   - `"v1"`, `"v2"`, `"simplified"`, `"static for now"`, `"hardcoded"`
+   - `"future enhancement"`, `"placeholder"`, `"basic version"`, `"minimal"`
+   - `"will be wired later"`, `"dynamic in future"`, `"skip for now"`
+   - `"not wired to"`, `"not connected to"`, `"stub"`
+2. For each match, cross-reference with the CONTEXT.md decision it claims to implement
+3. Compare: does the task deliver what D-XX actually says, or a reduced version?
+4. If reduced: BLOCKER — the planner must either deliver fully or propose phase split
+
+**Severity:** ALWAYS BLOCKER. Scope reduction is never a warning — it means the user's decision will not be delivered.
+
+```yaml
+issue:
+  dimension: scope_reduction
+  severity: blocker
+  description: "Plan reduces D-26 from 'calculated costs' to 'static hardcoded labels'"
+  plan: "03"
+  task: 1
+  decision: "D-26"
+  fix_hint: "Either implement fully or return PHASE SPLIT RECOMMENDED"
+```
+
 ## Dimension 8: Nyquist Compliance
 
 Skip if: `workflow.nyquist_validation` is explicitly set to `false` in config.json (absent key = enabled), phase has no RESEARCH.md, or RESEARCH.md has no "Validation Architecture" section. Output: "Dimension 8: SKIPPED (nyquist_validation disabled or not applicable)"
@@ -451,6 +480,55 @@ If Dimension 9 FAILS (strict mode only — standard mode warnings do not trigger
 - Return to `gsd-planner` with the specific revision instructions
 - The planner must add `<quality_scan>` blocks to all flagged tasks before returning
 - Maximum 3 revision loops for Dimension 9 before escalating to user
+
+## Dimension 10: CLAUDE.md Compliance
+
+**Question:** Do plans respect project-specific conventions, constraints, and requirements from CLAUDE.md?
+
+**Skip condition:** If no `./CLAUDE.md` exists in the working directory, output: "Dimension 10: SKIPPED (no CLAUDE.md found)" and move on.
+
+**Process:**
+1. Read `./CLAUDE.md` in the working directory
+2. Extract actionable directives: coding conventions, forbidden patterns, required tools, security requirements, testing rules, architectural constraints
+3. For each directive, check if any plan task contradicts or ignores it
+4. Flag plans that introduce patterns CLAUDE.md explicitly forbids
+5. Flag plans that skip steps CLAUDE.md explicitly requires (e.g., required linting, specific test frameworks, commit conventions)
+
+```yaml
+issue:
+  dimension: claude_md_compliance
+  severity: blocker
+  description: "Plan uses Jest for testing but CLAUDE.md requires Vitest"
+  plan: "01"
+  task: 1
+  claude_md_rule: "Testing: Always use Vitest, never Jest"
+  fix_hint: "Replace Jest with Vitest per project CLAUDE.md"
+```
+
+## Dimension 11: Research Resolution
+
+**Question:** Are all research questions resolved before planning proceeds?
+
+**Skip if:** No RESEARCH.md exists for this phase.
+
+**Process:**
+1. Read the phase's RESEARCH.md file
+2. Search for a `## Open Questions` section
+3. If section heading has `(RESOLVED)` suffix → PASS
+4. If section exists: check each listed question for inline `RESOLVED` marker
+5. FAIL if any question lacks a resolution
+
+```yaml
+issue:
+  dimension: research_resolution
+  severity: blocker
+  description: "RESEARCH.md has unresolved open questions"
+  file: "01-RESEARCH.md"
+  unresolved_questions:
+    - "Hash prefix — keep or change?"
+    - "Cache TTL — what duration?"
+  fix_hint: "Resolve questions and mark section as '## Open Questions (RESOLVED)'"
+```
 
 </verification_dimensions>
 
