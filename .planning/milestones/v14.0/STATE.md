@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v14.0
 milestone_name: Planning Intelligence
 status: executing
-stopped_at: Plan 92-01 complete — prompt-scorer.cjs built with computePromptQuality, cmdPromptScore, prompt-score CLI subcommand wired
-last_updated: "2026-04-06T00:20:00.000Z"
-last_activity: "2026-04-06 — Plan 92-01 complete: task-type-stratified prompt quality scorer, 15 tests passing, prompt-score CLI subcommand wired in gsd-tools.cjs"
+stopped_at: Plan 92-02 complete — Step 3k prompt quality section added to digest.md, success_criteria updated
+last_updated: "2026-04-06T01:00:00.000Z"
+last_activity: "2026-04-06 — Plan 92-02 complete: Step 3k (prompt quality scoring) integrated into /gsd:digest; milestone v14.0 all plans done"
 progress:
   total_phases: 3
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 7
-  completed_plans: 6
-  percent: 86
+  completed_plans: 7
+  percent: 100
 ---
 
 # Project State — Milestone v14.0
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-04)
 
 ## Current Position
 
-Phase: 92 of 92 (Prompt Quality Scoring) — In progress
-Plan: 1 of 1 in current phase (92-01 complete)
-Status: In progress — Phase 92 plan 92-01 complete; milestone v14.0 nearly done
-Last activity: 2026-04-06 — Plan 92-01 complete: task-type-stratified prompt quality scorer, 15 tests passing, prompt-score CLI wired
+Phase: 92 of 92 (Prompt Quality Scoring) — Complete
+Plan: 2 of 2 in current phase (92-02 complete)
+Status: Complete — All plans in milestone v14.0 done
+Last activity: 2026-04-06 — Plan 92-02 complete: Step 3k prompt quality section in /gsd:digest; milestone v14.0 all plans done
 
-Progress: [███████░░░] 71%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -79,5 +79,5 @@ None yet.
 
 Last session: 2026-04-06
 Stopped at: Plan 91-03 complete — workflow injection done; plan_suggestions and task_performance in cmdInitPlanPhase; planning_intelligence block in plan-phase.md Step 8
-Resume file: .planning/milestones/v14.0/phases/92-prompt-quality-scoring/92-01-SUMMARY.md
-Next step: Phase 92 complete — milestone v14.0 all plans done; run roadmap update and milestone completion
+Resume file: .planning/milestones/v14.0/phases/92-prompt-quality-scoring/92-02-SUMMARY.md
+Next step: Milestone v14.0 complete — all phases and plans done; run milestone completion ceremony

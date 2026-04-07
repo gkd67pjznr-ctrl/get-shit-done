@@ -406,9 +406,7 @@ async function main() {
 
     case 'prompt-score': {
       const { cmdPromptScore } = require('./lib/prompt-scorer.cjs');
-      const milestoneIdx = args.indexOf('--milestone');
-      const milestoneVersion = milestoneIdx !== -1 ? args[milestoneIdx + 1] : null;
-      cmdPromptScore(cwd, { milestone: milestoneVersion }, raw);
+      cmdPromptScore(cwd, { milestone: milestoneScope || null }, raw);
       break;
     }
 
