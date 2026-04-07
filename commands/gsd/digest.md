@@ -354,6 +354,51 @@ After the table, add a callout for each tension on its own line:
 
 If multiple tensions exist, display one callout per tension.
 
+### 3k. Prompt quality scoring
+
+Run the prompt scorer for the active milestone. The active milestone was read from `.planning/STATE.md` in Step 1 — use the `milestone:` value from the YAML frontmatter (e.g., `v14.0`). If the milestone could not be determined, pass no `--milestone` flag (shows all plans).
+
+```bash
+node get-shit-done/bin/gsd-tools.cjs prompt-score --milestone <ACTIVE_MILESTONE> --raw
+```
+
+Parse the JSON output. The output shape is:
+```
+{ milestone, plan_count, outlier_count, plans: [...], outliers: [...], medians: {...} }
+```
+
+Each entry in `plans` has: `plan_id`, `dominant_type`, `score_label` (e.g. "0.0x median for lib-module"), `is_outlier`.
+
+**Rendering:**
+
+If `plans` is empty, display:
+> No completed plans found for this milestone.
+
+Otherwise display a table:
+```
+### Prompt Quality (<milestone> — <plan_count> plans)
+| Plan | Dominant Type | Score | Status |
+|------|--------------|-------|--------|
+| 90-01 | lib-module | 0.0x median for lib-module | normal |
+| 91-01 | lib-module | 2.4x median for lib-module | OUTLIER |
+```
+
+If `outliers` array is non-empty, add an outliers callout block:
+```
+**Outliers (score > 2x type median):**
+- Plan <plan_id>: <score_label>. Correction categories: <categories joined with ", "> (or "none" when empty)
+```
+
+If `outliers` array is empty, display:
+> No outliers detected.
+
+Always end the section with:
+> _Prompt quality is diagnostic only — not a gate._
+
+If the `prompt-score` command fails (non-zero exit or invalid JSON), display:
+> Prompt quality data unavailable — run `gsd plan-index --rebuild` and retry.
+and continue to Step 4 without stopping.
+
 ## Step 4: Activation history
 
 Read `.planning/patterns/budget-history.jsonl` using the Read tool.

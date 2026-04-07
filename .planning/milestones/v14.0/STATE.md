@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
+milestone: v14.0
+milestone_name: Planning Intelligence
 status: executing
-stopped_at: Plan 91-03 complete — workflow injection done; plan_suggestions and task_performance in init.cjs, planning_intelligence block in plan-phase.md
-last_updated: "2026-04-06T06:00:00.000Z"
-last_activity: "2026-04-06 — Plan 91-03 complete: workflow injection into cmdInitPlanPhase and plan-phase.md"
+stopped_at: Plan 92-01 complete — prompt-scorer.cjs built with computePromptQuality, cmdPromptScore, prompt-score CLI subcommand wired
+last_updated: "2026-04-06T00:20:00.000Z"
+last_activity: "2026-04-06 — Plan 92-01 complete: task-type-stratified prompt quality scorer, 15 tests passing, prompt-score CLI subcommand wired in gsd-tools.cjs"
 progress:
   total_phases: 3
   completed_phases: 2
-  total_plans: 6
-  completed_plans: 7
-  percent: 57
+  total_plans: 7
+  completed_plans: 6
+  percent: 86
 ---
 
 # Project State — Milestone v14.0
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-04)
 
 ## Current Position
 
-Phase: 91 of 92 (Similarity, Task Intelligence & Workflow Integration) — In progress
-Plan: 3 of 3 in current phase (91-03 complete)
-Status: In progress — Phase 91 plan 91-03 complete, phase 92 next
-Last activity: 2026-04-06 — Plan 91-03 complete: workflow injection; cmdInitPlanPhase now emits plan_suggestions and task_performance; plan-phase.md Step 8 injects planning_intelligence block conditionally
+Phase: 92 of 92 (Prompt Quality Scoring) — In progress
+Plan: 1 of 1 in current phase (92-01 complete)
+Status: In progress — Phase 92 plan 92-01 complete; milestone v14.0 nearly done
+Last activity: 2026-04-06 — Plan 92-01 complete: task-type-stratified prompt quality scorer, 15 tests passing, prompt-score CLI wired
 
-Progress: [███░░░░░░░] 57%
+Progress: [███████░░░] 71%
 
 ## Performance Metrics
 
@@ -79,5 +79,5 @@ None yet.
 
 Last session: 2026-04-06
 Stopped at: Plan 91-03 complete — workflow injection done; plan_suggestions and task_performance in cmdInitPlanPhase; planning_intelligence block in plan-phase.md Step 8
-Resume file: .planning/milestones/v14.0/phases/91-similarity-task-intelligence-workflow-integration/91-03-SUMMARY.md
-Next step: Execute phase 92 (remaining phases in v14.0 milestone)
+Resume file: .planning/milestones/v14.0/phases/92-prompt-quality-scoring/92-01-SUMMARY.md
+Next step: Phase 92 complete — milestone v14.0 all plans done; run roadmap update and milestone completion
